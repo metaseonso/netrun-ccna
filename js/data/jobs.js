@@ -15,9 +15,9 @@
       SW3: { mac: macs.SW3, ports: Object.assign({ [gi(1)]: { to: 'SW1', peer: gi(2) }, [gi(2)]: { to: 'SW2', peer: gi(2) } }, hosts('SW3', 1, 12, 'PC3-')) } } };
     if (extra) extra(t); return t;
   }
-  const triMap = (alert) => ({ w: 520, h: 300, nodes: [
-      { id: 'SW1', label: 'SW1', type: 'switch', x: 260, y: 60 }, { id: 'SW2', label: 'SW2', type: 'switch', x: 110, y: 200 }, { id: 'SW3', label: 'SW3', type: 'switch', x: 410, y: 200 },
-      { id: 'PC1', label: 'PCs ×12', type: 'pc', x: 260, y: 20, small: true }, { id: 'PC2', label: 'PCs ×12', type: 'pc', x: 40, y: 270, small: true }, { id: 'PC3', label: 'PCs ×12', type: 'pc', x: 480, y: 270, small: true } ],
+  const triMap = (alert) => ({ w: 520, h: 340, nodes: [
+      { id: 'SW1', label: 'SW1', type: 'switch', x: 260, y: 80 }, { id: 'SW2', label: 'SW2', type: 'switch', x: 110, y: 220 }, { id: 'SW3', label: 'SW3', type: 'switch', x: 410, y: 220 },
+      { id: 'PC1', label: 'PCs ×12', type: 'pc', x: 400, y: 40, small: true }, { id: 'PC2', label: 'PCs ×12', type: 'pc', x: 40, y: 290, small: true }, { id: 'PC3', label: 'PCs ×12', type: 'pc', x: 480, y: 290, small: true } ],
     links: [ { a: 'SW1', b: 'SW2', ap: gi(1), bp: gi(1) }, { a: 'SW1', b: 'SW3', ap: gi(2), bp: gi(1) }, { a: 'SW2', b: 'SW3', ap: gi(2), bp: gi(2) },
       { a: 'SW1', b: 'PC1' }, { a: 'SW2', b: 'PC2' }, { a: 'SW3', b: 'PC3' } ], alert: alert || [] });
 
@@ -93,7 +93,7 @@
     { id: 'c-rogue-switch', cls: 'C', rep: 60, from: 'root', title: 'The Rogue Switch', requires: ['stp-bpdu', 'stp-toolkit', 'stp-config'], devices: ['SW1', 'SW2', 'SW3'],
       brief: 'DISPATCH » Class C. Something in the Watson office is claiming to be the root bridge with priority ZERO and half the floor is now hairpinning through a box nobody owns. Old Root is, in his words, "displeased". Find it, cut it, and choose the root on purpose this time.\n\nOLD ROOT » Every hello is a claim. Somebody is lying.',
       topo: triangle({ SW1: '0001.9642.a3c0', SW2: '0c11.7a3b.9902', SW3: '00d0.f8e4.0a01' }, t => { t.switches.SW2.ports[fa(7)] = { to: 'ROGUE', peer: fa(1), access: true }; t.switches.ROGUE = { mac: '0000.0c9f.f001', rogue: true, fixed: { priority: 0, mode: 'pvst', ports: {} }, ports: { [fa(1)]: { to: 'SW2', peer: fa(7) } } }; }),
-      map: (() => { const m = triMap(['ROGUE']); m.nodes.push({ id: 'ROGUE', label: '?? under desk 7', type: 'rogue', x: 110, y: 275 }); m.links.push({ a: 'SW2', b: 'ROGUE', ap: fa(7), bp: fa(1) }); return m; })(),
+      map: (() => { const m = triMap(['ROGUE']); m.nodes.push({ id: 'ROGUE', label: '?? under desk 7', type: 'rogue', x: 160, y: 300 }); m.links.push({ a: 'SW2', b: 'ROGUE', ap: fa(7), bp: fa(1) }); return m; })(),
       steps: [
         { type: 'find', skill: 'stp-bpdu', text: '"show spanning-tree" on SW2. Read the Root ID priority. Follow the root port. Click the box that is now the root of this building.', target: 'ROGUE', hint: 'Root ID priority 1 (0 + VLAN 1) and a MAC none of your switches own. SW2\'s root port is Fa0/7. Follow it.', ok: 'Priority zero. A ten-eddie switch from a bodega, or a deck running Yersinia. Same fix.' },
         { type: 'cmd', skill: 'stp-toolkit', text: 'Shut that door, and make it shut itself next time. SW2 Fa0/7 must go err-disabled the moment it hears a BPDU.', check: (d, ctx) => ctx.compute(1).switches.SW2.ports[fa(7)].errdisabled,
@@ -152,7 +152,7 @@
         SW3: { mac: '00d0.f8e4.0a01', ports: Object.assign({ [gi(1)]: { to: 'SW1', peer: gi(2) }, [gi(2)]: { to: 'SW4', peer: gi(2) }, [fa(24)]: { to: 'SW2', peer: fa(24) } }, hosts('SW3', 1, 8, 'PC3-')) },
         SW4: { mac: '0000.5e00.5301', ports: Object.assign({ [gi(1)]: { to: 'SW2', peer: gi(2) }, [gi(2)]: { to: 'SW3', peer: gi(2) }, [fa(3)]: { to: 'ROGUE', peer: fa(1), access: true } }, hosts('SW4', 1, 2, 'PC4-'), hosts('SW4', 4, 8, 'PC4-')) },
         ROGUE: { mac: '0000.0c9f.f002', rogue: true, fixed: { priority: 0, mode: 'pvst', ports: {} }, ports: { [fa(1)]: { to: 'SW4', peer: fa(3) } } } } },
-      map: { w: 520, h: 320, nodes: [ { id: 'SW1', label: 'SW1', type: 'switch', x: 120, y: 60 }, { id: 'SW2', label: 'SW2', type: 'switch', x: 400, y: 60 }, { id: 'SW3', label: 'SW3', type: 'switch', x: 120, y: 230 }, { id: 'SW4', label: 'SW4', type: 'switch', x: 400, y: 230 }, { id: 'ROGUE', label: '?? desk 3', type: 'rogue', x: 480, y: 300 }, { id: 'PC1', label: 'PCs', type: 'pc', x: 40, y: 30, small: true }, { id: 'PC3', label: 'PCs', type: 'pc', x: 40, y: 290, small: true } ],
+      map: { w: 520, h: 360, nodes: [ { id: 'SW1', label: 'SW1', type: 'switch', x: 120, y: 60 }, { id: 'SW2', label: 'SW2', type: 'switch', x: 400, y: 60 }, { id: 'SW3', label: 'SW3', type: 'switch', x: 120, y: 230 }, { id: 'SW4', label: 'SW4', type: 'switch', x: 400, y: 230 }, { id: 'ROGUE', label: '?? desk 3', type: 'rogue', x: 470, y: 315 }, { id: 'PC1', label: 'PCs', type: 'pc', x: 40, y: 30, small: true }, { id: 'PC3', label: 'PCs', type: 'pc', x: 40, y: 290, small: true } ],
         links: [ { a: 'SW1', b: 'SW2', ap: gi(1), bp: gi(1) }, { a: 'SW1', b: 'SW3', ap: gi(2), bp: gi(1) }, { a: 'SW2', b: 'SW4', ap: gi(2), bp: gi(1) }, { a: 'SW3', b: 'SW4', ap: gi(2), bp: gi(2) }, { a: 'SW2', b: 'SW3', ap: fa(24), bp: fa(24), tag: 'FastE' }, { a: 'SW4', b: 'ROGUE', ap: fa(3), bp: fa(1) }, { a: 'SW1', b: 'PC1' }, { a: 'SW3', b: 'PC3' } ], alert: ['ROGUE'] },
       steps: [
         { type: 'find', skill: 'stp-bpdu', text: 'Start where the lie is. Read the tree on SW4, follow its root port, click the box claiming root.', target: 'ROGUE', hint: 'SW4# show spanning-tree — Root ID priority 1, root port Fa0/3.', ok: 'Priority zero at desk 3. Of course.' },

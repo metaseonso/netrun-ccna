@@ -12,12 +12,14 @@
   function toast(msg, cls){ let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); } const d = document.createElement('div'); d.className = cls || ''; d.textContent = msg; t.appendChild(d); setTimeout(() => d.remove(), 4200); }
 
   function npcEl(id, size){
-    const n = NPCS[id]; const wrap = document.createElement('span'); wrap.style.display = 'inline-block';
+    const n = NPCS[id]; const wrap = document.createElement('span'); wrap.style.display = 'inline-block'; wrap.style.lineHeight = '0';
+    const apply = el => { if (size) { el.style.width = size + 'px'; el.style.height = size + 'px'; } return el; };
     const img = new Image(); img.alt = n.name; img.src = 'assets/npc/' + id + '.png';
     const cv = document.createElement('canvas'); Sprite.animate(cv, n.look);
-    img.onload = () => { wrap.innerHTML = ''; wrap.appendChild(img); }; img.onerror = () => { if (!wrap.contains(cv)) { wrap.innerHTML = ''; wrap.appendChild(cv); } };
-    wrap.appendChild(cv); return wrap;
+    img.onload = () => { wrap.innerHTML = ''; wrap.appendChild(apply(img)); }; img.onerror = () => { if (!wrap.contains(cv)) { wrap.innerHTML = ''; wrap.appendChild(apply(cv)); } };
+    wrap.appendChild(apply(cv)); return wrap;
   }
+  const npcSlot = (id, size) => '<span class="npcslot" data-npc="' + id + '" data-size="' + size + '"></span>';
 
   // ---- HUD ------------------------------------------------------------------
   function hud(){
@@ -53,10 +55,9 @@
     const st = STAGES.find(x => x.id === cur.stage);
     return '<div class="panel"><h2>THE GRID · ARC 01</h2><div class="stages"><div class="stagelist">' +
       STAGES.map(x => { const n = x.levels.filter(l => s.read[l.id]).length; return '<button data-stage="' + x.id + '" class="' + (x.id === cur.stage ? 'on' : '') + '">' + esc(x.title) + '<span class="p">' + n + '/' + x.levels.length + '</span><br><span class="muted">' + esc(x.sub) + '</span></button>'; }).join('') + '</div>' +
-      '<div><div class="row" style="margin-bottom:10px">' + npcCard(st.npc) + '<div><div class="muted" style="font-size:11px;letter-spacing:.14em">' + (st.status === 'live' ? '<span class="tag on">demo stage · fully built</span>' : '<span class="tag">framework stub · intro only</span>') + '</div><div style="font-size:15px;font-weight:700;margin-top:4px">' + esc(NPCS[st.npc].name) + ' <span class="muted">· ' + esc(NPCS[st.npc].sys) + '</span></div><div class="dim">' + esc(NPCS[st.npc].role) + '</div></div></div>' +
+      '<div><div class="row" style="margin-bottom:10px;align-items:flex-start"><div class="npcbox" style="width:72px;flex:none">' + npcSlot(st.npc, 72) + '</div><div><div class="muted" style="font-size:11px;letter-spacing:.14em">' + (st.status === 'live' ? '<span class="tag on">demo stage · fully built</span>' : '<span class="tag">framework stub · intro only</span>') + '</div><div style="font-size:15px;font-weight:700;margin-top:4px">' + esc(NPCS[st.npc].name) + ' <span class="muted">· ' + esc(NPCS[st.npc].sys) + '</span></div><div class="dim">' + esc(NPCS[st.npc].role) + '</div></div></div>' +
       '<div class="levels">' + st.levels.map(l => '<div class="level ' + (s.read[l.id] ? 'done' : '') + '" data-level="' + l.id + '">' + (s.read[l.id] ? '<span class="chk">✓</span>' : '') + '<div class="who">' + esc(NPCS[l.npc].name) + '</div><div class="t">' + esc(l.title) + '</div><div class="s">' + esc(l.sub) + '</div></div>').join('') + '</div></div></div></div>';
   }
-  function npcCard(id){ const w = document.createElement('div'); w.className = 'npcbox'; w.style.width = '64px'; const e = npcEl(id); e.querySelector('canvas,img').style.width = '64px'; e.querySelector('canvas,img').style.height = '64px'; w.appendChild(e); return w.outerHTML.replace('<canvas', '<canvas data-npc="' + id + '"'); }
 
   function level(){
     const l = Game.levelById(cur.level); const n = NPCS[l.npc]; const b = l.beats[cur.beat]; const last = cur.beat === l.beats.length - 1;
@@ -66,7 +67,7 @@
     if (b.k === 'KIT') body = '<div class="speech kit"><div class="k">DECK · SLOTTING</div>' + rich(b.text) + '<ul class="kitlist">' + b.kit.map(k => '<li><code>' + esc(k.cmd) + '</code> <span class="dim">' + rich(k.what) + '</span></li>').join('') + '</ul></div>';
     if (b.k === 'SYNC') { const q = b.q; body = '<div class="speech sync"><div class="k">SYNC CHECK · exam angle · no rep, no pressure</div>' + rich(q.prompt) + '<div class="opts">' + q.opts.map((o, i) => '<button data-opt="' + i + '" class="' + (cur.synced == null ? '' : i === q.a ? 'right' : i === cur.synced ? 'wrong' : '') + '">' + esc(o) + '</button>').join('') + '</div>' + (cur.synced == null ? '' : '<div style="margin-top:8px" class="' + (cur.synced === q.a ? 'good' : 'warn') + '">' + rich(cur.synced === q.a ? q.yes : q.no) + '</div>') + '</div>'; }
     return '<div class="panel"><div class="row" style="justify-content:space-between"><h2>' + esc(l.title) + '</h2><button class="btn ghost" data-v="grid">← GRID</button></div><div class="muted" style="font-size:11px">' + esc(l.sub) + '</div>' +
-      '<div class="dlg" style="margin-top:14px"><div class="npcbox" id="npcbox"><div class="name">' + esc(n.name) + '</div><div class="sys">' + esc(n.sys) + '</div><div class="role">' + esc(n.role) + '</div></div>' +
+      '<div class="dlg" style="margin-top:14px"><div class="npcbox" id="npcbox">' + npcSlot(l.npc, 192) + '<div class="name">' + esc(n.name) + '</div><div class="sys">' + esc(n.sys) + '</div><div class="role">' + esc(n.role) + '</div></div>' +
       '<div>' + body + '<div class="dots">' + l.beats.map((x, i) => '<i class="' + (i <= cur.beat ? 'on' : '') + '"></i>').join('') + '</div><div class="row">' +
       (cur.beat > 0 ? '<button class="btn ghost" id="prev">BACK</button>' : '') + (!last ? '<button class="btn" id="next">NEXT ▸</button>' : '<button class="btn grn" id="finish">SYNC COMPLETE ✓</button>') +
       '<span class="muted" style="font-size:11px">' + (b.k === 'SYNC' && cur.synced == null ? 'answer, or skip — reading never levels a skill; using it in a gig does' : '') + '</span></div>' +
@@ -92,9 +93,9 @@
     if (r.result) return resultView(r);
     const st = Game.currentStep(); const n = NPCS[r.job.from];
     return '<div class="panel"><div class="row" style="justify-content:space-between"><h2>NET RUN · ' + esc(r.job.title) + ' <span class="cls ' + r.job.cls + '" style="font-size:11px">CLASS ' + r.job.cls + '</span></h2><button class="btn ghost" id="abort">JACK OUT</button></div>' +
-      '<div class="run"><div><div class="netmap" id="netmap"><div class="label">LIVE MAP · click nodes to inspect' + (r.topo ? ' · tree computed from your config' : '') + '</div></div>' +
+      '<div class="run"><div><div class="netmap" id="netmap"></div>' +
       '<ol class="steps" style="margin-top:10px">' + r.job.steps.map((s, i) => '<li class="' + (i < r.step ? 'done' : i === r.step ? 'cur' : '') + (r.hinted[i] ? ' hinted' : '') + '">' + (i + 1) + '. ' + esc(SKILLS[s.skill] || s.skill) + (i === r.step ? ' ◂' : '') + '</li>').join('') + '</ol></div>' +
-      '<div><div class="task"><div class="npcline"><span id="npcsmall"></span><div><div class="who">' + esc(n.name.toUpperCase()) + ' · step ' + (r.step + 1) + '/' + r.job.steps.length + '</div><div>' + rich(st.text) + '</div></div></div>' + stepInput(st, r) +
+      '<div><div class="task"><div class="npcline">' + npcSlot(n && r.job.from, 48) + '<div><div class="who">' + esc(n.name.toUpperCase()) + ' · step ' + (r.step + 1) + '/' + r.job.steps.length + '</div><div>' + rich(st.text) + '</div></div></div>' + stepInput(st, r) +
       (r.feedback ? '<div style="margin-top:8px" class="' + (r.feedback.ok ? 'good' : 'bad') + '">' + rich(r.feedback.text) + (r.feedback.leveled ? ' <span class="mag">▲ ' + esc(SKILLS[r.feedback.leveled.skill]) + ' → ' + Game.LEVEL_NAMES[r.feedback.leveled.level] + '</span>' : '') + '</div>' : '') +
       (r.hintShown ? '<div class="hintbox">' + esc(r.hintShown) + '</div>' : '') +
       '<div class="row" style="margin-top:10px"><button class="btn grn" id="commit">COMMIT ▸</button>' + (st.hint ? '<button class="btn ghost" id="hint">' + (r.hinted[r.step] ? 'HINT SHOWN' : 'HINT (no level-up this step)') + '</button>' : '') + '</div></div>' +
@@ -126,7 +127,7 @@
       if (pa && pa.errdisabled || pb && pb.errdisabled) cls += ' err'; else if (pa && pa.state === 'BLK' || pb && pb.state === 'BLK') cls += ' blocked'; else if ((m.alert || []).includes(l.b) || (m.alert || []).includes(l.a)) cls += ' hot';
       if (hidden) return;
       svg += '<line class="' + cls + '" x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '"/>';
-      const tagAt = (p, from, to, txt, cls2) => { const dx = to.x - from.x, dy = to.y - from.y, L = Math.hypot(dx, dy) || 1; const x = from.x + dx / L * 34, y = from.y + dy / L * 34; svg += '<text class="ptag ' + cls2 + '" x="' + x + '" y="' + (y - 4) + '" text-anchor="middle">' + esc(txt) + '</text>'; };
+      const tagAt = (p, from, to, txt, cls2) => { const dx = to.x - from.x, dy = to.y - from.y, L = Math.hypot(dx, dy) || 1; const nx = -dy / L, ny = dx / L; const x = from.x + dx / L * 46 + nx * 9, y = from.y + dy / L * 46 + ny * 9; svg += '<text class="ptag ' + cls2 + '" x="' + x + '" y="' + (y + 3) + '" text-anchor="middle">' + esc(txt) + '</text>'; };
       if (pa) tagAt(pa, a, b, Stp.shortName(l.ap) + ' ' + (pa.errdisabled ? 'ERR' : pa.role === 'Root' ? 'R' : pa.role === 'Altn' ? 'A' : pa.role === 'Desg' ? 'D' : ''), pa.state === 'BLK' ? 'blk' : pa.role === 'Root' ? 'root' : '');
       if (pb) tagAt(pb, b, a, Stp.shortName(l.bp) + ' ' + (pb.errdisabled ? 'ERR' : pb.role === 'Root' ? 'R' : pb.role === 'Altn' ? 'A' : pb.role === 'Desg' ? 'D' : ''), pb.state === 'BLK' ? 'blk' : pb.role === 'Root' ? 'root' : '');
       if (l.tag) svg += '<text class="ptag" x="' + ((a.x + b.x) / 2) + '" y="' + ((a.y + b.y) / 2 - 6) + '" text-anchor="middle">' + esc(l.tag) + '</text>'; });
@@ -138,7 +139,7 @@
       else if (n.type === 'server') svg += '<rect class="body" x="-' + s + '" y="-' + (s * 1.1) + '" width="' + (2 * s) + '" height="' + (s * 2) + '" rx="2"/>';
       else svg += '<ellipse class="body" rx="' + (s + 8) + '" ry="' + (s * .7) + '"/>';
       svg += '<text y="' + (n.type === 'pc' ? s + 12 : s + 14) + '" text-anchor="middle">' + esc(n.label) + '</text></g>'; });
-    svg += '</svg>'; box.innerHTML = '<div class="label">LIVE MAP · click a node to select' + (comp ? ' · tree computed from your config · R root port · D designated · A alternate (blocking) · ERR err-disabled' : '') + '</div>' + svg;
+    svg += '</svg>'; box.innerHTML = svg + '<div class="legend">LIVE MAP · click a node to select' + (comp ? ' · tree computed from your config · <b>R</b> root port · <b>D</b> designated · <b>A</b> alternate (blocking) · <b>ERR</b> err-disabled · gold = root bridge' : '') + '</div>';
   }
   function resultView(r){
     const res = r.result; const c = Game.classFor(Game.state.rep);
@@ -164,10 +165,9 @@
     let body = '';
     if (view === 'home') body = home(); else if (view === 'grid') body = grid(); else if (view === 'level') body = level(); else if (view === 'jobs') body = jobs(); else if (view === 'run') body = runView(); else if (view === 'deck') body = deck(); else body = logView();
     a.innerHTML = hud() + body;
-    // mount sprites
-    a.querySelectorAll('canvas[data-npc]').forEach(c => { const id = c.getAttribute('data-npc'); const el = npcEl(id); const inner = el.querySelector('canvas,img'); inner.style.width = '64px'; inner.style.height = '64px'; c.replaceWith(el); });
-    if (view === 'level') { const l = Game.levelById(cur.level); const box = $('#npcbox'); box.insertBefore(npcEl(l.npc), box.firstChild); }
-    if (view === 'run' && Game.run && !Game.run.result) { $('#npcsmall').appendChild(npcEl(Game.run.job.from)); drawMap(); const o = $('#conout'); if (o) o.scrollTop = o.scrollHeight; const inp = $('#conin'); if (inp) { inp.focus(); } }
+    // mount sprites / portraits into their slots at the slot's size
+    a.querySelectorAll('.npcslot').forEach(sl => sl.replaceWith(npcEl(sl.dataset.npc, +sl.dataset.size)));
+    if (view === 'run' && Game.run && !Game.run.result) { drawMap(); const o = $('#conout'); if (o) o.scrollTop = o.scrollHeight; const inp = $('#conin'); if (inp) { inp.focus(); } }
     window.scrollTo({ top: view === 'run' ? window.scrollY : 0 });
   }
 
