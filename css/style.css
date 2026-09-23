@@ -161,3 +161,9 @@ code,kbd{font-family:var(--mono);background:#0b0f18;border:1px solid var(--line)
 .netmap .node.rogue .body{stroke:var(--red);fill:#2a0d12}
 .netmap .ptag{font-size:8px;fill:var(--ink3);paint-order:stroke;stroke:#070a12;stroke-width:3px}
 .netmap .ptag.blk{fill:var(--red)} .netmap .ptag.root{fill:var(--yel)}
+
+/* story scenes */
+.scene{border:1px solid var(--line);background:#0b0f18;padding:14px 16px;font-size:14.5px;line-height:1.6}
+.scene .where{font-size:11px;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase;margin-bottom:10px}
+.scene .ln{margin:8px 0} .scene .ln .who{display:block;font-family:var(--disp);font-size:10px;letter-spacing:.16em;color:var(--term);margin-bottom:2px}
+.scene .ln.you .who{color:var(--cyan)} .scene .ln.narr{color:var(--ink2);font-style:italic} .scene .ln.reply{border-left:2px solid var(--mag);padding-left:10px;margin-top:10px}

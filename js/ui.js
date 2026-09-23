@@ -29,14 +29,16 @@
     return '<div class="hud"><div class="logo">NETRUN<small>://</small>CCNA</div>' +
       '<div class="handle">handle <b>' + esc(s.handle || '—') + '</b></div><span class="cls ' + c.id + '">CLASS ' + c.id + '</span>' +
       '<div class="rep"><span>REP ' + s.rep + (nx ? ' / ' + nx.min + ' → Class ' + nx.id : ' · MAX for this arc') + '</span><div class="bar"><i style="width:' + pct + '%"></i></div></div>' +
-      '<div class="nav">' + [['home', 'MAP'], ['grid', 'GRID'], ['jobs', 'JOBS'], ['deck', 'DECK'], ['log', 'LOG']].map(([v, l]) => '<button data-v="' + v + '" class="' + (view === v || (v === 'grid' && view === 'level') || (v === 'jobs' && view === 'run') ? 'on' : '') + '">' + l + (v === 'jobs' && openJobs ? '<span class="badge">' + openJobs + '</span>' : '') + '</button>').join('') + '</div></div>';
+      '<div class="nav">' + [['home', 'MAP'], ['grid', 'GRID'], ['jobs', 'JOBS'], ['deck', 'DECK'], ['log', 'LOG']].map(([v, l]) => '<button data-v="' + v + '" class="' + (view === v || (v === 'grid' && view === 'level') || (v === 'jobs' && view === 'run') ? 'on' : '') + '">' + l + (v === 'jobs' && openJobs ? '<span class="badge">' + openJobs + '</span>' : '') + '</button>').join('') + '<button id="logout" title="back to the opening screen. progress stays saved under this handle">LOG OUT</button></div></div>';
   }
 
   // ---- views ----------------------------------------------------------------
   function intro(){
-    return '<div class="intro"><h1 class="glitch">NETRUN<span>://</span>CCNA</h1><p>Two layers. <b>THE GRID</b>: talk to the systems themselves. They are people here. Learn what they are, what they did, what is in your deck.<br><b>JOBS</b>: Dispatch sends gigs. You jack in, see the fault, fix it the way it is really fixed. Skills level only when you use them unprompted. Rep climbs. Class climbs. Bigger gigs fold in the smaller ones.</p>' +
-      '<p class="muted">Demo arc: The Grid · Stage 4 · Spanning Tree (Jeremy\'s IT Lab days 20–21). Exam bar: CCNA 200-301.</p>' +
-      '<p><input id="handle" placeholder="your handle" maxlength="18" autocomplete="off"> <button class="btn mag" id="go">JACK IN</button></p></div>';
+    return '<div class="intro"><h1 class="glitch">NETRUN<span>://</span>CCNA</h1><p>Watson district. Old switches, thin budgets, people who remember every outage by what they lost. You are new, you need work, and somebody vouched for you.<br><b>THE GRID</b> is where you meet the people who keep the district running. Each of them works one part of the network, and they will teach you the way people teach: by showing you the thing that went wrong.<br><b>JOBS</b> is the board. Dispatch sends a gig, you go to the building, you fix it in a real console, and someone gets their day back. Skills only count once you have used them without help.</p>' +
+      '<p class="muted">First showing: Stage 4, Spanning Tree, one week at the clinic annex (Jeremy\'s IT Lab days 20–21). Exam bar: CCNA 200-301.</p>' +
+      '<p><input id="handle" placeholder="your handle" maxlength="18" autocomplete="off"> <button class="btn mag" id="go">JACK IN</button></p>' +
+      (Game.profiles().length ? '<p class="muted" style="font-size:12px">saved on this browser: ' + Game.profiles().map(h => '<button class="btn ghost" data-resume="' + esc(h) + '" style="margin:2px 4px">' + esc(h) + '</button>').join('') + '</p>' : '') +
+      '<div class="footer">Study material follows Jeremy\'s IT Lab. Built on notes by <a href="https://github.com/psaumur/CCNA_Course_Notes" target="_blank">psaumur/CCNA_Course_Notes</a> and <a href="https://github.com/sparrowjumpy/CCNA-Notes" target="_blank">sparrowjumpy/CCNA-Notes</a>. Lore from real network history. MIT.</div></div>';
   }
 
   function home(){
@@ -45,9 +47,9 @@
     return '<div class="panel"><h2>JOURNEY MAP</h2><div class="muted">one arc per discipline. rep and class carry across. only one is mapped so far.</div><div class="arcs" style="margin-top:12px">' +
       ARCS.map(a => '<div class="arc ' + (a.status === 'play' ? 'play' : 'lock') + '" ' + (a.status === 'play' ? 'data-v="grid"' : '') + '><div class="n">ARC ' + a.n + '</div><div class="t">' + a.title + '</div><div class="st">' + esc(a.sub) + '</div>' +
         (a.status === 'play' ? '<div style="margin-top:8px"><span class="tag on">playable</span><span class="tag">' + reads + '/' + total + ' synced</span><span class="tag">' + done + '/' + JOBS.length + ' gigs</span></div>' : '<div style="margin-top:8px"><span class="tag lock">signal lost · not yet mapped</span></div>') + '</div>').join('') + '</div></div>' +
-      '<div class="grid2"><div class="panel"><h2>LAYER 1 · THE GRID</h2><p class="dim">Macro. Concepts. Each system is an NPC whose name gives it away. Glowing <span class="term" data-def="Like this. Hover any glowing term for the exam-grade definition.">terms</span> are the vocabulary the exam and the job both expect. Reading slots a skill into your deck at level 0. Nothing levels by reading.</p><button class="btn" data-v="grid">ENTER THE GRID</button></div>' +
-      '<div class="panel"><h2>LAYER 2 · JOBS</h2><p class="dim">Micro. Practice. A HUD message from Dispatch, a live net map, a real console. A skill levels only when you use it without a hint. Repeat gigs for less rep but real consolidation. Class A gigs contain Class D work, packaged as one night.</p><button class="btn mag" data-v="jobs">OPEN INBOX</button></div></div>' +
-      '<div class="footer">Built on notes by <a href="https://github.com/psaumur/CCNA_Course_Notes" target="_blank">psaumur/CCNA_Course_Notes</a> and <a href="https://github.com/sparrowjumpy/CCNA-Notes" target="_blank">sparrowjumpy/CCNA-Notes</a> (both following Jeremy\'s IT Lab). Lore drawn from real network security history. MIT.</div>';
+      '<div class="grid2"><div class="panel"><h2>THE GRID</h2><p class="dim">The people. Each one works a part of the network, and their name gives it away. Go and talk to them. Glowing <span class="term" data-def="Like this. Hover any glowing word for the exam definition.">words</span> are the ones the exam and the job will both use. Talking to someone puts a skill in your deck at level zero. Using it in a gig is what makes it count.</p><button class="btn" data-v="grid">GO TO THE GRID</button></div>' +
+      '<div class="panel"><h2>JOBS</h2><p class="dim">The board. Dispatch sends a message, the client says what is wrong in their own words, and you go and fix it. A live map, a real console, an NPC beside you. Skills level only when you use them without a hint. Repeat a gig for less rep but real practice. Bigger gigs bring back earlier problems in new buildings.</p><button class="btn mag" data-v="jobs">OPEN THE BOARD</button></div></div>' +
+      '';
   }
 
   function grid(){
@@ -63,15 +65,20 @@
     const l = Game.levelById(cur.level); const n = NPCS[l.npc]; const b = l.beats[cur.beat]; const last = cur.beat === l.beats.length - 1;
     let body = '';
     if (b.k === 'TALK') body = '<div class="speech"><div class="k">' + esc(n.name.toUpperCase()) + '</div>' + rich(b.text) + '</div>';
-    if (b.k === 'LORE') body = '<div class="speech lore"><div class="k">LORE · REAL HISTORY</div>' + rich(b.text) + '</div>';
-    if (b.k === 'KIT') body = '<div class="speech kit"><div class="k">DECK · SLOTTING</div>' + rich(b.text) + '<ul class="kitlist">' + b.kit.map(k => '<li><code>' + esc(k.cmd) + '</code> <span class="dim">' + rich(k.what) + '</span></li>').join('') + '</ul></div>';
-    if (b.k === 'SYNC') { const q = b.q; body = '<div class="speech sync"><div class="k">SYNC CHECK · exam angle · no rep, no pressure</div>' + rich(q.prompt) + '<div class="opts">' + q.opts.map((o, i) => '<button data-opt="' + i + '" class="' + (cur.synced == null ? '' : i === q.a ? 'right' : i === cur.synced ? 'wrong' : '') + '">' + esc(o) + '</button>').join('') + '</div>' + (cur.synced == null ? '' : '<div style="margin-top:8px" class="' + (cur.synced === q.a ? 'good' : 'warn') + '">' + rich(cur.synced === q.a ? q.yes : q.no) + '</div>') + '</div>'; }
+    if (b.k === 'LORE') body = '<div class="speech lore"><div class="k">AS TOLD · real history</div>' + rich(b.text) + '</div>';
+    if (b.k === 'KIT') body = '<div class="speech kit"><div class="k">WHAT YOU CARRY OUT</div>' + rich(b.text) + '<ul class="kitlist">' + b.kit.map(k => '<li><code>' + esc(k.cmd) + '</code> <span class="dim">' + rich(k.what) + '</span></li>').join('') + '</ul></div>';
+    if (b.k === 'SCENE') {
+      body = '<div class="scene">' + (b.where ? '<div class="where">' + rich(b.where) + '</div>' : '') +
+        (b.lines || []).map(ln => ln.who === 'you' ? '<div class="ln you"><span class="who">' + esc(Game.state.handle) + '</span>' + rich(ln.text) + '</div>' : ln.who === 'narr' ? '<div class="ln narr">' + rich(ln.text) + '</div>' : '<div class="ln"><span class="who">' + esc((NPCS[ln.who] || { name: ln.who }).name) + '</span>' + rich(ln.text) + '</div>').join('') +
+        (b.choice ? '<div class="opts">' + b.choice.opts.map((o, i) => '<button data-opt="' + i + '" class="' + (cur.synced === i ? 'right' : '') + '">' + esc(o.say) + '</button>').join('') + '</div>' + (cur.synced != null ? '<div class="ln reply"><span class="who">' + esc((NPCS[b.choice.opts[cur.synced].who || l.npc] || {}).name || '') + '</span>' + rich(b.choice.opts[cur.synced].reply) + '</div>' : '') : '') + '</div>';
+    }
+    if (b.k === 'SYNC') { const q = b.q; body = '<div class="speech sync"><div class="k">SOMEONE ASKS · no rep on the line</div>' + rich(q.prompt) + '<div class="opts">' + q.opts.map((o, i) => '<button data-opt="' + i + '" class="' + (cur.synced == null ? '' : i === q.a ? 'right' : i === cur.synced ? 'wrong' : '') + '">' + esc(o) + '</button>').join('') + '</div>' + (cur.synced == null ? '' : '<div style="margin-top:8px" class="' + (cur.synced === q.a ? 'good' : 'warn') + '">' + rich(cur.synced === q.a ? q.yes : q.no) + '</div>') + '</div>'; }
     return '<div class="panel"><div class="row" style="justify-content:space-between"><h2>' + esc(l.title) + '</h2><button class="btn ghost" data-v="grid">← GRID</button></div><div class="muted" style="font-size:11px">' + esc(l.sub) + '</div>' +
       '<div class="dlg" style="margin-top:14px"><div class="npcbox" id="npcbox">' + npcSlot(l.npc, 192) + '<div class="name">' + esc(n.name) + '</div><div class="sys">' + esc(n.sys) + '</div><div class="role">' + esc(n.role) + '</div></div>' +
       '<div>' + body + '<div class="dots">' + l.beats.map((x, i) => '<i class="' + (i <= cur.beat ? 'on' : '') + '"></i>').join('') + '</div><div class="row">' +
-      (cur.beat > 0 ? '<button class="btn ghost" id="prev">BACK</button>' : '') + (!last ? '<button class="btn" id="next">NEXT ▸</button>' : '<button class="btn grn" id="finish">SYNC COMPLETE ✓</button>') +
-      '<span class="muted" style="font-size:11px">' + (b.k === 'SYNC' && cur.synced == null ? 'answer, or skip — reading never levels a skill; using it in a gig does' : '') + '</span></div>' +
-      '<div class="srcs">sources · ' + l.src.map(s => '<a href="' + s.url + '" target="_blank">' + esc(s.label) + '</a>').join(' · ') + ' · day ' + l.day.join(', ') + '</div></div></div></div>';
+      (!last ? '<button class="btn" id="next"' + (b.k === 'SCENE' && b.choice && cur.synced == null ? ' disabled' : '') + '>NEXT ▸</button>' : '<button class="btn grn" id="finish">SYNC COMPLETE ✓</button>') + (cur.beat > 0 ? '<button class="btn ghost" id="prev">◂ BACK</button>' : '') +
+      '<span class="muted" style="font-size:11px">' + (b.k === 'SYNC' && cur.synced == null ? 'answer or skip. talking never levels a skill. using it on a gig does.' : b.k === 'SCENE' && b.choice && cur.synced == null ? 'say something to continue' : '') + '</span></div>' +
+      '</div></div></div>';
   }
 
   function jobs(){
@@ -105,7 +112,7 @@
     if (st.type === 'choice') return '<div class="opts" style="margin-top:8px">' + st.opts.map((o, i) => '<button data-choice="' + i + '" class="' + (r.choice === i ? 'right' : '') + '" style="' + (r.choice === i ? 'border-color:var(--cyan);color:var(--cyan)' : '') + '">' + String.fromCharCode(65 + i) + '. ' + esc(o) + '</button>').join('') + '</div>';
     if (st.type === 'calc') return '<div class="calc" style="margin-top:8px">' + st.fields.map(f => '<label>' + esc(f.label) + '<input data-calc="' + f.key + '" value="' + esc(r.calc[f.key] || '') + '" class="' + (r.feedback && r.feedback.bad ? (r.feedback.bad.includes(f.key) ? 'no' : 'ok') : '') + '" autocomplete="off"></label>').join('') + '</div>';
     if (st.type === 'find') return '<div class="muted" style="margin-top:8px;font-size:12px">selected: <b class="warn">' + esc(r.selected || 'nothing yet') + '</b> — click a node on the map, then COMMIT.</div>';
-    return '<div class="muted" style="margin-top:8px;font-size:12px">work in the console below, then COMMIT. abbreviations work (conf t, int g0/1, sh span, do sh run).</div>';
+    return '<div class="muted" style="margin-top:8px;font-size:12px">do it in the console below, then COMMIT. short forms work: conf t, int g0/1, sh span, do sh run.</div>';
   }
   function consoleView(r){
     const d = r.devices[r.active];
@@ -145,13 +152,13 @@
     const res = r.result; const c = Game.classFor(Game.state.rep);
     return '<div class="panel result"><h2>RUN COMPLETE</h2><div class="big">+' + res.rep + ' REP</div><div class="dim">' + (res.repeat ? 'repeat run · consolidation pays 40%' : 'first clear') + (res.hintedCount ? ' · ' + res.hintedCount + ' hinted step' + (res.hintedCount > 1 ? 's' : '') + ' (no level-up on those)' : ' · no hints. clean.') + '</div>' +
       (res.promoted ? '<div class="mag" style="font-family:var(--disp);font-size:20px;margin-top:10px">▲ PROMOTED · CLASS ' + res.promoted + '</div>' : '') +
-      (res.leveled.length ? '<div class="lvls">' + res.leveled.map(l => '<div><span class="tag new">LEVEL UP</span> ' + esc(SKILLS[l.skill]) + ' → <b>' + Game.LEVEL_NAMES[l.level] + '</b></div>').join('') + '</div>' : '<div class="muted" style="margin-top:8px">no skill levelled this run — clean uses stack across runs: 1 → SYNCED, 3 → WIRED, 6 → BURNED-IN</div>') +
+      (res.leveled.length ? '<div class="lvls">' + res.leveled.map(l => '<div><span class="tag new">LEVEL UP</span> ' + esc(SKILLS[l.skill]) + ' → <b>' + Game.LEVEL_NAMES[l.level] + '</b></div>').join('') + '</div>' : '<div class="muted" style="margin-top:8px">no skill levelled this run. clean uses add up across runs: 1 → SYNCED, 3 → WIRED, 6 → BURNED-IN</div>') +
       '<div class="brief" style="text-align:left;margin-top:16px">' + rich(r.job.outro) + '</div><div class="row" style="justify-content:center"><button class="btn mag" data-v="jobs" id="backjobs">BACK TO INBOX</button><button class="btn" data-v="deck">VIEW DECK</button></div><div class="muted" style="margin-top:8px">now Class ' + c.id + ' · ' + Game.state.rep + ' rep</div></div>';
   }
 
   function deck(){
     const s = Game.state;
-    return '<div class="panel"><h2>DECK · quickhacks you can run without prompting</h2><div class="muted">slotted by reading · levelled only by clean use in gigs · 1 → SYNCED · 3 → WIRED · 6 → BURNED-IN</div><div class="deck" style="margin-top:12px">' +
+    return '<div class="panel"><h2>DECK · what you can do without help</h2><div class="muted">a skill appears when someone teaches it · it levels only when you use it on a gig with no hint · 1 clean use → SYNCED · 3 → WIRED · 6 → BURNED-IN</div><div class="deck" style="margin-top:12px">' +
       Object.keys(SKILLS).map(k => { const sk = s.skills[k]; const lv = sk ? sk.level : 0; const next = Game.LEVEL_AT[lv + 1]; const pct = sk ? (next ? Math.round(((sk.clean - Game.LEVEL_AT[lv]) / (next - Game.LEVEL_AT[lv])) * 100) : 100) : 0;
         return '<div class="skill l' + lv + '"><div class="n">' + esc(SKILLS[k]) + '</div><div class="lv">' + (sk && sk.slotted ? Game.LEVEL_NAMES[lv] : 'NOT SLOTTED') + (sk ? ' · ' + sk.clean + ' clean / ' + sk.uses + ' uses' : '') + '</div><div class="bar"><i style="width:' + pct + '%"></i></div></div>'; }).join('') + '</div>' +
       '<h3>SAVE</h3><div class="row"><button class="btn ghost" id="export">EXPORT SAVE</button><button class="btn ghost" id="import">IMPORT SAVE</button><button class="btn ghost" id="wipe" style="border-color:var(--red);color:var(--red)">WIPE</button></div><textarea id="savebox" style="width:100%;height:60px;margin-top:8px;background:#050710;color:var(--ink2);border:1px solid var(--line);font:11px var(--mono)" placeholder="export writes JSON here; paste JSON here then IMPORT"></textarea></div>';
@@ -161,7 +168,7 @@
   // ---- render + events -----------------------------------------------------
   function render(){
     const s = Game.state; const a = app();
-    if (!s.handle) { a.innerHTML = intro(); $('#go').onclick = () => { Game.setHandle($('#handle').value); view = 'home'; render(); }; $('#handle').onkeydown = e => { if (e.key === 'Enter') $('#go').click(); }; $('#handle').focus(); return; }
+    if (!s.handle) { a.innerHTML = intro(); $('#go').onclick = () => { if (Game.setHandle($('#handle').value)) { view = 'home'; render(); } }; $('#handle').onkeydown = e => { if (e.key === 'Enter') $('#go').click(); }; a.querySelectorAll('[data-resume]').forEach(b => b.onclick = () => { Game.setHandle(b.dataset.resume); view = 'home'; render(); }); $('#handle').focus(); return; }
     let body = '';
     if (view === 'home') body = home(); else if (view === 'grid') body = grid(); else if (view === 'level') body = level(); else if (view === 'jobs') body = jobs(); else if (view === 'run') body = runView(); else if (view === 'deck') body = deck(); else body = logView();
     a.innerHTML = hud() + body;
@@ -172,7 +179,8 @@
   }
 
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-dev],[data-node],#next,#prev,#finish,#commit,#hint,#abort,#export,#import,#wipe'); if (!t) return;
+    const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-dev],[data-node],#next,#prev,#finish,#commit,#hint,#abort,#export,#import,#wipe,#logout'); if (!t) return;
+    if (t.id === 'logout') { if (view === 'run' && Game.run && !Game.run.result && !confirm('Jack out? Progress on this gig is lost.')) return; Game.logout(); view = 'home'; cur = { stage: null, level: null, beat: 0, job: null, synced: null }; return render(); }
     if (t.dataset.v) { if (view === 'run' && Game.run && !Game.run.result && t.dataset.v !== 'run') { if (!confirm('Jack out? Progress on this gig is lost.')) return; Game.abort(); } view = t.dataset.v; if (view === 'jobs' && Game.run && Game.run.result) Game.abort(); return render(); }
     if (t.dataset.stage) { cur.stage = t.dataset.stage; return render(); }
     if (t.dataset.level) { cur.level = t.dataset.level; cur.beat = 0; cur.synced = null; cur.stage = Game.stageOf(cur.level).id; view = 'level'; return render(); }

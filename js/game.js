@@ -8,9 +8,14 @@
   const LEVEL_AT = [0, 1, 3, 6]; // clean uses needed
 
   const fresh = () => ({ handle: '', rep: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now() });
+  // one save per handle; the current handle is remembered so a reload resumes
+  const PKEY = h => 'netrun-ccna-profile:' + h, CUR = 'netrun-ccna-current';
   let state = fresh();
-  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.handle !== undefined) state = Object.assign(fresh(), s); } catch (e) {}
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+  function load(h){ try { const s = JSON.parse(localStorage.getItem(PKEY(h)) || 'null'); if (s) return Object.assign(fresh(), s); } catch (e) {} return Object.assign(fresh(), { handle: h }); }
+  try { const cur = localStorage.getItem(CUR); if (cur) state = load(cur); else { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.handle) { state = Object.assign(fresh(), s); localStorage.setItem(PKEY(s.handle), JSON.stringify(state)); localStorage.setItem(CUR, s.handle); localStorage.removeItem(KEY); } } } catch (e) {}
+  const save = () => { try { if (state.handle) { localStorage.setItem(PKEY(state.handle), JSON.stringify(state)); localStorage.setItem(CUR, state.handle); } } catch (e) {} };
+  function profiles(){ const o = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('netrun-ccna-profile:')) o.push(k.slice(20)); } } catch (e) {} return o.sort(); }
+  function logout(){ save(); run = null; state = fresh(); try { localStorage.removeItem(CUR); } catch (e) {} }
   const log = (s) => { state.log.unshift({ t: Date.now(), s }); state.log = state.log.slice(0, 200); save(); };
 
   const classFor = rep => { let c = CLASSES[0]; for (const k of CLASSES) if (rep >= k.min) c = k; return c; };
@@ -114,10 +119,10 @@
   }
 
   function abort(){ if (run) log('Jacked out early: ' + run.job.title); run = null; }
-  function reset(){ state = fresh(); save(); run = null; }
-  function setHandle(h){ state.handle = h.trim().slice(0, 18) || 'v'; save(); log('Handle registered: ' + state.handle); }
+  function reset(){ const h = state.handle; try { localStorage.removeItem(PKEY(h)); } catch (e) {} state = fresh(); state.handle = h; run = null; save(); }
+  function setHandle(h){ h = h.trim().slice(0, 18); if (!h) return false; const isNew = !profiles().includes(h); state = load(h); state.handle = h; save(); if (isNew) log('Handle registered: ' + h); return true; }
   function exportSave(){ return JSON.stringify(state); }
   function importSave(txt){ try { const s = JSON.parse(txt); if (s && typeof s.rep === 'number') { state = Object.assign(fresh(), s); save(); return true; } } catch (e) {} return false; }
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, abort, reset, setHandle, exportSave, importSave, skill, LEVEL_NAMES, LEVEL_AT };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, abort, reset, setHandle, logout, profiles, exportSave, importSave, skill, LEVEL_NAMES, LEVEL_AT };
 })();
