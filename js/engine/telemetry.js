@@ -4,7 +4,8 @@
 (function(){
   const CAP = 4000;
   const freshStats = () => ({ steps: { attempts: 0, passes: 0, fails: 0, hints: 0, walks: 0, ms: 0, firstTry: 0 }, bySkill: {}, byType: {}, jobs: { started: 0, finished: 0, aborted: 0, ms: 0, byJob: {} }, dms: { asked: 0, correct: 0, wrong: 0, timeouts: 0, ms: 0, bySkill: {} }, reads: 0, repHistory: [], streak: { current: 0, best: 0 }, sessions: [], playMs: 0 });
-  function ensure(state){ state.events = state.events || []; state.stats = Object.assign(freshStats(), state.stats || {}); ['steps', 'jobs', 'dms', 'streak'].forEach(k => state.stats[k] = Object.assign(freshStats()[k], state.stats[k] || {})); return state.stats; }
+  // fills in missing fields without replacing objects, so references held during an event stay live
+  function ensure(state){ state.events = state.events || []; if (!state.stats) state.stats = freshStats(); const f = freshStats(); for (const k in f) { if (state.stats[k] == null) state.stats[k] = f[k]; else if (typeof f[k] === 'object' && !Array.isArray(f[k])) for (const kk in f[k]) if (state.stats[k][kk] == null) state.stats[k][kk] = f[k][kk]; } return state.stats; }
   const bucket = (o, k) => o[k] || (o[k] = { attempts: 0, passes: 0, fails: 0, hints: 0, walks: 0, ms: 0 });
 
   function event(state, type, data){ const st = ensure(state); const e = Object.assign({ t: Date.now(), type }, data || {}); state.events.push(e); if (state.events.length > CAP) state.events.splice(0, state.events.length - CAP); touch(state);
