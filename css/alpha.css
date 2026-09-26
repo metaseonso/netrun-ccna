@@ -1,0 +1,55 @@
+/* alpha.css — styles for the Alpha framework additions: new step types, protégé DMs, stats, crew, dev panel. */
+
+/* step types */
+.orderlist{list-style:none;padding:0;margin:8px 0} .orderlist li{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel2);padding:6px 10px;margin:4px 0;font-size:13px}
+.orderlist li .n{font-family:var(--disp);font-size:10px;color:var(--ink3);width:18px} .orderlist li .t{flex:1} .orderlist li button{background:transparent;border:1px solid var(--line);color:var(--ink2);padding:2px 7px;font-size:11px}
+.formgrid label{display:block;margin:6px 0;font-size:12px;color:var(--ink2)} .formgrid select{width:100%;background:#050710;border:1px solid var(--line);color:var(--ink);font:inherit;padding:6px 8px}
+.formgrid select.no{border-color:var(--red)} .formgrid select.ok{border-color:var(--grn)}
+textarea.txt{width:100%;min-height:90px;background:#050710;border:1px solid var(--line);color:var(--ink);font:12.5px var(--mono);padding:8px}
+.opts button.sel{border-color:var(--cyan);color:var(--cyan)}
+
+/* HUD extras */
+.hud .crew{font-size:11px;color:var(--ink2)} .hud .crew b{color:var(--grn)} .hud .crew .lost{color:var(--red)}
+.nav button.dmping{border-color:var(--mag);color:var(--mag);animation:pulse 1.2s infinite} @keyframes pulse{50%{box-shadow:0 0 12px rgba(255,63,164,.7)}}
+.nav button.dev{border-color:var(--yel);color:var(--yel)}
+
+/* DM overlay */
+.dm-back{position:fixed;inset:0;background:rgba(3,5,10,.82);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
+.dm{width:min(560px,96vw);border:1px solid var(--mag);background:#0b0f18;box-shadow:0 0 40px rgba(255,63,164,.35);padding:16px}
+.dm .from{display:flex;gap:10px;align-items:center} .dm .from canvas,.dm .from img{width:48px;height:48px;image-rendering:pixelated;border:1px solid var(--line)}
+.dm .from .n{font-family:var(--disp);color:var(--mag);letter-spacing:.1em} .dm .from .s{font-size:11px;color:var(--ink3)}
+.dm .msg{margin:12px 0;font-size:14.5px;line-height:1.6;white-space:pre-wrap;border-left:2px solid var(--mag);padding-left:12px}
+.dm .q{font-weight:700;margin:10px 0}
+.dm .timer{height:6px;background:#0b0f18;border:1px solid var(--line);margin:10px 0} .dm .timer i{display:block;height:100%;background:linear-gradient(90deg,var(--grn),var(--yel),var(--red));transition:width .25s linear}
+.dm .timer.hot i{background:var(--red)} .dm .secs{font-family:var(--disp);font-size:12px;color:var(--yel);text-align:right}
+.dm .danger{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)} .dm .danger.d1{color:var(--yel)} .dm .danger.d2{color:var(--red)}
+.dm .result{margin-top:10px;padding:10px;border:1px dashed var(--line);white-space:pre-wrap;line-height:1.55}
+.dm .result.good{border-color:var(--grn)} .dm .result.bad{border-color:var(--red)} .dm .result.flat{border-color:var(--mag);color:var(--mag)}
+
+/* crew */
+.crewgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.pcard{border:1px solid var(--line);background:var(--panel2);padding:10px;display:flex;gap:10px;align-items:flex-start}
+.pcard canvas,.pcard img{width:56px;height:56px;image-rendering:pixelated;border:1px solid var(--line);flex:none}
+.pcard .n{font-weight:700} .pcard .h{font-size:11px;color:var(--ink3)} .pcard .d{font-size:11px;margin-top:4px}
+.pcard.flat{opacity:.55;border-color:rgba(255,75,92,.5)} .pcard .dots i{display:inline-block;width:10px;height:10px;border:1px solid var(--line);margin-right:3px} .pcard .dots i.on{background:var(--red);border-color:var(--red)}
+.dmlog .row1{display:flex;justify-content:space-between;font-size:11px;color:var(--ink3)} .dmlog .item{border-top:1px dashed var(--line);padding:8px 0;font-size:13px}
+.dmlog .item .t{color:var(--ink2);white-space:pre-wrap;margin-top:4px}
+
+/* stats dashboard */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tile{border:1px solid var(--line);background:var(--panel2);padding:10px} .tile .v{font-family:var(--disp);font-size:22px;color:var(--cyan)} .tile .k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.tile.warn .v{color:var(--yel)} .tile.bad .v{color:var(--red)} .tile.good .v{color:var(--grn)}
+.bars{margin-top:8px} .bars .b{display:grid;grid-template-columns:180px 1fr 90px;gap:8px;align-items:center;font-size:12px;padding:3px 0}
+.bars .b .bar{height:8px;background:#0b0f18;border:1px solid var(--line)} .bars .b .bar i{display:block;height:100%;background:var(--cyan)} .bars .b.low .bar i{background:var(--red)} .bars .b.mid .bar i{background:var(--yel)}
+.spark{width:100%;height:60px;display:block}
+.stats table{width:100%;border-collapse:collapse;font-size:12px} .stats td,.stats th{border-bottom:1px dashed var(--line);padding:4px 6px;text-align:left} .stats th{color:var(--ink3);font-weight:400;font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+
+/* dev panel */
+.devbar{position:fixed;left:0;right:0;bottom:0;z-index:70;background:#050710;border-top:2px solid var(--yel);font:11px var(--mono);color:var(--ink2);max-height:42vh;display:flex;flex-direction:column}
+.devbar .tabs{display:flex;gap:0;border-bottom:1px solid var(--line)} .devbar .tabs button{background:transparent;border:0;border-right:1px solid var(--line);color:var(--ink3);padding:5px 10px;font:11px var(--disp);letter-spacing:.1em}
+.devbar .tabs button.on{color:var(--yel)} .devbar .tabs .sp{flex:1} .devbar .tabs .cnt{color:var(--red);margin-right:10px;align-self:center}
+.devbar .body{overflow:auto;padding:8px 12px;white-space:pre-wrap;line-height:1.45} .devbar .err{color:var(--red)} .devbar .warn{color:var(--yel)} .devbar .ok{color:var(--grn)}
+.devbar input{background:#0b0f18;border:1px solid var(--line);color:var(--ink);font:inherit;padding:3px 6px} .devbar button.act{background:transparent;border:1px solid var(--yel);color:var(--yel);padding:2px 8px;font:10px var(--disp);letter-spacing:.1em;margin-left:6px}
+body.devon #app{padding-bottom:44vh}
+.errbanner{position:fixed;top:0;left:0;right:0;z-index:90;background:#3a0d14;color:#ffd5da;border-bottom:1px solid var(--red);padding:6px 12px;font:12px var(--mono);white-space:pre-wrap}
+.signin{font-size:11px;color:var(--ink2)} .signin img{width:18px;height:18px;border-radius:50%;vertical-align:middle;margin-right:4px}

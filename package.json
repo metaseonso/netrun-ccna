@@ -1,0 +1,13 @@
+{
+  "name": "netrun-ccna",
+  "version": "0.2.0-alpha",
+  "description": "NETRUN://CCNA — a story-driven browser game for CCNA 200-301 study. Static, no build.",
+  "private": true,
+  "scripts": {
+    "test": "node tools/check.js",
+    "check": "node tools/check.js --warnings",
+    "serve": "python -m http.server 8765",
+    "import-cards": "python tools/import_apkg.py"
+  },
+  "license": "MIT"
+}

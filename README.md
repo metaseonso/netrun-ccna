@@ -1,82 +1,55 @@
 # NETRUN://CCNA
 
-A lightweight browser game for studying the **CCNA 200-301**, styled as a netrunner's HUD.
-No build step. No backend. Static files, GitHub Pages.
+A story-driven browser game for studying the **CCNA 200-301**. Static files, no build, GitHub Pages.
 
-**Play:** https://metaseonso.github.io/netrun-ccna/
+**Play:** https://metaseonso.github.io/netrun-ccna/ · **Dev mode:** add `?dev=1`
 
-> Demo scope for the first showing: **Stage 4 · The Bridges** — Spanning Tree Protocol,
-> Jeremy's IT Lab **Days 20–21** — fully built on both layers. Every other stage is a framework
-> stub (one intro level each) so the rest of the material can be slotted in the same way.
+> **Status: Alpha framework.** The engine is complete and tested. Content built so far: Stage 4 (Spanning Tree,
+> Jeremy's IT Lab days 20–21) plus one intro level per other stage. The full 63-day campaign is being written
+> into this framework. Start at `docs/HANDOFF.md`.
+
+## What it is
+
+- **The Grid.** Each part of the network is a person in Watson district. Old Root keeps the switches at the clinic
+  and has watched a loop take a building down. You learn by being in the room with them. Glowing terms are the exam
+  vocabulary. Nothing levels by reading.
+- **Jobs.** Dispatch sends a gig. You jack in to a live map and a real console, fix the fault the way it is really
+  fixed, and verify it. The console is backed by a network engine: VLANs, trunks, spanning tree, routing (static,
+  OSPF, RIP, EIGRP), HSRP, DHCP with snooping, port security, DAI, NAT, ACLs, end-to-end ping with a hop list.
+  Steps check **outcomes**, not keystrokes. Skills level only when used without a hint. Rep sets your class D → A.
+- **Crew.** Protégés who look up to you DM you from their own gigs. Every DM is a flash card on a timer. Right and
+  in time, they get through. Wrong or late, it escalates: rep loss, then a flatline, and their orphan joins your crew.
+  Spaced repetition decides which card comes when. Bigger gigs need a crew.
+- **Stats.** Every attempt is timed. Misses, hints, walk-throughs, DM response times, weak skills, rep over time,
+  a final report when the campaign is done.
+- **Key.** Every answer in the game, explained slowly, in the character's voice. Also available mid-step as
+  WALK ME THROUGH IT (costs the level-up for that step, nothing else).
+
+## Run it
+
+```bash
+python -m http.server 8765      # http://localhost:8765/
+npm test                        # lint + play every gig's golden solution + engine tests
+npm run check                   # same, listing warnings
+```
+
+## Write into it
+
+- `docs/HANDOFF.md` — what exists, what to build, the rules.
+- `docs/CAMPAIGN_GUIDE.md` — schema for levels, gigs, steps, topologies; the engine API for checks; the feedback loop.
+- `docs/STORY_BIBLE.md` — the world, the cast, the voice.
+- `docs/TASKS.md` — all 63 days mapped to stages, NPCs, skills and lab-based gigs.
+- `docs/templates/` — a complete stage file and a complete gig that pass `npm test`.
+- `tools/import_apkg.py` — turns Anki decks into game cards.
+- `docs/AUTH_PLAN.md` — sign-in and cloud saves (Supabase), scaffolded, inactive until configured.
 
 ## Credits
 
-The material follows Jeremy's IT Lab's free CCNA course. The game's stage/day structure and the
-"source" links on every level point at two note repositories this project is built on:
-
-- **psaumur / CCNA_Course_Notes** — https://github.com/psaumur/CCNA_Course_Notes (63 days of notes)
-- **sparrowjumpy / CCNA-Notes** — https://github.com/sparrowjumpy/CCNA-Notes (MIT; days 8–38)
-
-No text from either repo is copied into the game. The game is original writing that links back to
-them as the reading companion. Lore beats reference real network and security history
-(Perlman's spanning tree and "Algorhyme", the 2002 Beth Israel Deaconess STP meltdown, the Morris
-worm, Mockapetris and DNS, Ylönen and SSH, Mirai/Dyn, IPv4 exhaustion, and so on).
-
-## The two layers
-
-**Layer 1 · THE GRID (macro, concepts).**
-Each system is an NPC whose name gives it away: *Old Root* is spanning tree, *Cider* is CIDR,
-*Ace Elle* is the ACL, *Prof. Hypervisor* runs the lab. They talk in short beats. Official terms
-glow like unique-NPC names in an RPG; hover for the exam-grade definition. Each level ends with the
-**deck** (the commands and numbers you now carry) and a no-stakes **sync check** written at exam
-difficulty. Reading a level *slots* a skill at level 0. **Nothing levels by reading.**
-
-**Layer 2 · JOBS (micro, practice).**
-Dispatch sends a HUD message. You jack in to a live network map and a simulated IOS console
-(abbreviations work: `conf t`, `int g0/1`, `sh span`, `do sh run`). You find the fault, fix it the
-way it is actually fixed, and verify it. A skill levels **only when you use it without a hint**
-(1 clean use → SYNCED, 3 → WIRED, 6 → BURNED-IN). Rep sets your class: **D → C → B → A**.
-Higher-class gigs deliberately fold in lower-class steps as one scenario, so review rides along
-with the new concept. Repeating a gig pays 40% rep but counts fully for skill consolidation.
-
-The spanning tree gigs run on a small real election engine (`js/stp.js`): root bridge, root cost,
-port roles and states, PortFast/BPDU Guard, rogue switches, per-VLAN trees. `show spanning-tree`
-in the console reflects whatever you configured, so both `root primary` and `priority 4096` pass
-the "make SW1 root" step — the game checks outcomes, not keystrokes.
-
-## Adding content (framework guide)
-
-Everything is data in `js/data/`:
-
-| File | What | Add by |
-|---|---|---|
-| `npcs.js` | cast: name, system, role, voice, procedural sprite `look` | one object per NPC; drop `assets/npc/<id>.png` to override the sprite |
-| `glossary.js` | glowing terms | `'term': 'exam-grade definition'` — write `[[term]]` in any dialogue |
-| `grid.js` | Layer 1 arcs → stages → levels → beats (`TALK`/`LORE`/`KIT`/`SYNC`) | a level object with `unlocks: ['skill-id']` and `src` links; set the stage `status: 'live'` when complete |
-| `jobs.js` | Layer 2 gigs: brief, map, devices, steps | a job with `cls`, `rep`, `requires: [level ids]`, and steps of type `cmd` / `find` / `choice` / `calc` |
-
-A `cmd` step validates by `need` (normalized command records: `{dev, mode?, ctx?, line}`) and/or
-`check(devices, ctx)` (state, e.g. `ctx.compute(1).switches.SW1.isRoot`). For non-STP topics the
-console already speaks routers, ACLs, DHCP pools, OSPF, lines and NAT prompts; canned `show`
-output goes in the job's `shows` map (strings or functions of device state).
-
-Skill IDs live in `SKILLS` at the bottom of `grid.js`. Class thresholds in `CLASSES` at the bottom
-of `jobs.js`.
-
-## Art
-
-NPCs are drawn procedurally in-browser (`js/sprite.js`) so the game needs no image assets.
-`tools/gen_npcs.py` can generate real portraits into `assets/npc/` through either OpenRouter
-(illustrated) or PixelLab (pixel art); the game prefers a PNG when one exists.
-
-## Run locally
-
-```bash
-python -m http.server 8765
-```
-
-then open http://localhost:8765/.
+Material follows Jeremy's IT Lab's CCNA course. Built alongside two note repositories, credited on the opening screen:
+[psaumur/CCNA_Course_Notes](https://github.com/psaumur/CCNA_Course_Notes) and
+[sparrowjumpy/CCNA-Notes](https://github.com/sparrowjumpy/CCNA-Notes) (MIT). No text is copied from either.
+Lore draws on real network and security history.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT.

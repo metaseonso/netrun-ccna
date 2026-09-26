@@ -11,10 +11,10 @@
     ntp:'ntp', snmp:'snmp-server', snmp:'snmp-server', service:'service', do:'do', copy:'copy', banner:'banner', clock:'clock', permit:'permit', deny:'deny', remark:'remark', dhcp:'dhcp',
     dns:'dns-server', 'dns-server':'dns-server', 'default-router':'default-router', lease:'lease', domain:'domain-name', errdisable:'errdisable', arp:'arp' };
   const SECOND = { t:'terminal', term:'terminal', terminal:'terminal', run:'running-config', 'running':'running-config', start:'startup-config', startup:'startup-config', br:'brief', bri:'brief',
-    'access-lists':'access-lists', 'access-list':'access-lists', tr:'trunk', mo:'mode', mod:'mode', acc:'access', ac:'access', vl:'vlan', po:'port-security', 'port':'port-security', 'port-sec':'port-security',
-    add:'address', addr:'address', ro:'route', rou:'route', 'ospf':'ospf', 'ei':'eigrp', 'na':'nat', 'ins':'inside', 'out':'outside', 'so':'source', 'sta':'static', 'gen':'generate', 'ke':'key',
-    'sec':'secret', 'secr':'secret', 'in':'input', 'inp':'input', 'vt':'vty', 'con':'console', 'shut':'shutdown', 'ne':'neighbors', 'nei':'neighbors', 'neigh':'neighbors', 'inter':'interfaces', 'int':'interfaces',
-    'dh':'dhcp', 'snoop':'snooping', 'snoo':'snooping', 'ins':'inspection', 'pri':'priority', 'prio':'priority', 'roo':'root', 'portf':'portfast', 'bpdu':'bpduguard', 'stat':'statistics', 'nat':'nat', 'trans':'translations',
+    'access-lists':'access-lists', tr:'trunk', mo:'mode', mod:'mode', acc:'access', ac:'access', vl:'vlan', po:'port-security', 'port':'port-security', 'port-sec':'port-security',
+    add:'address', addr:'address', ro:'route', rou:'route', 'ospf':'ospf', 'ei':'eigrp', 'na':'nat', 'so':'source', 'sta':'static', 'gen':'generate', 'ke':'key',
+    'sec':'secret', 'secr':'secret', 'vt':'vty', 'con':'console', 'shut':'shutdown', 'ne':'neighbors', 'nei':'neighbors', 'neigh':'neighbors', 'inter':'interfaces', 'int':'interfaces',
+    'dh':'dhcp', 'snoop':'snooping', 'snoo':'snooping', 'pri':'priority', 'prio':'priority', 'roo':'root', 'portf':'portfast', 'bpdu':'bpduguard', 'stat':'statistics', 'nat':'nat', 'trans':'translations',
     'ver':'version', 'v':'version', 'ma':'mac', 'mac':'mac', 'st':'standby', 'unicast':'unicast-routing', 'uni':'unicast-routing', 'server':'server', 'ser':'server', 'pool':'pool', 'excluded':'excluded-address', 'exc':'excluded-address',
     'default-information':'default-information', 'orig':'originate', 'ori':'originate', 'ip':'ip', 'ipv6':'ipv6', 'ssh':'ssh', 'trap':'traps', 'community':'community', 'comm':'community', 'sec':'secret',
     'protocol':'protocol', 'prot':'protocol', 'vlan':'vlan', 'name':'name', 'lldp':'lldp', 'cdp':'cdp', 'ru':'run', 'g':'gigabitethernet' };
@@ -56,6 +56,7 @@
     s = s.replace(/^configure terminal.*$/, 'configure terminal').replace(/^show running-config.*/, 'show running-config').replace(/^copy running-config startup-config$/, 'write memory').replace(/^write$/, 'write memory').replace(/^write mem$/, 'write memory');
     s = s.replace(/^interface range /, 'interface range ');
     s = s.replace(/^no shut$/, 'no shutdown');
+    s = s.replace(/^transport in(p|pu)? /, 'transport input ').replace(/^ip nat ins(i|id|ide)?$/, 'ip nat inside').replace(/^ip nat out(s|si|sid|side)?$/, 'ip nat outside').replace(/^ip nat ins(i|id|ide)? so(u|ur|urc|urce)? /, 'ip nat inside source ').replace(/^ip arp ins(p|pe|pec|pect|pecti|pectio|pection)? /, 'ip arp inspection ');
     s = s.replace(/ dot1q$/, ' dot1q');
     return s;
   }
@@ -63,14 +64,19 @@
   // ---- device state ---------------------------------------------------------
   function Device(name, opts){
     this.name = name; this.host = name; this.mode = 'user'; this.ctx = ''; this.stack = [];
-    this.lines = []; // {mode, ctx, line}
+    this.lines = []; // {mode, ctx, line, pre?}
     this.out = [];   // rendered console lines {t:'in'|'out'|'err'|'sys', s}
     this.shows = (opts && opts.shows) || {};
+    this.kind = (opts && opts.kind) || 'ios'; // 'ios' | 'host'
     this.banner = (opts && opts.banner) || null;
+    this._netState = (opts && opts.netState) || null; // () => Net state, supplied by the game
     if (this.banner) this.out.push({ t:'sys', s: this.banner });
   }
+  // apply a starting configuration silently (scenario setup); recorded as pre lines, shown in running-config
+  Device.prototype.preload = function(lines){ const keepOut = this.out.length; lines = (lines || []).slice(); if (this.kind !== 'host') { const first = normalize(lines[0] || ''); if (first !== 'enable' && first !== 'configure terminal') lines = ['enable', 'configure terminal'].concat(lines); }
+    lines.forEach(l => this.exec(l, this._all, true)); this.out.length = keepOut; this.lines.forEach(r => { if (r.pre === undefined) r.pre = true; }); this.mode = 'user'; this.ctx = ''; this.stack = []; };
   Device.prototype.prompt = function(){
-    const h = this.host;
+    const h = this.host; if (this.kind === 'host') return h + '>';
     switch (this.mode) {
       case 'user': return h + '>'; case 'priv': return h + '#'; case 'config': return h + '(config)#';
       case 'config-if': return h + '(config-if)#'; case 'config-subif': return h + '(config-subif)#'; case 'config-if-range': return h + '(config-if-range)#';
@@ -107,10 +113,13 @@
     o.push('!', 'end'); return o.join('\n');
   }
 
-  Device.prototype.exec = function(raw, all){
-    const dev = this; if (all) dev._all = all; const s = normalize(raw);
+  Device.prototype.exec = function(raw, all, silent){
+    const dev = this; if (all) dev._all = all; const S = dev._netState ? dev._netState() : null;
+    if (dev.kind === 'host') { dev.out.push({ t:'in', s: dev.prompt() + ' ' + raw.trim() }); const o = window.Show ? Show.host(dev, raw, S) : 'no network'; if (o) dev.out.push({ t: /timed out|not recognized/.test(o) ? 'err' : 'out', s: o }); dev.lines.push({ mode: 'host', ctx: '', line: normalize(raw) }); return; }
+    const s = normalize(raw);
     dev.out.push({ t:'in', s: dev.prompt() + ' ' + raw.trim() });
     if (!s) return;
+    if (!silent) dev.lines.forEach(r => { if (r.pre === undefined) r.pre = false; });
     if (s === '?' || s.endsWith(' ?')) { dev.out.push({ t:'sys', s: '  (help: this sim knows the commands your NPC taught you. Try the abbreviations too.)' }); return; }
     const rec = { mode: dev.mode, ctx: dev.ctx, line: s };
     const doCmd = s.startsWith('do ') ? s.slice(3) : null;
@@ -125,16 +134,22 @@
     if (showish) {
       const q = showish;
       if (q === 'show running-config' || q === 'show run' || q === 'show configuration') { dev.out.push({ t:'out', s: runningConfig(dev) }); dev.lines.push(rec); return; }
-      if (q.startsWith('show ')) { const r = matchShow(dev, q); if (r) rec.line = doCmd ? 'do ' + r.key : r.key; dev.out.push({ t: r ? 'out' : 'err', s: r ? r.out : ('% This sim has no output for "' + q + '" on ' + dev.host + '. (It only fakes what the job needs.)') }); dev.lines.push(rec); return; }
+      if (q.startsWith('show ')) { let r = matchShow(dev, q); if (!r && window.Show && S) { const o = Show.render(dev, q, S); if (o != null) r = { key: q, out: o }; } if (r) rec.line = doCmd ? 'do ' + r.key : r.key; dev.out.push({ t: r ? 'out' : 'err', s: r ? r.out : ('% This sim has no output for "' + q + '" on ' + dev.host + '.') }); dev.lines.push(rec); return; }
       if (q === 'write memory' || q === 'copy running-config startup-config') { dev.out.push({ t:'out', s:'Building configuration...\n[OK]' }); dev.lines.push(rec); return; }
-      if (q.startsWith('ping ')) { dev.out.push({ t:'out', s:'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos:\n!!!!!\nSuccess rate is 100 percent (5/5)' }); dev.lines.push(rec); return; }
-      if (q.startsWith('traceroute ')) { dev.out.push({ t:'out', s:'Tracing the route...\n  1 10.0.0.1 1 msec\n  2 203.0.113.1 4 msec' }); dev.lines.push(rec); return; }
+      if (q.startsWith('ping ') || q.startsWith('traceroute ')) { const ip = q.split(' ')[1]; dev.lines.push(rec);
+        if (S && window.Net) { const r = Net.ping(S, dev.name, ip); dev._lastPing = r; if (r.nat && r.nat.length) { dev._natSeen = dev._natSeen || []; r.nat.forEach(t => { if (!dev._natSeen.some(x => x.inside === t.inside && x.global === t.global && x.port === t.port)) dev._natSeen.push(t); }); (dev._all && Object.values(dev._all) || []).forEach(o => { if (o !== dev && r.path.some(p => p.dev === o.name)) { o._natSeen = o._natSeen || []; r.nat.forEach(t => { if (!o._natSeen.some(x => x.inside === t.inside && x.global === t.global && x.port === t.port)) o._natSeen.push(t); }); } }); }
+          if (q.startsWith('ping ')) dev.out.push({ t: r.ok ? 'out' : 'err', s: 'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos to ' + ip + ', timeout is 2 seconds:\n' + (r.ok ? '!!!!!\nSuccess rate is 100 percent (5/5), round-trip min/avg/max = 1/1/2 ms' : '.....\nSuccess rate is 0 percent (0/5)\n  [why: ' + r.reason + ']') });
+          else dev.out.push({ t:'out', s: 'Type escape sequence to abort.\nTracing the route to ' + ip + '\n' + r.path.filter(p => /^route|^deliver/.test(p.act)).map((p, i) => '  ' + (i + 1) + ' ' + p.dev + ' 1 msec') .join('\n') + (r.ok ? '' : '\n  * * *  ' + r.reason) }); return; }
+        dev.out.push({ t:'out', s:'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos:\n!!!!!\nSuccess rate is 100 percent (5/5)' }); return; }
       if (q.startsWith('reload')) { dev.out.push({ t:'sys', s:'(nice try. no reloads in the sim.)' }); return; }
       if (!doCmd && dev.mode !== 'config' && !s.startsWith('show')) { if (dev.mode === 'user' || dev.mode === 'priv') { dev.out.push({ t:'err', s:'% Invalid input detected at \'^\' marker. (Config commands need "configure terminal" first.)' }); return; } }
       if (doCmd) { dev.lines.push(rec); return; }
     }
     // ---- config-mode grammar ----
     if (dev.mode === 'user' || dev.mode === 'priv') { dev.out.push({ t:'err', s:'% Invalid input detected. (That looks like a config command — enter global config mode first.)' }); return; }
+    // a global command typed inside a sub-mode: IOS accepts it and drops back to global config
+    const GLOBAL_ONLY = /^(no )?(ip route|ipv6 route|ip access-list|access-list|hostname|ip dhcp (pool|excluded-address|snooping vlan|snooping$)|ip nat (inside source|pool|outside source)|router |vlan [\d,\-]+$|spanning-tree (mode|vlan [\d,\-]+ (root|priority)|portfast default|portfast bpduguard default)|ip domain-name|ip domain name|crypto key|username|enable (secret|password)|ipv6 unicast-routing|ntp server|logging (host|\d)|snmp-server|ip arp inspection vlan|service |banner|line |ip default-gateway|cdp run|lldp run|errdisable|ip routing|ip name-server|ip ssh|interface )/;
+    if (dev.mode !== 'config' && GLOBAL_ONLY.test(s)) { dev.mode = 'config'; dev.ctx = ''; dev.stack = [['priv', '']]; rec.mode = 'config'; rec.ctx = ''; }
     dev.lines.push(rec);
     let m;
     if ((m = s.match(/^hostname (\S+)$/))) { dev.host = raw.trim().split(/\s+/)[1]; return; }
