@@ -102,6 +102,15 @@
   }
 
   function useHint(){ run.hinted[run.step] = true; return currentStep().hint; }
+  // the answer key for a step: what the correct answer is, in words
+  function answerOf(st){
+    if (!st) return '';
+    if (st.type === 'choice') return String.fromCharCode(65 + st.a) + '. ' + st.opts[st.a];
+    if (st.type === 'find') return 'Click ' + st.target + ' on the map.';
+    if (st.type === 'calc') return st.answer || st.fields.map(f => f.label).join(' · ');
+    return st.hint || '';
+  }
+  function reveal(){ run.hinted[run.step] = true; const st = currentStep(); return { answer: answerOf(st), why: st.why || '' }; }
 
   function finishJob(){
     const job = run.job; const prev = state.jobsDone[job.id];
@@ -124,5 +133,5 @@
   function exportSave(){ return JSON.stringify(state); }
   function importSave(txt){ try { const s = JSON.parse(txt); if (s && typeof s.rep === 'number') { state = Object.assign(fresh(), s); save(); return true; } } catch (e) {} return false; }
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, abort, reset, setHandle, logout, profiles, exportSave, importSave, skill, LEVEL_NAMES, LEVEL_AT };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, abort, reset, setHandle, logout, profiles, exportSave, importSave, skill, answerOf, reveal, LEVEL_NAMES, LEVEL_AT };
 })();

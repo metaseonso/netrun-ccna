@@ -16,7 +16,7 @@
           ] } },
         { k: 'LORE', text: 'Nexthop, at a red light: "The first router was called an IMP, built by BBN on a Honeywell 516. On 29 October 1969 UCLA tried to send LOGIN through it to Stanford. It crashed after two letters. First message on the internet: LO. First cab crashed on the first fare. We got better."' },
         { k: 'KIT', text: 'He hands you a receipt with writing on the back.', kit: [ { cmd: 'ip route 10.0.2.0 255.255.255.0 10.0.12.2', what: 'static route through a next hop' }, { cmd: 'ip route 0.0.0.0 0.0.0.0 203.0.113.1', what: 'default route toward the ISP' }, { cmd: 'show ip route', what: 'read the table: C connected, S static, S* default, O OSPF' } ] },
-        { k: 'SYNC', q: { prompt: 'Nexthop, over his shoulder: "Table has 10.0.0.0/8, 10.1.0.0/16 and a default. Fare wants 10.1.2.3. Which entry?"', opts: ['10.0.0.0/8', '10.1.0.0/16', '0.0.0.0/0', 'Whichever was typed first'], a: 1, yes: '"Most specific street. Every time."', no: '"Longest prefix. Slash 16 beats slash 8 beats the default."' } }
+        { k: 'SYNC', q: { prompt: 'Nexthop, over his shoulder: "Table has 10.0.0.0/8, 10.1.0.0/16 and a default. Fare wants 10.1.2.3. Which entry?"', opts: ['10.0.0.0/8', '10.1.0.0/16', '0.0.0.0/0', 'Whichever was typed first'], a: 1, yes: '"Most specific street. Every time."', no: '"Longest prefix. Slash 16 beats slash 8 beats the default."' , why: 'Nexthop: When more than one route fits, I pick the one that matches the most bits. Slash 16 matches more bits than slash 8. The default, slash 0, matches nothing specific, so it is used last.' } }
       ] }
   ] });
 })();

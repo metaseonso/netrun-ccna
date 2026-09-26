@@ -29,7 +29,7 @@
     return '<div class="hud"><div class="logo">NETRUN<small>://</small>CCNA</div>' +
       '<div class="handle">handle <b>' + esc(s.handle || '—') + '</b></div><span class="cls ' + c.id + '">CLASS ' + c.id + '</span>' +
       '<div class="rep"><span>REP ' + s.rep + (nx ? ' / ' + nx.min + ' → Class ' + nx.id : ' · MAX for this arc') + '</span><div class="bar"><i style="width:' + pct + '%"></i></div></div>' +
-      '<div class="nav">' + [['home', 'MAP'], ['grid', 'GRID'], ['jobs', 'JOBS'], ['deck', 'DECK'], ['log', 'LOG']].map(([v, l]) => '<button data-v="' + v + '" class="' + (view === v || (v === 'grid' && view === 'level') || (v === 'jobs' && view === 'run') ? 'on' : '') + '">' + l + (v === 'jobs' && openJobs ? '<span class="badge">' + openJobs + '</span>' : '') + '</button>').join('') + '<button id="logout" title="back to the opening screen. progress stays saved under this handle">LOG OUT</button></div></div>';
+      '<div class="nav">' + [['home', 'MAP'], ['grid', 'GRID'], ['jobs', 'JOBS'], ['deck', 'DECK'], ['key', 'KEY'], ['log', 'LOG']].map(([v, l]) => '<button data-v="' + v + '" class="' + (view === v || (v === 'grid' && view === 'level') || (v === 'jobs' && view === 'run') ? 'on' : '') + '">' + l + (v === 'jobs' && openJobs ? '<span class="badge">' + openJobs + '</span>' : '') + '</button>').join('') + '<button id="logout" title="back to the opening screen. progress stays saved under this handle">LOG OUT</button></div></div>';
   }
 
   // ---- views ----------------------------------------------------------------
@@ -72,7 +72,7 @@
         (b.lines || []).map(ln => ln.who === 'you' ? '<div class="ln you"><span class="who">' + esc(Game.state.handle) + '</span>' + rich(ln.text) + '</div>' : ln.who === 'narr' ? '<div class="ln narr">' + rich(ln.text) + '</div>' : '<div class="ln"><span class="who">' + esc((NPCS[ln.who] || { name: ln.who }).name) + '</span>' + rich(ln.text) + '</div>').join('') +
         (b.choice ? '<div class="opts">' + b.choice.opts.map((o, i) => '<button data-opt="' + i + '" class="' + (cur.synced === i ? 'right' : '') + '">' + esc(o.say) + '</button>').join('') + '</div>' + (cur.synced != null ? '<div class="ln reply"><span class="who">' + esc((NPCS[b.choice.opts[cur.synced].who || l.npc] || {}).name || '') + '</span>' + rich(b.choice.opts[cur.synced].reply) + '</div>' : '') : '') + '</div>';
     }
-    if (b.k === 'SYNC') { const q = b.q; body = '<div class="speech sync"><div class="k">SOMEONE ASKS · no rep on the line</div>' + rich(q.prompt) + '<div class="opts">' + q.opts.map((o, i) => '<button data-opt="' + i + '" class="' + (cur.synced == null ? '' : i === q.a ? 'right' : i === cur.synced ? 'wrong' : '') + '">' + esc(o) + '</button>').join('') + '</div>' + (cur.synced == null ? '' : '<div style="margin-top:8px" class="' + (cur.synced === q.a ? 'good' : 'warn') + '">' + rich(cur.synced === q.a ? q.yes : q.no) + '</div>') + '</div>'; }
+    if (b.k === 'SYNC') { const q = b.q; body = '<div class="speech sync"><div class="k">SOMEONE ASKS · no rep on the line</div>' + rich(q.prompt) + '<div class="opts">' + q.opts.map((o, i) => '<button data-opt="' + i + '" class="' + (cur.synced == null ? '' : i === q.a ? 'right' : i === cur.synced ? 'wrong' : '') + '">' + String.fromCharCode(65 + i) + '. ' + esc(o) + '</button>').join('') + '</div>' + (cur.synced == null ? '' : '<div style="margin-top:8px" class="' + (cur.synced === q.a ? 'good' : 'warn') + '">' + rich(cur.synced === q.a ? q.yes : q.no) + '</div>' + (q.why ? '<div class="why"><b>The answer is ' + String.fromCharCode(65 + q.a) + '. ' + esc(q.opts[q.a]) + '</b><br>' + rich(q.why) + '</div>' : '')) + '</div>'; }
     return '<div class="panel"><div class="row" style="justify-content:space-between"><h2>' + esc(l.title) + '</h2><button class="btn ghost" data-v="grid">← GRID</button></div><div class="muted" style="font-size:11px">' + esc(l.sub) + '</div>' +
       '<div class="dlg" style="margin-top:14px"><div class="npcbox" id="npcbox">' + npcSlot(l.npc, 192) + '<div class="name">' + esc(n.name) + '</div><div class="sys">' + esc(n.sys) + '</div><div class="role">' + esc(n.role) + '</div></div>' +
       '<div>' + body + '<div class="dots">' + l.beats.map((x, i) => '<i class="' + (i <= cur.beat ? 'on' : '') + '"></i>').join('') + '</div><div class="row">' +
@@ -104,8 +104,10 @@
       '<ol class="steps" style="margin-top:10px">' + r.job.steps.map((s, i) => '<li class="' + (i < r.step ? 'done' : i === r.step ? 'cur' : '') + (r.hinted[i] ? ' hinted' : '') + '">' + (i + 1) + '. ' + esc(SKILLS[s.skill] || s.skill) + (i === r.step ? ' ◂' : '') + '</li>').join('') + '</ol></div>' +
       '<div><div class="task"><div class="npcline">' + npcSlot(n && r.job.from, 48) + '<div><div class="who">' + esc(n.name.toUpperCase()) + ' · step ' + (r.step + 1) + '/' + r.job.steps.length + '</div><div>' + rich(st.text) + '</div></div></div>' + stepInput(st, r) +
       (r.feedback ? '<div style="margin-top:8px" class="' + (r.feedback.ok ? 'good' : 'bad') + '">' + rich(r.feedback.text) + (r.feedback.leveled ? ' <span class="mag">▲ ' + esc(SKILLS[r.feedback.leveled.skill]) + ' → ' + Game.LEVEL_NAMES[r.feedback.leveled.level] + '</span>' : '') + '</div>' : '') +
+      (r.lastWhy ? '<details class="why"><summary>why that worked</summary>' + rich(r.lastWhy) + '</details>' : '') +
       (r.hintShown ? '<div class="hintbox">' + esc(r.hintShown) + '</div>' : '') +
-      '<div class="row" style="margin-top:10px"><button class="btn grn" id="commit">COMMIT ▸</button>' + (st.hint ? '<button class="btn ghost" id="hint">' + (r.hinted[r.step] ? 'HINT SHOWN' : 'HINT (no level-up this step)') + '</button>' : '') + '</div></div>' +
+      (r.walk ? '<div class="why"><b>THE ANSWER</b><br><span class="ans">' + esc(r.walk.answer).replace(/\n/g, '<br>') + '</span><br><br>' + rich(r.walk.why || 'No explanation written for this step yet.') + '</div>' : '') +
+      '<div class="row" style="margin-top:10px"><button class="btn grn" id="commit">COMMIT ▸</button>' + (st.hint ? '<button class="btn ghost" id="hint">' + (r.hinted[r.step] ? 'HINT SHOWN' : 'HINT') + '</button>' : '') + '<button class="btn ghost" id="walk" title="shows the answer and explains it. counts as a hint: no level-up on this step">' + (r.walk ? 'ANSWER SHOWN' : 'WALK ME THROUGH IT') + '</button><span class="muted" style="font-size:10px">a hint or a walk-through costs the level-up for this step, nothing else</span></div></div>' +
       (r.job.devices.length ? consoleView(r) : '') + '</div></div></div>';
   }
   function stepInput(st, r){
@@ -156,6 +158,13 @@
       '<div class="brief" style="text-align:left;margin-top:16px">' + rich(r.job.outro) + '</div><div class="row" style="justify-content:center"><button class="btn mag" data-v="jobs" id="backjobs">BACK TO INBOX</button><button class="btn" data-v="deck">VIEW DECK</button></div><div class="muted" style="margin-top:8px">now Class ' + c.id + ' · ' + Game.state.rep + ' rep</div></div>';
   }
 
+  function keyView(){
+    const jobsHtml = JOBS.map(j => '<div class="keyjob"><h3><span class="cls ' + j.cls + '" style="font-size:10px">' + j.cls + '</span> ' + esc(j.title) + ' <span class="muted">· from ' + esc(NPCS[j.from].name) + '</span></h3>' +
+      j.steps.map((st, i) => '<div class="keystep"><div class="q"><span class="muted">step ' + (i + 1) + ' · ' + esc(SKILLS[st.skill] || st.skill) + '</span><br>' + rich(st.text) + '</div><div class="a"><b>Answer:</b> ' + esc(Game.answerOf(st)).replace(/\n/g, '<br>') + '</div>' + (st.why ? '<div class="w">' + rich(st.why) + '</div>' : '') + '</div>').join('') + '</div>').join('');
+    const lvlHtml = STAGES.map(stg => stg.levels.map(l => { const q = (l.beats.find(b => b.k === 'SYNC') || {}).q; if (!q) return ''; return '<div class="keystep"><div class="q"><span class="muted">' + esc(stg.title) + ' · ' + esc(l.title) + ' · ' + esc(NPCS[l.npc].name) + '</span><br>' + rich(q.prompt) + '</div><div class="a"><b>Answer:</b> ' + String.fromCharCode(65 + q.a) + '. ' + esc(q.opts[q.a]) + '</div>' + (q.why ? '<div class="w">' + rich(q.why) + '</div>' : '') + '</div>'; }).join('')).join('');
+    return '<div class="panel key"><h2>KEY · every answer, explained slowly</h2><div class="muted">Read this any time. It is a study sheet, not a cheat. It changes nothing in your deck. Inside a gig, the WALK ME THROUGH IT button shows the same text for the step you are on, and that one counts as a hint.</div>' +
+      '<h3 style="margin-top:16px;color:var(--cyan)">GIGS</h3>' + jobsHtml + '<h3 style="margin-top:16px;color:var(--cyan)">QUESTIONS PEOPLE ASK YOU IN THE GRID</h3>' + lvlHtml + '</div>';
+  }
   function deck(){
     const s = Game.state;
     return '<div class="panel"><h2>DECK · what you can do without help</h2><div class="muted">a skill appears when someone teaches it · it levels only when you use it on a gig with no hint · 1 clean use → SYNCED · 3 → WIRED · 6 → BURNED-IN</div><div class="deck" style="margin-top:12px">' +
@@ -170,7 +179,7 @@
     const s = Game.state; const a = app();
     if (!s.handle) { a.innerHTML = intro(); $('#go').onclick = () => { if (Game.setHandle($('#handle').value)) { view = 'home'; render(); } }; $('#handle').onkeydown = e => { if (e.key === 'Enter') $('#go').click(); }; a.querySelectorAll('[data-resume]').forEach(b => b.onclick = () => { Game.setHandle(b.dataset.resume); view = 'home'; render(); }); $('#handle').focus(); return; }
     let body = '';
-    if (view === 'home') body = home(); else if (view === 'grid') body = grid(); else if (view === 'level') body = level(); else if (view === 'jobs') body = jobs(); else if (view === 'run') body = runView(); else if (view === 'deck') body = deck(); else body = logView();
+    if (view === 'home') body = home(); else if (view === 'grid') body = grid(); else if (view === 'level') body = level(); else if (view === 'jobs') body = jobs(); else if (view === 'run') body = runView(); else if (view === 'deck') body = deck(); else if (view === 'key') body = keyView(); else body = logView();
     a.innerHTML = hud() + body;
     // mount sprites / portraits into their slots at the slot's size
     a.querySelectorAll('.npcslot').forEach(sl => sl.replaceWith(npcEl(sl.dataset.npc, +sl.dataset.size)));
@@ -179,7 +188,7 @@
   }
 
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-dev],[data-node],#next,#prev,#finish,#commit,#hint,#abort,#export,#import,#wipe,#logout'); if (!t) return;
+    const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-dev],[data-node],#next,#prev,#finish,#commit,#hint,#walk,#abort,#export,#import,#wipe,#logout'); if (!t) return;
     if (t.id === 'logout') { if (view === 'run' && Game.run && !Game.run.result && !confirm('Jack out? Progress on this gig is lost.')) return; Game.logout(); view = 'home'; cur = { stage: null, level: null, beat: 0, job: null, synced: null }; return render(); }
     if (t.dataset.v) { if (view === 'run' && Game.run && !Game.run.result && t.dataset.v !== 'run') { if (!confirm('Jack out? Progress on this gig is lost.')) return; Game.abort(); } view = t.dataset.v; if (view === 'jobs' && Game.run && Game.run.result) Game.abort(); return render(); }
     if (t.dataset.stage) { cur.stage = t.dataset.stage; return render(); }
@@ -193,8 +202,9 @@
     if (t.dataset.choice) { Game.run.choice = +t.dataset.choice; return render(); }
     if (t.dataset.dev) { Game.run.active = t.dataset.dev; return render(); }
     if (t.dataset.node) { Game.run.selected = t.dataset.node; Game.run.feedback = null; return render(); }
-    if (t.id === 'commit') { const r = Game.run; if (Game.currentStep().type === 'calc') document.querySelectorAll('[data-calc]').forEach(i => r.calc[i.dataset.calc] = i.value); const res = Game.commit(); r.hintShown = null; if (res.ok) { toast(res.finished ? 'GIG COMPLETE' : 'STEP CLEARED', 'grn'); if (r.feedback && r.feedback.leveled) toast('LEVEL UP · ' + SKILLS[r.feedback.leveled.skill] + ' → ' + Game.LEVEL_NAMES[r.feedback.leveled.level], 'mag'); if (res.result && res.result.promoted) toast('PROMOTED · CLASS ' + res.result.promoted, 'yel'); } return render(); }
+    if (t.id === 'commit') { const r = Game.run; const stBefore = Game.currentStep(); if (stBefore.type === 'calc') document.querySelectorAll('[data-calc]').forEach(i => r.calc[i.dataset.calc] = i.value); const res = Game.commit(); if (res.ok) { r.hintShown = null; r.walk = null; r.lastWhy = stBefore.why || null; } if (res.ok) { toast(res.finished ? 'GIG COMPLETE' : 'STEP CLEARED', 'grn'); if (r.feedback && r.feedback.leveled) toast('LEVEL UP · ' + SKILLS[r.feedback.leveled.skill] + ' → ' + Game.LEVEL_NAMES[r.feedback.leveled.level], 'mag'); if (res.result && res.result.promoted) toast('PROMOTED · CLASS ' + res.result.promoted, 'yel'); } return render(); }
     if (t.id === 'hint') { Game.run.hintShown = Game.useHint(); return render(); }
+    if (t.id === 'walk') { Game.run.walk = Game.reveal(); return render(); }
     if (t.id === 'abort') { if (confirm('Jack out? Progress on this gig is lost.')) { Game.abort(); view = 'jobs'; render(); } return; }
     if (t.id === 'export') { $('#savebox').value = Game.exportSave(); return; }
     if (t.id === 'import') { if (Game.importSave($('#savebox').value)) { toast('SAVE IMPORTED'); render(); } else toast('bad save JSON', 'mag'); return; }

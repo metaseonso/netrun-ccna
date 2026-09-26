@@ -167,3 +167,13 @@ code,kbd{font-family:var(--mono);background:#0b0f18;border:1px solid var(--line)
 .scene .where{font-size:11px;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase;margin-bottom:10px}
 .scene .ln{margin:8px 0} .scene .ln .who{display:block;font-family:var(--disp);font-size:10px;letter-spacing:.16em;color:var(--term);margin-bottom:2px}
 .scene .ln.you .who{color:var(--cyan)} .scene .ln.narr{color:var(--ink2);font-style:italic} .scene .ln.reply{border-left:2px solid var(--mag);padding-left:10px;margin-top:10px}
+
+/* answer key */
+.why{border-left:2px solid var(--yel);background:rgba(255,210,63,.05);padding:8px 12px;margin-top:8px;font-size:13px;line-height:1.55;color:var(--ink2);white-space:pre-wrap}
+.why b{color:var(--yel)} .why .ans{color:var(--ink);font-family:var(--mono)}
+details.why summary{cursor:pointer;color:var(--yel);font-family:var(--disp);font-size:10px;letter-spacing:.14em;text-transform:uppercase;outline:none}
+.key .keyjob{border:1px solid var(--line);padding:10px 12px;margin-top:10px;background:var(--panel2)}
+.key .keyjob h3{margin:0 0 6px;color:var(--ink)}
+.key .keystep{border-top:1px dashed var(--line);padding:8px 0;font-size:13px}
+.key .keystep .q{color:var(--ink2)} .key .keystep .a{margin-top:4px;color:var(--ink);font-family:var(--mono);font-size:12px;white-space:pre-wrap} .key .keystep .a b{color:var(--grn)}
+.key .keystep .w{margin-top:4px;color:var(--ink2);line-height:1.55;border-left:2px solid var(--yel);padding-left:10px}

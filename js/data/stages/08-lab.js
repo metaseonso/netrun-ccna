@@ -17,7 +17,7 @@
           ] } },
         { k: 'LORE', text: 'Prof. Hypervisor, feeding the cat: "IBM ran the first virtual machines on the CP-40 in 1967. VMware made it ordinary in 1998. Docker put containers in everyone\'s hands at a conference in March 2013. Ansible is from 2012, and it is named after the instant communicator in Ursula K. Le Guin\'s novels, which I think is the best name in the building."' },
         { k: 'KIT', text: 'A sticky note from the side of a monitor.', kit: [ { cmd: 'Type 1: ESXi, Hyper-V · Type 2: VirtualBox, Workstation', what: 'on bare metal, or on top of an OS' }, { cmd: '[[control plane]] · [[data plane]] · [[management plane]]', what: 'SDN separates the first from the second' }, { cmd: 'GET · POST · PUT · PATCH · DELETE', what: 'the REST verbs' } ] },
-        { k: 'SYNC', q: { prompt: 'The professor, mid-thought: "Hypervisor on bare metal, no operating system underneath. Which type?"', opts: ['Type 1', 'Type 2', 'A container', 'A cloud'], a: 0, yes: '"Type 1. The cat knew that."', no: '"Type 1 sits on the metal. Type 2 sits on an operating system, like the one on your laptop."' } }
+        { k: 'SYNC', q: { prompt: 'The professor, mid-thought: "Hypervisor on bare metal, no operating system underneath. Which type?"', opts: ['Type 1', 'Type 2', 'A container', 'A cloud'], a: 0, yes: '"Type 1. The cat knew that."', no: '"Type 1 sits on the metal. Type 2 sits on an operating system, like the one on your laptop."' , why: 'Prof. Hypervisor: Type 1 runs straight on the hardware, like ESXi or Hyper-V. Type 2 runs as a program on top of a normal operating system, like VirtualBox on a laptop. No operating system underneath means Type 1.' } }
       ] }
   ] });
 })();

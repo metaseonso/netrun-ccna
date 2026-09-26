@@ -17,7 +17,7 @@
           ] } },
         { k: 'LORE', text: 'Ace Elle, not looking up from the clipboard: "On 2 November 1988 a graduate student named Robert Morris released a worm that hit about a tenth of the machines on the internet in a day. First conviction under the computer fraud law. The CERT coordination centre was set up because of it. Every list I read is a descendant of that night."' },
         { k: 'KIT', text: 'A page off the clipboard.', kit: [ { cmd: 'access-list 10 deny 192.168.2.0 0.0.0.255 → access-list 10 permit any', what: 'a standard numbered list with a [[wildcard mask]]' }, { cmd: 'interface g0/2 → ip access-group 10 out', what: 'apply it, close to the destination' }, { cmd: 'switchport port-security → maximum 2 → violation restrict → mac-address sticky', what: 'Sticky\'s instructions' } ] },
-        { k: 'SYNC', q: { prompt: 'Ace Elle: "Packet reaches the end of my list. No line matched. What happens?"', opts: ['It is permitted', 'It is dropped by the implicit deny', 'It is logged and permitted', 'It goes back to the top'], a: 1, yes: '"Dropped. Nobody wrote that rule. Nobody has to."', no: '"Implicit deny. If nothing matched, it does not get in."' } }
+        { k: 'SYNC', q: { prompt: 'Ace Elle: "Packet reaches the end of my list. No line matched. What happens?"', opts: ['It is permitted', 'It is dropped by the implicit deny', 'It is logged and permitted', 'It goes back to the top'], a: 1, yes: '"Dropped. Nobody wrote that rule. Nobody has to."', no: '"Implicit deny. If nothing matched, it does not get in."' , why: 'Ace Elle: Every list ends with a rule nobody types: deny everything else. If a packet reaches the bottom without matching a line, that hidden rule drops it. Implicit deny.' } }
       ] }
   ] });
 })();
