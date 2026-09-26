@@ -2,7 +2,7 @@
 (function(){
   const $ = s => document.querySelector(s); const app = () => $('#app');
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  let view = 'home', cur = { stage: null, level: null, beat: 0, job: null, synced: null };
+  let view = 'home', lastView = null, cur = { stage: null, level: null, beat: 0, job: null, synced: null };
 
   // [[Term]] → glowing unique-NPC style term with hover definition
   function rich(text){
@@ -107,7 +107,7 @@
       (r.lastWhy ? '<details class="why"><summary>why that worked</summary>' + rich(r.lastWhy) + '</details>' : '') +
       (r.hintShown ? '<div class="hintbox">' + esc(r.hintShown) + '</div>' : '') +
       (r.walk ? '<div class="why"><b>THE ANSWER</b><br><span class="ans">' + esc(r.walk.answer).replace(/\n/g, '<br>') + '</span><br><br>' + rich(r.walk.why || 'No explanation written for this step yet.') + '</div>' : '') +
-      '<div class="row" style="margin-top:10px"><button class="btn grn" id="commit">COMMIT ▸</button>' + (st.hint ? '<button class="btn ghost" id="hint">' + (r.hinted[r.step] ? 'HINT SHOWN' : 'HINT') + '</button>' : '') + '<button class="btn ghost" id="walk" title="shows the answer and explains it. counts as a hint: no level-up on this step">' + (r.walk ? 'ANSWER SHOWN' : 'WALK ME THROUGH IT') + '</button><span class="muted" style="font-size:10px">a hint or a walk-through costs the level-up for this step, nothing else</span></div></div>' +
+      '<div class="row" style="margin-top:10px"><button class="btn grn" id="commit">COMMIT ▸</button>' + (st.hint ? '<button class="btn ghost" id="hint">' + (r.hinted[r.step] ? 'HINTED' : 'HINT') + '</button>' : '') + '<button class="btn ghost" id="walk" title="shows the answer and explains it. counts as a hint: no level-up on this step">' + (r.walk ? 'ANSWER SHOWN' : 'WALK ME THROUGH IT') + '</button><span class="muted" style="font-size:10px">a hint or a walk-through costs the level-up for this step, nothing else</span></div></div>' +
       (r.job.devices.length ? consoleView(r) : '') + '</div></div></div>';
   }
   function stepInput(st, r){
@@ -184,7 +184,7 @@
     // mount sprites / portraits into their slots at the slot's size
     a.querySelectorAll('.npcslot').forEach(sl => sl.replaceWith(npcEl(sl.dataset.npc, +sl.dataset.size)));
     if (view === 'run' && Game.run && !Game.run.result) { drawMap(); const o = $('#conout'); if (o) o.scrollTop = o.scrollHeight; const inp = $('#conin'); if (inp) { inp.focus(); } }
-    window.scrollTo({ top: view === 'run' ? window.scrollY : 0 });
+    window.scrollTo({ top: (view === 'run' && lastView === 'run') ? window.scrollY : 0 }); lastView = view;
   }
 
   document.addEventListener('click', e => {
