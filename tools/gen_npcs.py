@@ -53,6 +53,7 @@ SUBJECTS = {
     "hypervisor": "a professor with a grey bun and round glasses, white lab coat over a blue shirt, delighted expression, a black cat on the shoulder.",
     "jason": "a neat data broker with short black hair, clear glasses, white shirt and orange tie, polite smile.",
     "ansible": "an orchestrator with a bald head and a green visor across the eyes, dark teal coat, a small drone at the shoulder, calm.",
+    "marrow": "a market stall vendor under an overpass, weathered face, grey beanie, a scar through one eyebrow, orange-lit stall behind, dry grin, fingerless gloves.",
 }
 
 

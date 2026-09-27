@@ -128,7 +128,7 @@ Commands, hints and `kit.cmd` are exempt (the old tongue is the old tongue). Lev
 
 ## 10. Creds, the stall, rites
 
-`creds` on a gig (default 3 × rep). `rite: true` marks a class rite of passage (board badge, result framing, big creds).
+`creds` on a gig (default 3 × rep). `rite: true` marks a class rite of passage (board badge, result framing, big creds), and it **gates the class**: a player with the rep for the next class stays where they are until the rite gig of their current class is done. One rite per class (`rite: true` with that `cls`). The HUD names the rite; locked gigs say Dispatch wants to see it cleared first. Finish the rite and the promotion fires on the result screen.
 Shop items live in `js/data/shop.js` with kinds `gift | favor | bd | skin`; a `bd` item needs `title`, `year`, `who`, `text`.
 Never add an item that skips learning. Gifts and favors are applied from the CREW screen; effects are in `engine/protege.js`.
 

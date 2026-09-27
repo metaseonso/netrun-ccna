@@ -3,39 +3,44 @@
    LAYER 2 (Jobs): a skill levels only when used in a practicum step WITHOUT a hint or walk-through.
    Rep comes from gigs and from keeping protégés alive. Rep sets class. Class + reads + crew size gate gigs. */
 (function(){
-  const VERSION = 2;
+  const VERSION = 3; // records from earlier builds are dropped, not migrated (alpha reset)
   const LEVEL_NAMES = ['SLOTTED', 'SYNCED', 'WIRED', 'BURNED-IN'];
   const LEVEL_AT = [0, 1, 3, 6];
   const P = () => window.PLATFORM || {};
 
   const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [] });
-  function migrate(s){ const f = fresh(); const out = Object.assign(f, s || {}); out.v = VERSION; out.roster = out.roster || { seq: 0, list: [] }; out.cards = out.cards || {}; out.dmLog = out.dmLog || []; out.recruits = out.recruits || {}; out.creds = out.creds || 0; out.inventory = out.inventory || {}; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); out.bd = out.bd || [];
-    // crew recruited before archetypes existed: give them one, deterministically, plus the fields that came later
-    (out.roster.list || []).forEach((p, i) => { if (!p.arch) { let h = 0; for (const c of (p.id || 'p' + i)) h = (h * 31 + c.charCodeAt(0)) >>> 0; p.arch = Protege.ARCHS[h % Protege.ARCHS.length]; } if (!p.want) { const L = window.PROTEGE_LINES || {}; const A = (L.arch || {})[p.arch] || {}; const w = A.wants || L.wants || []; p.want = w[i % Math.max(1, w.length)] || null; } p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; });
-    Telemetry.ensure(out); return out; }
+  // fill in keys added since a record was written (same VERSION only; older records are dropped in load())
+  function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
+  const usable = s => !!s && (s.v || 0) >= VERSION;
   let state = fresh();
-  function load(h){ const s = Storage.local.loadSync(h); return s ? migrate(s) : Object.assign(fresh(), { handle: h }); }
-  try { const cur = Storage.local.current(); if (cur) state = load(cur); else { const legacy = JSON.parse(localStorage.getItem('netrun-ccna-save-v1') || 'null'); if (legacy && legacy.handle) { state = migrate(legacy); Storage.local.saveSync(state.handle, state); Storage.local.setCurrent(state.handle); localStorage.removeItem('netrun-ccna-save-v1'); } } } catch (e) {}
+  function load(h){ const s = Storage.local.loadSync(h); if (s && !usable(s)) { Storage.local.remove(h); console.info('record from an earlier build dropped:', h); } return usable(s) ? migrate(s) : Object.assign(fresh(), { handle: h }); }
+  try { const cur = Storage.local.current(); if (cur) state = load(cur); } catch (e) {}
+  try { localStorage.removeItem('netrun-ccna-save-v1'); } catch (e) {}
   Telemetry.ensure(state);
   const save = () => { if (!state.handle) return; state.updated = Date.now(); Storage.local.saveSync(state.handle, state); Storage.local.setCurrent(state.handle); Storage.pushIfRemote(state.handle, state); };
   const log = (s) => { state.log.unshift({ t: Date.now(), s }); state.log = state.log.slice(0, 300); save(); };
   const ev = (type, data) => Telemetry.event(state, type, data);
 
   // ---- progression -------------------------------------------------------------
-  const classFor = rep => { let c = CLASSES[0]; for (const k of CLASSES) if (rep >= k.min) c = k; return c; };
-  const nextClass = rep => CLASSES.find(k => k.min > rep) || null;
+  // class = rep threshold AND the rite of the class below (the gig flagged rite:true with that cls). No rite written yet = no gate.
   const classRank = id => CLASSES.findIndex(k => k.id === id);
+  const riteFor = cls => (window.JOBS || []).find(j => j.rite && j.cls === cls) || null;
+  const riteCleared = cls => { const r = riteFor(cls); return !r || !!state.jobsDone[r.id]; };
+  const classFor = rep => { let c = CLASSES[0]; for (let i = 1; i < CLASSES.length; i++) { if (rep >= CLASSES[i].min && riteCleared(CLASSES[i - 1].id)) c = CLASSES[i]; else break; } return c; };
+  const nextClass = rep => CLASSES[classRank(classFor(rep).id) + 1] || null;
+  // the rite standing between the player and the next class (rep is there, the rite is not)
+  const riteBlocking = () => { const nx = nextClass(state.rep); if (!nx || state.rep < nx.min) return null; const r = riteFor(classFor(state.rep).id); return r && !state.jobsDone[r.id] ? r : null; };
   const levelById = id => { for (const st of STAGES) for (const l of st.levels) if (l.id === id) return l; return null; };
   const stageOf = lid => STAGES.find(st => st.levels.some(l => l.id === lid));
   function skill(id){ return state.skills[id] || (state.skills[id] = { uses: 0, clean: 0, level: 0, slotted: false }); }
   function skillLevel(clean){ let lv = 0; LEVEL_AT.forEach((n, i) => { if (clean >= n) lv = i; }); return lv; }
-  function addRep(delta, why){ const before = classFor(state.rep).id; state.rep = Math.max(0, state.rep + delta); ev('rep', { rep: state.rep, delta, why }); const after = classFor(state.rep).id; if (classRank(after) > classRank(before)) { log('PROMOTED to Class ' + after); onPromotion(after); return after; } return null; }
+  function addRep(delta, why, before){ before = before || classFor(state.rep).id; state.rep = Math.max(0, state.rep + delta); ev('rep', { rep: state.rep, delta, why }); const after = classFor(state.rep).id; if (classRank(after) > classRank(before)) { log('PROMOTED to Class ' + after); onPromotion(after); return after; } return null; }
 
   function addCreds(delta, why){ state.creds = Math.max(0, (state.creds || 0) + delta); ev('creds', { creds: state.creds, delta, why }); }
   function readLevel(id){ const l = levelById(id); if (!l) return; const first = !state.read[id]; state.read[id] = Date.now(); (l.unlocks || []).forEach(s => { skill(s).slotted = true; }); if (first) { ev('read', { level: id }); log('Synced with ' + NPCS[l.npc].name + ' — "' + l.title + '"'); } save(); return first; }
 
   function jobStatus(job){ const me = classFor(state.rep); const locked = [];
-    if (classRank(job.cls) > classRank(me.id)) locked.push({ kind: 'class', text: 'Needs Class ' + job.cls + ' rep (' + CLASSES[classRank(job.cls)].min + ')' });
+    if (classRank(job.cls) > classRank(me.id)) { const rb = riteBlocking(); locked.push({ kind: 'class', text: rb && classRank(job.cls) === classRank(me.id) + 1 ? 'Dispatch wants to see you clear "' + rb.title + '" first' : 'Needs Class ' + job.cls + ' rep (' + CLASSES[classRank(job.cls)].min + ')' }); }
     (job.requires || []).forEach(r => { if (!state.read[r]) { const l = levelById(r); locked.push({ kind: 'read', id: r, text: l ? 'Talk to ' + NPCS[l.npc].name + ': "' + l.title + '"' : 'Read ' + r }); } });
     const t = Protege.teamCheck(job, state.roster); if (!t.ok) locked.push({ kind: 'team', text: t.text });
     return { locked, done: state.jobsDone[job.id] || null }; }
@@ -122,7 +127,8 @@
   function finishJob(){ const job = run.job; const prev = state.jobsDone[job.id]; const hintedCount = Object.keys(run.hinted).length; const fails = Object.values(run.fails).reduce((a, b) => a + b, 0); const ms = Date.now() - run.startedAt;
     let rep = job.rep; if (prev) rep = Math.round(rep * 0.4); rep = Math.max(Math.round(job.rep * 0.2), Math.round(rep * Math.max(0.3, 1 - 0.1 * hintedCount)));
     const creds = Math.round((job.creds || job.rep * 3) * (prev ? 0.4 : 1)); addCreds(creds, 'gig ' + job.id);
-    const promoted = addRep(rep, 'gig ' + job.id); state.jobsDone[job.id] = { times: (prev ? prev.times : 0) + 1, last: Date.now(), best: Math.max(prev ? prev.best : 0, run.done.filter(d => d.clean).length), bestMs: Math.min(prev && prev.bestMs || Infinity, ms) };
+    const before = classFor(state.rep).id; state.jobsDone[job.id] = { times: (prev ? prev.times : 0) + 1, last: Date.now(), best: Math.max(prev ? prev.best : 0, run.done.filter(d => d.clean).length), bestMs: Math.min(prev && prev.bestMs || Infinity, ms) };
+    const promoted = addRep(rep, 'gig ' + job.id, before); // a rite clears the gate, so the class is re-read after the gig is on the books
     const leveled = run.done.filter(d => d.leveled).map(d => d.leveled); ev('job_finish', { job: job.id, ms, fails, hints: hintedCount, rep });
     log('Gig done: ' + job.title + ' (+' + rep + ' rep, ' + Math.round(ms / 1000) + 's' + (hintedCount ? ', ' + hintedCount + ' hinted' : ', clean') + (fails ? ', ' + fails + ' failed attempts' : '') + ')');
     let recruit = null; if (!state.roster.list.length) { recruit = Protege.recruit(state.roster, 'first gig'); log(Protege.fill((PROTEGE_LINES.recruit || [])[1] || '{name} joined your crew.', recruit)); }
@@ -165,12 +171,15 @@
   // ---- profiles -------------------------------------------------------------------
   function reset(){ const h = state.handle; Storage.local.remove(h); state = Object.assign(fresh(), { handle: h }); run = null; save(); }
   function setHandle(h){ h = h.trim().slice(0, 18); if (!h) return false; const isNew = !Storage.local.listSync().includes(h); state = load(h); state.handle = h; save(); if (isNew) log('Handle registered: ' + h); return true; }
-  function logout(){ save(); run = null; state = fresh(); Storage.local.setCurrent(null); }
+  function logout(){ save(); if (state.handle) Storage.pushIfRemote(state.handle, state, true); run = null; state = fresh(); Storage.local.setCurrent(null); }
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && state.handle) Storage.pushIfRemote(state.handle, state, true); });
   function exportSave(){ return JSON.stringify(state); }
   function importSave(txt){ try { const s = JSON.parse(txt); if (s && typeof s.rep === 'number') { state = migrate(s); save(); return true; } } catch (e) {} return false; }
-  async function onAuth(user){ if (!user) { Storage.useLocal(); return; } try { await Storage.mergeLocalIntoRemote(); if (state.handle) { const remote = await Storage.remote.load(state.handle); if (remote && (remote.updated || 0) >= (state.updated || 0)) { state = migrate(remote); } } save(); } catch (e) { console.warn('auth sync', e); } if (window.UI) UI.render(); }
+  // sign-in: push newer local records up, pull newer Drive records down (so the door lists them), then carry on
+  async function onAuth(user){ if (!user) { Storage.useLocal(); if (window.UI) UI.render(); return; } if (!Auth.token()) { if (window.UI) UI.render(); return; }
+    try { await Storage.mergeLocalIntoRemote(); for (const h of await Storage.remote.list()) { const remote = await Storage.remote.load(h); const local = Storage.local.loadSync(h); if (usable(remote) && (!local || (remote.updated || 0) > (local.updated || 0))) { Storage.local.saveSync(h, remote); if (state.handle === h) state = migrate(remote); } } save(); } catch (e) { console.warn('auth sync', e); } if (window.UI) UI.render(); }
   if (window.Auth) Auth.onChange(onAuth);
   window.addEventListener('beforeunload', () => { Telemetry.touch(state); save(); });
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, logout, profiles: () => Storage.local.listSync(), exportSave, importSave, skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, shop, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, logout, riteFor, riteBlocking, profiles: () => Storage.local.listSync(), exportSave, importSave, skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, shop, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
 })();

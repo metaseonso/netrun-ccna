@@ -89,5 +89,5 @@ Days with a ✅ are built. Everything else: write the level(s), import the deck,
 ## Beyond content
 
 - Extend protégé lines and add a few recurring named protégés with arcs (optional, after the campaign).
-- OAuth: follow `docs/AUTH_PLAN.md` when the owner is ready. No code changes outside `config/platform.js` and one script tag should be needed.
+- Sign-in: code complete. The owner pastes the Google client ID into `config/platform.js` (`docs/AUTH_PLAN.md`). No campaign work here.
 - Arcs 00, 02–04 stay locked. The engine is arc-agnostic; a new arc is a new set of stage files with `arc: 'ice'` etc.

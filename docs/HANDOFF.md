@@ -22,7 +22,7 @@ then `docs/CAMPAIGN_GUIDE.md` (how to write content), `docs/STORY_BIBLE.md` (how
 | The dive transition, braindance title cards, in-world interface vocabulary | `js/ui.js`, `css/world.css` | done |
 | Golden-solution runner | `Game.runSolution` in `js/game.js`, `tools/check.js` | done |
 | Dev panel (`?dev=1`): lint, step diagnosis, net state, ping tester, golden runs, cards | `js/ui.js` | done |
-| Storage + auth interface, Supabase-ready | `js/platform/*.js`, `config/platform.js`, `docs/AUTH_PLAN.md` | scaffolded, inactive until configured |
+| Sign in with Google + saves in the player's Drive | `js/platform/*.js`, `config/platform.js`, `docs/AUTH_PLAN.md` | complete; switches on when the owner pastes the Google client ID |
 | Anki importer + page registration | `tools/import_apkg.py`, `tools/register_cards.py` | done; course files at `C:\Users\Seonso\Desktop\CCNA Course Files` |
 | Content: Stage 4 (Days 20–21) | `js/data/stages/04-bridges.js`, 7 gigs in `js/data/jobs.js`, 30 cards | built, the reference for tone and depth |
 | Content: Stages 1–3, 5–8 | `js/data/stages/*.js` | one intro level each; everything else is yours |
@@ -76,13 +76,22 @@ Definition of done for a day:
 
 ## Known gaps you will inherit (not engine limits)
 
-- Class C and B rites are existing gigs flagged `rite: true`. Write true rites for D→C, C→B, B→A: bigger topologies, a payday, an outro where the district starts calling the player by their class.
-- Nine NPCs (Dispatch, Ospef, Syn, Sixx, Shell, Nat, Beacon, Jason, Ansible) and all protégés use procedural sprites. `tools/gen_npcs.py` makes portraits via OpenRouter when the owner wants them. Do not run it on your own.
+- **Rites are now a real gate.** `Game.classFor` only promotes when the rep is there **and** the rite gig of the class
+  below is done (`rite: true` + `cls`). No rite written for a class = no gate, so the campaign can grow in order.
+  The three flagged demo gigs (`c-rogue-switch`, `b-per-vlan-split`, `a-last-storm`) are placeholders: write the
+  true rites for D→C (a Class D rite does not exist yet), C→B and B→A. Bigger topologies, a payday, an outro where
+  the district starts calling the player by their class. Retcon the demo gigs freely; nothing is saved from the alpha.
+- All twenty NPCs have portraits. New NPCs you add get the procedural sprite until the owner runs `tools/gen_npcs.py`
+  (add a `SUBJECTS` line for them). Do not run it yourself; it spends money.
 - Archetype voice lines are seed content: 3–4 lines per situation. Add depth, keep every situation covered (lint warns).
 - The crew's calls use real-time spacing (10 min, 1 h, 1 d …). In dev, DEV → CALLS → FORCE CALL.
 - `Day 63 (part 2) Terraform` deck skipped (new Anki format; not exam content). Terraform gets a mention in Ansible's stage, no more.
-- OAuth is scaffolded, not live: `docs/AUTH_PLAN.md`. Google only.
-- Mobile layout works but has not been tuned. Keep the 16px gutters; test the dive on a phone once.
+- Sign-in is code-complete (Google, saves in the player's own Drive). It is off until the owner pastes a client ID
+  into `config/platform.js`; `docs/AUTH_PLAN.md` has the ten-minute setup. Never touch `js/platform/` for content.
+- Save records are `VERSION` 3. Older records are dropped, not migrated. New keys go in `fresh()` with a default;
+  do not raise `VERSION` for that.
+- Mobile: the door, MAP, STALL and HUD fit a 375px phone. The dive (map + console side by side) stacks; test it once
+  per new gig shape.
 
 ## Known limits of the engine (extend with tests if a day needs them)
 

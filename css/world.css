@@ -41,3 +41,5 @@ body.theme-noir{--cyan:#4dff88;--cyan2:#2fbf66;--mag:#4dff88;--term:#b9f5c9;--ye
 .item .kb{display:inline-block;font-family:var(--disp);font-size:9px;letter-spacing:.16em;padding:1px 6px;border:1px solid currentColor;border-radius:2px;margin-right:4px}
 .item.gift .kb{color:var(--grn)} .item.favor .kb{color:var(--mag)} .item.bd .kb{color:var(--yel)} .item.skin .kb{color:var(--cyan)}
 .npcbox img{background:#0b0f18}
+
+.hud .nav #reconnect.warn{color:var(--mag);border-color:var(--mag);animation:pulse 1.6s infinite}

@@ -42,7 +42,7 @@ npm run check                   # same, listing warnings
 - `docs/TASKS.md` — all 63 days mapped to stages, NPCs, skills and lab-based gigs.
 - `docs/templates/` — a complete stage file and a complete gig that pass `npm test`.
 - `tools/import_apkg.py` — turns Anki decks into game cards.
-- `docs/AUTH_PLAN.md` — sign-in and cloud saves (Supabase), scaffolded, inactive until configured.
+- `docs/AUTH_PLAN.md` — Sign in with Google; records live in the player's own Drive. Code complete, on when the owner pastes a client ID.
 
 ## Credits
 

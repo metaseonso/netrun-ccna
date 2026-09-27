@@ -1,12 +1,10 @@
-/* config/platform.js — deployment settings. Safe to commit: the Supabase anon key is a public key by design;
-   access is controlled by row-level security (see docs/AUTH_PLAN.md).
-   Leave supabaseUrl empty and the game runs fully offline with local saves and no sign-in button. */
+/* config/platform.js — deployment settings. Safe to commit: a Google OAuth client ID is public by design.
+   Leave googleClientId empty and the game runs fully offline: local saves, no sign-in button.
+   Fill it in and players get SIGN IN WITH GOOGLE; their records are stored in their own Google Drive
+   (the hidden app folder), so they follow the player across devices. Setup: docs/AUTH_PLAN.md. */
 window.PLATFORM = {
-  supabaseUrl: '',            // e.g. 'https://abcdefgh.supabase.co'
-  supabaseAnonKey: '',        // the project's anon public key
-  providers: ['google'],          // Sign in with Google. Add 'github' or 'discord' later if wanted.
-  redirectTo: null,           // null = this page
-  dmCooldownMs: 3 * 60 * 1000, // minimum gap between protégé DMs
+  googleClientId: '',           // e.g. '1234567890-abc123.apps.googleusercontent.com'
+  dmCooldownMs: 3 * 60 * 1000,  // minimum gap between crew calls
   dmMaxPerSession: 12,
   dev: /[?&]dev=1/.test(location.search) // dev panel: lint, engine state, step evaluation, golden runs
 };
