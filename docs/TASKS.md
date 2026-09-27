@@ -1,8 +1,13 @@
 # TASKS — the full CCNA arc, day by day
 
 Source order: Jeremy's IT Lab CCNA 200-301 (63 days). Course files (Anki decks per day, Packet Tracer lab per day,
-CCNA Mega Lab doc): the Google Drive folder the owner shared. Download it locally, run the importer for cards,
-and turn every lab into a gig. `.pkt` files cannot be parsed; rebuild the lab's topology and tasks in `net` form.
+CCNA Mega Lab doc) are downloaded to **`C:\Users\Seonso\Desktop\CCNA Course Files`** (from the owner's shared Drive
+folder; `_listing.json` there has every file id). Decks are imported into `js/data/cards/dayNN.js` with
+`tools/import_apkg.py` and registered with `tools/register_cards.py`. Turn every `.pkt` lab into a gig: the files
+cannot be parsed here, so open them in Packet Tracer (or read the day's video notes) and rebuild the topology and tasks
+in `net` form. The capstone is the `CCNA Mega Lab` subfolder: `CCNA Mega Lab (Jeremy's IT Lab).pka` plus `Connections & IPv4 Addresses.xlsx` (the addressing plan).
+
+Import status: 70 of 71 decks imported (1,979 cards). `Day 63 (part 2) Flashcards - Terraform.apkg` uses the newer compressed Anki format and was skipped; Terraform is not on the 200-301 exam.
 
 Stage plan (arc 01 · THE GRID). Stage files exist as stubs; replace the intro level and add the rest.
 

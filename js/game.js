@@ -38,7 +38,8 @@
 
   // ---- cards & protégés ----------------------------------------------------------
   function allCards(){ const out = (window.CARDS || []).slice(); STAGES.forEach(st => st.levels.forEach(l => (l.cards || []).forEach((c, i) => out.push(Object.assign({ id: l.id + '-c' + (i + 1), level: l.id, skill: (l.unlocks || [])[0] }, c))))); return out; }
-  function cardUnlocked(c){ if (c.level) return !!state.read[c.level]; if (c.skill) return !!(state.skills[c.skill] && state.skills[c.skill].slotted); return false; }
+  const readDays = () => { const d = new Set(); for (const id in state.read) { const l = levelById(id); if (l) (l.day || []).forEach(x => d.add(x)); } return d; };
+  function cardUnlocked(c){ if (c.level) return !!state.read[c.level]; if (c.skill && state.skills[c.skill] && state.skills[c.skill].slotted) return true; if (c.day) return readDays().has(c.day); return false; }
   function onPromotion(cls){ if (!state.recruits[cls]) { state.recruits[cls] = true; const p = Protege.recruit(state.roster, 'promotion to Class ' + cls); log(Protege.fill((PROTEGE_LINES.recruit || [])[0] || '{name} joined your crew.', p)); } }
   const dm = {
     pending(){ return state.dm; },
@@ -48,7 +49,8 @@
       const p = active.slice().sort((a, b) => b.danger - a.danger)[Math.floor(Math.random() * Math.min(2, active.length))] || active[0];
       const you = state.handle; const d = Protege.dm(p, card, { you, sib: 'big sib' });
       let opts = card.opts, a = card.a, type = card.type || (card.opts ? 'choice' : 'text');
-      if (type === 'text') { const pool = cards.filter(c => c.id !== card.id && c.a && c.a !== card.a && (c.skill === card.skill || c.day === card.day)); const others = pool.length >= 3 ? pool : cards.filter(c => c.id !== card.id && c.a && c.a !== card.a); const picks = []; const seen = new Set([String(card.a)]); for (let i = 0; i < others.length && picks.length < 3; i++) { const c = others[(i * 7 + now) % others.length]; if (!seen.has(String(c.a))) { seen.add(String(c.a)); picks.push(String(c.a)); } } opts = [String(card.a)].concat(picks); for (let i = opts.length - 1; i > 0; i--) { const j = (now + i * 31) % (i + 1); [opts[i], opts[j]] = [opts[j], opts[i]]; } a = opts.indexOf(String(card.a)); type = 'choice'; }
+      if (type === 'text' && /^(yes|no)/i.test(String(card.a).trim())) { opts = ['Yes', 'No']; a = /^yes/i.test(String(card.a).trim()) ? 0 : 1; type = 'choice'; }
+      else if (type === 'text') { const pool = cards.filter(c => c.id !== card.id && c.a && c.a !== card.a && (c.skill === card.skill || c.day === card.day)); const others = pool.length >= 3 ? pool : cards.filter(c => c.id !== card.id && c.a && c.a !== card.a); const picks = []; const seen = new Set([String(card.a)]); for (let i = 0; i < others.length && picks.length < 3; i++) { const c = others[(i * 7 + now) % others.length]; if (!seen.has(String(c.a))) { seen.add(String(c.a)); picks.push(String(c.a)); } } opts = [String(card.a)].concat(picks); for (let i = opts.length - 1; i > 0; i--) { const j = (now + i * 31) % (i + 1); [opts[i], opts[j]] = [opts[j], opts[i]]; } a = opts.indexOf(String(card.a)); type = 'choice'; }
       state.dm = Object.assign(d, { type, opts, a, skill: card.skill || null, why: card.why || null, answerText: card.a, openedAt: null }); state.dmCount++; ev('dm_sent', { card: card.id, protege: p.id }); save(); return state.dm; },
     open(){ if (state.dm && !state.dm.openedAt) { state.dm.openedAt = Date.now(); save(); } return state.dm; },
     remaining(){ const d = state.dm; if (!d || !d.openedAt) return null; return Math.max(0, d.seconds * 1000 - (Date.now() - d.openedAt)); },

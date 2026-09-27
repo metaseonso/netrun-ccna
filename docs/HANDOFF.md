@@ -20,7 +20,7 @@ then `docs/CAMPAIGN_GUIDE.md` (how to write content), `docs/STORY_BIBLE.md` (how
 | Golden-solution runner | `Game.runSolution` in `js/game.js`, `tools/check.js` | done |
 | Dev panel (`?dev=1`): lint, step diagnosis, net state, ping tester, golden runs, cards | `js/ui.js` | done |
 | Storage + auth interface, Supabase-ready | `js/platform/*.js`, `config/platform.js`, `docs/AUTH_PLAN.md` | scaffolded, inactive until configured |
-| Anki importer | `tools/import_apkg.py` | done |
+| Anki importer + page registration | `tools/import_apkg.py`, `tools/register_cards.py` | done; course files at `C:\Users\Seonso\Desktop\CCNA Course Files` |
 | Content: Stage 4 (Days 20–21) | `js/data/stages/04-bridges.js`, 7 gigs in `js/data/jobs.js`, 30 cards | built, the reference for tone and depth |
 | Content: Stages 1–3, 5–8 | `js/data/stages/*.js` | one intro level each; everything else is yours |
 

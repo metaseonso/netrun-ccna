@@ -4,7 +4,7 @@
 window.PLATFORM = {
   supabaseUrl: '',            // e.g. 'https://abcdefgh.supabase.co'
   supabaseAnonKey: '',        // the project's anon public key
-  providers: ['google', 'github', 'discord'],
+  providers: ['google'],          // Sign in with Google. Add 'github' or 'discord' later if wanted.
   redirectTo: null,           // null = this page
   dmCooldownMs: 3 * 60 * 1000, // minimum gap between protégé DMs
   dmMaxPerSession: 12,
