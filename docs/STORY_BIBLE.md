@@ -1,4 +1,4 @@
-# NETRUN://CCNA — Story Bible
+# NETRUNNER://CCNA — Story Bible
 
 This is the brief for rewriting every level and gig as lived-in story. The current text in
 `js/data/grid.js` and `js/data/jobs.js` is a placeholder: correct facts, wrong form. It explains.
@@ -251,3 +251,29 @@ date. They watch a card, feel something, and get asked by someone they care abou
 
 Every LORE beat therefore carries `title`, `year`, `vibe`. The engine turns each one into a crew call automatically.
 Archetypes, bond, favors and rites are specified in `docs/CREW_ARCHETYPES.md`.
+
+## 10. The body, the sync, the flatline
+
+A netrunner is a body on a street with a deck in it. The body eats and the chrome needs a hand on it, and neither is
+free. Two meters, FOOD and CHROME, sit in the HUD next to the creds. Nothing but work drains them: every gig costs
+both at jack-in, and every bad call inside a dive burns a point of chrome. Getting paid is how you fill them again.
+Marrow sells food (a bar, a bowl, a hot plate at Cider's) and knows a ripperdoc two doors down who does not do
+partials: one price, full service, every time. Prices climb with class, like everything at the stall.
+
+The cost is never hidden. The board says what a dive costs and what you have. When a dive would kill you, the board
+says so in red and the button says JACK IN ANYWAY. A flatline is therefore a choice the player made with open eyes,
+which is the only kind of death that teaches anything.
+
+The screen is not subtle. **FLATLINED.** in red across the whole deck, then GAME OVER, CHOOM. in small caps, then one
+plain sentence about how ("you went in hungry. the dive took the rest."), then the last sync and how long ago it was.
+Two buttons: BACK TO THE LAST SYNC and OUT TO THE DOOR. The street keeps count of flatlines on a handle, and the count
+shows on the RECORD. A flatlined runner comes back to the last sync with the journal, the record and the count intact:
+the world remembers even when the runner rewinds.
+
+A sync is the only save. The deck syncs after every talk and every gig, on its own, and says so once. There are no
+chips, no export, no manual save; the pacing belongs to the street, not the player. Words: **food**, **chrome**,
+**sync**, **flatline**, **ripperdoc**, **the tab**. Never "health", "HP", "hunger bar", "save game", "checkpoint",
+"respawn". "Game over" appears in exactly one place: the flatline screen.
+
+When the player is broke and under 30 food, Marrow puts one bowl on the tab, once per class. He is not kind about it.
+That is the whole safety net, and it is enough.

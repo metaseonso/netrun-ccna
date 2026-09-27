@@ -8,14 +8,14 @@
   const LEVEL_AT = [0, 1, 3, 6];
   const P = () => window.PLATFORM || {};
 
-  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [] });
+  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null });
   // fill in keys added since a record was written (same VERSION only; older records are dropped in load())
-  function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
+  function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); out.body = Object.assign({ food: 100, chrome: 100, tab: 0 }, out.body || {}); out.meta = Object.assign({ deaths: 0, syncs: 0, lastSync: 0 }, out.meta || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
   const usable = s => !!s && (s.v || 0) >= VERSION;
   let state = fresh();
   function load(h){ const s = Storage.local.loadSync(h); if (s && !usable(s)) { Storage.local.remove(h); console.info('record from an earlier build dropped:', h); } return usable(s) ? migrate(s) : Object.assign(fresh(), { handle: h }); }
   try { const cur = Storage.local.current(); if (cur) state = load(cur); } catch (e) {}
-  try { localStorage.removeItem('netrun-ccna-save-v1'); } catch (e) {}
+  try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith('netrun-ccna-')) localStorage.removeItem(k); } } catch (e) {} // keys from before the rename
   Telemetry.ensure(state);
   const save = () => { if (!state.handle) return; state.updated = Date.now(); Storage.local.saveSync(state.handle, state); Storage.local.setCurrent(state.handle); Storage.pushIfRemote(state.handle, state); };
   const log = (s) => { state.log.unshift({ t: Date.now(), s }); state.log = state.log.slice(0, 300); save(); };
@@ -30,6 +30,24 @@
   const nextClass = rep => CLASSES[classRank(classFor(rep).id) + 1] || null;
   // the rite standing between the player and the next class (rep is there, the rite is not)
   const riteBlocking = () => { const nx = nextClass(state.rep); if (!nx || state.rep < nx.min) return null; const r = riteFor(classFor(state.rep).id); return r && !state.jobsDone[r.id] ? r : null; };
+
+  // ---- the body: two meters. only gigs drain them (food and chrome, at jack-in; a little chrome per bad call). getting paid is how you refill.
+  //      a meter at zero is a flatline. the player always sees the cost before jacking in, so a death is a choice they made.
+  const body = {
+    max: 100,
+    cost(job){ const r = classRank(job.cls); return { food: job.food != null ? job.food : 15 + 5 * r, chrome: job.chrome != null ? job.chrome : 10 + 5 * r }; },
+    lethal(job){ const c = body.cost(job); return state.body.food - c.food <= 0 || state.body.chrome - c.chrome <= 0; },
+    low(){ return state.body.food <= 30 || state.body.chrome <= 30; },
+    eat(id){ const it = shop.items().find(x => x.id === id); if (!it || it.kind !== 'food' || !(state.inventory[id] > 0)) return { ok: false, why: 'nothing to eat' }; if (state.body.food >= body.max) return { ok: false, why: 'you are full. keep it, or hand it to a runner who needs it.' };
+      state.inventory[id]--; const before = state.body.food; state.body.food = Math.min(body.max, state.body.food + (it.effect.food || 0)); ev('eat', { item: id, food: state.body.food }); log('Ate ' + it.name + ' (food ' + before + ' → ' + state.body.food + ')'); save(); return { ok: true, item: it, food: state.body.food }; },
+    wear(n, why){ if (!state.handle) return false; state.body.chrome = Math.max(0, state.body.chrome - n); if (state.body.chrome <= 0) { flatline(why || 'the chrome gave out.'); return true; } return false; }
+  };
+  function flatline(why){ state.dead = { at: Date.now(), why, food: state.body.food, chrome: state.body.chrome, job: run ? run.job.id : null }; state.meta.deaths++; ev('flatline', { why, job: state.dead.job }); log('FLATLINED. ' + why); run = null; save(); }
+  // a sync is the only save the player gets: after a talk, after a gig. no chips, no manual saves. pacing stays ours.
+  // telemetry, the journal and the passcode ride outside the snapshot so a reload never erases the record of what happened.
+  const KEEP = ['events', 'log', 'dmLog', 'meta', 'checkpoint', 'pass'];
+  function sync(label){ const data = {}; for (const k in state) if (!KEEP.includes(k) && k !== 'dead') data[k] = state[k]; state.checkpoint = { at: Date.now(), label, data: JSON.parse(JSON.stringify(data)) }; state.meta.syncs++; state.meta.lastSync = Date.now(); ev('sync', { label }); save(); }
+  function reload(){ const cp = state.checkpoint; const keep = {}; KEEP.forEach(k => { keep[k] = state[k]; }); const h = state.handle; state = cp ? migrate(Object.assign({}, cp.data, keep, { handle: h })) : Object.assign(fresh(), keep, { handle: h }); state.dead = null; run = null; ev('reload', { label: cp ? cp.label : null }); log(cp ? 'Back to the last sync: ' + cp.label : 'No sync on record. Starting over under this handle.'); save(); return !!cp; }
   const levelById = id => { for (const st of STAGES) for (const l of st.levels) if (l.id === id) return l; return null; };
   const stageOf = lid => STAGES.find(st => st.levels.some(l => l.id === lid));
   function skill(id){ return state.skills[id] || (state.skills[id] = { uses: 0, clean: 0, level: 0, slotted: false }); }
@@ -37,7 +55,7 @@
   function addRep(delta, why, before){ before = before || classFor(state.rep).id; state.rep = Math.max(0, state.rep + delta); ev('rep', { rep: state.rep, delta, why }); const after = classFor(state.rep).id; if (classRank(after) > classRank(before)) { log('PROMOTED to Class ' + after); onPromotion(after); return after; } return null; }
 
   function addCreds(delta, why){ state.creds = Math.max(0, (state.creds || 0) + delta); ev('creds', { creds: state.creds, delta, why }); }
-  function readLevel(id){ const l = levelById(id); if (!l) return; const first = !state.read[id]; state.read[id] = Date.now(); (l.unlocks || []).forEach(s => { skill(s).slotted = true; }); if (first) { ev('read', { level: id }); log('Synced with ' + NPCS[l.npc].name + ' — "' + l.title + '"'); } save(); return first; }
+  function readLevel(id){ const l = levelById(id); if (!l) return; const first = !state.read[id]; state.read[id] = Date.now(); (l.unlocks || []).forEach(s => { skill(s).slotted = true; }); if (first) { ev('read', { level: id }); log('Synced with ' + NPCS[l.npc].name + ' — "' + l.title + '"'); } if (first) sync('talk · ' + l.title); else save(); return first; }
 
   function jobStatus(job){ const me = classFor(state.rep); const locked = [];
     if (classRank(job.cls) > classRank(me.id)) { const rb = riteBlocking(); locked.push({ kind: 'class', text: rb && classRank(job.cls) === classRank(me.id) + 1 ? 'Dispatch wants to see you clear "' + rb.title + '" first' : 'Needs Class ' + job.cls + ' rep (' + CLASSES[classRank(job.cls)].min + ')' }); }
@@ -80,6 +98,8 @@
   // ---- a run ----------------------------------------------------------------------
   let run = null;
   function startJob(id, opts){ const job = JOBS.find(j => j.id === id); if (!job) return null; opts = opts || {};
+    if (!opts.silent) { const c = body.cost(job); state.body.food = Math.max(0, state.body.food - c.food); state.body.chrome = Math.max(0, state.body.chrome - c.chrome); ev('body', { job: job.id, food: state.body.food, chrome: state.body.chrome });
+      if (state.body.food <= 0) { flatline('you went in hungry. ' + (job.rite ? 'the rite' : 'the dive') + ' took the rest.'); return null; } if (state.body.chrome <= 0) { flatline('the chrome was already failing. it quit two floors down.'); return null; } save(); }
     const topo = job.topo ? JSON.parse(JSON.stringify(job.topo)) : null; const netDef = job.net ? JSON.parse(JSON.stringify(job.net)) : null;
     const devices = {}; const R = { job, topo, netDef, devices, step: 0, hinted: {}, walked: {}, fails: {}, done: [], selected: null, feedback: null, calc: {}, choice: null, multi: new Set(), order: null, form: {}, text: '', active: job.devices[0], history: [], startedAt: Date.now(), stepStart: Date.now(), lastWhy: null, walk: null, hintShown: null, _netKey: null, _net: null };
     const ctx = { job, topo, netDef, devices, get selected(){ return R.selected; },
@@ -114,7 +134,7 @@
     return { ok: false, why: '?' }; }
 
   function commit(){ const st = currentStep(); if (!st) return { ok: false }; const r = evaluate(); const i = run.step; const ms = Date.now() - run.stepStart;
-    if (!r.ok) { run.fails[i] = (run.fails[i] || 0) + 1; run.feedback = { ok: false, text: r.why, bad: r.bad }; ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: false, ms }); return r; }
+    if (!r.ok) { run.fails[i] = (run.fails[i] || 0) + 1; run.feedback = { ok: false, text: r.why, bad: r.bad }; ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: false, ms }); if (body.wear(1, 'the chrome burned out mid-dive, ' + (run.job.steps.length - i) + ' floors from the top.')) return { ok: false, dead: true, why: 'flatlined' }; return r; }
     const clean = !run.hinted[i] && !run.walked[i]; const k = skill(st.skill); k.uses++; if (clean) k.clean++; const before = k.level; k.level = skillLevel(k.clean); k.slotted = true;
     const leveled = k.level > before ? { skill: st.skill, level: k.level } : null; run.done.push({ step: i, clean, leveled, ms, fails: run.fails[i] || 0 });
     ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: true, ms, failsBefore: run.fails[i] || 0, hinted: !!run.hinted[i], walked: !!run.walked[i] });
@@ -132,15 +152,16 @@
     const leveled = run.done.filter(d => d.leveled).map(d => d.leveled); ev('job_finish', { job: job.id, ms, fails, hints: hintedCount, rep });
     log('Gig done: ' + job.title + ' (+' + rep + ' rep, ' + Math.round(ms / 1000) + 's' + (hintedCount ? ', ' + hintedCount + ' hinted' : ', clean') + (fails ? ', ' + fails + ' failed attempts' : '') + ')');
     let recruit = null; if (!state.roster.list.length) { recruit = Protege.recruit(state.roster, 'first gig'); log(Protege.fill((PROTEGE_LINES.recruit || [])[1] || '{name} joined your crew.', recruit)); }
-    save(); run.result = { rep, creds, hintedCount, fails, ms, leveled, promoted, repeat: !!prev, recruit }; return { ok: true, finished: true, result: run.result }; }
+    sync('gig · ' + job.title); run.result = { rep, creds, hintedCount, fails, ms, leveled, promoted, repeat: !!prev, recruit }; return { ok: true, finished: true, result: run.result }; }
   // ---- the stall -----------------------------------------------------------------------
   const shop = {
     items(){ return window.SHOP || []; },
     price(item){ return Math.round(item.price * (1 + 0.25 * classRank(classFor(state.rep).id))); },
     owned(id){ const it = shop.items().find(x => x.id === id); if (!it) return 0; if (it.kind === 'bd') return state.bd.includes(id) ? 1 : 0; if (it.kind === 'skin') return state.perks.skins.includes(id) ? 1 : 0; return state.inventory[id] || 0; },
-    buy(id){ const it = shop.items().find(x => x.id === id); if (!it) return { ok: false, why: 'no such item' }; const price = shop.price(it); if ((it.kind === 'bd' || it.kind === 'skin') && shop.owned(id)) return { ok: false, why: 'you already have it' }; if (state.creds < price) return { ok: false, why: 'not enough creds. ' + (price - state.creds) + ' short.' };
-      addCreds(-price, 'bought ' + it.id); if (it.kind === 'gift' || it.kind === 'perk') state.inventory[id] = (state.inventory[id] || 0) + 1; if (it.kind === 'bd') state.bd.push(id); if (it.kind === 'skin') { state.perks.skins.push(id); state.perks.theme = it.effect.theme; }
-      ev('buy', { item: id, price }); log('Bought ' + it.name + ' from Marrow (' + price + ' creds)'); save(); return { ok: true, item: it, price }; },
+    buy(id){ const it = shop.items().find(x => x.id === id); if (!it) return { ok: false, why: 'no such item' }; let price = shop.price(it); if ((it.kind === 'bd' || it.kind === 'skin') && shop.owned(id)) return { ok: false, why: 'you already have it' }; if (it.kind === 'service' && state.body.chrome >= body.max) return { ok: false, why: 'nothing to fix. the ripperdoc sends you home.' };
+      let onTheHouse = false; if (state.creds < price) { if (it.kind === 'food' && state.body.food <= 30 && state.body.tab < classRank(classFor(state.rep).id) + 1) { onTheHouse = true; price = 0; state.body.tab++; } else return { ok: false, why: 'not enough creds. ' + (price - state.creds) + ' short.' }; }
+      if (price) addCreds(-price, 'bought ' + it.id); if (it.kind === 'gift' || it.kind === 'food' || it.kind === 'perk') state.inventory[id] = (state.inventory[id] || 0) + 1; if (it.kind === 'service') state.body.chrome = body.max; if (it.kind === 'bd') state.bd.push(id); if (it.kind === 'skin') { state.perks.skins.push(id); state.perks.theme = it.effect.theme; }
+      ev('buy', { item: id, price, tab: onTheHouse }); log((onTheHouse ? 'Marrow put it on the tab: ' : 'Bought ') + it.name + (onTheHouse ? '' : ' from Marrow (' + price + ' creds)')); save(); return { ok: true, item: it, price, onTheHouse }; },
     give(itemId, protegeId){ const it = shop.items().find(x => x.id === itemId); const p = state.roster.list.find(x => x.id === protegeId); if (!it || !p || !(state.inventory[itemId] > 0) || p.status !== 'active') return { ok: false }; state.inventory[itemId]--; const line = Protege.give(p, it); ev('gift', { item: itemId, protege: protegeId }); log('Gave ' + it.name + ' to ' + p.name); state.dmLog.unshift({ t: Date.now(), protege: p.id, name: p.name, letter: true, text: line }); save(); return { ok: true, line }; },
     favor(protegeId){ const p = state.roster.list.find(x => x.id === protegeId); if (!p || p.status !== 'active') return { ok: false, why: 'no such runner' }; if (!(state.inventory.favor > 0)) return { ok: false, why: (PROTEGE_LINES.dispatch || {}).favorEmpty || 'no favor on the books' }; state.inventory.favor--; const out = Protege.favor(p); ev('favor', { protege: protegeId }); log('Called in a favor for ' + p.name); state.dmLog.unshift({ t: Date.now(), protege: p.id, name: 'Dispatch', letter: true, text: out.dispatch }, { t: Date.now() + 1, protege: p.id, name: p.name, letter: true, text: out.them }); if (state.dm && state.dm.protege === p.id) state.dm = null; save(); return { ok: true, out }; },
     setTheme(id){ if (id && !state.perks.skins.some(s => shop.items().find(x => x.id === s).effect.theme === id)) return false; state.perks.theme = id || null; save(); return true; }
@@ -169,17 +190,21 @@
     netState(){ return run && run.ctx.state ? run.ctx.state() : null }, ping(from, to){ const n = run && run.ctx.net(); return n ? n.ping(from, to) : null }, transcripts(){ return run ? Object.fromEntries(Object.entries(run.devices).map(([n, d]) => [n, d.lines])) : null } };
 
   // ---- profiles -------------------------------------------------------------------
-  function reset(){ const h = state.handle; Storage.local.remove(h); state = Object.assign(fresh(), { handle: h }); run = null; save(); }
-  function setHandle(h){ h = h.trim().slice(0, 18); if (!h) return false; const isNew = !Storage.local.listSync().includes(h); state = load(h); state.handle = h; save(); if (isNew) log('Handle registered: ' + h); return true; }
+  function reset(){ const h = state.handle, pass = state.pass; Storage.local.remove(h); state = Object.assign(fresh(), { handle: h, pass }); run = null; save(); }
+  // not security, by design: a passcode keeps two people on one deck out of each other's record. it is hashed so it is not stored as typed.
+  function hashPass(p){ let h = 0x811c9dc5; for (const c of String(p)) { h ^= c.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, '0') + String(p).length.toString(16); }
+  function setHandle(h, pass){ h = (h || '').trim().slice(0, 18); pass = (pass || '').trim(); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' }; const isNew = !Storage.local.listSync().includes(h);
+    if (!pass) return { ok: false, why: isNew ? 'pick a passcode too. anything. you need it again after LOG OUT.' : 'passcode for ' + h + '?', field: 'pass' };
+    const s = load(h); if (s.pass && s.pass !== hashPass(pass)) return { ok: false, why: 'that is not the passcode for ' + h, field: 'pass' };
+    state = s; state.handle = h; if (!state.pass) state.pass = hashPass(pass); save(); if (isNew) log('Handle registered: ' + h); return { ok: true, isNew }; }
   function logout(){ save(); if (state.handle) Storage.pushIfRemote(state.handle, state, true); run = null; state = fresh(); Storage.local.setCurrent(null); }
   if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && state.handle) Storage.pushIfRemote(state.handle, state, true); });
-  function exportSave(){ return JSON.stringify(state); }
-  function importSave(txt){ try { const s = JSON.parse(txt); if (s && typeof s.rep === 'number') { state = migrate(s); save(); return true; } } catch (e) {} return false; }
+  // no exportSave / importSave on purpose: the deck syncs after every talk and every gig, and that is the only save there is.
   // sign-in: push newer local records up, pull newer Drive records down (so the door lists them), then carry on
   async function onAuth(user){ if (!user) { Storage.useLocal(); if (window.UI) UI.render(); return; } if (!Auth.token()) { if (window.UI) UI.render(); return; }
     try { await Storage.mergeLocalIntoRemote(); for (const h of await Storage.remote.list()) { const remote = await Storage.remote.load(h); const local = Storage.local.loadSync(h); if (usable(remote) && (!local || (remote.updated || 0) > (local.updated || 0))) { Storage.local.saveSync(h, remote); if (state.handle === h) state = migrate(remote); } } save(); } catch (e) { console.warn('auth sync', e); } if (window.UI) UI.render(); }
   if (window.Auth) Auth.onChange(onAuth);
   window.addEventListener('beforeunload', () => { Telemetry.touch(state); save(); });
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, logout, riteFor, riteBlocking, profiles: () => Storage.local.listSync(), exportSave, importSave, skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, shop, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, shop, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
 })();

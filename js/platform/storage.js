@@ -3,7 +3,7 @@
    RemoteAdapter: the signed-in player's Google Drive app folder (drive.appdata), one JSON file per handle.
    After sign-in, Storage.mergeLocalIntoRemote() uploads local profiles once; then remote is primary and local is a cache. */
 (function(){
-  const PREFIX = 'netrun-ccna-profile:', CUR = 'netrun-ccna-current';
+  const PREFIX = 'netrunner-ccna-profile:', CUR = 'netrunner-ccna-current', FN = 'netrunner-';
   const LocalAdapter = {
     name: 'local',
     list(){ return Promise.resolve(LocalAdapter.listSync()); },
@@ -24,9 +24,9 @@
     async tok(){ const t = this.client && this.client.token(); if (!t) throw new Error('no token'); return t; },
     live(){ return this.ready() && !!this.client.token(); },
     async req(url, opts){ const t = await this.tok(); const r = await fetch(url, Object.assign({}, opts, { headers: Object.assign({ Authorization: 'Bearer ' + t }, (opts && opts.headers) || {}) })); if (!r.ok) throw new Error('drive ' + r.status + ' ' + (await r.text()).slice(0, 120)); return r; },
-    fname: h => 'netrun-' + encodeURIComponent(h) + '.json',
+    fname: h => FN + encodeURIComponent(h) + '.json',
     async find(h){ if (this.ids[h]) return this.ids[h]; const r = await this.req(API + '/files?spaces=appDataFolder&fields=files(id,name,modifiedTime)&q=' + encodeURIComponent("name='" + this.fname(h) + "'")); const d = await r.json(); const f = d.files && d.files[0]; if (f) this.ids[h] = f.id; return f ? f.id : null; },
-    async list(){ if (!this.ready()) return []; try { const r = await this.req(API + '/files?spaces=appDataFolder&fields=files(id,name)&pageSize=100'); const d = await r.json(); return (d.files || []).map(f => f.name).filter(n => /^netrun-.*\.json$/.test(n)).map(n => decodeURIComponent(n.slice(7, -5))).sort(); } catch (e) { console.warn('drive.list', e); return []; } },
+    async list(){ if (!this.ready()) return []; try { const r = await this.req(API + '/files?spaces=appDataFolder&fields=files(id,name)&pageSize=100'); const d = await r.json(); return (d.files || []).map(f => f.name).filter(n => n.startsWith(FN) && n.endsWith('.json')).map(n => decodeURIComponent(n.slice(FN.length, -5))).sort(); } catch (e) { console.warn('drive.list', e); return []; } },
     async load(h){ if (!this.ready()) return null; try { const id = await this.find(h); if (!id) return null; const r = await this.req(API + '/files/' + id + '?alt=media'); return await r.json(); } catch (e) { console.warn('drive.load', e); return null; } },
     async save(h, state){ if (!this.ready()) return false; try { const id = await this.find(h); const meta = { name: this.fname(h), parents: id ? undefined : ['appDataFolder'] }; const boundary = 'netrun' + Date.now();
         const body = '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(meta) + '\r\n--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(state) + '\r\n--' + boundary + '--';

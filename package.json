@@ -1,7 +1,7 @@
 {
-  "name": "netrun-ccna",
+  "name": "netrunner-ccna",
   "version": "0.2.0-alpha",
-  "description": "NETRUN://CCNA — a story-driven browser game for CCNA 200-301 study. Static, no build.",
+  "description": "NETRUNNER://CCNA — a story-driven browser game for CCNA 200-301 study. Static, no build.",
   "private": true,
   "scripts": {
     "test": "node tools/check.js",

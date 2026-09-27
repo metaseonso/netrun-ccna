@@ -16,20 +16,24 @@ when one value is filled in: `googleClientId` in `config/platform.js`.
 - Google tokens last one hour. The name stays in the HUD; when the token is gone a **RECONNECT** button pulses.
   One click renews it (the popup needs a click, browsers block it otherwise). Background saves never open popups.
 - Nothing about a player ever leaves their browser except to Google's own APIs.
+- Remembering the player is the standard. A Google account stays signed in on that browser until SIGN OUT. A local
+  handle (name + passcode, no Google) stays logged in until LOG OUT. There is no "remember me" box and there will not be one.
+- Local handles are not security. The passcode keeps two people on one deck out of each other's record; that is all it
+  is for, and the owner accepted that.
 
 ## Setting it up (owner, about ten minutes, once)
 
-1. Go to https://console.cloud.google.com/ and make a project. Name: `netrun-ccna`.
+1. Go to https://console.cloud.google.com/ and make a project. Name: `netrunner-ccna`.
 2. **APIs & Services → Library**: enable **Google Drive API**.
 3. **APIs & Services → OAuth consent screen** (now called "Google Auth Platform → Branding / Audience"):
-   - User type **External**. App name `NETRUN://CCNA`, your support email, your email as developer contact.
+   - User type **External**. App name `NETRUNNER://CCNA`, your support email, your email as developer contact.
    - **Scopes**: add `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`, and
      `https://www.googleapis.com/auth/drive.appdata`.
    - **Audience**: while it says **Testing**, only the emails you list under Test users can sign in (up to 100).
      Click **Publish app** when you want anyone to sign in. The scopes above are the low-risk kind; if Google asks
      for a verification review anyway, the app still works for test users while it is pending.
 4. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
-   - Application type **Web application**. Name `netrun web`.
+   - Application type **Web application**. Name `netrunner web`.
    - **Authorized JavaScript origins**: `https://metaseonso.github.io` and `http://127.0.0.1:8765` and `http://localhost:8765`.
    - No redirect URIs are needed (token flow, popup).
    - Copy the **Client ID** (ends in `.apps.googleusercontent.com`). It is public; the repo can hold it.

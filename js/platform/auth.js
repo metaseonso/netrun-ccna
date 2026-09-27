@@ -5,7 +5,7 @@
    Inactive until config/platform.js has googleClientId. Then: Auth.configured, Auth.user(), Auth.signIn(), Auth.signOut(), Auth.onChange(cb), Auth.token(). */
 (function(){
   const SCOPES = 'openid email profile https://www.googleapis.com/auth/drive.appdata';
-  const listeners = []; let current = null; let token = null; let tokenExp = 0; let client = null; let waiters = []; const KEY = 'netrun-ccna-google';
+  const listeners = []; let current = null; let token = null; let tokenExp = 0; let client = null; let waiters = []; const KEY = 'netrunner-ccna-google';
   const settle = t => { waiters.splice(0).forEach(r => { try { r(t); } catch (e) {} }); };
   const emit = () => { const u = Auth.user(); if (u) Storage.useRemote({ token: () => Auth.token() }, u.id); else Storage.useLocal(); listeners.forEach(cb => { try { cb(u); } catch (e) { console.error(e); } }); };
   async function whoami(t){ const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + t } }); if (!r.ok) throw new Error('userinfo ' + r.status); return r.json(); }

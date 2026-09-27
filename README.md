@@ -1,4 +1,4 @@
-# NETRUN://CCNA
+# NETRUNNER://CCNA
 
 A story-driven browser game for studying the **CCNA 200-301**. Static files, no build, GitHub Pages.
 
@@ -20,6 +20,9 @@ A story-driven browser game for studying the **CCNA 200-301**. Static files, no 
 - **Crew.** Protégés who look up to you DM you from their own gigs. Every DM is a flash card on a timer. Right and
   in time, they get through. Wrong or late, it escalates: rep loss, then a flatline, and their orphan joins your crew.
   Spaced repetition decides which card comes when. Bigger gigs need a crew.
+- **Survive.** Every gig costs food and chrome at jack-in; pay comes when it is done. Marrow sells food and knows a
+  ripperdoc. Zero on either meter is a flatline: FLATLINED, game over, back to the last sync. The deck syncs after
+  every talk and every gig; there is no manual save. A handle is a name and a passcode, remembered until you log out.
 - **Stats.** Every attempt is timed. Misses, hints, walk-throughs, DM response times, weak skills, rep over time,
   a final report when the campaign is done.
 - **Key.** Every answer in the game, explained slowly, in the character's voice. Also available mid-step as

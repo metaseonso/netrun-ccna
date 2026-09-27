@@ -1,9 +1,16 @@
 /* shop.js — Marrow's stall. Creds buy things that feed the loops, never things that skip them.
-   kinds: gift (given to a protégé from CREW) · favor (Dispatch pulls a runner out; hold one at a time) · bd (a braindance for the CODEX) · skin (deck theme).
-   Prices scale with class: price × (1 + 0.25 × classRank). */
+   kinds: food (eat it: +food; some can also be given to a protégé) · service (the ripperdoc: chrome back to full, one price)
+          gift (given to a protégé from CREW) · favor (Dispatch pulls a runner out; hold one at a time) · bd (a braindance for the CODEX) · skin (deck theme).
+   Prices scale with class: price × (1 + 0.25 × classRank). Every gig costs food and chrome at jack-in (Game.body.cost). */
 window.SHOP = [
-  { id: 'noodles', kind: 'gift', name: 'Noodle bowl', price: 30, blurb: 'From the place on Kabuki with the broken sign. Calms a runner down one notch.', effect: { danger: -1 },
+  { id: 'protein', kind: 'food', name: 'Synth-protein bar', price: 12, blurb: 'Tastes like the wrapper. Keeps you upright for one more dive.', effect: { food: 15 },
+    line: 'Marrow: "Nobody buys these because they want to."' },
+  { id: 'noodles', kind: 'food', name: 'Noodle bowl', price: 30, blurb: 'From the place on Kabuki with the broken sign. Eat it, or hand it to a runner who needs calming down one notch.', effect: { food: 40, danger: -1 },
     line: 'Marrow: "Hot. Salty. Fixes about a third of what is wrong with anyone."' },
+  { id: 'ciders', kind: 'food', name: 'Hot plate at Cider\'s', price: 70, blurb: 'Cider feeds you until you stop shaking. Full, however empty you came in.', effect: { food: 100 },
+    line: 'Marrow: "Tell her I sent you. She will charge you the same, but she will smile."' },
+  { id: 'tuneup', kind: 'service', name: 'Ripperdoc tune-up', price: 120, blurb: 'Two doors down, no sign. Full service on the chrome, no questions. One price, every time, whatever state you bring it in.', effect: { chrome: 100 },
+    line: 'Marrow: "He does not do partials. Says half-fixed chrome is how he gets repeat customers, and he hates repeat customers."' },
   { id: 'antenna', kind: 'gift', name: 'Better antenna', price: 140, blurb: 'A protégé\'s calls reach you sooner. Fifteen more seconds on every call from them, for good.', effect: { timerBonus: 15 },
     line: 'Marrow: "Salvaged off a corpo drone. The drone did not need it any more."' },
   { id: 'burner', kind: 'gift', name: 'Burner deck', price: 320, blurb: 'One bad call forgiven. When it goes wrong, the burner takes the hit instead of them. Single use.', effect: { insurance: 1 },

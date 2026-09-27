@@ -129,7 +129,15 @@ Commands, hints and `kit.cmd` are exempt (the old tongue is the old tongue). Lev
 ## 10. Creds, the stall, rites
 
 `creds` on a gig (default 3 × rep). `rite: true` marks a class rite of passage (board badge, result framing, big creds), and it **gates the class**: a player with the rep for the next class stays where they are until the rite gig of their current class is done. One rite per class (`rite: true` with that `cls`). The HUD names the rite; locked gigs say Dispatch wants to see it cleared first. Finish the rite and the promotion fires on the result screen.
-Shop items live in `js/data/shop.js` with kinds `gift | favor | bd | skin`; a `bd` item needs `title`, `year`, `who`, `text`.
+Shop items live in `js/data/shop.js` with kinds `food | service | gift | favor | bd | skin`; a `bd` item needs `title`, `year`, `who`, `text`; a `food` item needs `effect.food` (and may carry `effect.danger` so it doubles as a crew gift).
+
+### The body: food and chrome
+
+Two meters, 0–100, in `state.body`. Only gigs drain them. At jack-in a gig costs `food` (default 15 + 5 × classRank) and `chrome` (default 10 + 5 × classRank); every failed attempt costs 1 chrome. Set `food` and `chrome` on a gig to override; rites should cost more than the gigs around them. Zero on either meter is a flatline: `Game.flatline(why)` sets `state.dead`, the FLATLINED screen shows, and the player goes back to the last sync. The board always shows the cost and warns in red when a dive would be lethal, so a death is a choice the player made. Food refills partially (`kind: 'food'`); the ripperdoc (`kind: 'service'`) refills chrome fully at one price. Marrow's tab: when the player cannot pay and food ≤ 30, one bowl per class rank is on the house, so nobody soft-locks. **No time-based drain, ever.**
+
+### Syncs, the only save
+
+`Game.sync(label)` snapshots the state after every first talk (`readLevel`) and every gig (`finishJob`). Telemetry, the journal, the passcode, the flatline count and the checkpoint itself ride outside the snapshot, so a reload never erases the record of what happened. There is no export or import and there must never be one. If a new beat type deserves a checkpoint, call `sync('...')` once with an in-world label.
 Never add an item that skips learning. Gifts and favors are applied from the CREW screen; effects are in `engine/protege.js`.
 
 ## 11. Voice
