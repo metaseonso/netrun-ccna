@@ -5,8 +5,11 @@
   const STEPS = new Set(['cmd', 'find', 'choice', 'multi', 'calc', 'order', 'form', 'text']);
   const TERM = /\[\[([^\]]+)\]\]/g;
 
+  // words that break the world when a player can read them (commands and hints are exempt)
+  const BANNED = /(flash ?cards?|anki|exam|exams|quiz|quizzes|lesson|lessons|tutorial|study|studying|revise|revision|framework|stub|ccna|200-301|jeremy|xp|level up|step \d+)/i;
   function all(C){
     const E = [], W = []; const err = (where, msg) => E.push({ where, msg }); const warn = (where, msg) => W.push({ where, msg });
+    const world = (where, text) => { if (typeof text !== 'string') return; const m = text.match(BANNED); if (m) warn(where, 'out-of-world word "' + m[0] + '" — see STORY_BIBLE Part II vocabulary'); };
     const { STAGES = [], JOBS = [], NPCS = {}, GLOSSARY = {}, SKILLS = {}, CARDS = [], ARCS = [] } = C;
     const levelIds = new Set(), stageIds = new Set(), jobIds = new Set(); const termsUsed = new Set(), skillsSlotted = new Set(), skillsUsed = new Set(), levelsRequired = new Set(); const days = {};
     const checkTerms = (where, text) => { if (typeof text !== 'string') return; let m; TERM.lastIndex = 0; while ((m = TERM.exec(text))) { const k = m[1].toLowerCase(); termsUsed.add(k); if (!GLOSSARY[k]) err(where, 'term [[' + m[1] + ']] is not in the glossary'); } };
@@ -19,16 +22,17 @@
       if (!Array.isArray(st.levels) || !st.levels.length) { err(w0, 'no levels'); return; }
       st.levels.forEach((l, li) => { const w = w0 + ' › level ' + (l.id || '#' + li);
         if (!l.id) err(w, 'missing id'); if (levelIds.has(l.id)) err(w, 'duplicate level id'); levelIds.add(l.id);
-        if (!l.title) err(w, 'missing title'); if (!NPCS[l.npc]) err(w, 'npc "' + l.npc + '" does not exist'); if (!Array.isArray(l.day) || !l.day.length) err(w, 'day must be an array of day numbers'); day(l.day, 'levels', l.id);
+        if (!l.title) err(w, 'missing title'); world(w, l.title + ' ' + (l.sub || '')); if (!NPCS[l.npc]) err(w, 'npc "' + l.npc + '" does not exist'); if (!Array.isArray(l.day) || !l.day.length) err(w, 'day must be an array of day numbers'); day(l.day, 'levels', l.id);
         if (!Array.isArray(l.src) || !l.src.length) warn(w, 'no source links'); (l.unlocks || []).forEach(s => { if (!SKILLS[s]) err(w, 'unlocks unknown skill "' + s + '"'); skillsSlotted.add(s); }); if (!(l.unlocks || []).length) warn(w, 'unlocks no skill');
         if (!Array.isArray(l.beats) || !l.beats.length) { err(w, 'no beats'); return; }
         let syncs = 0, kits = 0;
         l.beats.forEach((b, bi) => { const wb = w + ' › beat ' + (bi + 1) + ' (' + b.k + ')'; if (!BEATS.has(b.k)) { err(wb, 'unknown beat kind'); return; }
-          if (b.k === 'TALK' || b.k === 'LORE') { if (!b.text) err(wb, 'missing text'); checkTerms(wb, b.text); }
-          if (b.k === 'KIT') { kits++; if (!Array.isArray(b.kit) || !b.kit.length) err(wb, 'kit must be a non-empty array of {cmd, what}'); (b.kit || []).forEach((k, ki) => { if (!k.cmd || !k.what) err(wb + ' item ' + (ki + 1), 'kit item needs cmd and what'); checkTerms(wb, k.what); }); }
-          if (b.k === 'SCENE') { if (!Array.isArray(b.lines) || !b.lines.length) err(wb, 'scene needs lines'); (b.lines || []).forEach((ln, i) => { if (!ln.who || !ln.text) err(wb + ' line ' + (i + 1), 'line needs who and text'); if (ln.who && ln.who !== 'you' && ln.who !== 'narr' && !NPCS[ln.who] && !/^[A-Z]/.test(ln.who)) warn(wb + ' line ' + (i + 1), 'speaker "' + ln.who + '" is not an NPC id (shown as a plain name)'); checkTerms(wb, ln.text); });
-            if (b.choice) { if (!Array.isArray(b.choice.opts) || b.choice.opts.length < 2) err(wb, 'choice needs 2+ opts'); (b.choice.opts || []).forEach((o, i) => { if (!o.say || !o.reply) err(wb + ' choice ' + (i + 1), 'option needs say and reply'); checkTerms(wb, o.reply); }); } }
-          if (b.k === 'SYNC') { syncs++; const q = b.q; if (!q) { err(wb, 'missing q'); return; } if (!q.prompt) err(wb, 'q.prompt missing'); if (!Array.isArray(q.opts) || q.opts.length < 2) err(wb, 'q.opts needs 2+ options'); if (typeof q.a !== 'number' || !q.opts || q.a < 0 || q.a >= q.opts.length) err(wb, 'q.a must index into q.opts'); if (!q.yes || !q.no) err(wb, 'q.yes and q.no required'); if (!q.why) err(wb, 'q.why (plain explanation) required'); checkTerms(wb, q.prompt); } });
+          if (b.k === 'TALK' || b.k === 'LORE') { if (!b.text) err(wb, 'missing text'); checkTerms(wb, b.text); world(wb, b.text); }
+          if (b.k === 'LORE') { if (!b.title) warn(wb, 'LORE beat has no title (braindances have title cards)'); if (!b.year) warn(wb, 'LORE beat has no year'); world(wb, b.title); }
+          if (b.k === 'KIT') { kits++; if (!Array.isArray(b.kit) || !b.kit.length) err(wb, 'kit must be a non-empty array of {cmd, what}'); (b.kit || []).forEach((k, ki) => { if (!k.cmd || !k.what) err(wb + ' item ' + (ki + 1), 'kit item needs cmd and what'); checkTerms(wb, k.what); world(wb + ' item ' + (ki + 1), k.what); }); world(wb, b.text); }
+          if (b.k === 'SCENE') { if (!Array.isArray(b.lines) || !b.lines.length) err(wb, 'scene needs lines'); (b.lines || []).forEach((ln, i) => { if (!ln.who || !ln.text) err(wb + ' line ' + (i + 1), 'line needs who and text'); world(wb + ' line ' + (i + 1), ln.text); if (ln.who && ln.who !== 'you' && ln.who !== 'narr' && !NPCS[ln.who] && !/^[A-Z]/.test(ln.who)) warn(wb + ' line ' + (i + 1), 'speaker "' + ln.who + '" is not an NPC id (shown as a plain name)'); checkTerms(wb, ln.text); });
+            if (b.choice) { if (!Array.isArray(b.choice.opts) || b.choice.opts.length < 2) err(wb, 'choice needs 2+ opts'); (b.choice.opts || []).forEach((o, i) => { if (!o.say || !o.reply) err(wb + ' choice ' + (i + 1), 'option needs say and reply'); checkTerms(wb, o.reply); world(wb + ' choice ' + (i + 1), o.say + ' ' + o.reply); }); } }
+          if (b.k === 'SYNC') { syncs++; const q = b.q; if (!q) { err(wb, 'missing q'); return; } if (!q.prompt) err(wb, 'q.prompt missing'); if (!Array.isArray(q.opts) || q.opts.length < 2) err(wb, 'q.opts needs 2+ options'); if (typeof q.a !== 'number' || !q.opts || q.a < 0 || q.a >= q.opts.length) err(wb, 'q.a must index into q.opts'); if (!q.yes || !q.no) err(wb, 'q.yes and q.no required'); if (!q.why) err(wb, 'q.why (plain explanation) required'); checkTerms(wb, q.prompt); world(wb, [q.prompt, q.yes, q.no, q.why].concat(q.opts || []).join(' ')); } });
         if (!syncs) warn(w, 'no SYNC question'); if (!kits) warn(w, 'no KIT beat (nothing carried out of the scene)');
         (l.cards || []).forEach((c, ci) => checkCard(c, w + ' › card ' + (ci + 1), err, warn, SKILLS, true)); }); });
     // ---- jobs
@@ -47,7 +51,7 @@
       if (!Array.isArray(j.steps) || !j.steps.length) { err(w, 'no steps'); return; }
       j.steps.forEach((s, si) => { const ws = w + ' › step ' + (si + 1) + ' (' + s.type + ')'; if (!STEPS.has(s.type)) { err(ws, 'unknown step type'); return; }
         if (!s.skill) err(ws, 'missing skill'); else { if (!SKILLS[s.skill]) err(ws, 'skill "' + s.skill + '" not in SKILLS'); skillsUsed.add(s.skill); }
-        if (!s.text) err(ws, 'missing text'); checkTerms(ws, s.text); if (!s.why) err(ws, 'missing why (plain explanation; feeds KEY and walk-through)'); if (!s.ok) warn(ws, 'missing ok (reaction line)');
+        if (!s.text) err(ws, 'missing text'); checkTerms(ws, s.text); if (!s.why) err(ws, 'missing why (plain explanation; feeds CODEX and SHOW ME)'); if (!s.ok) warn(ws, 'missing ok (reaction line)'); world(ws, [s.text, s.ok, s.why].concat(s.opts || []).join(' '));
         if (s.type === 'cmd' && !s.need && !s.check) err(ws, 'cmd step needs `need` and/or `check`'); if (s.type === 'cmd' && !s.hint) warn(ws, 'cmd step has no hint (walk-through will show nothing)');
         if (s.type === 'find') { const ids = new Set(((j.map || {}).nodes || []).map(n => n.id)); const tg = s.targets || [s.target]; if (!tg.length || !tg[0]) err(ws, 'find needs target'); tg.forEach(t => { if (j.map && !ids.has(t)) err(ws, 'target "' + t + '" is not a map node'); }); }
         if (s.type === 'choice') { if (!Array.isArray(s.opts) || s.opts.length < 2) err(ws, 'choice needs 2+ opts'); if (typeof s.a !== 'number' || !s.opts || s.a < 0 || s.a >= s.opts.length) err(ws, 'a must index into opts'); }
@@ -60,8 +64,13 @@
       if (Array.isArray(j.day)) day(j.day, 'jobs', j.id); });
     // ---- npcs, glossary, cards
     for (const id in NPCS) { const n = NPCS[id]; const w = 'npc ' + id; if (!n.name || !n.sys || !n.role) err(w, 'needs name, sys, role'); if (!n.look) warn(w, 'no look (procedural sprite will be default)'); }
-    for (const k in GLOSSARY) { if (k !== k.toLowerCase()) err('glossary "' + k + '"', 'keys must be lowercase'); if (!GLOSSARY[k] || GLOSSARY[k].length < 20) warn('glossary "' + k + '"', 'definition is very short'); }
-    CARDS.forEach((c, i) => { checkCard(c, 'card ' + (c.id || '#' + i), err, warn, SKILLS); if (c.day) { days[c.day] = days[c.day] || { levels: [], jobs: [], cards: 0 }; days[c.day].cards++; } });
+    for (const k in GLOSSARY) { if (k !== k.toLowerCase()) err('glossary "' + k + '"', 'keys must be lowercase'); if (!GLOSSARY[k] || GLOSSARY[k].length < 20) warn('glossary "' + k + '"', 'definition is very short'); world('glossary "' + k + '"', GLOSSARY[k]); }
+    for (const id in NPCS) world('npc ' + id, (NPCS[id].role || '') + ' ' + (NPCS[id].voice || ''));
+    (C.SHOP || []).forEach(it => world('shop ' + it.id, [it.name, it.blurb, it.line, it.text].join(' ')));
+    const PL = C.PROTEGE_LINES || {}; JSON.stringify(PL, (k, v) => { if (typeof v === 'string') world('protege-lines', v); return v; });
+    const NEED = [['open', 0], ['open', 1], ['open', 2], ['relief'], ['escalate', 1], ['escalate', 2], ['trust', 1], ['trust', 2], ['trust', 4], ['trust', 7], ['milestones', 3], ['milestones', 6], ['milestones', 10], ['flatline'], ['orphan']];
+    for (const id in (PL.arch || {})) { const A = PL.arch[id]; NEED.forEach(path => { let cur = A; for (const k of path) cur = cur == null ? null : cur[k]; if (!cur || (Array.isArray(cur) && !cur.length)) warn('archetype ' + id, 'missing lines for ' + path.join('.') + ' (falls back to common; players will notice)'); }); }
+    CARDS.forEach((c, i) => { checkCard(c, 'card ' + (c.id || '#' + i), err, warn, SKILLS); world('card ' + (c.id || '#' + i), (c.q || '') + ' ' + (c.a || '')); if (c.day) { days[c.day] = days[c.day] || { levels: [], jobs: [], cards: 0 }; days[c.day].cards++; } });
     const cardIds = new Set(); CARDS.forEach(c => { if (cardIds.has(c.id)) err('card ' + c.id, 'duplicate card id'); cardIds.add(c.id); });
     // ---- coverage
     const skillsUnused = Object.keys(SKILLS).filter(s => !skillsUsed.has(s)); const skillsNeverSlotted = Object.keys(SKILLS).filter(s => !skillsSlotted.has(s));

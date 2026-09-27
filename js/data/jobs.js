@@ -99,7 +99,7 @@
       ], outro: 'Imani reboots her workstation to check. The port goes green before she has finished sitting down. Old Root: "Fast where it is safe. Slow where it is not." Dispatch: "Rep credited."' },
 
     // ------------------------------------------------------------------ C · The Box Under the Desk
-    { id: 'c-rogue-switch', cls: 'C', rep: 60, from: 'root', title: 'The Box Under the Desk', requires: ['stp-bpdu', 'stp-toolkit', 'stp-config'], devices: ['SW1', 'SW2', 'SW3'],
+    { id: 'c-rogue-switch', cls: 'C', rep: 60, creds: 300, rite: true, from: 'root', title: 'The Box Under the Desk', requires: ['stp-bpdu', 'stp-toolkit', 'stp-config'], devices: ['SW1', 'SW2', 'SW3'],
       brief: 'DISPATCH » Class C. Something at the clinic is claiming to be the root bridge with priority zero. Half the floor is routing through a box nobody owns. Old Root wants it found, cut, and the root chosen on purpose this time.\n\nVEE LAN » "The gateway has moved ports three times since Tuesday. Find whatever it is before I do."',
       topo: triangle({ SW1: '0001.9642.a3c0', SW2: '0c11.7a3b.9902', SW3: '00d0.f8e4.0a01' }, t => { t.switches.SW2.ports[fa(7)] = { to: 'ROGUE', peer: fa(1), access: true }; t.switches.ROGUE = { mac: '0000.0c9f.f001', rogue: true, fixed: { priority: 0, mode: 'pvst', ports: {} }, ports: { [fa(1)]: { to: 'SW2', peer: fa(7) } } }; }),
       map: (() => { const m = triMap(['ROGUE']); m.nodes.push({ id: 'ROGUE', label: '?? under desk 7', type: 'rogue', x: 160, y: 300 }); m.links.push({ a: 'SW2', b: 'ROGUE', ap: fa(7), bp: fa(1) }); return m; })(),
@@ -152,7 +152,7 @@
       ], outro: 'The office manager watches the direct line light up and stops talking about the invoice. Old Root: "You changed the tree by changing what it measures. That is the only clean way." Dispatch: "Rep credited."' },
 
     // ------------------------------------------------------------------ B · Two Trees, Two Uplinks
-    { id: 'b-per-vlan-split', cls: 'B', rep: 100, from: 'root', title: 'Two Trees, Two Uplinks', requires: ['vlan-intro', 'stp-config', 'stp-bpdu'], devices: ['SW1', 'SW2', 'SW3'],
+    { id: 'b-per-vlan-split', cls: 'B', rep: 100, creds: 500, rite: true, from: 'root', title: 'Two Trees, Two Uplinks', requires: ['vlan-intro', 'stp-config', 'stp-bpdu'], devices: ['SW1', 'SW2', 'SW3'],
       brief: 'DISPATCH » Class B. Vee Lan and Old Root are on the same building in Charter Hill: two departments, two VLANs, two uplinks, and one uplink sits idle all day because one root rules everything. Split the trees. Both links should earn their keep.\n\nVEE LAN » "Streets 10 and 20. Make them exist before he starts."\nOLD ROOT » "One root per street. Each the other\'s backup."',
       topo: triangle({ SW1: '0001.9642.a3c0', SW2: '0c11.7a3b.9902', SW3: '00d0.f8e4.0a01' }, t => { t.defaultMode = 'pvst'; }), map: triMap(),
       day: [20, 21], team: { min: 1 },
@@ -174,7 +174,7 @@
       ], outro: 'Vee Lan and Old Root look at the same screen and, for once, neither says anything. Dispatch: "That is Class B work. Rep credited."' },
 
     // ------------------------------------------------------------------ A · The Night Before Opening
-    { id: 'a-last-storm', cls: 'A', rep: 200, from: 'root', title: 'The Night Before Opening', requires: ['stp-why', 'stp-election', 'stp-states', 'stp-bpdu', 'stp-toolkit', 'stp-config'], devices: ['SW1', 'SW2', 'SW3', 'SW4'],
+    { id: 'a-last-storm', cls: 'A', rep: 200, creds: 900, rite: true, from: 'root', title: 'The Night Before Opening', requires: ['stp-why', 'stp-election', 'stp-states', 'stp-bpdu', 'stp-toolkit', 'stp-config'], devices: ['SW1', 'SW2', 'SW3', 'SW4'],
       brief: 'DISPATCH » Class A. New corpo floor in City Center opens at 06:00. Four switches, classic PVST+, no VLANs, no guards, and something is already claiming root on SW4 with priority zero. Old Root came out of retirement for one night to sit beside you. He will not touch the keyboard.\n\nOLD ROOT » "Everything you have learned. One building. Do not rush the forwarding state."',
       topo: { defaultMode: 'pvst', switches: {
         SW1: { mac: '0001.9642.a3c0', ports: Object.assign({ [gi(1)]: { to: 'SW2', peer: gi(1) }, [gi(2)]: { to: 'SW3', peer: gi(1) } }, hosts('SW1', 1, 8, 'PC1-')) },

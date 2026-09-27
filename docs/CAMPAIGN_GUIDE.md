@@ -27,7 +27,7 @@ js/data/protege-lines.js     protégé voice lines, timers, rep values
       lines: [ { who: 'narr', text: '...' }, { who: 'root', text: '...' }, { who: 'you', text: '...' }, { who: 'Imani', text: '...' } ],
       choice: { opts: [ { say: '...', reply: '...' }, { say: '...', reply: '...', who: 'veelan' } ] } },   // optional
     { k: 'TALK', text: '...' },            // single NPC paragraph (use sparingly; SCENE is the default)
-    { k: 'LORE', text: 'Old Root: "..."' },  // real history, told by a character
+    { k: 'LORE', title: 'FOUR DAYS ON PAPER', year: 2002, vibe: 'Totally offline. Doctors with clipboards.', text: 'Old Root: "..."' },  // a braindance: year is the hero, title the caption, vibe one line of era slang; becomes a crew call automatically
     { k: 'KIT', text: 'On the work order:', kit: [ { cmd: 'spanning-tree portfast default', what: 'global: every access port' } ] },
     { k: 'SYNC', q: { prompt: 'Imani texts you: "..."', opts: [...], a: 2, yes: '...', no: '...', why: '...' } }
   ] }
@@ -38,7 +38,7 @@ Every level needs a KIT, a SYNC with `why`, and at least one skill in `unlocks` 
 ## 3. A gig
 
 ```js
-{ id: 'c-dhcp-lease-wars', cls: 'C', rep: 60, from: 'denise', title: 'Lease Wars', day: [38, 49],
+{ id: 'c-dhcp-lease-wars', cls: 'C', rep: 60, creds: 180, rite: false, from: 'denise', title: 'Lease Wars', day: [38, 49],   // creds default to 3 × rep; rite: true marks a class rite of passage
   requires: ['denise-intro', 'ace-intro'],          // level ids the player must have read
   team: { min: 2 },                                 // optional crew-size gate
   devices: ['R1', 'SW1', 'PC1'],                    // consoles shown (hosts get a PC prompt)
@@ -112,7 +112,7 @@ Router/switch `ping`/`traceroute` and PC `ping`/`ipconfig [/all]`/`arp -a`/`trac
 ## 7. Cards and protégés
 
 Import a day's Anki deck: `python tools/import_apkg.py <folder> --out js/data/cards`, then add the script tag. Set the day → skill map at the top of the importer. Text cards become multiple choice automatically at DM time (distractors from the same skill/day).
-Protégé lines: extend `js/data/protege-lines.js`. Danger levels 0/1/2, flatline, recruit, orphan. Timers and rep values live there too.
+Protégé lines: `js/data/protege-lines.js` is organised by archetype (`arch.kid|ghost|hustler|scholar|soldier|heart`) with `common` fallbacks. Each archetype needs open[0..2], relief, escalate[1..2], forgiven, trust[1,2,4,7], milestones[3,6,10], flatline, orphan, gift lines. See `docs/CREW_ARCHETYPES.md`.
 
 ## 8. The feedback loop
 

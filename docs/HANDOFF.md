@@ -76,3 +76,13 @@ Definition of done for a day:
 ## CHANGELOG (append engine changes here)
 
 - 2026-09-27 · Alpha framework complete. Engine, tooling, telemetry, protégés, platform scaffold.
+
+## Immersion rules (binding)
+
+- Read `docs/STORY_BIBLE.md` Part II before writing anything. The vocabulary table there is law.
+- `npm test` warns on out-of-world words in player-facing text. Fix every one before commit.
+- Every LORE beat has `title`, `year` and `vibe` (a braindance: the year is the hero, the title is the caption, the vibe is one line of era slang). Every stage has one "legacy is the foundation" line.
+- Crew archetypes, bond, favors and rites: `docs/CREW_ARCHETYPES.md`. Every archetype must have every line set (lint warns).
+- Each class has a rite of passage gig: `rite: true`, big `creds`, a story payoff in the outro.
+- Every protégé milestone (3/6/10 saves) has a gratitude line in `protege-lines.js`; every flatline an orphan keepsake line.
+- Gigs declare `creds` (default 3 × rep). Shop items live in `js/data/shop.js`; do not add items that bypass learning.

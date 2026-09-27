@@ -18,7 +18,7 @@ if (errors.length) { console.log(errors.join('\n')); process.exit(1); }
 
 let fails = 0; const out = (s) => { if (!flag('--quiet')) console.log(s); };
 // ---- 1. lint
-const lint = Validate.all({ STAGES, JOBS, NPCS, GLOSSARY, SKILLS, CARDS: Game.allCards(), ARCS, CLASSES });
+const lint = Validate.all({ STAGES, JOBS, NPCS, GLOSSARY, SKILLS, CARDS: Game.allCards(), ARCS, CLASSES, SHOP: window.SHOP, PROTEGE_LINES: window.PROTEGE_LINES });
 out('== LINT ==');
 lint.errors.forEach(e => { out('ERROR  ' + e.where + ' — ' + e.msg); fails++; });
 if (flag('--warnings')) lint.warnings.forEach(w => out('warn   ' + w.where + ' — ' + w.msg)); else out('(' + lint.warnings.length + ' warnings; pass --warnings to list them)');

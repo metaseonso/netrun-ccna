@@ -8,8 +8,11 @@
   const LEVEL_AT = [0, 1, 3, 6];
   const P = () => window.PLATFORM || {};
 
-  const fresh = () => ({ v: VERSION, handle: '', rep: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {} });
-  function migrate(s){ const f = fresh(); const out = Object.assign(f, s || {}); out.v = VERSION; out.roster = out.roster || { seq: 0, list: [] }; out.cards = out.cards || {}; out.dmLog = out.dmLog || []; out.recruits = out.recruits || {}; Telemetry.ensure(out); return out; }
+  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [] });
+  function migrate(s){ const f = fresh(); const out = Object.assign(f, s || {}); out.v = VERSION; out.roster = out.roster || { seq: 0, list: [] }; out.cards = out.cards || {}; out.dmLog = out.dmLog || []; out.recruits = out.recruits || {}; out.creds = out.creds || 0; out.inventory = out.inventory || {}; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); out.bd = out.bd || [];
+    // crew recruited before archetypes existed: give them one, deterministically, plus the fields that came later
+    (out.roster.list || []).forEach((p, i) => { if (!p.arch) { let h = 0; for (const c of (p.id || 'p' + i)) h = (h * 31 + c.charCodeAt(0)) >>> 0; p.arch = Protege.ARCHS[h % Protege.ARCHS.length]; } if (!p.want) { const L = window.PROTEGE_LINES || {}; const A = (L.arch || {})[p.arch] || {}; const w = A.wants || L.wants || []; p.want = w[i % Math.max(1, w.length)] || null; } p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; });
+    Telemetry.ensure(out); return out; }
   let state = fresh();
   function load(h){ const s = Storage.local.loadSync(h); return s ? migrate(s) : Object.assign(fresh(), { handle: h }); }
   try { const cur = Storage.local.current(); if (cur) state = load(cur); else { const legacy = JSON.parse(localStorage.getItem('netrun-ccna-save-v1') || 'null'); if (legacy && legacy.handle) { state = migrate(legacy); Storage.local.saveSync(state.handle, state); Storage.local.setCurrent(state.handle); localStorage.removeItem('netrun-ccna-save-v1'); } } } catch (e) {}
@@ -28,6 +31,7 @@
   function skillLevel(clean){ let lv = 0; LEVEL_AT.forEach((n, i) => { if (clean >= n) lv = i; }); return lv; }
   function addRep(delta, why){ const before = classFor(state.rep).id; state.rep = Math.max(0, state.rep + delta); ev('rep', { rep: state.rep, delta, why }); const after = classFor(state.rep).id; if (classRank(after) > classRank(before)) { log('PROMOTED to Class ' + after); onPromotion(after); return after; } return null; }
 
+  function addCreds(delta, why){ state.creds = Math.max(0, (state.creds || 0) + delta); ev('creds', { creds: state.creds, delta, why }); }
   function readLevel(id){ const l = levelById(id); if (!l) return; const first = !state.read[id]; state.read[id] = Date.now(); (l.unlocks || []).forEach(s => { skill(s).slotted = true; }); if (first) { ev('read', { level: id }); log('Synced with ' + NPCS[l.npc].name + ' — "' + l.title + '"'); } save(); return first; }
 
   function jobStatus(job){ const me = classFor(state.rep); const locked = [];
@@ -37,7 +41,9 @@
     return { locked, done: state.jobsDone[job.id] || null }; }
 
   // ---- cards & protégés ----------------------------------------------------------
-  function allCards(){ const out = (window.CARDS || []).slice(); STAGES.forEach(st => st.levels.forEach(l => (l.cards || []).forEach((c, i) => out.push(Object.assign({ id: l.id + '-c' + (i + 1), level: l.id, skill: (l.unlocks || [])[0] }, c))))); return out; }
+  function allCards(){ const out = (window.CARDS || []).slice(); STAGES.forEach(st => st.levels.forEach(l => { (l.cards || []).forEach((c, i) => out.push(Object.assign({ id: l.id + '-c' + (i + 1), level: l.id, skill: (l.unlocks || [])[0] }, c)));
+      // every braindance becomes a call: the title, what year?
+      l.beats.forEach((b, i) => { if (b.k === 'LORE' && b.title && b.year) out.push({ id: l.id + '-bd' + (i + 1), level: l.id, skill: (l.unlocks || [])[0], day: (l.day || [])[0], type: 'text', year: true, q: 'The braindance "' + b.title + '". What year?', a: String(b.year), why: (b.text || '').split(/(?<=\.)\s/)[0] }); }); })); return out; }
   const readDays = () => { const d = new Set(); for (const id in state.read) { const l = levelById(id); if (l) (l.day || []).forEach(x => d.add(x)); } return d; };
   function cardUnlocked(c){ if (c.level) return !!state.read[c.level]; if (c.skill && state.skills[c.skill] && state.skills[c.skill].slotted) return true; if (c.day) return readDays().has(c.day); return false; }
   function onPromotion(cls){ if (!state.recruits[cls]) { state.recruits[cls] = true; const p = Protege.recruit(state.roster, 'promotion to Class ' + cls); log(Protege.fill((PROTEGE_LINES.recruit || [])[0] || '{name} joined your crew.', p)); } }
@@ -50,6 +56,7 @@
       const you = state.handle; const d = Protege.dm(p, card, { you, sib: 'big sib' });
       let opts = card.opts, a = card.a, type = card.type || (card.opts ? 'choice' : 'text');
       if (type === 'text' && /^(yes|no)/i.test(String(card.a).trim())) { opts = ['Yes', 'No']; a = /^yes/i.test(String(card.a).trim()) ? 0 : 1; type = 'choice'; }
+      else if (type === 'text' && /^\d{4}$/.test(String(card.a).trim())) { const y = +card.a; const pool = [...new Set(cards.filter(c => /^\d{4}$/.test(String(c.a)) && +c.a !== y).map(c => +c.a))]; const picks = []; const cand = pool.length >= 3 ? pool : pool.concat([y - 3, y + 2, y - 11, y + 7].filter(v => v !== y)); for (let i = 0; i < cand.length && picks.length < 3; i++) { const v = cand[(i * 5 + now) % cand.length]; if (!picks.includes(v)) picks.push(v); } opts = [String(y)].concat(picks.map(String)); for (let i = opts.length - 1; i > 0; i--) { const j = (now + i * 17) % (i + 1); [opts[i], opts[j]] = [opts[j], opts[i]]; } a = opts.indexOf(String(y)); type = 'choice'; }
       else if (type === 'text') { const pool = cards.filter(c => c.id !== card.id && c.a && c.a !== card.a && (c.skill === card.skill || c.day === card.day)); const others = pool.length >= 3 ? pool : cards.filter(c => c.id !== card.id && c.a && c.a !== card.a); const picks = []; const seen = new Set([String(card.a)]); for (let i = 0; i < others.length && picks.length < 3; i++) { const c = others[(i * 7 + now) % others.length]; if (!seen.has(String(c.a))) { seen.add(String(c.a)); picks.push(String(c.a)); } } opts = [String(card.a)].concat(picks); for (let i = opts.length - 1; i > 0; i--) { const j = (now + i * 31) % (i + 1); [opts[i], opts[j]] = [opts[j], opts[i]]; } a = opts.indexOf(String(card.a)); type = 'choice'; }
       state.dm = Object.assign(d, { type, opts, a, skill: card.skill || null, why: card.why || null, answerText: card.a, openedAt: null }); state.dmCount++; ev('dm_sent', { card: card.id, protege: p.id }); save(); return state.dm; },
     open(){ if (state.dm && !state.dm.openedAt) { state.dm.openedAt = Date.now(); save(); } return state.dm; },
@@ -59,9 +66,10 @@
   };
   function finish(ok, timedOut, idx){ const d = state.dm; const p = state.roster.list.find(x => x.id === d.protege); const ms = d.openedAt ? Date.now() - d.openedAt : null;
     const out = Protege.resolve(p, state.roster, ok, timedOut, { you: state.handle, sib: 'big sib' }); state.cards[d.card] = SRS.grade(state.cards[d.card], ok, Date.now(), ms);
-    ev('dm_answer', { card: d.card, protege: p.id, ok, timedOut, ms, skill: d.skill }); const promoted = addRep(out.repDelta, ok ? 'protégé saved' : timedOut ? 'protégé DM timed out' : 'protégé DM wrong');
-    state.dmLog.unshift({ t: Date.now(), protege: p.id, name: p.name, q: d.q, chosen: idx, correct: d.a, opts: d.opts, ok, timedOut, text: out.text, flatlined: out.flatlined, orphan: out.orphan ? out.orphan.name : null, repDelta: out.repDelta, why: d.why }); state.dmLog = state.dmLog.slice(0, 80);
-    log((ok ? 'Saved ' : timedOut ? 'Too late for ' : 'Failed ') + p.name + ' (' + (out.repDelta >= 0 ? '+' : '') + out.repDelta + ' rep)' + (out.flatlined ? ' — FLATLINED. ' + out.orphan.name + ' joins the crew.' : ''));
+    ev('dm_answer', { card: d.card, protege: p.id, ok, timedOut, ms, skill: d.skill, forgiven: out.forgiven }); const promoted = out.repDelta ? addRep(out.repDelta, ok ? 'crew call answered' : timedOut ? 'crew call missed' : 'crew call wrong') : null; if (out.credsDelta) addCreds(out.credsDelta, 'crew call');
+    state.dmLog.unshift({ t: Date.now(), protege: p.id, name: p.name, q: d.q, chosen: idx, correct: d.a, opts: d.opts, ok, timedOut, forgiven: out.forgiven, text: out.text, flatlined: out.flatlined, orphan: out.orphan ? out.orphan.name : null, repDelta: out.repDelta, why: d.why });
+    if (out.trust) state.dmLog.unshift({ t: Date.now() + 1, protege: p.id, name: p.name, letter: true, trust: true, text: out.trust }); if (out.milestone) state.dmLog.unshift({ t: Date.now() + 2, protege: p.id, name: p.name, letter: true, text: out.milestone }); if (out.orphanIntro) state.dmLog.unshift({ t: Date.now() + 2, protege: out.orphan.id, name: 'Dispatch', letter: true, text: out.orphanIntro }); state.dmLog = state.dmLog.slice(0, 80);
+    log((out.forgiven ? 'Burner took the hit for ' : ok ? 'Saved ' : timedOut ? 'Too late for ' : 'Failed ') + p.name + (out.repDelta ? ' (' + (out.repDelta >= 0 ? '+' : '') + out.repDelta + ' rep)' : '') + (out.flatlined ? ' — FLATLINED. ' + out.orphan.name + ' joins the crew.' : '') + (out.milestone ? ' — a letter arrived.' : ''));
     state.dm = null; state.lastDmAt = Date.now(); save(); return { ok, timedOut, out, protege: p, promoted, why: d.why, answerText: d.opts ? d.opts[d.a] : d.answerText }; }
 
   // ---- a run ----------------------------------------------------------------------
@@ -113,11 +121,24 @@
   function reveal(){ run.walked[run.step] = true; run.hinted[run.step] = true; ev('walk', { job: run.job.id, step: run.step, skill: currentStep().skill }); const st = currentStep(); return { answer: answerOf(st), why: st.why || '' }; }
   function finishJob(){ const job = run.job; const prev = state.jobsDone[job.id]; const hintedCount = Object.keys(run.hinted).length; const fails = Object.values(run.fails).reduce((a, b) => a + b, 0); const ms = Date.now() - run.startedAt;
     let rep = job.rep; if (prev) rep = Math.round(rep * 0.4); rep = Math.max(Math.round(job.rep * 0.2), Math.round(rep * Math.max(0.3, 1 - 0.1 * hintedCount)));
+    const creds = Math.round((job.creds || job.rep * 3) * (prev ? 0.4 : 1)); addCreds(creds, 'gig ' + job.id);
     const promoted = addRep(rep, 'gig ' + job.id); state.jobsDone[job.id] = { times: (prev ? prev.times : 0) + 1, last: Date.now(), best: Math.max(prev ? prev.best : 0, run.done.filter(d => d.clean).length), bestMs: Math.min(prev && prev.bestMs || Infinity, ms) };
     const leveled = run.done.filter(d => d.leveled).map(d => d.leveled); ev('job_finish', { job: job.id, ms, fails, hints: hintedCount, rep });
     log('Gig done: ' + job.title + ' (+' + rep + ' rep, ' + Math.round(ms / 1000) + 's' + (hintedCount ? ', ' + hintedCount + ' hinted' : ', clean') + (fails ? ', ' + fails + ' failed attempts' : '') + ')');
     let recruit = null; if (!state.roster.list.length) { recruit = Protege.recruit(state.roster, 'first gig'); log(Protege.fill((PROTEGE_LINES.recruit || [])[1] || '{name} joined your crew.', recruit)); }
-    save(); run.result = { rep, hintedCount, fails, ms, leveled, promoted, repeat: !!prev, recruit }; return { ok: true, finished: true, result: run.result }; }
+    save(); run.result = { rep, creds, hintedCount, fails, ms, leveled, promoted, repeat: !!prev, recruit }; return { ok: true, finished: true, result: run.result }; }
+  // ---- the stall -----------------------------------------------------------------------
+  const shop = {
+    items(){ return window.SHOP || []; },
+    price(item){ return Math.round(item.price * (1 + 0.25 * classRank(classFor(state.rep).id))); },
+    owned(id){ const it = shop.items().find(x => x.id === id); if (!it) return 0; if (it.kind === 'bd') return state.bd.includes(id) ? 1 : 0; if (it.kind === 'skin') return state.perks.skins.includes(id) ? 1 : 0; return state.inventory[id] || 0; },
+    buy(id){ const it = shop.items().find(x => x.id === id); if (!it) return { ok: false, why: 'no such item' }; const price = shop.price(it); if ((it.kind === 'bd' || it.kind === 'skin') && shop.owned(id)) return { ok: false, why: 'you already have it' }; if (state.creds < price) return { ok: false, why: 'not enough creds. ' + (price - state.creds) + ' short.' };
+      addCreds(-price, 'bought ' + it.id); if (it.kind === 'gift' || it.kind === 'perk') state.inventory[id] = (state.inventory[id] || 0) + 1; if (it.kind === 'bd') state.bd.push(id); if (it.kind === 'skin') { state.perks.skins.push(id); state.perks.theme = it.effect.theme; }
+      ev('buy', { item: id, price }); log('Bought ' + it.name + ' from Marrow (' + price + ' creds)'); save(); return { ok: true, item: it, price }; },
+    give(itemId, protegeId){ const it = shop.items().find(x => x.id === itemId); const p = state.roster.list.find(x => x.id === protegeId); if (!it || !p || !(state.inventory[itemId] > 0) || p.status !== 'active') return { ok: false }; state.inventory[itemId]--; const line = Protege.give(p, it); ev('gift', { item: itemId, protege: protegeId }); log('Gave ' + it.name + ' to ' + p.name); state.dmLog.unshift({ t: Date.now(), protege: p.id, name: p.name, letter: true, text: line }); save(); return { ok: true, line }; },
+    favor(protegeId){ const p = state.roster.list.find(x => x.id === protegeId); if (!p || p.status !== 'active') return { ok: false, why: 'no such runner' }; if (!(state.inventory.favor > 0)) return { ok: false, why: (PROTEGE_LINES.dispatch || {}).favorEmpty || 'no favor on the books' }; state.inventory.favor--; const out = Protege.favor(p); ev('favor', { protege: protegeId }); log('Called in a favor for ' + p.name); state.dmLog.unshift({ t: Date.now(), protege: p.id, name: 'Dispatch', letter: true, text: out.dispatch }, { t: Date.now() + 1, protege: p.id, name: p.name, letter: true, text: out.them }); if (state.dm && state.dm.protege === p.id) state.dm = null; save(); return { ok: true, out }; },
+    setTheme(id){ if (id && !state.perks.skins.some(s => shop.items().find(x => x.id === s).effect.theme === id)) return false; state.perks.theme = id || null; save(); return true; }
+  };
   function abort(){ if (run && !run.result) { ev('job_abort', { job: run.job.id, step: run.step }); log('Jacked out early: ' + run.job.title); } run = null; }
 
   // ---- golden solution runner (tools/check.js and the dev panel) --------------------
@@ -135,7 +156,7 @@
     return res; }
 
   // ---- dev helpers --------------------------------------------------------------------
-  const dev = { lint(){ return Validate.all({ STAGES, JOBS, NPCS, GLOSSARY, SKILLS, CARDS: allCards(), ARCS, CLASSES }); },
+  const dev = { lint(){ return Validate.all({ STAGES, JOBS, NPCS, GLOSSARY, SKILLS, CARDS: allCards(), ARCS, CLASSES, SHOP: window.SHOP, PROTEGE_LINES: window.PROTEGE_LINES }); },
     stepDiag(){ if (!run || run.result) return null; const st = currentStep(); const e = evaluate(); const out = { step: run.step + 1, type: st.type, skill: st.skill, ok: e.ok, why: e.why, err: e.err ? String(e.err.stack || e.err) : null };
       if (st.type === 'cmd' && st.need) out.need = st.need.map(n => ({ dev: n.dev, mode: n.mode || '*', ctx: n.ctx ? String(n.ctx) : '*', line: String(n.line), satisfied: !(e.missing || []).includes(n) }));
       if (st.type === 'cmd' && st.check) out.check = st.check.toString().slice(0, 400); const s = run.ctx.state && run.ctx.state(); if (s) { out.issues = s.issues; out.hosts = s.hosts; out.tables = s.tables; } return out; },
@@ -151,5 +172,5 @@
   if (window.Auth) Auth.onChange(onAuth);
   window.addEventListener('beforeunload', () => { Telemetry.touch(state); save(); });
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, logout, profiles: () => Storage.local.listSync(), exportSave, importSave, skill, allCards, cardUnlocked, dm, dev, addRep, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, logout, profiles: () => Storage.local.listSync(), exportSave, importSave, skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, shop, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
 })();

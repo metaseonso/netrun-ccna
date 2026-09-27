@@ -131,3 +131,123 @@ her workstation back, the temp got a lecture, Old Root got to leave.
   never in the sentence that carries the fact.
 - Every exam number and command stays exact. The story bends around the fact, never the reverse.
 - Read every line aloud as the character. If it sounds like a narrator, rewrite it.
+
+---
+
+# Part II · The world holds. (Canon added 2026-09-27.)
+
+## 1. Never break the world
+
+Nothing on screen, in a scene, in a gig, in a DM, in a menu, may use the language of study. Banned in
+player-facing text: *flash card, Anki, deck of cards, exam, quiz, lesson, tutorial, study, revise,
+step N, terminal, console, framework, stub, level up (as a phrase), XP, content, feature, UI, demo,
+CCNA, 200-301, Jeremy, notes, source.* The lint (`npm test`) flags these as warnings; treat them as errors.
+
+Use the world's words instead. This table is binding for Opus and for every screen:
+
+| Out of world | In world |
+|---|---|
+| a gig's steps | **floors** of the dive (floor 1 of 5) |
+| commit / submit | **EXECUTE** |
+| console / terminal | the **shell** (your deck talking to the box) |
+| hint | **ping Dispatch** |
+| walk me through it | **SHOW ME** (the NPC takes your hands) |
+| flash card / quiz | a **call** from your crew; a **Board question** |
+| the exam / the cert | **the Board** (Netrunner Certification Board, classes D → A) |
+| stats | your **RECORD** |
+| answer key | the **CODEX** (your own notes, kept in your deck) |
+| log | **JOURNAL** |
+| lore / history | a **braindance** (BD) |
+| tutorial gig | your **first dive** |
+| level up | a quickhack goes **SYNCED → WIRED → BURNED-IN** |
+| content / a day | a **district**, a **street**, a **night** |
+
+## 2. Legacy is the point
+
+Watson runs old gear. The corpo cores downtown run something the street never sees. A netrunner's
+deck speaks the old tongue, the shell you type into, because that is what the street's boxes
+understand. This is why the interface looks the way it does, and it is said out loud, early:
+
+> Enable, first dive: "The box only listens in the old tongue. Your deck translates. Speak plainly to it."
+
+Every stage has at least one character who says, in their own way, that the shiny stuff is built on
+this. Prof. Hypervisor: "Every cloud you have ever heard of is forty of these boxes and a very good lie."
+Ansible: "The corps automate it because it works. It works because someone learned it by hand first."
+Dispatch: "Street gigs pay in creds. They also pay in the only thing the corps cannot buy: you knowing why."
+
+The player lives in the future and is retracing the past on purpose. That framing must always be present
+and never preachy: one line per stage, said by a person, about a thing in front of them.
+
+## 3. Jacking in is a dive
+
+Starting a gig runs the **dive** sequence (engine-provided, two seconds, skippable): deck online,
+legacy shell mounted, intent translation ready, ICE reading, then the run. Jacking out fades. Inside
+the run, each objective is a **floor**. Clearing the last floor is **DIVE COMPLETE**. The map is the
+NET architecture of the building. Red is ICE. Gold is the root.
+
+## 4. History arrives as braindances
+
+A `LORE` beat is a BD recording someone hands the player. It has a **title** and a **year**, shown
+as a title card, then the recording in the character's voice. Titles are how humans file memories:
+
+- THE NIGHT THE NET CAUGHT FIRE · 1988 (the Morris worm)
+- FOUR DAYS ON PAPER · 2002 (Beth Israel Deaconess STP meltdown)
+- ALGORHYME · 1985 (Perlman writes the tree)
+- LO · 1969 (the first message crashes after two letters)
+- THE LAST FIVE BLOCKS · 2011 (IANA runs out of IPv4)
+
+Rules: exact dates and names inside the recording; the title is a phrase, not a fact; the character
+says why they kept this one. A player should be able to recite the title and the year without ever
+having tried to.
+
+## 5. Titles, not facts. Numbers become places.
+
+Every number that must be remembered is attached to a person, a place or a thing in the world:
+4096 is the size of Old Root's door key; 24576 is "six keys"; 50 seconds is the length of the walk
+from the closet to reception; 01:00:0C:CC:CC:CD is "the Cisco knock". Repetition is designed, not
+hoped for: a command the Board expects appears in at least three gigs across two stages before the
+campaign considers it known, and the deck levels only rise on clean use. Spaced returns come through
+the crew's calls. The player should feel they are enjoying the world and find the reflexes already there.
+
+## 6. Loss drives. Payoff is emotional.
+
+Protégés are people. Each has a want (a sibling, a debt, a dream deck) that shows up in their calls.
+Save them three, six, ten times and they send something personal: a photo, a first solo dive story, a
+thank-you that costs them something. Lose one and the orphan arrives carrying a keepsake and the dead
+runner's handle in their notes. Clients come back: Imani sends a message when the clinic passes an
+inspection. Old Root invites the player to the roof at Class B. Rep opens doors. The reward is people.
+
+## 7. Creds and the shop
+
+Gigs pay **creds** as well as rep. Creds buy things that feed the loops, never things that skip them:
+
+- **Gifts for the crew** (noodles, a better antenna, a burner): buy a protégé time on their next call,
+  or calm them by one danger level.
+- **Insurance chip**: one call forgiven, once. Expensive. Emotional.
+- **Braindances**: bonus recordings, more history, a character's past.
+- **Deck skins and frames**: how the HUD looks. Pure vanity. People love vanity.
+- **Dispatch priority**: see the next gig a class early.
+
+The vendor is a person with a stall and opinions. Prices rise with class. Spending should feel like
+buying a friend a drink, not like buying a level.
+
+## 8. The Board
+
+The in-world certification body. Classes D, C, B, A. Board questions are the sync checks and the
+crew's calls. NPCs refer to "what the Board asks" the way tradespeople refer to their licence. The
+player is preparing for the Board without ever leaving the story.
+
+
+## 9. How the braindance card works on memory (design notes)
+
+The date is the hero: one huge number on an otherwise quiet card. A single distinctive element is recalled first and
+best (the isolation effect, von Restorff, 1933). The title under it is a phrase, not a fact, so it becomes a retrieval
+cue rather than a thing to retrieve. The line of era slang gives the card a mood; feeling attached to information is
+consolidated faster and held longer (emotional modulation of memory, McGaugh). Number + phrase + picture is two or
+three routes back to the same memory (dual coding, Paivio). Then the crew asks for the year on a later night, spaced
+out, without warning: retrieval practice beats re-reading by a wide margin (the testing effect, Roediger and Karpicke,
+2006), and spacing those retrievals is the oldest result in the field (Ebbinghaus, 1885). The player never studies the
+date. They watch a card, feel something, and get asked by someone they care about a week later. That is the design.
+
+Every LORE beat therefore carries `title`, `year`, `vibe`. The engine turns each one into a crew call automatically.
+Archetypes, bond, favors and rites are specified in `docs/CREW_ARCHETYPES.md`.

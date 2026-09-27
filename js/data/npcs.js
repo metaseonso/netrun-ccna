@@ -56,6 +56,9 @@ window.NPCS = {
   jason: { name: 'Jason', sys: 'JSON · XML · YAML · REST', role: 'a data broker. Everything he says comes with matching braces.',
     voice: 'neat, structured, quietly proud of being readable.',
     look: { seed:'jason', skin:'#d3a27a', hair:'#2b2b2b', hairStyle:'short', outfit:'#e6ecf5', accent:'#ff9f43', eyes:'#111', hat:'tie', glasses:true, glassTint:'rgba(255,255,255,.35)', mood:'smile' } },
+  marrow: { name: 'Marrow', sys: 'The stall · Kabuki market', role: 'sells salvage, noodles and second chances from a stall under the overpass. Prices go up when your class does.',
+    voice: 'dry, fond of the crew, never asks where the creds came from.',
+    look: { seed:'marrow', skin:'#b8865a', hair:'#3a3a44', hairStyle:'beanie', outfit:'#2a2f3a', accent:'#ff9f43', eyes:'#ffd23f', hat:'beanie', mood:'grin', scar:true } },
   ansible: { name: 'Ansible', sys: 'Automation · SDN · configuration management', role: 'talks to a thousand boxes at once and needs no agent on any of them.',
     voice: 'calm, thinks in plays and tasks. Named after a device that talks across space instantly.',
     look: { seed:'ansible', skin:'#b58a6a', hair:'#0f0f14', hairStyle:'bald', outfit:'#0d2b2b', accent:'#4dff88', eyes:'#4dff88', hat:'visor', visorColor:'#4dff88', mood:'flat', pet:'drone' } }

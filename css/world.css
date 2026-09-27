@@ -1,0 +1,35 @@
+/* world.css — the dive, braindance cards, the shop, deck skins. */
+
+/* the dive: jacking in */
+.dive{position:fixed;inset:0;z-index:120;background:#03050a;display:flex;align-items:center;justify-content:center;cursor:pointer;animation:divein .3s ease-out}
+.dive .core{width:min(560px,92vw);font-family:var(--mono);color:var(--cyan);font-size:13px;line-height:1.7;letter-spacing:.04em}
+.dive .core .ln{opacity:0;transform:translateY(6px);animation:lnin .25s ease-out forwards}
+.dive .core .ln.mag{color:var(--mag)} .dive .core .ln.dim{color:var(--ink3)} .dive .core .ln.big{font-family:var(--disp);font-size:22px;letter-spacing:.3em;color:var(--ink);text-shadow:0 0 18px var(--cyan)}
+.dive .grid{position:absolute;inset:0;background:linear-gradient(rgba(63,246,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(63,246,255,.06) 1px,transparent 1px);background-size:40px 40px;transform:perspective(500px) rotateX(60deg) translateY(-20%) scale(2);animation:gridmove 1.8s linear infinite;pointer-events:none}
+.dive .skip{position:absolute;bottom:18px;right:22px;font-size:10px;letter-spacing:.2em;color:var(--ink3)}
+@keyframes lnin{to{opacity:1;transform:none}} @keyframes divein{from{opacity:0}to{opacity:1}} @keyframes gridmove{from{background-position:0 0}to{background-position:0 40px}}
+.dive.out{animation:diveout .5s ease-in forwards} @keyframes diveout{to{opacity:0}}
+
+/* braindance title card */
+.bd{border:1px solid rgba(255,210,63,.55);background:linear-gradient(180deg,rgba(255,210,63,.07),transparent);padding:0;overflow:hidden}
+.bd .card{padding:18px 16px 12px;text-align:center;border-bottom:1px dashed rgba(255,210,63,.4);background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 2px,transparent 2px 4px)}
+.bd .card .k{font-family:var(--disp);font-size:10px;letter-spacing:.3em;color:var(--yel)}
+.bd .card .y{font-family:var(--disp);font-weight:800;font-size:clamp(44px,9vw,84px);line-height:1;color:var(--ink);letter-spacing:.06em;margin:6px 0 4px;text-shadow:0 0 22px rgba(255,210,63,.55),0 0 2px var(--yel)}
+.bd .card .t{font-family:var(--disp);font-size:clamp(12px,2vw,16px);letter-spacing:.22em;color:var(--yel);margin:2px 0 6px}
+.bd .card .v{font-size:12px;color:var(--ink2);font-style:italic;letter-spacing:.02em} .bd .body{padding:14px 16px;font-size:14.5px;line-height:1.6}
+.bd .rec{position:absolute;right:10px;top:10px;font-size:9px;letter-spacing:.2em;color:var(--red)} .bd .rec::before{content:"●";margin-right:5px;animation:blink 1.2s infinite}
+
+/* shop */
+.stall{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.item{border:1px solid var(--line);background:var(--panel2);padding:12px;display:flex;flex-direction:column;gap:6px}
+.item .n{font-weight:700} .item .b{font-size:12px;color:var(--ink2);line-height:1.5;flex:1} .item .p{font-family:var(--disp);color:var(--yel);letter-spacing:.1em}
+.item .k{font-size:10px;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase} .item.owned{border-color:rgba(77,255,136,.5)} .item.cant{opacity:.6}
+.creds{font-family:var(--disp);color:var(--yel);letter-spacing:.08em} .creds small{color:var(--ink3);font-family:var(--mono);letter-spacing:0}
+.gift{font-size:11px;margin-top:6px} .gift button{background:transparent;border:1px solid var(--yel);color:var(--yel);padding:2px 8px;font:10px var(--disp);letter-spacing:.1em;margin:2px 4px 2px 0}
+.letter{border:1px solid rgba(77,255,136,.5);background:rgba(77,255,136,.05);padding:10px 12px;margin:8px 0;white-space:pre-wrap;line-height:1.55}
+.letter .k{font-family:var(--disp);font-size:10px;letter-spacing:.2em;color:var(--grn)}
+
+/* deck skins */
+body.theme-ember{--cyan:#ff9f43;--cyan2:#e07b2a;--mag:#ff4b5c;--term:#ffd23f;--classB:#ff9f43}
+body.theme-ghost{--cyan:#e6f1ff;--cyan2:#9fb3d1;--mag:#c9ced8;--term:#ffffff;--bg:#0b0d12;--panel:#12151d;--panel2:#171b25}
+body.theme-noir{--cyan:#4dff88;--cyan2:#2fbf66;--mag:#4dff88;--term:#b9f5c9;--yel:#b9f5c9}

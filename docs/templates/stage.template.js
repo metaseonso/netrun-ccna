@@ -4,7 +4,7 @@
 (function(){
   const { PS, SJ } = SRC;   // source-link helpers (psaumur / sparrowjumpy note files)
   STAGES.push({ id: 'services-example', arc: 'grid', title: 'STAGE 6 · THE SERVICES'  /* rename to the real stage id and delete the stub */, sub: 'DNS, DHCP, NTP and the rest', npc: 'denise', status: 'stub', levels: [
-    { id: 'dhcp-lease', title: 'Four messages and a lease', sub: 'Day 39 · DHCP', npc: 'denise', day: [39], src: [PS('DHCP.md')], unlocks: ['dhcp'],
+    { id: 'dhcp-lease', title: 'Four messages and a lease', sub: 'DHCP', npc: 'denise', day: [39], src: [PS('DHCP.md')], unlocks: ['dhcp'],
       cards: [ { q: 'Which DHCP message does the client send first?', opts: ['Offer', 'Discover', 'Request', 'Acknowledge'], a: 1, why: 'The client has no address yet, so it broadcasts a Discover.' } ],
       beats: [
         { k: 'SCENE', where: 'The exchange · Dora\'s desk · a queue of laptops',

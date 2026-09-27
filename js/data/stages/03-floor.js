@@ -2,7 +2,7 @@
 (function(){
   const { PS, SJ } = SRC;
   STAGES.push({ id: 'floor', arc: 'grid', title: 'STAGE 3 · THE FLOOR', sub: 'switching, VLANs, trunks', npc: 'mac', status: 'stub', levels: [
-    { id: 'mac-intro', title: 'Every face, five minutes', sub: 'Days 5–6, 9 · switching, the MAC table, ARP', npc: 'mac', day: [5,6,9], src: [PS('Ethernet_LAN_Switching_Part1.md'), PS('Ethernet_LAN_Switching_Part2.md'), SJ('02 - Day 9 - Switch Interfaces.md')], unlocks: ['mac-table'],
+    { id: 'mac-intro', title: 'Every face, five minutes', sub: 'switching, the MAC table, ARP', npc: 'mac', day: [5,6,9], src: [PS('Ethernet_LAN_Switching_Part1.md'), PS('Ethernet_LAN_Switching_Part2.md'), SJ('02 - Day 9 - Switch Interfaces.md')], unlocks: ['mac-table'],
       beats: [
         { k: 'SCENE', where: 'The switch floor · a door with twenty-four numbered slots',
           lines: [
@@ -14,11 +14,11 @@
             { say: 'How do hosts find each other\'s addresses in the first place?', reply: '"[[ARP]]. A host shouts, who has 10.0.0.5, tell me. One host answers with its MAC. Everyone who heard it writes it down. Simple. Ace Elle will tell you later how badly that can be abused."' },
             { say: 'What is the most common problem you see?', reply: '"A [[speed/duplex mismatch]]. One end set by hand, the other set to auto. The link comes up and crawls. Look at "show interfaces status" before you blame anything else."' }
           ] } },
-        { k: 'LORE', text: 'Mac: "Bob Metcalfe wrote the Ethernet memo at Xerox PARC on 22 May 1973 and named it after the luminiferous ether. ARP is from 1982, RFC 826. The first real switch came around 1990. Before that this floor was a hub: everyone heard everyone, and collisions were normal. Full duplex ended that."' },
+        { k: 'LORE', title: 'THE ETHER MEMO', year: 1973, vibe: 'Far out. Everyone heard everyone, and it worked anyway.', text: 'Mac: "Bob Metcalfe wrote the Ethernet memo at Xerox PARC on 22 May 1973 and named it after the luminiferous ether. ARP is from 1982, RFC 826. The first real switch came around 1990. Before that this floor was a hub: everyone heard everyone, and collisions were normal. Full duplex ended that."' },
         { k: 'KIT', text: 'He tears a page off the sign-in pad.', kit: [ { cmd: 'show mac address-table', what: 'who is on which slot' }, { cmd: 'show interfaces status', what: 'speed, duplex, VLAN per port' }, { cmd: 'interface range f0/1 - 12 → description · speed · duplex', what: 'set a batch of ports at once' } ] },
         { k: 'SYNC', q: { prompt: 'Mac, testing you: "Frame comes in for a face I have never seen. What do I do?"', opts: ['Drop it', 'Send it back out the same slot', 'Flood it out every other slot', 'Ask the router'], a: 2, yes: '"Shout first, learn later."', no: '"Unknown face, I flood it. Every slot except the one it came in on."' , why: 'Mac: I only know faces I have seen. For a face I have not seen, I send the frame out every port except the one it came from. Whoever answers, I write down. That is flooding, and it is how my table fills up.' } }
       ] },
-    { id: 'vlan-intro', title: 'Borders inside one building', sub: 'Days 16–19, 23 · VLANs, trunks, DTP/VTP, EtherChannel', npc: 'veelan', day: [16,17,18,19,23], src: [PS('VLAN_Part1.md'), PS('VLAN_Part2.md'), SJ('04 - Day 16 - VLANs Part 1.md'), SJ('11 - Day 23 - EtherChannel.md')], unlocks: ['vlan-config', 'trunk-config'],
+    { id: 'vlan-intro', title: 'Borders inside one building', sub: 'VLANs, trunks, DTP/VTP, EtherChannel', npc: 'veelan', day: [16,17,18,19,23], src: [PS('VLAN_Part1.md'), PS('VLAN_Part2.md'), SJ('04 - Day 16 - VLANs Part 1.md'), SJ('11 - Day 23 - EtherChannel.md')], unlocks: ['vlan-config', 'trunk-config'],
       beats: [
         { k: 'SCENE', where: 'Second floor of the clinic annex · a taped line down the middle of the corridor',
           lines: [

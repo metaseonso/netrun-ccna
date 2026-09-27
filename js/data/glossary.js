@@ -69,7 +69,7 @@ window.GLOSSARY = {
   'area 0': 'The OSPF backbone. Every other area must touch it.',
   'router id': 'A 32-bit name for an OSPF router. Manually set, else highest loopback, else highest interface IP.',
   'passive interface': 'Stop sending OSPF hellos on an interface (like a LAN) while still advertising it.',
-  'rip': 'Routing Information Protocol. Hop count, max 15. Old, simple, still on the exam.',
+  'rip': 'Routing Information Protocol. Hop count, max 15. Old, simple, still on the Board.',
   'eigrp': 'Enhanced Interior Gateway Routing Protocol. Cisco\'s fast distance-vector hybrid. Metric from bandwidth + delay.',
   'fhrp': 'First Hop Redundancy Protocol. Two routers share one virtual gateway IP so hosts never notice a dead router.',
   'hsrp': 'Hot Standby Router Protocol. Cisco\'s FHRP. Active/standby, virtual IP + virtual MAC 0000.0C07.ACxx.',
