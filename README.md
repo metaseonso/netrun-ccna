@@ -37,7 +37,8 @@ npm run check                   # same, listing warnings
 
 - `docs/HANDOFF.md` — what exists, what to build, the rules.
 - `docs/CAMPAIGN_GUIDE.md` — schema for levels, gigs, steps, topologies; the engine API for checks; the feedback loop.
-- `docs/STORY_BIBLE.md` — the world, the cast, the voice.
+- `docs/STORY_BIBLE.md` — the world, the cast, the voice, and Part II: the immersion canon (vocabulary, legacy framing, the dive, braindances, rites, the stall).
+- `docs/CREW_ARCHETYPES.md` — the six crew archetypes, bond, favors, rites.
 - `docs/TASKS.md` — all 63 days mapped to stages, NPCs, skills and lab-based gigs.
 - `docs/templates/` — a complete stage file and a complete gig that pass `npm test`.
 - `tools/import_apkg.py` — turns Anki decks into game cards.

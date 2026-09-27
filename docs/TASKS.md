@@ -22,6 +22,8 @@ Stage plan (arc 01 · THE GRID). Stage files exist as stubs; replace the intro l
 | 7 THE ICE | 34–35, 48–50, 58 | Ace Elle (+Sticky), Beacon | security-fundamentals, acl-standard, acl-extended, port-security, dhcp-snooping, dai, wireless-security |
 | 8 THE LAB | 51–63 | Prof. Hypervisor, Beacon, Jason, Ansible | lan-arch, wan-arch, virtualization, cloud, wireless-fundamentals, wireless-arch, wireless-config, automation, json-yaml, rest, sdn, config-mgmt |
 
+Per day, in this order: level as scenes → braindance (title, year, vibe) → legacy line (once per stage) → gig from the lab with `net` + `solution` → glossary → `npm test` → play it. Keep the crew's calls in mind: the year on every braindance is a call the crew will make.
+
 ## Day list (level · cards · gig from the lab)
 
 Days with a ✅ are built. Everything else: write the level(s), import the deck, build the gig, run `npm test`.

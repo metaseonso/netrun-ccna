@@ -120,6 +120,18 @@ Protégé lines: `js/data/protege-lines.js` is organised by archetype (`arch.kid
 - `?dev=1` — DEV button. STEP tab tells you exactly why a step would pass or fail right now. NET tab shows tables, hosts, issues, and a ping tester. GOLDEN plays a gig headless in the browser.
 - Lint errors name the stage, level, beat, job and step. Warnings are coverage: days without a level, skills no gig exercises, terms never used.
 
-## 9. Voice
+## 9. The world's words (lint-enforced)
+
+Player-facing text is checked for out-of-world words: flash card, Anki, exam, quiz, lesson, tutorial, study, revise,
+framework, stub, CCNA, 200-301, Jeremy, XP, level up, step N. The full vocabulary table is in STORY_BIBLE Part II.
+Commands, hints and `kit.cmd` are exempt (the old tongue is the old tongue). Level `sub` lines carry no day numbers.
+
+## 10. Creds, the stall, rites
+
+`creds` on a gig (default 3 × rep). `rite: true` marks a class rite of passage (board badge, result framing, big creds).
+Shop items live in `js/data/shop.js` with kinds `gift | favor | bd | skin`; a `bd` item needs `title`, `year`, `who`, `text`.
+Never add an item that skips learning. Gifts and favors are applied from the CREW screen; effects are in `engine/protege.js`.
+
+## 11. Voice
 
 Read `docs/STORY_BIBLE.md` before writing a line. Plain sentences. People, not lectures. The fact is the way out of the scene.

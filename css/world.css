@@ -33,3 +33,11 @@
 body.theme-ember{--cyan:#ff9f43;--cyan2:#e07b2a;--mag:#ff4b5c;--term:#ffd23f;--classB:#ff9f43}
 body.theme-ghost{--cyan:#e6f1ff;--cyan2:#9fb3d1;--mag:#c9ced8;--term:#ffffff;--bg:#0b0d12;--panel:#12151d;--panel2:#171b25}
 body.theme-noir{--cyan:#4dff88;--cyan2:#2fbf66;--mag:#4dff88;--term:#b9f5c9;--yel:#b9f5c9}
+
+/* stall sections and kind colours */
+.stallsec{margin-top:14px} .stallsec h3{margin:0 0 8px}
+.stallsec.gift h3{color:var(--grn)} .stallsec.favor h3{color:var(--mag)} .stallsec.bd h3{color:var(--yel)} .stallsec.skin h3{color:var(--cyan)}
+.item.gift{border-top:3px solid var(--grn)} .item.favor{border-top:3px solid var(--mag)} .item.bd{border-top:3px solid var(--yel)} .item.skin{border-top:3px solid var(--cyan)}
+.item .kb{display:inline-block;font-family:var(--disp);font-size:9px;letter-spacing:.16em;padding:1px 6px;border:1px solid currentColor;border-radius:2px;margin-right:4px}
+.item.gift .kb{color:var(--grn)} .item.favor .kb{color:var(--mag)} .item.bd .kb{color:var(--yel)} .item.skin .kb{color:var(--cyan)}
+.npcbox img{background:#0b0f18}
