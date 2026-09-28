@@ -134,5 +134,16 @@ module.exports.run = function({ out }){
     const r1 = new Sim.Device('R1', { kind: 'ios' }); ['en', 'conf t', 'access-list 1 remark x', 'access-list 1 deny 10.0.0.0 0.0.0.255', 'access-list 1 permit any', 'access-list 2 permit any', 'no access-list 1', 'do show running-config'].forEach(l => r1.exec(l));
     const run = r1.out[r1.out.length - 1].s; ok(!/access-list 1 /.test(run) && /access-list 2 permit any/.test(run), 'shell: no access-list 1 removes every line of list 1 from the running-config');
   }
+  // 11. CDP and LLDP per port, and their timers
+  {
+    const net = { devices: { R1: { kind: 'router' }, EX: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.0000.0011' }, SW2: { kind: 'switch', mac: '0001.0000.0012' } },
+      links: [ { a: 'EX', ap: 'gigabitethernet0/0', b: 'R1', bp: 'gigabitethernet0/1' }, { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'gigabitethernet0/2', b: 'SW2', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ EX: ['en', 'conf t', 'int g0/0', 'no shut'], R1: ['en', 'conf t', 'int g0/0', 'no shut', 'int g0/1', 'no shut', 'no cdp enable', 'exit', 'cdp timer 30', 'cdp holdtime 120'],
+      SW1: ['en', 'conf t', 'lldp run', 'lldp timer 10', 'int g0/2', 'no lldp receive'], SW2: ['en', 'conf t', 'lldp run'] });
+    const A = Net.api(Net.build(net, d)); const nb = (a, b) => A.neighbors(a).find(n => n.dev === b);
+    ok(!nb('EX', 'R1').cdp && !nb('R1', 'EX').cdp && nb('SW1', 'R1').cdp && nb('R1', 'SW1').cdp, 'cdp: no cdp enable on one port hides only that link');
+    ok(nb('SW2', 'SW1').lldp && !nb('SW1', 'SW2').lldp, 'lldp: no lldp receive on SW1 g0/2 stops SW1 learning SW2, not the other way round');
+    ok(/every 30 seconds/.test(Show.render(d.R1, 'show cdp', A.state)) && /holdtime value of 120/.test(Show.render(d.R1, 'show cdp', A.state)) && /every 10 seconds/.test(Show.render(d.SW1, 'show lldp', A.state)) && /not enabled/.test(Show.render(d.R1, 'show lldp', A.state)), 'show cdp and show lldp print the timers');
+  }
   return { pass, fails };
 };

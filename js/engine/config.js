@@ -75,6 +75,9 @@
         else if ((m = s.match(/^ntp master(?: (\d+))?$/))) cfg.ntpMaster = m[1] ? +m[1] : 8;
         else if ((m = s.match(/^no logging (?:host )?(\S+)$/))) cfg.logging = cfg.logging.filter(x => x !== m[1]);
         else if ((m = s.match(/^no snmp-server community (\S+)/))) cfg.snmp = cfg.snmp.filter(x => x.community !== m[1]);
+        else if ((m = s.match(/^cdp (timer|holdtime) (\d+)$/))) cfg[m[1] === 'timer' ? 'cdpTimer' : 'cdpHoldtime'] = +m[2];
+        else if ((m = s.match(/^lldp (timer|holdtime|reinit) (\d+)$/))) cfg['lldp' + m[1][0].toUpperCase() + m[1].slice(1)] = +m[2];
+        else if (s === 'no cdp advertise-v2') cfg.cdpV1 = true; else if (s === 'cdp advertise-v2') cfg.cdpV1 = false;
         else if (/^errdisable recovery cause/.test(s)) cfg.errdisableRecovery = true;
         else if ((m = s.match(/^no ip route (\S+) (\S+) (\S+)/))) cfg.routes = cfg.routes.filter(x => !(x.prefix === m[1] && x.mask === m[2] && x.via === m[3]));
         else if ((m = s.match(/^no access-list (\d+)$/))) delete cfg.acls[m[1]];
@@ -118,6 +121,9 @@
           else if (s === 'ip dhcp snooping trust') i.snoopTrust = true; else if (s === 'ip arp inspection trust') i.daiTrust = true;
           else if ((m = s.match(/^speed (\S+)$/))) i.speed = m[1]; else if ((m = s.match(/^duplex (\S+)$/))) i.duplex = m[1];
           else if ((m = s.match(/^ip ospf network (\S+)$/))) i.ospfNetwork = m[1];
+          else if (s === 'no cdp enable') i.cdpOff = true; else if (s === 'cdp enable') i.cdpOff = false;
+          else if (s === 'no lldp transmit') i.lldpTxOff = true; else if (s === 'lldp transmit') i.lldpTxOff = false;
+          else if (s === 'no lldp receive') i.lldpRxOff = true; else if (s === 'lldp receive') i.lldpRxOff = false;
         }
       }
       // ---------------- line config

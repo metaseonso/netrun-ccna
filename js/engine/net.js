@@ -144,6 +144,7 @@
     buildRouting(S);
     // ---- MAC tables & neighbors
     buildMacTables(S); buildNeighbors(S);
+    discoveryPorts(S);
     return S;
   }
   function synthMac(seed){ let h = 0; for (const c of seed) h = (h * 33 + c.charCodeAt(0)) >>> 0; const hex = h.toString(16).padStart(8, '0'); return '0200.' + hex.slice(0, 4) + '.' + hex.slice(4, 8); }
@@ -232,6 +233,10 @@
   function buildNeighbors(S){ const D = S.net.devices; S.neighbors = {}; for (const L of S.links) { const ka = D[L.a].kind, kb = D[L.b].kind; const netdev = k => ['router', 'switch', 'l3switch'].includes(k); if (!netdev(ka) || !netdev(kb)) continue; const a = S.ifaces[L.a][L.ap], b = S.ifaces[L.b][L.bp]; if (!a.up || !b.up) continue;
       (S.neighbors[L.a] = S.neighbors[L.a] || []).push({ dev: L.b, local: L.ap, remote: L.bp, cdp: S.cfg[L.a].cdp && S.cfg[L.b].cdp, lldp: S.cfg[L.a].lldp && S.cfg[L.b].lldp, platform: kb === 'router' ? 'cisco ISR4321' : 'cisco WS-C2960', ip: (S.l3.find(o => o.dev === L.b && o.kind === 'iface') || {}).ip || '' });
       (S.neighbors[L.b] = S.neighbors[L.b] || []).push({ dev: L.a, local: L.bp, remote: L.ap, cdp: S.cfg[L.a].cdp && S.cfg[L.b].cdp, lldp: S.cfg[L.a].lldp && S.cfg[L.b].lldp, platform: ka === 'router' ? 'cisco ISR4321' : 'cisco WS-C2960', ip: (S.l3.find(o => o.dev === L.a && o.kind === 'iface') || {}).ip || '' }); } }
+
+  // per-port CDP and LLDP: "no cdp enable" hides both ends of that link from CDP; LLDP needs the sender to transmit and the listener to receive
+  function discoveryPorts(S){ for (const n in S.neighbors) for (const x of S.neighbors[n]) { const me = S.ifaces[n][x.local].cfg, them = S.ifaces[x.dev][x.remote].cfg;
+      if (me.cdpOff || them.cdpOff) x.cdp = false; if (me.lldpRxOff || them.lldpTxOff) x.lldp = false; x.cdpHold = S.cfg[x.dev].cdpHoldtime || 180; x.lldpHold = S.cfg[x.dev].lldpHoldtime || 120; } }
 
   // ---------------------------------------------------------------- ACL / NAT
   function aclEval(S, dev, aclId, pkt){ const a = S.cfg[dev].acls[aclId]; if (!a) return { action: 'permit', reason: 'ACL ' + aclId + ' not defined (permits all)' };

@@ -142,6 +142,11 @@ Definition of done for a day:
   `no snmp-server community X`, and reads `ntp master [stratum]` (`cfg.ntpMaster`, default 8). Tested (section 10).
   `no access-list N` removes every line of list N from the running-config, not just the first. Tested (section 10).
 
+- 2026-09-28 · CDP and LLDP per port: `no cdp enable` / `cdp enable`, `no lldp transmit` / `no lldp receive` on an interface
+  (`Net` `discoveryPorts`: LLDP needs the sender to transmit and the listener to receive); `cdp timer|holdtime N`,
+  `lldp timer|holdtime|reinit N`, `[no] cdp advertise-v2` are parsed; `show cdp` and `show lldp` print the global timers.
+  Tested (section 11).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a
