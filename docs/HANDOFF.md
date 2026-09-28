@@ -136,6 +136,8 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · OSPF interarea routes show as `O IA` on routers with no interface in the destination's area (tested).
+
 - 2026-09-28 · OSPF DR and BDR on every broadcast segment (`ip ospf priority`, then the router ID; priority 0 never stands),
   DROthers stay 2WAY with each other, `ip ospf network point-to-point` has no DR; hello and dead timers
   (`ip ospf hello-interval|dead-interval`) and unique router IDs are neighbour requirements (`ospf-timer-mismatch`,

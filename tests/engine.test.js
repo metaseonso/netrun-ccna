@@ -178,5 +178,14 @@ module.exports.run = function({ out }){
     d.R4.exec('no ip ospf hello-interval'); A = Net.api(Net.build(net, d)); ok(A.ospfNeighbors('R1').some(n => n.dev === 'R4'), 'ospf: resetting the hello timer brings the neighbour back');
     d.R4.exec('router ospf 1'); d.R4.exec('router-id 1.1.1.1'); A = Net.api(Net.build(net, d)); ok(!A.ospfNeighbors('R1').some(n => n.dev === 'R4') && A.issues.some(i => i.kind === 'ospf-duplicate-router-id'), 'ospf: duplicate router IDs never become neighbours');
   }
+  // 14. OSPF interarea routes show as O IA on routers with no interface in that area
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' } }, links: [ { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/2', b: 'R3', bp: 'gigabitethernet0/2' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/1', 'ip add 10.5.12.1 255.255.255.252', 'no shut', 'router ospf 1', 'network 10.5.12.0 0.0.0.3 area 0'],
+      R2: ['en', 'conf t', 'int g0/1', 'ip add 10.5.12.2 255.255.255.252', 'no shut', 'int g0/2', 'ip add 10.5.23.1 255.255.255.252', 'no shut', 'router ospf 1', 'network 10.5.12.0 0.0.0.3 area 0', 'network 10.5.23.0 0.0.0.3 area 1'],
+      R3: ['en', 'conf t', 'int g0/2', 'ip add 10.5.23.2 255.255.255.252', 'no shut', 'int lo0', 'ip add 10.5.3.1 255.255.255.0', 'router ospf 1', 'network 10.5.0.0 0.0.255.255 area 1'] });
+    const A = Net.api(Net.build(net, d)); const a = A.route('R1', '10.5.3.0/24'), b = A.route('R2', '10.5.3.0/24');
+    ok(a && a.proto === 'O IA' && b && b.proto === 'O', 'ospf: O IA across the ABR, O inside the area (' + (a && a.proto) + ', ' + (b && b.proto) + ')');
+  }
   return { pass, fails };
 };

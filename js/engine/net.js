@@ -217,6 +217,8 @@
     for (const r of ospfRouters) { const dr = spf(r); const nbr = adj[r].map(e => ({ e, d: spf(e.to) })); for (const t in dr) { if (t === r) continue; const hops = nbr.filter(x => x.d[t] != null && x.e.cost + x.d[t] === dr[t]); if (hops.length < 2) continue;
       for (const h of hops) { for (const ni of S.ospf.routers[t].ifaces) { if (S.ospf.routers[r].ifaces.some(x => x.net === ni.net && x.len === ni.len)) continue; add(r, { prefix: ni.net, len: ni.len, via: h.e.via, iface: h.e.iface, proto: 'O', ad: 110, metric: dr[t] + ni.cost }); }
         if (S.cfg[t].ospf.defaultOriginate && S.cfg[t].routes.some(x => x.prefix === '0.0.0.0')) add(r, { prefix: '0.0.0.0', len: 0, via: h.e.via, iface: h.e.iface, proto: 'O*E2', ad: 110, metric: 1 }); } } }
+    // OSPF interarea routes: a network in an area this router has no interface in shows as O IA
+    for (const r of ospfRouters) { const mine = new Set(S.ospf.routers[r].ifaces.map(i => i.area)); (cands[r] || []).forEach(e => { if (e.proto !== 'O') return; let area = null; for (const t in S.ospf.routers) { const f = S.ospf.routers[t].ifaces.find(i => i.net === e.prefix && i.len === e.len); if (f) { area = f.area; break; } } if (area != null && !mine.has(area)) e.proto = 'O IA'; }); }
     // RIP / EIGRP: hop-based over shared network statements
     for (const proto of ['rip', 'eigrp']) { const rs = S.routers.filter(r => S.cfg[r][proto]); if (!rs.length) continue;
       const enabled = (r, o) => { const c = S.cfg[r][proto]; return c.networks.some(n => { const a = typeof n === 'string' ? n : n.addr; const w = typeof n === 'string' ? null : n.wild; if (w) return wildMatch(o.ip, a, w); const cls = IP.ip2n(a) >>> 24; const len = cls < 128 ? 8 : cls < 192 ? 16 : 24; return inSubnet(o.ip, a, len); }); };
