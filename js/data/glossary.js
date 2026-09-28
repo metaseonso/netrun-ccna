@@ -34,12 +34,12 @@ window.GLOSSARY = {
   'startup-config': 'The saved configuration in NVRAM, loaded when the device boots. Save to it with write, write memory or copy running-config startup-config.',
   'enable secret': 'Password for privileged mode, stored hashed. Always beats "enable password", which is plaintext.',
   'service password-encryption': 'Weakly scrambles plaintext passwords in the config (type 7). Better than nothing, not real security.',
-  'ipv4 address': '32-bit address written as four octets, e.g. 192.168.1.10. Network part + host part, split by the mask.',
-  'subnet mask': 'Which bits are network, which are host. 255.255.255.0 = /24 = first 24 bits are network.',
+  'ipv4 address': 'A 32-bit (4-byte) address written as four decimal octets, e.g. 192.168.1.10. Part network, part host; the prefix length or mask says where the split is.',
+  'subnet mask': 'The network/host split written as 32 bits in dotted decimal: 1s for the network part, 0s for the host part. 255.255.255.0 = /24.',
   'cidr': 'Classless Inter-Domain Routing (RFC 1519, 1993). Killed the old A/B/C classes. Prefix length /n instead.',
-  'prefix length': 'The /24 in 10.0.0.0/24. Number of network bits.',
-  'network address': 'All host bits zero. Names the subnet. Cannot be assigned to a host.',
-  'broadcast address': 'All host bits one. Sends to everyone in the subnet. Cannot be assigned either.',
+  'prefix length': 'The number of network bits in an address, written after a slash: /8, /16, /24. The same information as the subnet mask.',
+  'network address': 'The address with all host bits set to 0. Identifies the network itself; cannot be assigned to a host.',
+  'broadcast address': 'The address with all host bits set to 1. Reaches every host on the network; cannot be assigned to a host.',
   'usable range': 'Network + 1 through broadcast − 1. The addresses hosts can actually use.',
   'vlsm': 'Variable Length Subnet Masking. Different subnets, different sizes. Slice big first, then small.',
   'wildcard mask': 'Inverse of the subnet mask. 0 bits = must match, 1 bits = don\'t care. 0.0.0.255 covers a /24.',
@@ -186,5 +186,8 @@ window.GLOSSARY = {
   'aging': 'A switch removing a dynamic MAC address from its table after 5 minutes (300 seconds) without seeing a frame from it.',
   'arp request': 'The ARP message asking who has a given IP address. Sent as a broadcast to FFFF.FFFF.FFFF, so every device in the LAN receives it.',
   'arp reply': 'The ARP message from the device that owns the requested IP address, giving its MAC address. Sent unicast to the device that asked.',
-  'ping': 'A tool that tests reachability with ICMP: it sends echo requests and waits for echo replies.'
+  'ping': 'A tool that tests reachability with ICMP: it sends echo requests and waits for echo replies.',
+  'octet': 'A group of 8 bits. An IPv4 address is four octets; each is 0 to 255 (11111111 = 255).',
+  'loopback address': 'An address in 127.0.0.0/8 (usually 127.0.0.1) that a device uses to talk to itself and test its own network software.',
+  'multicast': 'Traffic sent to a group of hosts that asked to receive it. IPv4 multicast uses class D, 224.0.0.0 to 239.255.255.255.'
 };
