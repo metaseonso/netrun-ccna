@@ -227,6 +227,11 @@
     // select best per prefix
     for (const r of S.routers) { const best = {}; for (const e of cands[r] || []) { const k = e.prefix + '/' + e.len; const cur = best[k]; if (!cur || e.ad < cur[0].ad || (e.ad === cur[0].ad && e.metric < cur[0].metric)) best[k] = [e]; else if (e.ad === cur[0].ad && e.metric === cur[0].metric && !cur.some(x => x.via === e.via && x.iface === e.iface)) cur.push(e); }
       S.tables[r] = Object.values(best).flat().sort((a, b) => IP.ip2n(a.prefix) - IP.ip2n(b.prefix) || b.len - a.len); }
+    // a Layer 2 switch (no ip routing) talks from its management SVI like a host: its own subnet, then ip default-gateway.
+    // kept apart from S.tables so show ip route and the routing protocols still treat it as a switch
+    S.hostTables = {}; for (const n in D) { if (D[n].kind !== 'switch' || S.routers.includes(n)) continue; const own = S.l3.filter(o => o.dev === n && o.kind === 'iface'); if (!own.length) continue;
+      const t = own.map(o => ({ prefix: netOf(o.ip, o.mask), len: mlen(o.mask), via: null, iface: o.iface, proto: 'C', ad: 0, metric: 0 })); const gw = S.cfg[n].defaultGateway; const o = gw && own.find(x => inSubnet(gw, netOf(x.ip, x.mask), x.mask));
+      if (o) t.push({ prefix: '0.0.0.0', len: 0, via: gw, iface: o.iface, proto: 'S*', ad: 1, metric: 0 }); S.hostTables[n] = t; }
     // IPv6: connected + static only
     for (const r of S.routers) { const t6 = []; for (const p in S.ifaces[r]) { const i = S.ifaces[r][p]; if (!i.up) continue; for (const a of i.cfg.ipv6) { const addr = a.eui64 ? eui64(a.addr, synthMac(r + p)) : a.addr; t6.push({ prefix: v6net(addr, a.prefix), len: a.prefix, via: null, iface: p, proto: 'C', ad: 0 }); } }
       for (const st of S.cfg[r].routes6) { const [pre, len] = st.prefix.split('/'); t6.push({ prefix: IP.ipv6compress(pre), len: +len, via: IP.validIp(st.via) ? null : (st.via.includes(':') ? st.via : null), iface: st.via.includes(':') ? null : (Sim.canonIf(st.via) || st.via), proto: st.prefix.startsWith('::/0') || pre === '::' ? 'S' : 'S', ad: 1 }); }
@@ -260,7 +265,7 @@
 
   // ---------------------------------------------------------------- forwarding
   function ownerOn(S, seg, ip){ return (S.owners[seg] || []).find(o => o.ip === ip) || (S.owners[seg] || []).find(o => o.kind === 'cloud' && (o.internet && !RFC1918(ip) || o.serves.includes(ip))); }
-  function lookup(S, r, ip){ const t = S.tables[r] || []; let best = null; for (const e of t) { if (!inSubnet(ip, e.prefix, e.len)) continue; if (!best || e.len > best.len) best = e; } return best; }
+  function lookup(S, r, ip){ const t = S.tables[r] || (S.hostTables && S.hostTables[r]) || []; let best = null; for (const e of t) { if (!inSubnet(ip, e.prefix, e.len)) continue; if (!best || e.len > best.len) best = e; } return best; }
   function ping(S, from, dstIp, opts){
     opts = opts || {}; const proto = opts.proto || 'icmp'; const pkt0 = { src: null, dst: dstIp, proto, sport: opts.sport || 49152, dport: opts.dport || (proto === 'icmp' ? null : 80) };
     const D = S.net.devices; const path = []; const natTbl = []; const fail = (reason, extra) => Object.assign({ ok: false, reason, path, nat: natTbl }, extra || {});
@@ -268,7 +273,7 @@
     // source
     let cur, seg, pkt = Object.assign({}, pkt0);
     if (S.hosts[from]) { const h = S.hosts[from]; if (!h.up) return fail(from + ' has no link'); if (!h.ip) return fail(from + ' has no IP address' + (h.lease && h.lease.reason ? ' (' + h.lease.reason + ')' : '')); pkt.src = h.ip; cur = { kind: 'host', dev: from, seg: h.seg, ip: h.ip, mask: h.mask, gw: h.gw }; }
-    else if (S.routers.includes(from)) { const rt = lookup(S, from, dstIp); if (!rt) return fail(from + ' has no route to ' + dstIp); const o = S.l3.find(x => x.dev === from && x.iface === rt.iface); pkt.src = opts.src || (o ? o.ip : null); if (!pkt.src) return fail('no source address'); cur = { kind: 'router', dev: from, inIf: null }; }
+    else if (S.routers.includes(from) || (S.hostTables && S.hostTables[from])) { const rt = lookup(S, from, dstIp); if (!rt) return fail(from + ' has no route to ' + dstIp); const o = S.l3.find(x => x.dev === from && x.iface === rt.iface); pkt.src = opts.src || (o ? o.ip : null); if (!pkt.src) return fail('no source address'); cur = { kind: 'router', dev: from, inIf: null }; }
     else return fail(from + ' cannot originate traffic');
     const res = forward(S, cur, pkt, path, natTbl, 'request'); const trail = (path.trail || []).slice(); if (res.ok && trail[trail.length - 1] !== dstIp) trail.push(dstIp); if (!res.ok) return fail(res.reason, { hops: res.hops, trail });
     // reply

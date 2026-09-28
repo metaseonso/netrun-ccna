@@ -152,5 +152,14 @@ module.exports.run = function({ out }){
     ok(A.ospfNeighbors('CSW1').length === 1 && A.route('CSW1', '10.2.0.0/24') && A.route('CSW1', '10.2.0.0/24').proto === 'O', 'routed: OSPF neighbours across the routed link and learns the far VLAN');
     ok(A.ping('PC1', '10.2.0.10').ok, 'routed: PC1 reaches PC2 across two multilayer switches'); ok(!A.trunk('CSW1', 'g1/0/1') && !A.stp(10).switches.CSW1.ports['gigabitethernet1/0/1'], 'routed: no trunk and no spanning tree on a routed port');
   }
+  // 13. a Layer 2 switch's management SVI answers pings: on its own subnet, and beyond it through ip default-gateway
+  {
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0013.0000.0001' }, PC1: { kind: 'host', ip: '10.0.99.50', mask: '255.255.255.0', gw: '10.0.99.1' }, PC2: { kind: 'host', ip: '10.0.10.10', mask: '255.255.255.0', gw: '10.0.10.1' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'PC2' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.99.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.10.1 255.255.255.0', 'no shut'], SW1: ['en', 'conf t', 'int vlan 1', 'ip add 10.0.99.4 255.255.255.0', 'no shut'] });
+    let A = Net.api(Net.build(net, d)); ok(A.ping('PC1', '10.0.99.4').ok, 'svi: a host on the management subnet pings the switch'); const p = A.ping('PC2', '10.0.99.4'); ok(!p.ok, 'svi: from another subnet it fails without a default gateway (' + p.reason + ')');
+    ok(!A.routes('SW1').length && /not enabled/.test(Show.render(d.SW1, 'show ip route', A.state)), 'svi: the switch still has no routing table of its own');
+    d.SW1.exec('exit'); d.SW1.exec('ip default-gateway 10.0.99.1'); A = Net.api(Net.build(net, d)); ok(A.ping('PC2', '10.0.99.4').ok && A.ping('SW1', '10.0.10.10').ok, 'svi: with ip default-gateway the switch answers and pings across the router');
+  }
   return { pass, fails };
 };

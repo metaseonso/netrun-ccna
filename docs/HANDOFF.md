@@ -136,6 +136,10 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · A Layer 2 switch's management SVI answers pings and can ping: on its own subnet, and beyond it through
+  `ip default-gateway` (`S.hostTables`, kept apart from the routing tables, so `show ip route` still says routing is off).
+  Before, a ping reached the SVI but the reply had no route. Tested (13).
+
 - 2026-09-28 · Routed ports on multilayer switches: `no switchport` on an `l3switch` port makes it a Layer 3 port (no VLAN,
   no trunk, no spanning tree, no EtherChannel); with an `ip address` it is a point-to-point link like a router's, so a
   core of multilayer switches can run OSPF over /30s (the Mega Lab). `switchport` turns it back. Tested (12).
