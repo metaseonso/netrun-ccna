@@ -189,6 +189,7 @@ Definition of done for a day:
   `access-class` to permit the source, and TCP 22 through; Telnet needs transport to allow it (no transport line allows it), a
   password or local login, the access-class and TCP 23. PCs: `ssh -l USER IP`, `telnet IP`. A Layer 2 switch with an SVI now
   replies through `ip default-gateway` (it had no way back to other subnets). Tested (section 17).
+  `crypto key generate rsa` names the keys after `ip domain name` as well as the older `ip domain-name`. Tested (section 17).
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service

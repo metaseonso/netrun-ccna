@@ -235,6 +235,7 @@ module.exports.run = function({ out }){
     ['exit', 'ip domain name watson.net', 'crypto key generate rsa modulus 1024', 'ip ssh version 2', 'username shell secret brass', 'line vty 0 15', 'login local', 'transport input ssh'].forEach(l => d.R1.exec(l)); A = Net.api(Net.build(net, d));
     ok(A.ssh('ADM', '10.0.1.1', 'shell').ok && !A.telnet('ADM', '10.0.1.1').ok && !A.ssh('ADM', '10.0.1.1', 'nobody').ok, 'login: SSH as a local user works, Telnet is refused, an unknown user is refused');
     ['access-list 5 permit 10.0.9.0 0.0.0.255', 'line vty 0 15', 'access-class 5 in'].forEach(l => d.R1.exec(l)); A = Net.api(Net.build(net, d)); ok(A.ssh('ADM', '10.0.1.1', 'shell').ok && !A.ssh('PC1', '10.0.1.1', 'shell').ok && /access-class 5/.test(A.ssh('PC1', '10.0.1.1', 'shell').reason), 'login: access-class limits who may connect');
+    ok(d.R1.out.some(o => /The name for the keys will be: R1\.watson\.net/.test(o.s)), 'shell: crypto key generate rsa names the keys after hostname.domain (ip domain name)');
     const pc = new Sim.Device('ADM', { kind: 'host', netState: () => A.state }); pc.exec('ssh -l shell 10.0.1.1'); ok(/Open/.test(pc.out[pc.out.length - 1].s) && /SSH 2 session to R1/.test(pc.out[pc.out.length - 1].s), 'pc: ssh -l opens a session'); pc.exec('telnet 10.0.1.1'); ok(/refused/.test(pc.out[pc.out.length - 1].s), 'pc: telnet is refused');
   }
   return { pass, fails };

@@ -244,6 +244,7 @@
     if ((m = s.match(/^ip vrf (\S+)$/))) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter('config-vrf', s); return; }
     if (s.startsWith('crypto key generate rsa')) { dev.out.push({ t:'out', s:'The name for the keys will be: ' + dev.host + '.' + (dev.domain || 'example.com') + '\n% Generating RSA keys ...[OK]' }); return; }
     if ((m = s.match(/^ip domain-name (\S+)$/))) { dev.domain = m[1]; return; }
+    if ((m = s.match(/^ip domain name (\S+)$/))) { dev.domain = m[1]; return; } // the newer spelling names the keys too
     if (s === 'shutdown') { dev.out.push({ t:'sys', s:'%LINK-5-CHANGED: Interface changed state to administratively down' }); return; }
     if (s === 'no shutdown') { dev.out.push({ t:'sys', s:'%LINK-3-UPDOWN: Interface changed state to up' }); return; }
     const IF_LEVEL = /^(ip address|ip access-group|ip helper-address|ip nat (inside|outside)$|ip ospf|ipv6 address|switchport|description|standby|channel-group|encapsulation|spanning-tree (vlan [\d,\-]+ )?(cost|port-priority)|spanning-tree portfast( edge| trunk)?$|spanning-tree bpduguard|spanning-tree guard|duplex|speed)/;
