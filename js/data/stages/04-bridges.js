@@ -1,8 +1,7 @@
 /* District 04 · The Bridges — nights 20–22: spanning tree, its guards, the rapid tree. Old Root's last week at the
    Watson clinic annex. Written to docs/STORY_BIBLE.md (Voice) and docs/CAMPAIGN_MAP.md. */
 (function(){
-  const { PS, SJ } = SRC;
-  const D21 = [PS('Spanning_Tree_Protocol_Part2.md'), SJ('09 - Day 21 - STP Part 2.md')];
+  const { PS } = SRC;
   STAGES.push({ id: 'bridges', arc: 'grid', title: 'STAGE 4 · THE BRIDGES', sub: 'spanning tree at the clinic annex', npc: 'root', status: 'live', levels: [
     // ------------------------------------------------------------ night 20 · spanning tree, part 1
     { id: 'n20-tagged-cable', title: 'The cable that never carried a frame', sub: 'loops, the root bridge, port roles and cost', npc: 'root', day: [20], src: [PS('Spanning_Tree_Protocol_Part1.md')], unlocks: ['stp-election', 'stp-loops'],
@@ -50,136 +49,57 @@
           yes: 'Old Root: "Lowest ID. Importance never came into it."', no: 'Old Root: "The lowest bridge ID. Every priority here is the default, so the oldest MAC won."',
           why: 'Old Root: The root bridge is the switch with the lowest bridge ID, which is the priority first and then the MAC address. Every switch in the annex has the default priority, 32768 plus the VLAN, so they tie and the lowest MAC address wins. Old switches tend to have low MACs, which is how the pharmacy\'s hand-me-down ended up in charge.' } }
       ] },
-    // ------------------------------------------------------------ 3
-    { id: 'stp-states', title: 'Thirty seconds with a stopwatch', sub: 'port states and timers', npc: 'root', day: [21], src: D21, unlocks: ['stp-states'],
+    // ------------------------------------------------------------ night 21 · spanning tree, part 2, and its guards
+    { id: 'n21-reception-desk', title: 'Thirty seconds at reception', sub: 'port states, timers, PortFast and the guards', npc: 'root', day: [21], src: [PS('Spanning_Tree_Protocol_Part2.md')], unlocks: ['stp-toolkit', 'stp-states', 'stp-bpdu', 'stp-config'],
       beats: [
-        { k: 'SCENE', where: 'Clinic annex · reception · Wednesday, 08:05',
+        { k: 'SCENE', where: 'The clinic annex · reception · Wednesday, 08:05',
           lines: [
-            { who: 'Imani', text: 'Every morning I turn the workstation on and I wait. Half a minute, sometimes more, before it will even see the network. Is that the switch?' },
-            { who: 'root', text: 'It is the switch being careful. Come to the closet. Bring your phone, we need a stopwatch.' },
-            { who: 'narr', text: 'In the closet he unplugs Imani\'s cable from SW2 and plugs it back in. The port light comes on amber.' },
-            { who: 'root', text: 'Start the clock. Amber means the port is not forwarding yet. A port has two settled states. Blocking, for a port that lost the election. Forwarding, for a root port or a designated port. Between them are two states it passes through on the way up.' },
+            { who: 'narr', text: 'Reception smells of floor polish and burnt coffee, and behind the counter a printer is chewing slowly through a queue. Three people wait on the plastic chairs with numbered tickets. Imani stands at her workstation with a folder under one arm, watching a circle spin on a screen that has not found the network yet.' },
+            { who: 'Imani', text: 'Every morning. I switch it on and it sits there for half a minute. He says it\'s the switch being careful.' },
+            { who: 'root', text: 'It is. Get your phone out. You\'re the stopwatch.' },
+            { who: 'narr', text: 'He reaches under the counter, pulls the workstation\'s cable out of the wall socket and pushes it back in. The little light beside the socket comes on amber.' },
+            { who: 'root', text: 'Start it. A port that comes up doesn\'t forward straight away. The first fifteen seconds it\'s listening: it sends and receives BPDUs, carries no traffic, learns no addresses.' },
             { who: 'narr', text: 'Fifteen seconds. The light is still amber.' },
-            { who: 'root', text: 'That was Listening. The port only handles BPDUs. No traffic, and it does not learn addresses. Now Learning. Still no traffic, but it starts writing MAC addresses into the table so it is ready.' },
-            { who: 'narr', text: 'Thirty seconds. The light turns green.' },
-            { who: 'root', text: 'Forwarding. Fifteen and fifteen, set by one timer, the [[forward delay]]. The fifth word you will see on the Board is Disabled: a port somebody shut down. It is not in the tree at all.' }
-          ] },
-        { k: 'SCENE', where: 'Same closet',
-          lines: [
-            { who: 'you', text: 'Thirty seconds for a workstation seems long.' },
-            { who: 'root', text: 'It is long for a workstation. It is exactly right for a switch. If a port that faces another switch started forwarding at once, it could forward into a loop before the tree had time to see it. So every port waits. There is a way to skip the wait for host ports, and I will show you on Friday, but not before you know what the wait is for.' },
-            { who: 'Imani', text: 'So I just wait?' },
-            { who: 'root', text: 'Until Friday. Then no.' }
+            { who: 'root', text: 'Now it\'s learning. Still no traffic, but it writes the MAC addresses it sees into the table, so it\'s ready the moment it opens.' },
+            { who: 'narr', text: 'At thirty seconds the light turns green and Imani\'s screen blinks to the login page.' },
+            { who: 'root', text: 'Forwarding. Fifteen and fifteen, and both come from one timer, the [[forward delay]]. Listening and learning are only the way up. A port settles in forwarding, or in blocking if it lost the election, and a blocking port does nothing but receive BPDUs.' }
           ],
           choice: { opts: [
-            { say: 'What are the other timers?', reply: '"Three, and the root bridge sets all of them for the whole network. [[Hello]]: the root sends a BPDU every 2 seconds. [[Max age]]: a switch waits 20 seconds without hearing a BPDU before it decides something changed. Forward delay: the 15 seconds you just timed, twice."' },
-            { say: 'What happens when a link dies?', reply: '"The switch on the far side stops hearing BPDUs on its root port. It waits max age, 20 seconds. Then it re-runs the election, and a blocked port that must wake up goes through Listening and Learning. 20 plus 15 plus 15. Fifty seconds from a dead link to a working one. Going the other way, from forwarding to blocking, is instant. Closing a door is always safe."' }
+            { tone: 'ask', say: 'What are the other timers?', reply: 'Old Root: "The root sends a BPDU every two seconds, which is the [[hello]]. A switch that hears nothing on its root port for twenty seconds, ten hellos, gives up on that path, and that\'s [[max age]]. Every switch runs on the timers the root bridge sends, whatever it has set itself."' },
+            { tone: 'press', say: 'So when a cable dies, the backup is up in thirty seconds?', reply: 'Old Root: "Worse. If the switch can\'t see the cable die, it waits out max age first, twenty seconds, then the blocked port climbs through listening and learning, fifteen and fifteen. Fifty seconds. The other way round is instant: a forwarding port can drop straight to blocking, but a blocking port has to climb."' },
+            { tone: 'care', say: 'Half a minute with a patient waiting must feel long.', reply: 'Imani: "On a quiet morning it\'s half a minute. On the morning of a bus crash it\'s thirty people at this counter." Old Root: "You\'ll have it back by lunch."' }
           ] } },
-        { k: 'SCENE', where: 'Same closet',
+        { k: 'SCENE', where: 'The switch closet · Wednesday, 09:20',
           lines: [
-            { who: 'root', text: 'One more thing people get wrong. A switch only sends BPDUs out of its designated ports. Root ports and blocked ports listen. So when a switch goes quiet on your root port for 20 seconds, that is how you learn your path to the root is gone.' },
-            { who: 'narr', text: 'Imani goes back to reception. Old Root writes on the work order.' }
-          ] },
-        { k: 'LORE', title: 'FIFTY SECONDS OF NOTHING', year: 2001, vibe: 'Whack. Half a minute is a lifetime when the phones are down.', text: 'Old Root: "That fifty seconds is why the original standard got a bad name. In 2001 the IEEE published 802.1w, Rapid Spanning Tree. Same idea, new handshake, a link comes back in under a second. It renamed the roles too: alternate and backup instead of non-designated. Every modern Cisco switch runs the rapid version per VLAN by default. The old states and timers are still asked by the Board because half the buildings in Watson still run the old tree."' },
-        { k: 'KIT', text: 'On the work order:', kit: [ { cmd: 'Blocking → Listening (15 s) → Learning (15 s) → Forwarding', what: 'the way up. never skipped without PortFast' }, { cmd: 'hello 2 s · forward delay 15 s · max age 20 s', what: 'defaults. the root bridge sets them for everyone' }, { cmd: 'dead link to forwarding: up to 50 s', what: 'max age + listening + learning' }, { cmd: 'forwarding → blocking: immediate', what: 'closing is always safe' }, { cmd: 'BPDUs go out designated ports only', what: 'root and blocked ports receive' } ] },
-        { k: 'SYNC', q: { prompt: 'Imani texts you later: "The tech said the port was in a state where it learns addresses but still does not pass my traffic. Which one was that?"', opts: ['Blocking', 'Listening', 'Learning', 'Forwarding'], a: 2, yes: 'Old Root, reading over your shoulder: "Learning. It fills the table so that the moment it forwards, it forwards well."', no: 'Old Root: "Learning. Listening does neither. Forwarding does both. Blocking does nothing but listen for hellos."' , why: 'Old Root: Four states. Blocking only listens for hellos. Listening handles hellos, no traffic, no learning. Learning still sends no traffic, but it starts writing MAC addresses into the table. Forwarding does everything. The one that learns but does not forward is Learning.' } }
-      ] },
-
-    // ------------------------------------------------------------ 4
-    { id: 'stp-bpdu', title: 'Something in reception is talking', sub: 'the BPDU, PVST+ and 802.1D', npc: 'root', day: [21], src: D21, unlocks: ['stp-bpdu'],
-      beats: [
-        { k: 'SCENE', where: 'Clinic annex · switch closet · Thursday, 11:30',
-          lines: [
-            { who: 'mac', text: 'Root. I have frames coming in on SW2 port 7 every two seconds. Same size, same destination, and it is not a broadcast address. I do not know that address.' },
-            { who: 'root', text: 'Read it to me.' },
-            { who: 'mac', text: 'Zero one, zero zero, zero C, CC, CC, CD.' },
-            { who: 'narr', text: 'Old Root puts his coffee down.' },
-            { who: 'root', text: 'Port 7 is reception. Reception has a desk, a printer and a workstation. None of those send that. That address is a switch talking.' },
-            { who: 'you', text: 'How do you know from the address?' },
-            { who: 'root', text: 'Because a [[BPDU]] is always sent to one of two addresses. The standard one, 802.1D, goes to 01:80:C2:00:00:00. The Cisco one, PVST+, one tree per VLAN, goes to 01:00:0C:CC:CC:CD. Mac just read you the second one. Every two seconds is the hello timer. Something in reception is a Cisco switch and it is saying hello.' }
-          ] },
-        { k: 'SCENE', where: 'Same closet · he opens the capture on the laptop',
-          lines: [
-            { who: 'root', text: 'Look at what is inside one. Root Identifier: who the sender thinks the root is. Root Path Cost: how far the sender is from that root. Bridge Identifier: the sender\'s own ID. Port Identifier: the port it left by. Then the timers: message age, max age, hello, forward delay.' },
-            { who: 'narr', text: 'The Root Identifier field shows a priority of 1.' },
-            { who: 'root', text: 'Priority zero, plus one for the VLAN. Lower than anything in this building. Whatever that box is, it has just won the election. Every switch in the annex now believes reception is the centre of the world.' },
-            { who: 'mac', text: 'That explains the table. The gateway keeps moving ports.' }
+            { who: 'narr', text: 'The closet is cooler this morning. Someone has swapped the dying fan for a new one that hums instead of whining, and a phone on speaker leans against the rack, crackling with a market\'s worth of background noise.' },
+            { who: 'mac', text: 'Root, it\'s Mac, from the floor. Your annex uplink has been sending me frames I don\'t know since six this morning, one every two seconds, all to 01:00:0C:CC:CC:CD.' },
+            { who: 'root', text: 'Every two seconds is a hello, and that address is Cisco\'s per-VLAN tree, PVST+. The standard tree sends to 01:80:C2:00:00:00. Something new is talking spanning tree.' },
+            { who: 'root', text: 'SW1\'s shell is open. Show spanning-tree, and read me the root.' },
+            { who: 'you', text: 'Priority 4097, and an address that isn\'t on the rack. SW1\'s root port is Fa0/7.' },
+            { who: 'root', text: 'Fa0/7 is the reception desk.' },
+            { who: 'narr', text: 'Under the reception desk, behind the bin, you find a five-port switch the size of a paperback, warm to the touch, its one cable running into wall socket 7. The sticker on the bottom is from a hire company that closed years ago.' },
+            { who: 'Imani', text: 'That wasn\'t there on Monday. Nobody on this desk has ever seen it.' },
+            { who: 'root', text: 'It set its priority to 4096 and told every switch in the annex it had the best ID, and they believed it. Two things stop that in any building you touch. [[PortFast]] on the ports that face desks, so a workstation goes straight to forwarding, and never on a port to another switch. Then [[BPDU guard]] on the same ports: a BPDU arrives, the port shuts itself down, [[err-disabled]].' }
           ],
           choice: { opts: [
-            { say: 'Is that an attack?', reply: '"It could be. It is also what happens when someone brings a small managed switch from home and plugs it in for a second monitor. Either way, the fix is the same, and you will do it tomorrow. Today, learn to read the hello. A claim in a BPDU is only a claim. The tree believes every one of them unless you tell it not to."' },
-            { say: 'Why does the Cisco version have its own address?', reply: '"Because the standard tree was one tree for the whole switch. Cisco wanted one tree per VLAN, so Vee Lan\'s streets could each have their own root and their own sleeping cable. The old version, PVST, only worked on ISL trunks. PVST+ works on 802.1Q trunks, which is what everyone runs. The rapid version is Rapid PVST+. Same address."' }
+            { tone: 'ask', say: 'Are there other guards?', reply: 'Old Root: "Root Guard, on a port that must never lead to the root: a superior BPDU arrives and the port goes broken, root inconsistent, until those BPDUs stop. Loop Guard, for a cable that has gone one-way: the port stops hearing BPDUs, max age runs out, and it goes broken, loop inconsistent, instead of forwarding. BPDU Filter stops a port sending BPDUs at all, and I\'ve never trusted it."' },
+            { tone: 'press', say: 'Why not just unplug the box?', reply: 'Old Root: "Because the next one will be under a different desk. Guard the ports and it doesn\'t matter where it turns up. Then choose the root on purpose: spanning-tree vlan 1 root primary on SW1 sets 24576, or 4096 under whatever root is there now, and root secondary sets 28672 on the spare."' },
+            { tone: 'quiet', say: '(Turn the little switch over in your hands.)', reply: 'The fan inside it is new, and the label on its config port is typed, not handwritten. Old Root holds out his hand for it, turns it over once, and puts it in his cardigan pocket without a word.' }
           ] } },
-        { k: 'LORE', title: 'ONE KEYSTROKE, WHOLE BUILDING', year: 2005, vibe: 'Pwned, they called it. The word was new. The trick was not.', text: 'Vee Lan, from the doorway: "A pentester showed me a tool called Yersinia once, 2005 vintage. One keystroke and your laptop sends a BPDU with priority zero. Whole building re-elects around a laptop. He did it to make a point. The point was that every hello is a claim and the tree believes claims." Old Root: "Which is why the toolkit exists. Tomorrow."' },
-        { k: 'KIT', text: 'On the work order:', kit: [ { cmd: '01:80:C2:00:00:00', what: 'IEEE 802.1D / RSTP BPDU destination' }, { cmd: '01:00:0C:CC:CC:CD', what: 'Cisco PVST+ BPDU destination' }, { cmd: 'BPDU fields: root ID · root path cost · bridge ID · port ID · timers', what: 'what is in a hello' }, { cmd: 'PVST = ISL trunks only · PVST+ = 802.1Q · Rapid PVST+ = RSTP per VLAN', what: 'the Cisco versions' } ] },
-        { k: 'SYNC', q: { prompt: 'Mac, later: "New capture. Frames to 01:80:C2:00:00:00, two seconds apart. Same thing?"', opts: ['Same thing, PVST+ hellos', 'Standard IEEE STP or RSTP hellos, not the Cisco per-VLAN kind', 'CDP advertisements', 'ARP replies'], a: 1, yes: 'Old Root: "Standard tree. Not a Cisco box, or a Cisco box running the standard mode. Still a switch. Still a claim."', no: 'Old Root: "01:80:C2 is the IEEE address. Cisco per-VLAN uses 01:00:0C. Learn both. The Board will show you one and ask which."' , why: 'Old Root: Two hello addresses to remember. 01:80:C2:00:00:00 is the standard IEEE one. 01:00:0C:CC:CC:CD is the Cisco per-VLAN one, PVST+. Frames to the IEEE address every 2 seconds are standard STP or RSTP hellos. Still a switch. Still a claim.' } }
-      ] },
-
-    // ------------------------------------------------------------ 5
-    { id: 'stp-toolkit', title: 'The box under the desk', sub: 'PortFast, BPDU Guard, Root Guard, Loop Guard', npc: 'root', day: [21], src: D21, unlocks: ['stp-toolkit'],
-      beats: [
-        { k: 'SCENE', where: 'Clinic annex · reception · Friday, 08:20',
-          lines: [
-            { who: 'narr', text: 'Under the reception desk, behind a bin, a small five-port switch with a sticker from a games shop. A temp named Deshawn is standing very still.' },
-            { who: 'Deshawn', text: 'I needed a second port for my laptop. It was just for the week.' },
-            { who: 'veelan', text: 'It has been the root bridge of a medical building since Tuesday.' },
-            { who: 'root', text: 'Vee. He did not know. Nobody told the port to refuse it. That is on us.' },
-            { who: 'narr', text: 'He turns to you.' },
-            { who: 'root', text: 'Two tools. Learn them today and this cannot happen again in any building you touch.' }
-          ] },
-        { k: 'SCENE', where: 'Switch closet · SW2 console',
-          lines: [
-            { who: 'root', text: 'First. Imani\'s workstation waits thirty seconds every morning because the port treats it like a switch. It is not a switch. It cannot make a loop. So we tell the port to skip Listening and Learning and go straight to forwarding. That is [[PortFast]].' },
-            { who: 'you', text: 'On every port?' },
-            { who: 'root', text: 'On every port that faces a host. Never on a port that faces another switch. Put PortFast on an uplink and you have built the loop I spent twenty years preventing. On one port: interface, then "spanning-tree portfast". For every access port on the switch at once: "spanning-tree portfast default" in global config. That command skips trunk ports on its own.' },
-            { who: 'narr', text: 'He types it on SW2 and Imani\'s port goes green in under a second.' }
-          ] },
-        { k: 'SCENE', where: 'Same console',
-          lines: [
-            { who: 'root', text: 'Second. A PortFast port faces a host, so it should never hear a BPDU. Make that a rule. [[BPDU Guard]]. If a BPDU arrives on the port, the port shuts itself off. The state is called [[err-disabled]]. Deshawn\'s box would have been talking to a dead port before it finished saying hello.' },
-            { who: 'veelan', text: 'And I would have found it in the logs instead of in a re-election.' },
-            { who: 'root', text: 'On one port: "spanning-tree bpduguard enable". For every PortFast port at once: "spanning-tree portfast bpduguard default". To bring a port back after you pull the box: "shutdown", then "no shutdown".' }
-          ],
-          choice: { opts: [
-            { say: 'Are there more tools like this?', reply: '"Two you should know by name. Root Guard: a port that will never accept a superior BPDU, so nothing downstream can take the root from you. Loop Guard: a port that stops hearing BPDUs is not allowed to start forwarding, in case the cable went one-way. The Board wants PortFast and BPDU Guard cold. Know the other two exist."' },
-            { say: 'What happens to Deshawn?', reply: 'Vee Lan: "He gets the talk." Old Root: "He gets a second monitor cable from the closet and the talk. Then we put the guard on every host port in the building so the next temp never gets the chance."' }
-          ] } },
-        { k: 'LORE', title: 'FOUR DAYS ON PAPER', year: 2002, vibe: 'Totally offline. Doctors with clipboards. Nobody laughing.', text: 'Old Root: "Err-disabled is a Cisco word. The port shows as down until someone does shutdown and no shutdown, or errdisable recovery brings it back on a timer. After that Boston hospital outage in 2002, the fix was partly this discipline. Decide which ports are edges. Guard them. Stop trusting every hello."' },
-        { k: 'KIT', text: 'On the work order, underlined twice:', kit: [ { cmd: 'interface f0/1 → spanning-tree portfast', what: 'one host port goes straight to forwarding' }, { cmd: 'spanning-tree portfast default', what: 'global: every access port, never trunks' }, { cmd: 'interface f0/1 → spanning-tree bpduguard enable', what: 'one port: BPDU arrives → err-disabled' }, { cmd: 'spanning-tree portfast bpduguard default', what: 'global: every PortFast port gets the guard' }, { cmd: 'shutdown → no shutdown', what: 'recover an err-disabled port after the box is gone' }, { cmd: 'spanning-tree guard root · spanning-tree guard loop', what: 'Root Guard, Loop Guard. know the names' } ] },
-        { k: 'SYNC', q: { prompt: 'Deshawn, quietly: "If the tech had put PortFast on the uplink between SW1 and SW2, what would have gone wrong?"', opts: ['Nothing, PortFast is safe anywhere', 'The uplink could start forwarding before the tree blocked it, and make a loop', 'The port would refuse to trunk', 'Convergence would be slower'], a: 1, yes: 'Old Root: "A port forwarding before the tree has judged it is a loop waiting to happen. Host ports only."', no: 'Old Root: "PortFast skips the safety states. On a switch-facing port that means forwarding into a loop before the tree can react."' , why: 'Old Root: PortFast skips the two safety waits. On a desk port that is fine, because a desk cannot make a loop. On a port to another switch, the port would forward before the tree had checked it, and two switches with two paths make a loop. A loop with no block is a broadcast storm.' } }
-      ] },
-
-    // ------------------------------------------------------------ 6
-    { id: 'stp-config', title: 'Choosing on purpose', sub: 'mode, root primary and secondary, priority, cost, port-priority', npc: 'root', day: [21], src: D21, unlocks: ['stp-config'],
-      beats: [
-        { k: 'SCENE', where: 'Clinic annex · switch closet · Friday, 16:50',
-          lines: [
-            { who: 'narr', text: 'The box is packed. The mug is gone. Old Root sits on an upturned crate and hands you the laptop.' },
-            { who: 'root', text: 'Last thing. On Tuesday you found out the pharmacy hand-me-down is the root by accident. We are going to choose. You type. I talk.' },
-            { who: 'root', text: '"spanning-tree vlan 1 root primary" on SW1. That sets SW1\'s priority to 24576. If some other switch is already lower than that, it goes 4096 below that switch instead. Then "spanning-tree vlan 1 root secondary" on SW2. That is 28672. A backup that wins if SW1 dies.' },
-            { who: 'you', text: 'Why not just type a number?' },
-            { who: 'root', text: 'You can. "spanning-tree vlan 1 priority 4096". Any multiple of 4096, and zero is allowed. I like the number when I want a guarantee. The root primary command works out its number once, when you type it. If a lower switch shows up next month, it does not re-run.' }
-          ] },
-        { k: 'SCENE', where: 'Same closet',
-          lines: [
-            { who: 'veelan', text: 'While you are in there. Two departments on this annex now, VLAN 10 and VLAN 20, and both uplinks cost money. One of them is asleep all day.' },
-            { who: 'root', text: 'Which is the honest use of a tree per VLAN. Make SW1 the root for VLAN 10 and SW2 the root for VLAN 20. Each the other\'s secondary. Two trees, two different sleeping ports, both cables working. Every one of these commands says which VLAN it is for. Type one without the VLAN number and it is not the command you think it is.' },
-            { who: 'narr', text: 'Vee Lan almost smiles.' }
-          ],
-          choice: { opts: [
-            { say: 'What about the mode?', reply: '"spanning-tree mode rapid-pvst" is the modern default, one rapid tree per VLAN. "pvst" is the classic one. "mst" is for very large buildings, and you will not need it here. Check what a switch is running before you assume."' },
-            { say: 'Can I change which port a switch picks without touching the root?', reply: '"Yes. On a port, "spanning-tree vlan 1 cost 4" changes how much that port adds to the root cost. Lower it and the switch prefers that path. "spanning-tree vlan 1 port-priority 64" breaks ties, and it is the neighbour that reads it. Change the number and the tree follows the number."' }
-          ] } },
-        { k: 'SCENE', where: 'Same closet · 17:20',
-          lines: [
-            { who: 'root', text: 'Now look. Not on the switch you typed on. On SW3. "show spanning-tree vlan 20". Read me the Root ID.' },
-            { who: 'you', text: 'It is SW2\'s address. And on VLAN 10 it is SW1.' },
-            { who: 'root', text: 'Then you are done and so am I. Always look from somewhere else. The switch you configured will tell you what you typed. A different switch tells you what happened.' },
-            { who: 'narr', text: 'He picks up the box. At the door he stops.' },
-            { who: 'root', text: 'The tag stays on the cable.' }
-          ] },
-        { k: 'LORE', title: 'SIX KEYS, SEVEN KEYS', year: 2001, vibe: 'Six under the default, seven for the spare. Type it like you mean it.', text: 'Vee Lan, after he leaves: "The numbers are not magic. 24576 is six times 4096. 28672 is seven times. Both sit under the default of eight times, 32768. Cisco added the root primary and secondary commands because people kept typing raw priorities wrong. He still types the raw number when he wants to be sure. So do I."' },
-        { k: 'KIT', text: 'The last work order. His handwriting, your notes:', kit: [ { cmd: 'spanning-tree mode rapid-pvst | pvst | mst', what: 'global. which tree' }, { cmd: 'spanning-tree vlan 1 root primary', what: '24576, or 4096 below the current lowest' }, { cmd: 'spanning-tree vlan 1 root secondary', what: '28672' }, { cmd: 'spanning-tree vlan 1 priority 4096', what: 'explicit. multiples of 4096' }, { cmd: 'interface g0/1 → spanning-tree vlan 1 cost 4', what: 'change what one port adds to the root cost' }, { cmd: 'interface g0/1 → spanning-tree vlan 1 port-priority 64', what: 'tiebreaker, read by the neighbour' }, { cmd: 'show spanning-tree [vlan N]', what: 'verify from a different switch' } ] },
-        { k: 'SYNC', q: { prompt: 'Dispatch, that evening: "Client asks: all defaults, they typed root primary on SW3 for VLAN 1. What priority does SW3 have now?"', opts: ['0', '4096', '24576', '28672'], a: 2, yes: 'You answer before Old Root can. 24576, shown as 24577 in VLAN 1.', no: 'Dispatch: "24576. Only if another switch was already lower would it go 4096 beneath. 28672 is secondary."' , why: 'Old Root: root primary sets 24576 when nobody is lower. If some switch is already lower, it goes 4096 below that switch instead. root secondary always sets 28672. The default is 32768. VLAN 1 adds 1 to the number on screen, so you will read 24577.' } }
+        { k: 'LORE', title: 'FOUR DAYS ON PAPER', year: 2002, vibe: 'Talk about a total meltdown: doctors with clipboards, runners in the halls.',
+          text: 'Old Root, taping a new work order to the door: "On the thirteenth of November 2002 the network at Beth Israel Deaconess Medical Center in Boston started to fail, and it stayed broken for the best part of four days. It had grown too big and too flat for spanning tree to keep up, and the switches drowned in their own traffic. The hospital went back to paper orders and people running lab results by hand. Their CIO, John Halamka, wrote it all up so other hospitals could learn from it. I printed it that year, and it\'s been in my box ever since."' },
+        { k: 'KIT', text: 'He writes the morning on a work order and hands it to you.', kit: [
+          { cmd: 'blocking → listening 15 s → learning 15 s → forwarding', what: 'listening: BPDUs only. Learning: BPDUs and MAC addresses. Forwarding: everything. Blocking: receives BPDUs, nothing else' },
+          { cmd: 'hello 2 s · forward delay 15 s · max age 20 s', what: 'the root bridge\'s timers rule every switch. A dead root port to a new one forwarding: up to 50 s' },
+          { cmd: 'BPDU to 0100.0ccc.cccd = PVST+ · 0180.c200.0000 = standard STP', what: 'BPDUs go out designated ports' },
+          { cmd: 'spanning-tree portfast · spanning-tree portfast default', what: 'one port, or every access port. Never towards a switch' },
+          { cmd: 'spanning-tree bpduguard enable · spanning-tree portfast bpduguard default', what: 'a BPDU arrives → err-disabled. Back with shutdown, no shutdown, or errdisable recovery cause bpduguard (every 300 s)' },
+          { cmd: 'spanning-tree guard root · spanning-tree guard loop · spanning-tree bpdufilter enable', what: 'Root Guard: superior BPDU → broken. Loop Guard: BPDUs stop → broken. Filter: sends none' },
+          { cmd: 'spanning-tree vlan 1 root primary | root secondary | priority 4096', what: '24576, or 4096 under the current root · 28672 · steps of 4096' },
+          { cmd: 'spanning-tree vlan 1 cost 4 · spanning-tree vlan 1 port-priority 64', what: 'on a port: change what it adds to the root cost, or break a tie' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani, as her workstation comes up green before she has pulled her chair in: "If they\'d put that fast setting on the cables between the switches too, what would have happened?"', opts: ['Those ports could forward before the tree had checked them, and make a loop', 'Nothing. It is safe on any port', 'The ports would refuse to come up', 'The whole building would get faster'], a: 0,
+          yes: 'Old Root: "A loop before the tree could stop it. Desks only."', no: 'Old Root: "It skips the checks. Towards a switch that means a loop before the tree can react. Desks only."',
+          why: 'Old Root: PortFast skips listening and learning and goes straight to forwarding. A workstation cannot make a loop, so that is safe on a desk port. A port that faces another switch could start forwarding before spanning tree had judged it, and two switches with two paths between them make a loop.' } }
       ] }
   ] });
 })();

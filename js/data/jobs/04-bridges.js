@@ -65,6 +65,66 @@
         { form: { s1g1: 'root port', s1g2: 'designated port', s2g2: 'non-designated (blocking)', s2f24: 'non-designated (blocking)', s3g2: 'designated port' } }, 'commit', { choose: 0 }, 'commit',
         { dev: 'SW2', type: ['enable', 'configure terminal', 'interface g0/1', 'shutdown'] }, { dev: 'PC2', type: ['ping 10.20.0.31'] }, 'commit', { calc: { rp: 'Gi0/2', cost: '8', tag: '23' } }, 'commit',
         { dev: 'SW2', type: ['no shutdown'] }, 'commit' ],
-      outro: 'At midnight Old Root pencils the tree on the inside of the closet door, with SW3 circled and an X on each of SW2\'s sleeping ports. Up on the ward, the night shift never noticed their cable being pulled. He leaves the tag where it hangs.' }
+      outro: 'At midnight Old Root pencils the tree on the inside of the closet door, with SW3 circled and an X on each of SW2\'s sleeping ports. Up on the ward, the night shift never noticed their cable being pulled. He leaves the tag where it hangs.' },
+
+    // ------------------------------------------------------------------ night 21 · from Lab 21 (configuring spanning tree)
+    { id: 'c-n21-reception-box', cls: 'C', rep: 15, from: 'root', title: 'The Box Under the Reception Desk', day: [21], requires: ['n21-reception-desk'], devices: ['SW1', 'SW2', 'SW3'],
+      brief: 'DISPATCH » Something under the clinic annex\'s reception desk is claiming to be the root bridge. Old Root wants the desk ports guarded, the box cut off, and the root chosen on purpose this time.\n\nCLIENT (Imani, reception) » "My screen takes half a minute every morning, and now there\'s a box under my desk nobody owns. Fix both, please, before the ten o\'clock clinic."',
+      net: {
+        stpMode: 'pvst',
+        devices: {
+          SW1: { kind: 'switch', mac: '0019.e8a1.1c01' }, SW2: { kind: 'switch', mac: '0c11.7a3b.9902' }, SW3: { kind: 'switch', mac: '0001.4a3c.0e03' },
+          PC1: { kind: 'host', ip: '10.20.0.11', mask: '255.255.255.0' }, PC2: { kind: 'host', ip: '10.20.0.21', mask: '255.255.255.0' },
+          ROGUE: { kind: 'rogue', role: 'stp', priority: 4096, mac: '0050.7966.6801' }
+        },
+        links: [ { a: 'SW3', ap: gi(1), b: 'SW1', bp: gi(1) }, { a: 'SW3', ap: gi(2), b: 'SW2', bp: gi(1) }, { a: 'SW1', ap: gi(2), b: 'SW2', bp: gi(2) }, { a: 'SW1', ap: fa(24), b: 'SW2', bp: fa(24) },
+          { a: 'SW1', ap: fa(1), b: 'PC1' }, { a: 'SW2', ap: fa(1), b: 'PC2' }, { a: 'SW1', ap: fa(7), b: 'ROGUE', bp: fa(1) } ],
+        alert: ['ROGUE']
+      },
+      map: { w: 540, h: 360, nodes: [
+          { id: 'SW1', label: 'SW1 · top of the rack', type: 'switch', x: 150, y: 90 }, { id: 'SW2', label: 'SW2 · the wards', type: 'switch', x: 400, y: 90 }, { id: 'SW3', label: 'SW3 · the pharmacy\'s old box', type: 'switch', x: 275, y: 240 },
+          { id: 'PC1', label: 'Imani\'s workstation', type: 'pc', x: 50, y: 200 }, { id: 'ROGUE', label: 'under the reception desk', type: 'rogue', x: 120, y: 320 }, { id: 'PC2', label: 'ward station', type: 'pc', x: 500, y: 200 } ],
+        links: [ { a: 'SW3', b: 'SW1', ap: gi(1), bp: gi(1) }, { a: 'SW3', b: 'SW2', ap: gi(2), bp: gi(1) }, { a: 'SW1', b: 'SW2', ap: gi(2), bp: gi(2) }, { a: 'SW1', b: 'SW2', ap: fa(24), bp: fa(24), tag: 'DO NOT UNPLUG' },
+          { a: 'SW1', b: 'PC1' }, { a: 'SW2', b: 'PC2' }, { a: 'SW1', b: 'ROGUE', ap: fa(7), bp: fa(1) } ], alert: ['ROGUE'] },
+      steps: [
+        { type: 'calc', skill: 'stp-states', text: 'Imani, holding up your phone with the stopwatch still on it: "So where did my half a minute go? And if a cable dies upstairs, how long do the wards wait?"',
+          fields: [ { key: 'listen', label: 'seconds in listening', check: v => String(v).trim() === '15' }, { key: 'learn', label: 'seconds in learning', check: v => String(v).trim() === '15' },
+            { key: 'dead', label: 'seconds from a silent root port to the backup forwarding', check: v => String(v).trim() === '50' } ],
+          answer: 'Listening 15 s + learning 15 s = 30 s. A silent root port: max age 20 + 15 + 15 = 50 s.', hint: 'Forward delay is 15 seconds, used twice. Max age is 20 seconds.', ok: 'Old Root: "Fifteen, fifteen, and fifty. That\'s the classic tree\'s whole bill."',
+          why: 'Old Root: A port that comes up spends one forward delay, 15 seconds, in listening and another 15 in learning before it forwards, which is Imani\'s 30 seconds. When a switch stops hearing BPDUs on its root port, it first waits out max age, 20 seconds, and then the blocked port climbs through listening and learning: 20 + 15 + 15 = 50 seconds.' },
+        { type: 'find', skill: 'stp-bpdu', target: 'ROGUE', text: 'Old Root: "Now the root. Read SW1\'s tree, follow its root port, and click whatever is on the other end."',
+          hint: 'SW1# show spanning-tree\nRoot ID priority 4097 with an address that is not SW1, SW2 or SW3. The Root port is Fa0/7.', ok: 'Old Root: "Priority 4096 plus VLAN 1, on a box nobody owns."',
+          why: 'Old Root: SW1\'s show spanning-tree shows a Root ID of priority 4097, which is 4096 plus VLAN 1, and a MAC address that belongs to none of the annex\'s switches. The port marked Root on SW1 is Fa0/7, the reception desk socket, so the box on the far end of Fa0/7 is the one claiming the root.' },
+        { type: 'choice', skill: 'stp-bpdu', text: 'Mac, on the speaker: "Its hellos all go to 01:00:0C:CC:CC:CD. What\'s it speaking?"', opts: ['Standard IEEE 802.1D', 'Cisco PVST+', 'Rapid STP, 802.1w', 'It is not spanning tree at all'], a: 1,
+          hint: 'The standard tree uses 01:80:C2:00:00:00.', ok: 'Old Root: "Cisco\'s per-VLAN tree. Somebody knew what they were plugging in."',
+          why: 'Old Root: Standard 802.1D BPDUs go to 01:80:C2:00:00:00. Cisco\'s PVST+, one tree per VLAN, sends its BPDUs to 01:00:0C:CC:CC:CD. The box under the desk is a Cisco switch running PVST+.' },
+        { type: 'cmd', skill: 'stp-toolkit', text: 'Old Root: "SW1\'s ports 1 to 12 face desks. Make them access ports, give them PortFast so Imani stops waiting, and BPDU Guard so that box is talking to a dead socket."',
+          check: (d, ctx) => { const c = ctx.compute(1).switches.SW1; return !!(c.ports[fa(1)] && c.ports[fa(1)].portfast && c.ports[fa(1)].bpduguard && c.ports[fa(7)] && c.ports[fa(7)].errdisabled); },
+          onPass: (ctx) => { ctx.netDef.devices.ROGUE.removed = true; },
+          hint: 'SW1(config)# interface range f0/1 - 12\nSW1(config-if-range)# switchport mode access\nSW1(config-if-range)# spanning-tree portfast\nSW1(config-if-range)# spanning-tree bpduguard enable\n   or, after the range is in access mode:\nSW1(config)# spanning-tree portfast default\nSW1(config)# spanning-tree portfast bpduguard default',
+          ok: '%SPANTREE-2-BLOCK_BPDUGUARD: Received BPDU on port Fa0/7 with BPDU Guard enabled. Disabling port.\nImani, from the doorway, holding the little switch: "It\'s gone dark. I\'ve pulled it out."',
+          why: 'Old Root: On the desk ports, switchport mode access fixes them as access ports, spanning-tree portfast sends them straight to forwarding, and spanning-tree bpduguard enable shuts a port down the moment a BPDU arrives on it. The global versions are spanning-tree portfast default, which covers every access port, and spanning-tree portfast bpduguard default, which guards every PortFast port. The box on Fa0/7 keeps sending hellos, so Fa0/7 goes err-disabled and the box drops out of the tree.' },
+        { type: 'cmd', skill: 'stp-config', text: 'Old Root: "Now choose the root before anything else chooses it for you. SW1 primary for VLAN 1, SW2 secondary."',
+          check: (d, ctx) => { const c = ctx.compute(1); return c.switches.SW1.isRoot && c.switches.SW1.prio === 24577 && c.switches.SW2.prio === 28673; },
+          hint: 'SW1(config)# spanning-tree vlan 1 root primary\nSW2(config)# spanning-tree vlan 1 root secondary', ok: 'Old Root: "24577 and 28673 on the screen. SW1 runs the tree because we said so."',
+          why: 'Old Root: spanning-tree vlan 1 root primary sets the priority to 24576, or to 4096 below the current root if the root is already lower than that. spanning-tree vlan 1 root secondary sets 28672. Both beat the default 32768, so SW1 becomes the root and SW2 takes over if SW1 dies. With VLAN 1 added, the screen shows 24577 and 28673.' },
+        { type: 'cmd', skill: 'stp-toolkit', text: 'Imani: "The box is in his pocket. Can I have the socket back for the label printer?"',
+          need: [ { dev: 'SW1', ctx: 'interface ' + fa(7), line: 'shutdown' }, { dev: 'SW1', ctx: 'interface ' + fa(7), line: 'no shutdown' } ],
+          hint: 'SW1(config)# interface f0/7\nSW1(config-if)# shutdown\nSW1(config-if)# no shutdown', ok: 'Old Root: "Up, and still guarded. If another box turns up there, it goes dark again."',
+          why: 'Old Root: An err-disabled port stays down until somebody resets it. Go to interface f0/7 and type shutdown, then no shutdown. The guard stays on the port. To have the switch do it on its own, errdisable recovery cause bpduguard brings err-disabled ports back every 300 seconds by default.' },
+        { type: 'cmd', skill: 'stp-toolkit', text: 'Old Root: "The pharmacy box ran this tree once by accident. Put Root Guard on SW1\'s port to it, so it can never take the root back from that side."',
+          need: [ { dev: 'SW1', ctx: 'interface ' + gi(1), line: 'spanning-tree guard root' } ],
+          hint: 'SW1(config)# interface g0/1\nSW1(config-if)# spanning-tree guard root', ok: 'Old Root: "If SW3 ever claims the root again, that port goes broken until it stops."',
+          why: 'Old Root: Root Guard goes on a designated port that should never lead to the root. On SW1, interface g0/1 faces SW3, so spanning-tree guard root there means a superior BPDU from SW3 puts the port into the broken, root inconsistent state instead of handing SW3 the root. The port recovers on its own when the superior BPDUs stop.' },
+        { type: 'choice', skill: 'stp-toolkit', text: 'Old Root, tapping the tag: "Last one. Say this cable went one-way, so SW2 stops hearing BPDUs on its blocked end. Without Loop Guard, what does SW2 do?"',
+          opts: ['Waits out max age, decides the path is gone, and opens the port into a loop', 'Keeps the port blocked forever', 'Shuts the port down as err-disabled', 'Becomes the root bridge'], a: 0,
+          hint: 'A blocked port stays blocked only because BPDUs keep telling it a better path exists.', ok: 'Old Root: "It opens into a loop. With Loop Guard, spanning-tree guard loop, it goes broken instead."',
+          why: 'Old Root: A blocked port stays blocked because it keeps hearing BPDUs from the designated end. If the link goes one-way, a Layer 1 fault, the BPDUs stop, max age runs out, and the switch moves the port towards forwarding, which makes a loop. Loop Guard, spanning-tree guard loop on a port or spanning-tree loopguard default on all of them, puts that port into the broken, loop inconsistent state instead, until BPDUs arrive again.' }
+      ],
+      solution: [ { calc: { listen: '15', learn: '15', dead: '50' } }, 'commit', { select: 'ROGUE' }, 'commit', { choose: 1 }, 'commit',
+        { dev: 'SW1', type: ['enable', 'configure terminal', 'interface range f0/1 - 12', 'switchport mode access', 'spanning-tree portfast', 'spanning-tree bpduguard enable'] }, 'commit',
+        { dev: 'SW1', type: ['exit', 'spanning-tree vlan 1 root primary'] }, { dev: 'SW2', type: ['enable', 'configure terminal', 'spanning-tree vlan 1 root secondary'] }, 'commit',
+        { dev: 'SW1', type: ['interface f0/7', 'shutdown', 'no shutdown'] }, 'commit', { dev: 'SW1', type: ['interface g0/1', 'spanning-tree guard root'] }, 'commit', { choose: 0 }, 'commit' ],
+      outro: 'Imani\'s screen finds the network before her coffee has cooled, and the ten o\'clock clinic starts on time. Old Root keeps the little switch in his cardigan pocket all afternoon.' }
   );
 })();
