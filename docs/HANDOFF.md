@@ -136,6 +136,10 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Every router and switch in a gig's `net` gets a device at jack-in, so `preconfig` applies to boxes with no
+  console too; only `devices` show as consoles. A gig sharpens each quickhack one step at most. Spanning-tree marks on the
+  map show only for gigs with a `topo` or `stpView: true`. Class thresholds C 180, B 420, A 820; pay and rep default per class.
+
 - 2026-09-28 · UI overhaul, part 1. HUD in three bands with icons, five top-level menus, HUNGER and CHROME INTEGRITY
   meters, hover tips (`data-tip` on any element), phone tab bar (`css/hud.css`). **The fixer replaces SHOW ME:**
   `Game.fixer.can()/hire()` in a dive; the fee is the gig's pay; the run pays nothing, greenlights nothing, sharpens

@@ -41,6 +41,11 @@ module.exports.run = function({ out }){
       ok(r.ok && ((Game.state.skills[k] || {}).clean || 0) === before + 1, 'sharpening: one gig adds one clean use to ' + k + ' (' + ((Game.state.skills[k] || {}).clean) + ')'); }
     Object.keys(Game.state).forEach(key => delete Game.state[key]); Object.assign(Game.state, JSON.parse(snap));
   }
+  // a router or switch without a console still gets its starting config (night 2's dock switch starts with its port shut)
+  if (JOBS.find(j => j.id === 'd-n02-dock-link')) {
+    Game.startJob('d-n02-dock-link', { silent: true }); const p = Game.run.ctx.net().ping('PC1', '192.168.1.60'); Game.abort();
+    ok(!p.ok, 'setup: a device with no console still gets its preconfig (' + p.reason + ')');
+  }
   // nothing leaked out of the probe runs
   ok(!Game.state.codex || !Game.state.codex[first.id], 'runs do not leak into the saved state');
   return { pass, fails };

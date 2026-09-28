@@ -122,7 +122,9 @@
       net(){ const s = ctx.state(); return s ? Net.api(s) : null; }, cfg(dev){ return devices[dev] ? NetConfig.parse(devices[dev]) : null; },
       compute(vlan){ vlan = vlan || 1; if (topo) return Stp.compute(topo, vlan, devices); const s = ctx.state(); if (!s) return null; return s.stp[vlan] || (s.stpTopo ? Stp.compute(s.stpTopo, vlan, devices) : null); } };
     R.ctx = ctx;
-    job.devices.forEach(n => { const kind = netDef && netDef.devices[n] && ['host', 'server'].includes(netDef.devices[n].kind) ? 'host' : 'ios'; const shows = topo ? stpShowsFor(topo) : {}; if (job.shows && job.shows[n]) Object.assign(shows, job.shows[n]);
+    // every router and switch in the network gets a device, so its starting config applies even without a console; the player only sees job.devices
+    const all = job.devices.slice(); if (netDef) Object.keys(netDef.devices).forEach(n => { if (!all.includes(n) && ['router', 'switch', 'l3switch'].includes(netDef.devices[n].kind)) all.push(n); });
+    all.forEach(n => { const kind = netDef && netDef.devices[n] && ['host', 'server'].includes(netDef.devices[n].kind) ? 'host' : 'ios'; const shows = topo ? stpShowsFor(topo) : {}; if (job.shows && job.shows[n]) Object.assign(shows, job.shows[n]);
       devices[n] = new Sim.Device(n, { shows, kind, netState: () => ctx.state(), banner: kind === 'host' ? n + ' — type help' : n + ' con0 is now available\n\nPress RETURN to get started.' }); });
     if (netDef && netDef.preconfig) for (const n in netDef.preconfig) if (devices[n]) devices[n].preload(netDef.preconfig[n]);
     run = R; if (!opts.silent) { ev('job_start', { job: id }); log('Jacked in: ' + job.title); } return run; }
