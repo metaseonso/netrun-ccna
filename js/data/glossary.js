@@ -187,5 +187,9 @@ window.GLOSSARY = {
   'pagp': 'Port Aggregation Protocol, Cisco proprietary. Negotiates an EtherChannel: desirable sends, auto only answers.',
   'metric': 'The number a routing protocol uses to compare its own routes to the same network: RIP hop count, EIGRP bandwidth and delay, OSPF cost. Lower wins; equal metrics are load-balanced (ECMP).',
   'autonomous system': 'A network under one organisation\'s control, with its own routing policy. IGPs share routes inside one; EGPs (BGP) share routes between them.',
-  'floating static route': 'A static route given an administrative distance higher than the dynamic route it backs up, so it stays out of the routing table until that route disappears.'
+  'floating static route': 'A static route given an administrative distance higher than the dynamic route it backs up, so it stays out of the routing table until that route disappears.',
+  'feasible distance': 'EIGRP: this router\'s own total metric to a destination.',
+  'reported distance': 'EIGRP: a neighbour\'s metric to a destination, as it advertises it. Also called the advertised distance.',
+  'successor': 'EIGRP: the route with the lowest metric (feasible distance) to a destination. It goes in the routing table.',
+  'feasible successor': 'EIGRP: a backup route whose reported distance is lower than the successor\'s feasible distance (the feasibility condition), so it cannot loop. EIGRP load-balances over unequal costs only across these.'
 };

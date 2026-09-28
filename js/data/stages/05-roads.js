@@ -57,6 +57,48 @@
         { k: 'SYNC', q: { prompt: 'A night driver at the coffee van, reading your receipt over your shoulder: "Say a router hears about the depot from OSPF and from RIP at the same time. Which one goes in the table?"', opts: ['The OSPF route, because 110 is lower than RIP\'s 120', 'The RIP route, because it counts hops', 'Whichever has the lower metric', 'Both, split evenly'], a: 0,
           yes: 'Nexthop: "OSPF. Lower AD, every time."', no: 'Nexthop: "OSPF. Different protocols get compared by AD, and 110 beats 120."',
           why: 'Nexthop: When two different protocols offer a route to the same network, the router cannot compare their metrics, so it compares administrative distance and keeps the lower one. OSPF is 110 and RIP is 120, so the OSPF route goes in the table. Metrics only decide between routes from the same protocol.' } }
+      ] },
+    // ------------------------------------------------------------ night 25 · RIP and EIGRP
+    { id: 'n25-old-cabbies', title: 'The old cabbies\' routes', sub: 'RIP and EIGRP', npc: 'nexthop', day: [25], src: [PS('RIP_and_EIGRP.md')], unlocks: ['rip-eigrp'],
+      beats: [
+        { k: 'SCENE', where: 'The cab co-op garage · Monday, 23:30',
+          lines: [
+            { who: 'narr', text: 'The garage smells of engine oil and the cigarettes nobody is supposed to smoke in here. A radio on the workbench plays songs older than you, and four drivers in their sixties play cards on an upturned crate under a strip light. Along the back wall, above a rack of three dusty routers, hang hundreds of laminated route cards.' },
+            { who: 'nexthop', text: 'The co-op. My dad\'s crowd. Their routers have spoken RIP since before I could drive, and Hollis over there wants them moved to something newer before he retires.' },
+            { who: 'Hollis', text: 'Forty years on the radio, and every one of those boxes still thinks the only thing that matters is how many stops away you are.' },
+            { who: 'nexthop', text: 'That\'s [[RIP]]. Hop count is the whole metric, and fifteen hops is the most it will count. Sixteen means you can\'t get there. It doesn\'t care whether a hop is a gigabit fibre or a wet piece of string.' },
+            { who: 'nexthop', text: 'RIPv1 shouts its updates to everyone by broadcast and only knows the old classful networks, so no VLSM. RIPv2 carries the masks, works with VLSM and CIDR, and multicasts to 224.0.0.9. There\'s RIPng for IPv6. It only has two messages: a request, and a response full of routes.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do you set it up?', reply: 'Nexthop: "router rip, version 2, no auto-summary so it stops squashing subnets back into classful networks, then network with a classful address to switch it on for every interface inside it. passive-interface stops updates going out of a port with no routers behind it. default-information originate hands the neighbours your default route."' },
+            { tone: 'press', say: 'Why move them off it, if it works?', reply: 'Hollis: "Because the garage on the hill has a fibre and the night depot has a copper line older than me, and RIP thinks they\'re the same. Two hops is two hops to RIP. It can\'t split traffic unequally either, only across routes with the same hop count."' },
+            { tone: 'joke', say: 'Does anyone win at cards?', reply: 'Hollis: "Nobody\'s won since the co-op bought the fridge. We just keep score." He lays down a hand without looking at it.' }
+          ] } },
+        { k: 'SCENE', where: 'The co-op garage · the workbench · Tuesday, 00:10',
+          lines: [
+            { who: 'narr', text: 'Nexthop clears a space on the workbench among spark plugs and a cold teapot, and draws three boxes and three roads on a napkin with a green pen.' },
+            { who: 'nexthop', text: '[[EIGRP]] is Cisco\'s. It\'s distance vector like RIP, rumours from the neighbours, but it measures the road properly: the bandwidth of the slowest link on the path, plus the delay of every link on it. AD 90, so it beats RIP\'s 120 the moment it\'s switched on. Hellos go to 224.0.0.10.' },
+            { who: 'nexthop', text: 'router eigrp 100 starts it, and that number is the AS. It has to match on both routers or they never become neighbours. network with a wildcard mask picks the interfaces, no auto-summary like RIP, passive-interface on the ports that face desks, and a router ID the same way as always: one you set, or the highest loopback, or the highest physical address.' },
+            { who: 'nexthop', text: 'Here\'s where it gets clever. My total metric to a place is my [[feasible distance]]. The neighbour\'s metric to it, what it tells me, is its [[reported distance]]. The road with the lowest total is the [[successor]]. Any other road whose reported distance is lower than the successor\'s feasible distance is a [[feasible successor]], a backup that can\'t possibly loop back through me.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why does the backup need a lower reported distance?', reply: 'Nexthop: "If the neighbour is closer to the place than I am, its road can\'t be going back through me. That\'s the feasibility condition. A feasible successor steps in the moment the successor dies, with no asking round."' },
+            { tone: 'press', say: 'Can it use the slow line and the fast one at once?', reply: 'Nexthop: "EIGRP is the only one of the three that can load-balance over unequal costs, and only across feasible successors. RIP and OSPF only split traffic over routes with the same metric."' },
+            { tone: 'care', say: 'What happens to the route cards?', reply: 'Hollis, from the card table: "On the wall, where they\'ve always been. My grandson can read them when the power goes."' }
+          ] } },
+        { k: 'LORE', title: 'THE CO-OP\'S OWN ROAD', year: 1993, real: ['cisco', 'ietf'], vibe: 'All that and a bag of chips: Cisco\'s own road, and only Cisco cabs allowed on it.',
+          text: 'Nexthop, folding the napkin into his wallet: "Cisco brought out EIGRP in 1993 to replace its older protocol, IGRP. For more than twenty years only Cisco routers could speak it, and in 2016 Cisco published it as RFC 7868 so anyone could. The co-op bought Cisco routers the year it came out and have argued about it at the card table ever since."' },
+        { k: 'KIT', text: 'Nexthop writes it on the back of the napkin.', kit: [
+          { cmd: 'router rip → version 2 → no auto-summary → network 10.0.0.0', what: 'RIP: hop count, 15 max. v1 broadcasts, classful. v2 multicasts to 224.0.0.9, VLSM. RIPng for IPv6' },
+          { cmd: 'passive-interface g0/0 · default-information originate', what: 'no updates out of a desk port · share the default route' },
+          { cmd: 'router eigrp 100 → network 10.25.0.0 0.0.255.255 → no auto-summary', what: 'EIGRP: AD 90, hellos to 224.0.0.10. The AS number must match on neighbours' },
+          { cmd: 'eigrp router-id 1.1.1.1', what: 'router ID: manual, else highest loopback, else highest physical address' },
+          { cmd: 'metric = slowest bandwidth + total delay (K1 = 1, K3 = 1, K2 = K4 = K5 = 0)', what: 'feasible distance: mine. Reported distance: the neighbour\'s' },
+          { cmd: 'successor = best route · feasible successor: RD lower than the successor\'s FD', what: 'EIGRP load-balances over unequal costs, but only across feasible successors' },
+          { cmd: 'no router eigrp 10 · show ip eigrp neighbors · show ip protocols', what: 'remove a process · who the router can hear · what it is running' } ] },
+        { k: 'SYNC', q: { prompt: 'Hollis, not looking up from his cards: "So the depot box says router eigrp 10 and ours say router eigrp 100. That\'s just a label, isn\'t it?"', opts: ['No. The AS number must match or they never become neighbours', 'Yes. The number is only for the router\'s own use', 'Only the lower number matters', 'It must match only for RIP'], a: 0,
+          yes: 'Nexthop: "Not a label. Change the depot to 100 and they\'ll talk."', no: 'Nexthop: "It has to match. EIGRP routers with different AS numbers ignore each other."',
+          why: 'Nexthop: The number after router eigrp is the autonomous system number, and two routers only become EIGRP neighbours when it matches. A router in AS 10 and one in AS 100 never exchange routes, even on the same cable.' } }
       ] }
   ] });
 })();
