@@ -163,5 +163,44 @@
           yes: 'Cider: "One-two-seven. The next subnet starts at .128."', no: 'Cider: "The second /26 runs .64 to .127, so .127."',
           why: 'Cider: A /26 has a block size of 64, so the subnets of 192.168.13.0/24 are .0, .64, .128 and .192. The second one runs from 192.168.13.64, its network address, to 192.168.13.127, its broadcast address, one below the start of the next subnet.' } }
       ] },
+    // ------------------------------------------------------------ night 14 · subnetting, part 2
+    { id: 'n14-the-landlord', title: 'Eighty subnets for twelve units', sub: 'subnetting a class B, subnet and host counts', npc: 'cider', day: [14], src: [PS('Subnetting_Part2.md')], unlocks: ['subnet-math'],
+      beats: [
+        { k: 'SCENE', where: 'Cider\'s bar · a booth by the window · evening',
+          lines: [
+            { who: 'narr', text: 'The booth by the window smells of the man sitting in it: expensive cologne and wet wool. He has a tablet on the table with a slide on it, full of boxes and arrows in corporate blue. Cider slides in opposite him with her ruler and a glass of water, and makes room for you on her side.' },
+            { who: 'Voss', text: 'I own the warehouse block on Coil Street. Twelve units. A consultant told me I need eighty separate networks of five hundred machines each, out of my 172.20.0.0/16, and that he could do it for a price.' },
+            { who: 'cider', text: 'A class B is sixteen network bits and sixteen host bits, and you cut it the same way as a class C, only the interesting octet moves to the third. Eighty networks: six borrowed bits gives 64, which isn\'t enough, so seven gives 128. That\'s a /23.' },
+            { who: 'cider', text: 'A /23 leaves nine host bits: 512 addresses, 510 hosts. So yes, eighty networks of five hundred fit, exactly, with forty-eight spare. The question is whether twelve units need eighty networks.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do you pick the prefix from what someone asks for?', reply: 'Cider: "Two questions. How many subnets do you need? Borrow the smallest number of bits where 2 to that number covers it. How many hosts in the biggest one? Keep enough host bits that 2 to that number, minus 2, covers it. If both fit in 32 bits, you have your prefix. If they don\'t, somebody wants too much."' },
+            { tone: 'press', say: 'Why would a consultant tell him eighty?', reply: 'Cider glances at the corporate blue on the slide. "Because eighty sounds like a lot of work, and work is billed by the hour. The logo on that slide is Halvorsen\'s." Voss turns the tablet face down.' },
+            { tone: 'care', say: 'What does he actually need, Cider?', reply: 'Cider: "Twelve units, a few dozen machines each, plus a camera network and an office. Sixteen subnets would be generous. A /20 each would give him four thousand hosts per unit and still leave room, and he\'d never have to pay anyone to renumber."' }
+          ] } },
+        { k: 'SCENE', where: 'The booth · Cider\'s ruler on the tablet',
+          lines: [
+            { who: 'cider', text: 'To find which subnet an address is in, find the interesting octet, the one where the mask isn\'t 255 or 0, and the block size in it. A /23 is 255.255.254.0, so the third octet is interesting, and the block size is 256 minus 254, which is 2.' },
+            { who: 'cider', text: 'So the /23 subnets start at 172.20.0.0, 172.20.2.0, 172.20.4.0 and so on, every even third octet. Take 172.20.217.130: the biggest multiple of 2 at or below 217 is 216, so it\'s in 172.20.216.0/23, and the broadcast is one below the next subnet, 172.20.217.255.' },
+            { who: 'Voss', text: 'So a machine with .255 at the end could be a normal machine?' },
+            { who: 'cider', text: 'In a /23, yes. 172.20.216.255 sits in the middle of 172.20.216.0/23, and a PC can have it. Only the very first address and the very last address of the whole block are taken, and here those are 172.20.216.0 and 172.20.217.255.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Does a class A work the same way?', reply: 'Cider: "The same, with more octets to play with. 10.0.0.0/8 cut into /16s is 256 subnets of 65,534 hosts. Cut it into /24s and it\'s 65,536 subnets of 254. The method never changes: borrowed bits make subnets, remaining bits make hosts."' },
+            { tone: 'press', say: 'What if he needs more hosts per subnet than that?', reply: 'Cider: "Then he borrows fewer bits. /22 gives 1,022 hosts and 64 subnets. /21 gives 2,046 and 32. Every bit you hand back to the hosts halves the number of subnets."' },
+            { tone: 'joke', say: 'Can I bill him by the hour?', reply: 'Voss laughs for the first time. Cider does not. "You\'ll bill him for one evening, which is what it takes."' }
+          ] } },
+        { k: 'LORE', title: 'RUNNING OUT OF B', year: 1992, real: ['ietf'], vibe: 'Not! Class B was running out, and everybody still wanted one.',
+          text: 'Cider, capping her pen: "In June 1992 RFC 1338 warned that the class B networks were going fast, because every company that needed a few hundred addresses asked for sixty-five thousand. It proposed handing out blocks of class C networks and routing them as one, which became CIDR the next year. Landlords asking for more than they need is an old story on this block."' },
+        { k: 'KIT', text: 'Cider writes on the back of Voss\'s business card and hands it to you instead of him.', kit: [
+          { cmd: 'subnets needed → borrow b bits: 2^b ≥ subnets', what: '80 subnets → 7 bits → /16 + 7 = /23' },
+          { cmd: 'hosts needed → keep h bits: 2^h − 2 ≥ hosts', what: '/23: 9 host bits → 510 hosts' },
+          { cmd: 'interesting octet · block size = 256 − mask octet', what: '/23 = 255.255.254.0 → block 2 in the third octet' },
+          { cmd: 'network = the block multiple at or below · broadcast = next network − 1', what: '172.20.217.130/23 → 172.20.216.0 to 172.20.217.255' },
+          { cmd: '/22 1,022 hosts · /21 2,046 · /20 4,094', what: 'each bit back to the hosts halves the subnets' } ] },
+        { k: 'SYNC', q: { prompt: 'Voss, turning the card over: "So 172.20.216.255 on a /23. Can a machine have it?"', opts: ['Yes. It is a normal host address inside 172.20.216.0/23', 'No. Anything ending in .255 is a broadcast', 'No. It is the network address', 'Only a router can have it'], a: 0,
+          yes: 'Cider: "Yes. The broadcast for that block is 172.20.217.255."', no: 'Cider: "Yes, it can. A /23 spans two third-octet values, so .255 on the first one is in the middle."',
+          why: 'Cider: 172.20.216.0/23 runs from 172.20.216.0 to 172.20.217.255. 172.20.216.255 is in the middle of that range, so it is an ordinary host address. Only the first address, the network, and the last, the broadcast, are reserved.' } }
+      ] },
   ] });
 })();

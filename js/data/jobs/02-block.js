@@ -224,6 +224,57 @@
         { dev: 'R1', type: ['enable', 'configure terminal', 'interface g0/0', 'ip address 192.168.13.1 255.255.255.192', 'no shutdown'] }, { dev: 'INK', type: ['ping 192.168.13.1'] }, 'commit',
         { dev: 'R1', type: ['interface g0/1', 'ip address 192.168.13.65 255.255.255.192', 'no shutdown', 'interface g0/2', 'ip address 192.168.13.129 255.255.255.192', 'no shutdown'] }, { dev: 'FIX', type: ['ping 192.168.13.70'] }, 'commit',
         { choose: 0 }, 'commit', { calc: { n: '4', b: '16', h: '14' } }, 'commit' ],
-      outro: 'By evening all three shops have their lights and their networks, and the tattoo artist has a small .1 inked on the inside of one wrist, a joke that got out of hand. Cider writes the fourth /26 in her ledger as RESERVED, with the landlord\'s name next to it.' }
+      outro: 'By evening all three shops have their lights and their networks, and the tattoo artist has a small .1 inked on the inside of one wrist, a joke that got out of hand. Cider writes the fourth /26 in her ledger as RESERVED, with the landlord\'s name next to it.' },
+
+    // ------------------------------------------------------------------ night 14 · a topic gig (no lab): counts, prefixes, a class B subnet
+    { id: 'd-n14-coil-street', cls: 'D', rep: 10, from: 'cider', title: 'The Coil Street Plan', day: [14], requires: ['n14-the-landlord'], devices: ['R1', 'UNIT1'],
+      brief: 'DISPATCH » Voss, the Coil Street landlord, wants his address plan checked before he pays anyone. Cider says do the sums with him, then set up the first unit so he can see it work.\n\nCLIENT (Voss) » "One /16, twelve units, and a consultant who wants eighty networks. Tell me what I really need."',
+      net: {
+        devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0011.2214.0001' }, UNIT1: { kind: 'host', ip: '172.20.216.20', mask: '255.255.254.0', gw: '172.20.217.254' },
+          CAM: { kind: 'host', ip: '172.20.216.255', mask: '255.255.254.0', gw: '172.20.217.254' } },
+        links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'UNIT1' }, { a: 'SW1', ap: 'fastethernet0/2', b: 'CAM' } ],
+        preconfig: { R1: ['hostname COIL-ST'] }
+      },
+      map: { w: 520, h: 250, nodes: [ { id: 'R1', label: 'COIL-ST', type: 'router', x: 260, y: 55 }, { id: 'SW1', label: 'unit 1 switch', type: 'switch', x: 260, y: 135 }, { id: 'UNIT1', label: 'unit 1 office PC', type: 'pc', x: 160, y: 215 }, { id: 'CAM', label: 'unit 1 camera', type: 'pc', x: 360, y: 215 } ],
+        links: [ { a: 'R1', b: 'SW1' }, { a: 'SW1', b: 'UNIT1' }, { a: 'SW1', b: 'CAM' } ] },
+      steps: [
+        { type: 'calc', skill: 'subnet-math', text: 'Cider: "Start with the consultant\'s numbers. Eighty subnets out of 172.20.0.0/16."',
+          fields: [ { key: 'bits', label: 'Bits to borrow', check: v => +v === 7 }, { key: 'pfx', label: 'Resulting prefix length (/n)', check: v => +String(v).replace('/', '') === 23 },
+            { key: 'hosts', label: 'Usable hosts per subnet', check: v => +String(v).replace(/,/g, '') === 510 } ],
+          answer: '7 · /23 · 510', hint: '2^6 = 64 is too few. 2^7 = 128.', ok: 'Cider: "A /23, with room for five hundred and ten in each. His numbers fit. His building doesn\'t need them."',
+          why: 'Cider: 2^6 = 64 subnets is fewer than 80, so 7 bits must be borrowed, giving 2^7 = 128 subnets. 16 + 7 = /23. That leaves 32 − 23 = 9 host bits: 2^9 − 2 = 510 usable hosts per subnet.' },
+        { type: 'form', skill: 'subnet-math', text: 'Cider: "Now what he really needs: sixteen subnets, with as many hosts in each as the /16 allows."',
+          fields: [ { key: 'pfx', label: 'Prefix', options: ['/18', '/20', '/22', '/24'], answer: '/20' }, { key: 'mask', label: 'Mask', options: ['255.255.192.0', '255.255.240.0', '255.255.252.0', '255.255.255.0'], answer: '255.255.240.0' },
+            { key: 'hosts', label: 'Usable hosts each', options: ['4,094', '1,022', '16,382', '254'], answer: '4,094' } ],
+          hint: 'Sixteen subnets is 2^4, so borrow 4 bits.', ok: 'Voss: "Four thousand machines a unit. I have eleven machines in unit one."',
+          why: 'Cider: 16 subnets needs 4 borrowed bits: /16 + 4 = /20, which is 255.255.240.0. That leaves 12 host bits: 2^12 − 2 = 4,094 usable hosts in each subnet.' },
+        { type: 'calc', skill: 'subnet-math', text: 'Cider: "His camera in unit one has been given 172.20.217.130 on a /23 by the consultant. Which subnet is that in?"',
+          fields: [ { key: 'net', label: 'Network address', check: v => String(v).trim() === '172.20.216.0' }, { key: 'bc', label: 'Broadcast address', check: v => String(v).trim() === '172.20.217.255' },
+            { key: 'first', label: 'First usable', check: v => String(v).trim() === '172.20.216.1' }, { key: 'last', label: 'Last usable', check: v => String(v).trim() === '172.20.217.254' } ],
+          answer: '172.20.216.0 · 172.20.217.255 · .216.1 · .217.254', hint: '/23: block size 2 in the third octet. The multiple of 2 at or below 217 is 216.', ok: 'Cider: "216.0 to 217.255. It spans two third-octet values."',
+          why: 'Cider: A /23 mask is 255.255.254.0, so the interesting octet is the third, with a block size of 256 − 254 = 2. The largest multiple of 2 at or below 217 is 216, so the network is 172.20.216.0. The next subnet starts at 172.20.218.0, so the broadcast is 172.20.217.255. Usable: 172.20.216.1 to 172.20.217.254.' },
+        { type: 'cmd', skill: 'subnet-math', text: 'Voss: "Show me it working." Cider: "The unit-one router takes the last usable address of 172.20.216.0/23. Set it on G0/0 and ping it from the office PC and from the camera."',
+          check: (d, ctx) => { const i = ctx.cfg('R1').interfaces['gigabitethernet0/0']; const n = ctx.net(); return !!(i && i.ip === '172.20.217.254' && i.mask === '255.255.254.0') && n.ping('UNIT1', '172.20.217.254').ok && n.ping('CAM', '172.20.217.254').ok; },
+          hint: 'COIL-ST(config)# interface g0/0\nCOIL-ST(config-if)# ip address 172.20.217.254 255.255.254.0\nCOIL-ST(config-if)# no shutdown\nUNIT1 shell:\nC:\\> ping 172.20.217.254', ok: 'Voss: "Both of them answer. Even the one ending in .255."',
+          why: 'Cider: The last usable address of 172.20.216.0/23 is 172.20.217.254, and the mask for /23 is 255.255.254.0. The camera\'s address, 172.20.216.255, ends in .255 but sits in the middle of the /23, so it is an ordinary host and reaches its gateway.' },
+        { type: 'form', skill: 'subnet-math', text: 'Cider: "His nephew runs a class A at the university. Same method, bigger numbers."',
+          fields: [ { key: 'a', label: '10.0.0.0/8 cut into /16s: subnets', options: ['16', '256', '65,536', '128'], answer: '256' }, { key: 'b', label: '... hosts in each /16', options: ['254', '65,534', '65,536', '16,777,214'], answer: '65,534' },
+            { key: 'c', label: '10.0.0.0/8 cut into /24s: subnets', options: ['256', '4,096', '65,536', '16,777,216'], answer: '65,536' } ],
+          hint: 'From /8 to /16 is 8 borrowed bits; to /24 is 16.', ok: 'Cider: "Borrowed bits make subnets, the rest make hosts."',
+          why: 'Cider: From /8 to /16 borrows 8 bits: 2^8 = 256 subnets, each with 16 host bits, 65,534 usable hosts. From /8 to /24 borrows 16 bits: 2^16 = 65,536 subnets of 254 hosts.' },
+        { type: 'choice', skill: 'subnet-math', text: 'Voss: "If one of my units ever needs a thousand machines on one network, what\'s the longest prefix that still fits?"',
+          opts: ['/22 (1,022 hosts)', '/23 (510 hosts)', '/21 (2,046 hosts)', '/24 (254 hosts)'], a: 0,
+          hint: 'Find the fewest host bits where 2^h − 2 is at least 1,000.', ok: 'Cider: "/22. One bit fewer and it\'s five hundred and ten."',
+          why: 'Cider: 2^9 − 2 = 510 is not enough, and 2^10 − 2 = 1,022 is. Ten host bits means a /22. A /21 also fits but wastes more; the longest prefix that fits is /22.' },
+        { type: 'calc', skill: 'subnet-math', text: 'Cider, closing her ledger: "A warm-down for the road. A /24 cut into /27s."',
+          fields: [ { key: 'n', label: 'Number of /27 subnets', check: v => +v === 8 }, { key: 'h', label: 'Usable hosts in each', check: v => +v === 30 }, { key: 'b', label: 'Block size', check: v => +v === 32 } ],
+          answer: '8 · 30 · 32', hint: 'Three borrowed bits, five host bits.', ok: 'Cider: "Eight of thirty. Go home."',
+          why: 'Cider: A /27 borrows 3 bits from a /24: 2^3 = 8 subnets. It keeps 5 host bits: 32 addresses, 30 usable. The block size is 256 − 224 = 32.' }
+      ],
+      solution: [ { calc: { bits: '7', pfx: '23', hosts: '510' } }, 'commit', { form: { pfx: '/20', mask: '255.255.240.0', hosts: '4,094' } }, 'commit',
+        { calc: { net: '172.20.216.0', bc: '172.20.217.255', first: '172.20.216.1', last: '172.20.217.254' } }, 'commit',
+        { dev: 'R1', type: ['enable', 'configure terminal', 'interface g0/0', 'ip address 172.20.217.254 255.255.254.0', 'no shutdown'] }, { dev: 'UNIT1', type: ['ping 172.20.217.254'] }, 'commit',
+        { form: { a: '256', b: '65,534', c: '65,536' } }, 'commit', { choose: 0 }, 'commit', { calc: { n: '8', h: '30', b: '32' } }, 'commit' ],
+      outro: 'Voss pays for one evening, as Cider said he would, and cancels the consultant the next morning. He leaves the tablet with the blue slide on Cider\'s bar, and she props it behind the till where the regulars can see the Halvorsen logo on it.' }
   );
 })();
