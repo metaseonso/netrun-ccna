@@ -136,6 +136,9 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Sticky secure MAC addresses appear in `show running-config` under their port (`switchport port-security mac-address
+  sticky <mac>`), as IOS writes them. Tested in `tests/engine.test.js` (section 18).
+
 - 2026-09-28 · Switch security, for nights 49–51: a port err-disabled by port security stays err-disabled after the offender is
   unplugged, until `shutdown` then `no shutdown` on it or `errdisable recovery cause psecure-violation` (no clock: recovery counts
   as the interval passed); while the offender is still plugged in the port follows the config as before. `errdisable recovery

@@ -151,6 +151,7 @@
     [...blocks.keys()].filter(k => k.startsWith('interface ') && !k.startsWith('interface range ')).map(k => k.slice(10)).sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).forEach(addIf);
     const ranged = [...blocks.keys()].filter(k => k.startsWith('interface range ')); const rangeLines = n => { const out = []; ranged.forEach(k => { const members = window.Stp ? Stp.expandRange(k.replace('interface range ', '')) : []; if (members.includes(n)) blocks.get(k).forEach(x => out.push(x)); }); return out; };
     ifs.forEach(n => { const b = (blocks.get('interface ' + n) || []).concat(rangeLines(n)); const lines = b.map(x => ' ' + show(x)); const noShut = (blocks.get('interface ' + n) || {}).noShut;
+      const ps = S && S.portsec && S.portsec[dev.name + '|' + n]; if (ps && ps.enabled && ps.sticky) ps.learned.forEach(m => lines.push(' switchport port-security mac-address sticky ' + m)); // sticky faces land in the running-config
       const physRouter = (kind === 'router') && /^(gigabitethernet|fastethernet|serial|ethernet)\d/.test(n) && !n.includes('.');
       if (!b.some(x => /^ip address /.test(x.line)) && (kind === 'router' || n.startsWith('vlan') || n.includes('.'))) lines.push(' no ip address');
       if (physRouter && !noShut && !b.some(x => x.line === 'shutdown')) lines.push(' shutdown');

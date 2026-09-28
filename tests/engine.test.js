@@ -278,6 +278,8 @@ module.exports.run = function({ out }){
     const ai = Show.render(d.SW1, 'show ip arp inspection', A.state); ok(/Source Mac Validation\s+: Enabled/.test(ai) && /IP Address Validation\s+: Enabled/.test(ai) && /printers/.test(ai) && /Invalid ARPs \(Res\) on Fa0\/7, vlan 1\.\(\[0bad\.0bad\.0001\/10\.50\.0\.1/.test(ai), 'show ip arp inspection shows validation, the ACL and the spoof it dropped (' + ai + ')');
     ok(/Gi0\/1\s+Trusted\s+None/.test(Show.render(d.SW1, 'show ip arp inspection interfaces', A.state)) && /Fa0\/1\s+Untrusted\s+15/.test(Show.render(d.SW1, 'show ip arp inspection interfaces', A.state)), 'show ip arp inspection interfaces: trust state and the 15 pps default');
     const run = (() => { const n = d.SW1.out.length; d.SW1.exec('do show running-config'); return d.SW1.out.slice(n).map(o => o.s).join('\n'); })(); ok(/arp access-list printers\n permit ip host 10\.50\.0\.5 mac host 0050\.7966\.0005/.test(run), 'running-config prints the ARP ACL');
+    d.SW1.exec('int f0/5'); d.SW1.exec('switchport mode access'); d.SW1.exec('switchport port-security'); d.SW1.exec('switchport port-security mac-address sticky'); d.SW1._netState = () => Net.build(net, d);
+    const run2 = (() => { const n = d.SW1.out.length; d.SW1.exec('do show running-config'); return d.SW1.out.slice(n).map(o => o.s).join('\n'); })(); ok(/interface FastEthernet0\/5\n switchport mode access\n switchport port-security\n switchport port-security mac-address sticky\n switchport port-security mac-address sticky 0050\.7966\.0005/.test(run2), 'running-config lists the sticky address a port learned');
   }
   return { pass, fails };
 };
