@@ -343,6 +343,47 @@
         { k: 'SYNC', q: { prompt: 'Clerk Adebayo, reading the demo\'s small print: "Their controller \'talks to every device over NETCONF\'. Is that its northbound or its southbound interface?"', opts: ['Southbound', 'Northbound', 'Both', 'Neither: NETCONF is a data plane protocol'], a: 0,
           yes: 'Ansible: "Southbound. Down to the boxes."', no: 'Ansible: "Southbound. NETCONF runs between the controller and the devices."',
           why: 'Ansible: The southbound interface (SBI) connects the SDN controller to the network devices it controls, using protocols such as OpenFlow, OpFlex, onePK and NETCONF. The northbound interface (NBI) connects the controller to applications and scripts, usually with a REST API.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 60 · JSON, XML and YAML
+    { id: 'n60-matching-braces', title: 'Matching braces', sub: 'JSON, XML and YAML', npc: 'jason', day: [60], src: [PS('JSON_XML_YAML.md')], unlocks: ['data-formats'],
+      beats: [
+        { k: 'SCENE', where: 'The Lab · Jason\'s desk by the stairs · ten at night', real: ['json'],
+          lines: [
+            { who: 'narr', text: 'Jason\'s corner of the Lab smells of fresh paper and lemon cleaner, which nothing else in the building does. Every folder on his desk is labelled, every label is typed, and his pens lie in a row sorted by colour. He wears a tie at ten at night. A print-out lies squared in the middle of the desk, and he has circled one character on it in red.' },
+            { who: 'jason', text: 'Halvorsen sent the council an inventory of every network device in Watson, for the bid. They have counted our boxes. It\'s in [[JSON]], JavaScript Object Notation, and it doesn\'t parse, because of this comma.' },
+            { who: 'jason', text: 'JSON has four primitive types. A string is text, always in double quotes. A number is just the number. A boolean is true or false. And null means there is deliberately no value. Then two structured types. An object is a set of key-value pairs inside braces, and an array is a list of values inside square brackets.' },
+            { who: 'jason', text: 'Every key in an object is a string in double quotes, then a colon, then the value. Pairs are separated by commas, and there is never a comma after the last one. That is the comma I circled.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Does the spacing matter?', reply: 'Jason: "Not in JSON. Whitespace between the tokens is ignored, so one line or forty lines mean the same thing. I indent for people, not for the parser. That is not true of every format, which we will come to."' },
+            { tone: 'press', say: 'Why would a corp send a file that doesn\'t parse?', reply: 'Jason: "Their own tools forgive trailing commas. Ours don\'t, because the standard doesn\'t. A file that only one side can read is not a shared record, and the council needs a shared record."' },
+            { tone: 'joke', say: 'Is your desk in JSON too?', reply: 'Jason straightens a pen that was already straight. "An object. Key: drawer, value: an array of folders. The cat once walked across it, and I would describe what she left behind as null."' }
+          ] } },
+        { k: 'SCENE', where: 'The Lab · Jason\'s desk · three print-outs side by side',
+          lines: [
+            { who: 'narr', text: 'He lays out three sheets side by side, each describing the same switch. The first is all braces and quotes, the second is all angle brackets, and the third is almost bare, just indented lines and a few dashes.' },
+            { who: 'jason', text: 'Same data, three formats. [[XML]], Extensible Markup Language, wraps every value in tags, <hostname>ASW-A1</hostname>. It is older, longer, and whitespace does not matter in it either. REST APIs usually speak JSON or XML.' },
+            { who: 'jason', text: '[[YAML]] stands for YAML Ain\'t Markup Language, which I find unbearable. A YAML file starts with three dashes. Key-value pairs are written key: value, and a dash at the start of a line marks an item in a list. In YAML the whitespace is significant: the indentation is the structure, so one space out of place changes the meaning.' },
+            { who: 'jason', text: 'Ansible writes his plays in YAML because people read them. I carry the street\'s data in JSON because programs read it. The council will read whatever we hand them, so it had better parse.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do I tell a string from a number?', reply: 'Jason: "Quotes. "48" is a string of two characters, and 48 is a number. "true" is a string, and true is a boolean. The difference matters the moment a program tries to add one to it."' },
+            { tone: 'press', say: 'Why not just use one format?', reply: 'Jason: "Because they were built for different readers. XML came first and carries a great deal of structure. JSON is lighter and maps straight onto the objects in most programming languages. YAML is for people who have to edit the file by hand. The data doesn\'t care, and a good converter doesn\'t either."' },
+            { tone: 'care', say: 'How did Halvorsen count our boxes?', reply: 'Jason taps the print-out. "From outside, mostly. Every address that answers a ping, every box that shows up in a public list. They missed the Lab entirely. I did not correct them."' }
+          ] } },
+        { k: 'LORE', title: 'THE FIRST MESSAGE IN BRACES', year: 2001, real: ['json'], vibe: 'Bling. Data a person can read over coffee.',
+          text: 'Jason, squaring the three sheets: "In April 2001 Douglas Crockford and Chip Morningstar sent the first message in what became JSON, between two computers at their company, State Software. Crockford put the rules on a one-page website, json.org, the next year, and ECMA made it a standard, ECMA-404, in 2013. I keep this one because the whole format fits on a single page, and I have never needed a second one."' },
+        { k: 'KIT', text: 'Jason types it, prints it and hands it to you squared.', real: ['json'], kit: [
+          { cmd: 'JSON: JavaScript Object Notation · XML: Extensible Markup Language · YAML: YAML Ain\'t Markup Language', what: 'the three formats. REST APIs usually use JSON or XML' },
+          { cmd: 'string "text" · number 5 · boolean true/false · null', what: 'JSON primitive types' },
+          { cmd: 'object {"key": value, ...} · array [value, ...]', what: 'JSON structured types. Keys in double quotes. No comma after the last item' },
+          { cmd: '<key>value</key>', what: 'XML' },
+          { cmd: '--- · key: value · - item', what: 'YAML: starts with three dashes, dashes for lists' },
+          { cmd: 'whitespace: JSON no · XML no · YAML yes', what: 'is it significant?' } ] },
+        { k: 'SYNC', q: { prompt: 'Clerk Adebayo reads a line from Halvorsen\'s file: ""poe": false". "Is that a string, or something else?"', opts: ['A boolean', 'A string', 'A number', 'Null'], a: 0,
+          yes: 'Jason: "A boolean. No quotes, so not a string."', no: 'Jason: "A boolean. true and false without quotes are booleans."',
+          why: 'Jason: In JSON, true and false without quotation marks are booleans. With quotation marks they would be strings. A number has no quotes and is a numeric value, and null means the intentional absence of any value.' } }
       ] }
   ] });
 })();
