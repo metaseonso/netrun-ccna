@@ -46,8 +46,8 @@ window.GLOSSARY = {
   'private address': 'RFC 1918 ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Never routed on the public internet.',
   'ttl': 'Time To Live. Decremented per router hop; packet dies at 0. Stops loops from lasting forever.',
   'mac address': '48-bit hardware address burned into a NIC. First half = vendor (OUI). Written like 00:1A:2B:3C:4D:5E.',
-  'mac address table': 'The switch\'s memory of which MAC lives on which port. Learned from source addresses, aged out after 300s.',
-  'flooding': 'Switch sends a frame out every port except the one it came in on. Happens for unknown unicast and broadcast.',
+  'mac address table': 'A switch\'s list of MAC addresses and the port (and VLAN) each was learned on, built from the SOURCE address of received frames. Entries learned from traffic are dynamic and age out after 5 minutes.',
+  'flooding': 'A switch sending a frame out of every port except the one it arrived on: done for broadcasts and for unknown unicast frames.',
   'arp': 'Address Resolution Protocol (RFC 826, 1982). "Who has 10.0.0.5? Tell 10.0.0.1." Maps IP to MAC in a LAN.',
   'broadcast': 'A frame to FF:FF:FF:FF:FF:FF. Everyone in the VLAN gets it.',
   'full duplex': 'Send and receive at the same time. Modern switch ports. Half duplex is the old hub world with collisions.',
@@ -175,5 +175,13 @@ window.GLOSSARY = {
   'adjacent-layer interaction': 'A layer working with the layers directly above and below it on the same host: it serves the layer above and uses the layer below.',
   'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.',
   'rollover cable': 'The cable from a PC\'s serial or USB port to the RJ45 console port of a Cisco device. Its pins are reversed end to end, pin 1 to pin 8.',
-  'console port': 'The management port on a router or switch, RJ45 or USB, used to configure it directly. Default settings: 9600 bps, 8 data bits, no parity, 1 stop bit, no flow control.'
+  'console port': 'The management port on a router or switch, RJ45 or USB, used to configure it directly. Default settings: 9600 bps, 8 data bits, no parity, 1 stop bit, no flow control.',
+  'preamble': 'The first 7 bytes of an Ethernet frame, each 10101010, which let the receiver synchronise its clock to the incoming bits.',
+  'sfd': 'Start Frame Delimiter: the 1 byte after the preamble, 10101011, which marks the end of the preamble and the start of the frame\'s addresses.',
+  'fcs': 'Frame Check Sequence: the 4-byte Ethernet trailer. A CRC calculated over the frame; the receiver recalculates it and drops the frame if they differ.',
+  'oui': 'Organizationally Unique Identifier: the first 3 bytes (24 bits) of a MAC address, assigned by the IEEE to the maker of the device.',
+  'bia': 'Burned-in address: the MAC address set on a network card at the factory.',
+  'unicast': 'A frame or packet sent to one single destination.',
+  'unknown unicast': 'A unicast frame whose destination MAC address is not in the switch\'s MAC address table. The switch floods it.',
+  'aging': 'A switch removing a dynamic MAC address from its table after 5 minutes (300 seconds) without seeing a frame from it.'
 };

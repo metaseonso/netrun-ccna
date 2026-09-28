@@ -7,6 +7,7 @@
   window.REAL = {
     cisco: { name: 'Cisco', owner: 'Cisco Systems, Inc.', icon: 'cisco', what: 'Makes the routers and switches the whole course runs on.' },
     xerox: { name: 'Xerox PARC', owner: 'Xerox Corporation', what: 'The lab where Ethernet was invented in 1973.' },
+    kalpana: { name: 'Kalpana', owner: 'Cisco Systems, Inc. (acquired 1994)', what: 'Sold the first Ethernet switch, the EtherSwitch, in 1990.' },
     bbn: { name: 'BBN', owner: 'Raytheon BBN', what: 'Built the IMP, the first router, for the ARPANET in 1969.' },
     ieee: { name: 'IEEE', owner: 'IEEE', icon: 'ieee', what: 'Writes the 802 standards: Ethernet, Wi-Fi, VLAN tags, spanning tree.' },
     ietf: { name: 'IETF', owner: 'Internet Engineering Task Force', what: 'Writes the RFCs: IP, TCP, OSPF, DHCP and the rest.' },
