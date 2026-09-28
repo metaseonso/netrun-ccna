@@ -138,5 +138,13 @@ module.exports.run = function({ out }){
     ['router eigrp 100', 'network 10.0.0.0', 'no auto-summary'].forEach(l => d.R3.exec(l)); A = Net.api(Net.build(net, d)); ok(A.route('R1', '10.9.3.0/24') && A.route('R1', '10.9.3.0/24').proto === 'D', 'eigrp: re-created in AS 100, the depot LAN arrives as D');
     d.R3.exec('do show running-config'); const rc = d.R3.out[d.R3.out.length - 1].s; ok(/router eigrp 100/.test(rc) && !/router eigrp 10\n/.test(rc), 'shell: the removed process is gone from the running-config');
   }
+  // 11. OSPF cost: reference bandwidth, a loopback always costs 1, ip ospf N area N on an interface
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' } }, links: [ { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/1', 'ip add 10.8.12.1 255.255.255.252', 'no shut', 'router ospf 1', 'network 10.8.12.0 0.0.0.3 area 0', 'auto-cost reference-bandwidth 100000'],
+      R2: ['en', 'conf t', 'int lo0', 'ip add 2.2.2.2 255.255.255.255', 'ip ospf 1 area 0', 'int g0/1', 'ip add 10.8.12.2 255.255.255.252', 'no shut', 'router ospf 1', 'network 10.8.12.0 0.0.0.3 area 0', 'auto-cost reference-bandwidth 100000'] });
+    const A = Net.api(Net.build(net, d)); const r = A.route('R1', '2.2.2.2/32');
+    ok(r && r.proto === 'O' && r.metric === 101, 'ospf: gigabit costs 100 at reference 100000, a loopback costs 1, enabled with ip ospf 1 area 0 (' + JSON.stringify(r) + ')');
+  }
   return { pass, fails };
 };

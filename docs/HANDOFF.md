@@ -136,6 +136,8 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · An OSPF loopback always costs 1, whatever the reference bandwidth (tested).
+
 - 2026-09-28 · `no router ospf|eigrp|rip [id]` removes the routing process from the parsed config and from the running-config,
   so a wrong EIGRP AS can be replaced (tested).
 
