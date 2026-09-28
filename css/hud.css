@@ -1,0 +1,104 @@
+/* hud.css — the HUD in three bands (identity · body and rep · nav), icons, dropdowns, hover tips.
+   Palette: the tokens in style.css only. Motion stays under 200 ms and turns off with reduced motion. */
+
+.ic{width:18px;height:18px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ic.sm{width:13px;height:13px} .ic.big{width:22px;height:22px}
+
+.hud2{position:relative;z-index:20;margin-bottom:16px;border:1px solid var(--line);background:var(--bg2)}
+.hud2 .band{display:flex;align-items:center;gap:18px;padding:0 18px}
+.hud2 .grow{flex:1} .hud2 .sep{width:1px;height:26px;background:var(--line)}
+.hud2 button{background:transparent;border:1px solid transparent;color:var(--ink2);transition:color .15s,border-color .15s,background .15s,box-shadow .15s}
+.hud2 button:focus-visible,.dropdown button:focus-visible{outline:2px solid var(--yel);outline-offset:2px}
+
+/* band 1 · identity */
+.b-id{min-height:54px;border-bottom:1px solid #1a2233}
+.b-id .logo{font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:.16em;color:var(--cyan);text-shadow:0 0 12px rgba(63,246,255,.45);white-space:nowrap}
+.b-id .logo .sh{display:none}
+.b-id .logo small{color:var(--mag);font-size:inherit;font-weight:800}
+.b-id .who{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink)}
+.b-id .who img,.b-id .who .ava{width:30px;height:30px;border-radius:50%;border:1px solid var(--cyan);object-fit:cover}
+.b-id .who .ava{display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:10px;color:var(--cyan);background:var(--panel)}
+.b-id .cls{font-family:var(--disp);font-size:11px;letter-spacing:.18em;padding:4px 9px;border:1px solid currentColor;white-space:nowrap}
+.b-id .riteline{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink2);min-width:0}
+.b-id .riteline .ic{color:var(--mag);width:15px;height:15px} .b-id .riteline em{font-style:normal;color:var(--mag);letter-spacing:.14em}
+.b-id .riteline span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-id .syncchip{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.08em;color:var(--ink2);white-space:nowrap} .b-id .syncchip .ic{color:var(--grn)}
+.b-id #reconnect,.b-id .devbtn{display:flex;align-items:center;gap:6px;height:32px;padding:0 10px;font-size:11px;letter-spacing:.12em}
+.b-id #reconnect{color:var(--mag);border-color:var(--mag);animation:hpulse 1.6s infinite}
+.b-id .devbtn{color:var(--yel);border-color:rgba(255,210,63,.5)}
+.b-id .acct{display:flex;align-items:center;gap:4px;height:36px;padding:0 9px;border-color:var(--line)}
+.b-id .acct:hover,.b-id .acct.open{color:var(--ink);border-color:var(--cyan)}
+
+/* band 2 · body and rep */
+.b-body{min-height:54px;gap:30px;background:#0b0e16;border-bottom:1px solid #1a2233}
+.meter,.repm{display:flex;align-items:center;gap:10px}
+.mcol{display:flex;flex-direction:column;gap:5px}
+.mhead{display:flex;justify-content:space-between;gap:16px;font-size:10px;letter-spacing:.16em;color:var(--ink2)}
+.mhead b{font-weight:400;white-space:nowrap} .mhead small{color:var(--ink2);font-size:10px}
+.segs{display:flex;gap:3px} .segs i{display:block;width:14px;height:8px;background:var(--line)}
+.meter.hunger .ic,.meter.hunger .mhead b{color:var(--org)} .meter.hunger .segs i.f{background:var(--org)}
+.meter.chrome .ic,.meter.chrome .mhead b{color:var(--mag)} .meter.chrome .segs i.f{background:var(--mag)}
+.segs i.part{opacity:.5}
+.meter.low .mhead b,.meter.low .ic{animation:flick 3.2s steps(1) infinite}
+.meter.crit .mhead b,.meter.crit .ic{animation:flick 1.1s steps(1) infinite}
+.meter.crit .segs i.f{background:var(--red)}
+.repm .ic{color:var(--cyan)} .repm .mhead b{color:var(--ink)}
+.repm .rbar{display:block;width:160px;height:8px;background:var(--line);position:relative}
+.repm .rbar i{position:absolute;left:0;top:0;bottom:0;background:var(--cyan);box-shadow:0 0 10px rgba(63,246,255,.6);transition:width .6s cubic-bezier(.6,0,.2,1)}
+.credm{display:flex;align-items:center;gap:8px} .credm .ic{color:var(--yel)}
+.credm b{font-family:var(--disp);font-size:16px;color:var(--yel);font-weight:600} .credm span{font-size:10px;letter-spacing:.16em;color:var(--ink2)}
+.crewm{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:.08em;color:var(--ink2)} .crewm .ic{color:var(--ink)} .crewm b{color:var(--ink)}
+.crewm .lost{font-style:normal;color:var(--red)}
+.callpip{display:flex;align-items:center;gap:6px;color:var(--mag)} .callpip i{width:8px;height:8px;border-radius:50%;background:var(--mag);animation:hpulse 1.2s infinite}
+
+/* band 3 · nav */
+.b-nav{min-height:50px;gap:4px;padding:0 12px}
+.navb{display:flex;align-items:center;gap:8px;height:38px;padding:0 13px;font-family:var(--disp);font-size:11px;letter-spacing:.16em;position:relative}
+.navb:hover{color:var(--ink);background:var(--panel2);border-color:var(--cyan);box-shadow:0 0 16px rgba(63,246,255,.14)}
+.navb.on{color:var(--cyan);background:var(--panel2);border-color:var(--line);box-shadow:inset 0 -2px 0 var(--cyan)}
+.navb.open{color:var(--ink);border-color:var(--cyan)}
+.navb.ringing{animation:hring 1.2s ease-out infinite}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0;color:var(--bg)}
+.badge.c{background:var(--cyan)} .badge.m{background:var(--mag);animation:hpulse 1.2s infinite}
+
+/* dropdowns */
+.menuwrap{position:relative}
+.dropdown{position:absolute;top:calc(100% + 6px);left:0;z-index:40;min-width:290px;padding:6px;display:flex;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);box-shadow:0 16px 40px rgba(0,0,0,.6);animation:hdrop .16s ease-out}
+.dropdown.right{left:auto;right:0}
+.dropdown button{display:grid;grid-template-columns:22px 1fr;column-gap:12px;row-gap:2px;align-items:center;text-align:left;padding:10px 12px;background:transparent;border:1px solid transparent;color:var(--ink)}
+.dropdown button .ic{grid-row:span 2}
+.dropdown button .t{font-family:var(--disp);font-size:11px;letter-spacing:.14em}
+.dropdown button .d{font-size:11px;color:var(--ink2)}
+.dropdown button:hover,.dropdown button.cur{background:var(--panel2);border-color:var(--line)}
+.dropdown button:hover .t,.dropdown button.cur .t{color:var(--cyan)}
+.dropdown .dhead{padding:8px 12px 10px;font-size:11px;color:var(--ink2);border-bottom:1px solid #1a2233} .dropdown .dhead b{color:var(--ink);font-weight:400}
+
+/* hover tips */
+.tipbox{position:fixed;z-index:200;max-width:280px;padding:8px 11px;background:var(--panel2);border:1px solid var(--cyan);color:var(--ink);font:12px/1.5 var(--mono);box-shadow:0 8px 24px rgba(0,0,0,.55);pointer-events:none;opacity:0;transform:translateY(-3px);transition:opacity .14s,transform .14s}
+.tipbox.on{opacity:1;transform:none}
+
+@keyframes hpulse{50%{opacity:.4}}
+@keyframes flick{0%,92%,100%{opacity:1}93%{opacity:.35}95%{opacity:1}97%{opacity:.5}}
+@keyframes hring{0%{box-shadow:0 0 0 0 rgba(255,63,164,.5)}100%{box-shadow:0 0 0 10px rgba(255,63,164,0)}}
+@keyframes hdrop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+/* phone: identity and body stay on top, the nav becomes a tab bar at the bottom */
+@media (max-width:760px){
+  #app{padding-bottom:96px}
+  .hud2 .band{gap:12px;padding:0 12px}
+  .b-id{min-height:50px;overflow:hidden} .b-id .logo{font-size:14px} .b-id .logo .lg{display:none} .b-id .logo .sh{display:inline}
+  .b-id .who{min-width:0} .b-id .who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .b-id .cls{padding:3px 7px;letter-spacing:.12em} .b-id .riteline,.b-id .syncchip,.hud2 .sep{display:none}
+  .b-body{flex-wrap:wrap;gap:10px 16px;padding:10px 12px}
+  .meter{flex:1 1 40%} .meter .mhead{flex-wrap:wrap;gap:2px 8px} .segs i{width:auto;flex:1} .meter .mcol{flex:1} .meter .segs{width:100%}
+  .repm{flex:1 1 60%} .repm .mcol{flex:1} .repm .rbar{width:100%} .crewm{flex:1 1 100%}
+  .b-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;justify-content:space-around;min-height:64px;padding:0 4px env(safe-area-inset-bottom);background:var(--bg2);border-top:1px solid var(--line)}
+  .b-nav>.navb,.b-nav>.menuwrap{flex:1}
+  .b-nav .navb{flex-direction:column;justify-content:center;gap:4px;width:100%;height:60px;padding:0;font-size:9px;letter-spacing:.1em}
+  .b-nav .navb .ic.sm{display:none} .b-nav .navb .ic{width:22px;height:22px}
+  .b-nav .navb.on{box-shadow:inset 0 2px 0 var(--cyan);border-color:transparent}
+  .b-nav .badge{position:absolute;top:6px;left:calc(50% + 6px);height:16px;min-width:16px;font-size:9px}
+  .b-nav .dropdown{top:auto;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);min-width:260px;animation:none}
+  .b-nav .menuwrap:last-child .dropdown{left:auto;right:0;transform:none}
+  .b-nav .menuwrap:first-child .dropdown{left:0;transform:none}
+}
+@media (prefers-reduced-motion:reduce){.hud2 *,.dropdown,.tipbox{animation:none !important;transition:none !important}}

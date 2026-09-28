@@ -21,17 +21,99 @@
   const pSlot = (p, size) => '<span class="npcslot" data-protege="' + esc(p.id) + '" data-size="' + size + '"></span>';
   const noDay = s => String(s || '').replace(/^Days? [\d–,\- ]+ · /, '');
 
-  // ---- HUD --------------------------------------------------------------------------
-  function hud(){ const s = Game.state, c = Game.classFor(s.rep), nx = Game.nextClass(s.rep), rb = Game.riteBlocking(); const pct = nx ? Math.min(100, Math.round(((s.rep - c.min) / (nx.min - c.min)) * 100)) : 100;
-    const openJobs = JOBS.filter(j => Game.jobStatus(j).locked.length === 0 && !s.jobsDone[j.id]).length; const alive = Protege.active(s.roster).length, lost = Protege.lost(s.roster).length; const dm = Game.dm.pending(); const u = window.Auth && Auth.user();
-    return '<div class="hud"><div class="logo">NETRUNNER<small>://</small>CCNA</div><div class="handle">handle <b>' + esc(s.handle || '—') + '</b>' + (u ? ' <span class="signin">' + (u.avatar ? '<img src="' + esc(u.avatar) + '">' : '') + esc(u.name) + '</span>' : '') + '</div><span class="cls ' + c.id + '">CLASS ' + c.id + '</span>' +
-      '<div class="rep"><span>REP ' + s.rep + (nx ? (rb ? ' · Class ' + nx.id + ' waits on the rite: ' + esc(rb.title) : ' / ' + nx.min + ' → Class ' + nx.id) : ' · top of the street') + '</span><div class="bar"><i style="width:' + pct + '%"></i></div></div><div class="creds">' + (s.creds || 0) + ' <small>creds</small></div>' +
-      '<div class="body" title="a gig costs food and chrome at jack-in. zero on either is a flatline."><div class="m food' + (s.body.food <= 30 ? ' low' : '') + '"><span>FOOD</span><div class="bar"><i style="width:' + s.body.food + '%"></i></div><b>' + s.body.food + '</b></div><div class="m chrome' + (s.body.chrome <= 30 ? ' low' : '') + '"><span>CHROME</span><div class="bar"><i style="width:' + s.body.chrome + '%"></i></div><b>' + s.body.chrome + '</b></div></div>' +
-      (s.roster.list.length ? '<div class="crew">crew <b>' + alive + '</b>' + (lost ? ' <span class="lost">†' + lost + '</span>' : '') + '</div>' : '') +
-      '<div class="nav">' + [['home', 'MAP'], ['grid', 'GRID'], ['jobs', 'BOARD'], ['crew', 'CREW'], ['shop', 'STALL'], ['deck', 'DECK'], ['key', 'CODEX'], ['stats', 'RECORD'], ['log', 'JOURNAL']].map(([v, l]) => '<button data-v="' + v + '" class="' + (view === v || (v === 'grid' && view === 'level') || (v === 'jobs' && view === 'run') ? 'on' : '') + (v === 'crew' && dm ? ' dmping' : '') + '">' + l + (v === 'jobs' && openJobs ? '<span class="badge">' + openJobs + '</span>' : '') + (v === 'crew' && dm ? '<span class="badge">CALL</span>' : '') + '</button>').join('') +
-      (window.Auth && Auth.configured && !u ? '<button id="signin" title="keep your record across decks">SIGN IN</button>' : '') + (u ? (Auth.needsToken() ? '<button id="reconnect" class="warn" title="your record is not reaching your Drive right now. reconnect">RECONNECT</button>' : '') + '<button id="signout">SIGN OUT</button>' : '') + (P().dev ? '<button id="devtoggle" class="dev">DEV</button>' : '') + '<button id="logout" title="back to the door. your record stays under this handle">LOG OUT</button></div></div>'; }
+  // ---- icons: one stroke style, 24-unit grid, drawn in currentColor --------------------
+  const ICONS = {
+    street: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>',
+    grid: '<circle cx="12" cy="5" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><path d="M12 7v4M12 11l-6 5M12 11l6 5"/>',
+    board: '<rect x="3" y="7" width="18" height="13" rx="1"/><path d="M9 7V4h6v3M3 12h18"/>',
+    crew: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2c2.8.3 5 2.6 5 5.8"/>',
+    gear: '<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+    stall: '<path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8 7c0-1.5 1-1.5 1-3M12 7c0-1.5 1-1.5 1-3M16 7c0-1.5 1-1.5 1-3"/>',
+    deck: '<rect x="6" y="6" width="12" height="12" rx="1"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+    archive: '<rect x="3" y="4" width="18" height="5"/><path d="M5 9v11h14V9M10 13h4"/>',
+    codex: '<path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/>',
+    record: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    journal: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
+    hunger: '<path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8 7c0-1.5 1-1.5 1-3M12 7c0-1.5 1-1.5 1-3M16 7c0-1.5 1-1.5 1-3"/>',
+    chrome: '<path d="M12 2 20.5 7v10L12 22 3.5 17V7z"/><path d="M13 7l-3 5h4l-3 5"/>',
+    rep: '<path d="M5 14l7-7 7 7M5 20l7-7 7 7"/>',
+    creds: '<circle cx="12" cy="12" r="9"/><path d="M15 9.5a3.5 3.5 0 1 0 0 5"/>',
+    rite: '<path d="M12 2l5 10-5 10-5-10z"/>',
+    sync: '<path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.7 1.5A3.5 3.5 0 0 1 17 18z"/><path d="M9.5 13.5l2 2 3.5-3.5"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
+    chev: '<path d="M6 9l6 6 6-6"/>',
+    right: '<path d="M9 6l6 6-6 6"/>',
+    logout: '<path d="M15 4h4v16h-4M10 16l4-4-4-4M14 12H3"/>',
+    signout: '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/>',
+    dev: '<rect x="7" y="7" width="10" height="13" rx="5"/><path d="M12 7V4M4 11h3M17 11h3M4 17h3M17 17h3"/>',
+    call: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    check: '<path d="M5 12l5 5 9-10"/>',
+    warn: '<path d="M12 3 22 20H2z"/><path d="M12 10v4M12 17v.5"/>',
+    play: '<path d="M7 4l12 8-12 8z"/>',
+    talk: '<path d="M4 5h16v11H9l-5 4z"/>',
+    fixer: '<path d="M4 20l6-6M14 4l6 6-8 8-6-6z"/><path d="M13 9l2 2"/>',
+    sound: '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/>',
+    mute: '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/>'
+  };
+  const icon = (n, cls) => '<svg class="ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[n] || '') + '</svg>';
+  const tipAttr = t => t ? ' data-tip="' + esc(t) + '"' : '';
 
-  // ---- views ------------------------------------------------------------------------
+  // ---- the body, in words you can read at a glance -------------------------------------
+  const hungerWord = v => v >= 70 ? 'SATED' : v >= 40 ? 'PECKISH' : v >= 15 ? 'HUNGRY' : 'STARVING';
+  const chromeWord = v => v >= 70 ? 'STABLE' : v >= 40 ? 'WORN' : v >= 15 ? 'GLITCHING' : 'FAILING';
+  function segs(v){ let h = ''; for (let i = 0; i < 10; i++) { const f = Math.max(0, Math.min(1, (v - i * 10) / 10)); h += '<i' + (f >= 1 ? ' class="f"' : f > 0 ? ' class="f part"' : '') + '></i>'; } return '<span class="segs">' + h + '</span>'; }
+  function meter(kind, v){ const low = v < 40, word = kind === 'hunger' ? hungerWord(v) : chromeWord(v); const cost = Game.body.cost({ cls: Game.classFor(Game.state.rep).id });
+    const tip = kind === 'hunger' ? 'A dive at your class costs ' + cost.food + ' hunger. At zero you flatline. Eat at Marrow\'s stall.'
+      : 'A dive at your class costs ' + cost.chrome + ' chrome, plus 1 for each bad command. At zero you flatline. The ripperdoc at Marrow\'s stall repairs it.';
+    return '<div class="meter ' + kind + (low ? ' low' : '') + (v < 15 ? ' crit' : '') + '"' + tipAttr(tip) + '>' + icon(kind, 'big') + '<div class="mcol"><div class="mhead"><span>' + (kind === 'hunger' ? 'HUNGER' : 'CHROME INTEGRITY') + '</span><b>' + word + ' · ' + v + '</b></div>' + segs(v) + '</div></div>'; }
+  const agoText = t => { const m = Math.max(0, Math.round((Date.now() - t) / 60000)); return m < 1 ? 'JUST NOW' : m < 60 ? m + ' MIN AGO' : m < 1440 ? Math.round(m / 60) + ' H AGO' : Math.round(m / 1440) + ' D AGO'; };
+
+  // ---- HUD: identity · body and rep · nav ------------------------------------------------
+  const NAV = [
+    { id: 'street', label: 'STREET', icon: 'street', tip: 'The map and the people.', items: [['home', 'MAP', 'street', 'Districts and nights'], ['grid', 'GRID', 'grid', 'Everyone you can talk to']] },
+    { id: 'board', label: 'BOARD', icon: 'board', v: 'jobs', tip: 'Gigs from Dispatch.' },
+    { id: 'crew', label: 'CREW', icon: 'crew', v: 'crew', tip: 'Your crew and their calls.' },
+    { id: 'gear', label: 'GEAR', icon: 'gear', tip: 'Marrow\'s stall and your deck.', items: [['shop', 'STALL', 'stall', 'Food, repairs, gifts, braindances'], ['deck', 'DECK', 'deck', 'Quickhacks and skins']] },
+    { id: 'archive', label: 'ARCHIVE', icon: 'archive', tip: 'Codex, record and journal.', items: [['key', 'CODEX', 'codex', 'Gigs you cleared or paid a fixer for'], ['stats', 'RECORD', 'record', 'Your rep, dives and calls'], ['log', 'JOURNAL', 'journal', 'What happened, in order']] }
+  ];
+  const viewGroup = v => v === 'level' ? 'street' : v === 'run' ? 'board' : (NAV.find(g => g.v === v || (g.items || []).some(it => it[0] === v)) || {}).id;
+  function hud(){ const s = Game.state, c = Game.classFor(s.rep), nx = Game.nextClass(s.rep), rb = Game.riteBlocking(), rite = Game.riteFor(c.id); const pct = nx ? Math.min(100, Math.round(((s.rep - c.min) / (nx.min - c.min)) * 100)) : 100;
+    const openJobs = JOBS.filter(j => Game.jobStatus(j).locked.length === 0 && !s.jobsDone[j.id]).length; const alive = Protege.active(s.roster).length, lost = Protege.lost(s.roster).length; const dm = Game.dm.pending(); const u = window.Auth && Auth.user(); const on = viewGroup(view);
+    const cp = s.checkpoint, initials = (u && u.name ? u.name : s.handle || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const id = '<div class="band b-id"><div class="logo"><span class="lg">NETRUNNER</span><span class="sh">NR</span><small>://</small><span class="lg">CCNA</span></div><span class="sep"></span>' +
+      '<div class="who"' + tipAttr(u ? 'Signed in as ' + u.name + '. Your record saves to your Drive.' : 'Your record saves on this deck only.') + '>' + (u && u.avatar ? '<img src="' + esc(u.avatar) + '" alt="">' : '<span class="ava">' + esc(initials) + '</span>') + '<b>' + esc(s.handle) + '</b></div>' +
+      '<span class="cls ' + c.id + '"' + tipAttr(c.name + (nx ? '. Next: Class ' + nx.id + ' at ' + nx.min + ' rep.' : '.')) + '>CLASS ' + c.id + '</span>' +
+      (rite && !s.jobsDone[rite.id] ? '<div class="riteline"' + tipAttr(nx ? 'Clear this gig' + (rb ? '' : ' with ' + nx.min + ' rep') + ' to reach Class ' + nx.id + '. It costs more and pays more.' : '') + '>' + icon('rite') + '<span><em>RITE</em> · ' + esc(rite.title) + '</span></div>' : '') +
+      '<span class="grow"></span>' +
+      (cp ? '<div class="syncchip"' + tipAttr('Last sync: ' + cp.label + '. If you flatline, you restart here.') + '>' + icon('sync') + '<span>SYNCED · ' + agoText(cp.at) + '</span></div>' : '') +
+      (u && Auth.needsToken() ? '<button id="reconnect" class="warn"' + tipAttr('Your Drive is not saving. Click to reconnect.') + '>' + icon('sync') + 'RECONNECT</button>' : '') +
+      (P().dev ? '<button id="devtoggle" class="devbtn"' + tipAttr('Dev panel: lint, step diagnosis, net state, golden runs.') + '>' + icon('dev') + 'DEV</button>' : '') +
+      '<div class="menuwrap"><button class="acct' + (cur.menu === 'acct' ? ' open' : '') + '" data-menu="acct" aria-haspopup="true" aria-expanded="' + (cur.menu === 'acct') + '" aria-label="Your account">' + icon('user') + icon('chev', 'sm') + '</button>' +
+      (cur.menu === 'acct' ? '<div class="dropdown right" role="menu">' + (u ? '<div class="dhead">signed in as <b>' + esc(u.name) + '</b></div>' : window.Auth && Auth.configured ? '<button id="signin" role="menuitem">' + icon('key') + '<span class="t">SIGN IN WITH GOOGLE</span><span class="d">your record on every deck</span></button>' : '') +
+        '<button id="logout" role="menuitem">' + icon('logout') + '<span class="t">LOG OUT</span><span class="d">back to the door</span></button>' + (u ? '<button id="signout" role="menuitem">' + icon('signout') + '<span class="t">SIGN OUT</span><span class="d">Google</span></button>' : '') + '</div>' : '') + '</div></div>';
+    const bodyBand = '<div class="band b-body">' + meter('hunger', s.body.food) + meter('chrome', s.body.chrome) + '<span class="sep"></span>' +
+      '<div class="repm"' + tipAttr(nx ? (rb ? 'You have the rep for Class ' + nx.id + '. Clear the rite: ' + rb.title + '.' : 'Class ' + nx.id + ' at ' + nx.min + ' rep' + (Game.riteFor(c.id) ? ' and the rite.' : '.')) : 'Class A. The top of the Board.') + '>' + icon('rep') + '<div class="mcol"><div class="mhead"><span>REP</span><b>' + s.rep + (nx ? ' / ' + nx.min + ' <small>→ ' + nx.id + '</small>' : '') + '</b></div><span class="rbar"><i style="width:' + pct + '%"></i></span></div></div>' +
+      '<div class="credm"' + tipAttr('Spend them at Marrow\'s stall or on a fixer.') + '>' + icon('creds') + '<b>' + (s.creds || 0) + '</b><span>CREDS</span></div><span class="grow"></span>' +
+      (s.roster.list.length ? '<div class="crewm"' + tipAttr(dm ? 'A crew call is waiting. Answer it in CREW before the clock runs out.' : alive + ' on your crew' + (lost ? ', ' + lost + ' lost' : '') + '.') + '>' + icon('crew') + '<span><b>' + alive + '</b> RUNNING' + (lost ? ' <em class="lost">†' + lost + '</em>' : '') + '</span>' + (dm ? '<span class="callpip"><i></i>1 CALL</span>' : '') + '</div>' : '') + '</div>';
+    const badge = g => g.id === 'board' && openJobs ? '<span class="badge c">' + openJobs + '</span>' : g.id === 'crew' && dm ? '<span class="badge m">1</span>' : '';
+    const nav = '<nav class="band b-nav" aria-label="Main">' + NAV.map(g => { const open = cur.menu === g.id; const cls = 'navb' + (on === g.id ? ' on' : '') + (open ? ' open' : '') + (g.id === 'crew' && dm ? ' ringing' : '');
+      if (!g.items) return '<button class="' + cls + '" data-v="' + g.v + '"' + tipAttr(g.tip) + '>' + icon(g.icon) + '<span>' + g.label + '</span>' + badge(g) + '</button>';
+      return '<div class="menuwrap"><button class="' + cls + '" data-menu="' + g.id + '" aria-haspopup="true" aria-expanded="' + open + '"' + tipAttr(open ? '' : g.tip) + '>' + icon(g.icon) + '<span>' + g.label + '</span>' + icon('chev', 'sm') + '</button>' +
+        (open ? '<div class="dropdown" role="menu">' + g.items.map(([v, l, ic, d]) => '<button role="menuitem" data-v="' + v + '" class="' + (view === v || (v === 'grid' && view === 'level') ? 'cur' : '') + '">' + icon(ic) + '<span class="t">' + l + '</span><span class="d">' + esc(d) + '</span></button>').join('') + '</div>' : '') + '</div>'; }).join('') + '</nav>';
+    return '<header class="hud2">' + id + bodyBand + nav + '</header>'; }
+
+  // ---- hover tips: one floating box, shown after a short rest, also on keyboard focus ------
+  (function tips(){ let box = null, timer = null, owner = null;
+    const hide = () => { clearTimeout(timer); owner = null; if (box) box.classList.remove('on'); };
+    const show = el => { const t = el.getAttribute('data-tip'); if (!t) return; if (!box) { box = document.createElement('div'); box.className = 'tipbox'; box.setAttribute('role', 'tooltip'); document.body.appendChild(box); }
+      box.textContent = t; box.classList.add('on'); const r = el.getBoundingClientRect(), bw = box.offsetWidth, bh = box.offsetHeight; let x = r.left + r.width / 2 - bw / 2; x = Math.max(8, Math.min(window.innerWidth - bw - 8, x)); let y = r.bottom + 10; if (y + bh > window.innerHeight - 8) y = r.top - bh - 10; box.style.left = x + 'px'; box.style.top = y + 'px'; };
+    const arm = (el, delay) => { if (el === owner) return; hide(); owner = el; timer = setTimeout(() => { if (owner === el && document.body.contains(el)) show(el); }, delay); };
+    document.addEventListener('mouseover', e => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el) arm(el, 350); else if (owner) hide(); });
+    document.addEventListener('focusin', e => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el) arm(el, 0); });
+    document.addEventListener('focusout', hide); document.addEventListener('scroll', hide, true); document.addEventListener('click', hide, true); })();
+
   // the door, signed in: the Google account is the key. the record lives in the account's Drive; the door lists names, one load per pick.
   const DRIVE_WHY = 'Google asks one extra thing: a box that lets the game keep its save file in your Drive. tick it. that folder is where your progress lives, and it is the only thing the game can see in your Drive.';
   function doorSignedIn(){ const u = Auth.user(), tok = !!Auth.token(), mine = Game.myHandles(), last = Game.lastHandle(), loose = Game.deckHandles();
@@ -211,8 +293,12 @@
     window.scrollTo({ top: (view === 'run' && lastView === 'run') ? window.scrollY : 0 }); lastView = view; }
   setInterval(() => { const r = Game.run; const el = $('#runclock'); if (r && el && !r.result) { const s = Math.floor((Date.now() - r.startedAt) / 1000); el.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); } }, 1000);
 
+  // nested menus: one open at a time; a click anywhere else, or Escape, closes it
+  document.addEventListener('click', e => { const m = e.target.closest('[data-menu]'); if (m) { e.stopPropagation(); cur.menu = cur.menu === m.dataset.menu ? null : m.dataset.menu; render(); const first = cur.menu && $('.dropdown button'); if (first && e.detail === 0) first.focus(); return; }
+    if (cur.menu && !e.target.closest('.dropdown')) { cur.menu = null; render(); } }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && cur.menu) { const was = cur.menu; cur.menu = null; render(); const b = $('[data-menu="' + was + '"]'); if (b) b.focus(); } });
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-multi],[data-up],[data-down],[data-dev],[data-node],[data-dmans],[data-devtab],[data-golden],[data-buy],[data-eat],[data-give],[data-favor],[data-theme],#next,#prev,#finish,#commit,#hint,#walk,#abort,#wipe,#logout,#signin,#signout,#reconnect,#reload,#exitdoor,#devtoggle,#opendm,#dmopen,#dmlater,#dmclose,#forcedm,#devping'); if (!t) return;
+    const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-multi],[data-up],[data-down],[data-dev],[data-node],[data-dmans],[data-devtab],[data-golden],[data-buy],[data-eat],[data-give],[data-favor],[data-theme],#next,#prev,#finish,#commit,#hint,#walk,#abort,#wipe,#logout,#signin,#signout,#reconnect,#reload,#exitdoor,#devtoggle,#opendm,#dmopen,#dmlater,#dmclose,#forcedm,#devping'); if (!t) return; if (t.closest('.dropdown')) cur.menu = null;
     if (t.id === 'logout') { if (view === 'run' && Game.run && !Game.run.result && !confirm('Jack out? This dive is lost.')) return; Game.logout(); view = 'home'; cur = Object.assign(cur, { stage: null, level: null, beat: 0, job: null, synced: null }); return render(); }
     if (t.id === 'signin') { Auth.signIn().then(tok => { if (!tok) toast('sign-in did not go through', 'mag'); }).catch(err => toast('sign-in failed: ' + err.message, 'mag')); return; } if (t.id === 'signout') { Game.flushNow().then(() => Auth.signOut()).then(() => { view = 'home'; render(); }); return; }
     if (t.id === 'reconnect') { Auth.ensureToken().then(tok => { if (tok && Game.state.handle) toast('your Drive is listening again', 'grn'); else if (!tok) toast('Google did not answer. try again', 'mag'); Game.flushNow(); render(); }); return; }
