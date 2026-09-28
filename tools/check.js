@@ -37,5 +37,9 @@ out(played + ' gigs played');
 out('\n== ENGINE TESTS ==');
 try { const T = require(path.join(ROOT, 'tests', 'engine.test.js')); const res = T.run({ out }); fails += res.fails; out(res.pass + ' passed, ' + res.fails + ' failed'); } catch (e) { out('engine tests could not run: ' + e.message); fails++; }
 
+// ---- 4. game rules (the fixer, the codex)
+out('\n== GAME RULES ==');
+try { const G = require(path.join(ROOT, 'tests', 'game.test.js')); const res = G.run({ out }); fails += res.fails; out(res.pass + ' passed, ' + res.fails + ' failed'); } catch (e) { out('game tests could not run: ' + e.message); fails++; }
+
 out('\n' + (fails ? 'CHECK FAILED (' + fails + ')' : 'CHECK PASSED'));
 process.exit(fails ? 1 : 0);

@@ -92,7 +92,7 @@ Definition of done for a day:
   in its own commit, and note it in the CHANGELOG section below.
 - **Checks read state, not keystrokes.** `ctx.net().ping('PC1','10.0.2.10').ok` beats `need: [{line:/ip route/}]`.
   Use `need` only for pure verification steps ("look at it from SW3") and for topics with no state.
-- **Every step has a `why`.** The KEY tab and WALK ME THROUGH IT depend on it. Lint enforces it.
+- **Every step has a `why`.** The CODEX and the fixer's notes show it. Lint enforces it.
 - **Every gig has a `solution`.** No exceptions. The runner is the only proof the gig can be finished.
 - Console input is lower-cased. ACL names, hostnames and VLAN names come out lower-case in state.
 - Router physical interfaces start **shut down**, like real IOS. Switch ports start up. Preconfigure with `net.preconfig`.
@@ -135,6 +135,14 @@ Definition of done for a day:
 - Automation days: use `text` steps with a validator (JSON.parse, regex) and `order` steps.
 
 ## CHANGELOG (append engine changes here)
+
+- 2026-09-28 · UI overhaul, part 1. HUD in three bands with icons, five top-level menus, HUNGER and CHROME INTEGRITY
+  meters, hover tips (`data-tip` on any element), phone tab bar (`css/hud.css`). **The fixer replaces SHOW ME:**
+  `Game.fixer.can()/hire()` in a dive; the fee is the gig's pay; the run pays nothing, greenlights nothing, sharpens
+  nothing, and does not sync. `Game.codexStatus(job)` is `greenlit` (cleared), `paid` (fixer) or `sealed`;
+  `state.codex` holds paid entries and survives a reload. Rites refuse fixers; owned notes stop the offer.
+  The CODEX has tabs (gigs, words, braindances, people), filters and search (`css/screens.css`).
+  Rules tested in `tests/game.test.js` (stage 4 of `npm test`).
 
 - 2026-09-28 · Sign-in live (client ID in `config/platform.js`, consent screen published, brand review pending). The door
   now treats the Google account as the key: `Game.claimHandle`, `Game.myHandles`, `Game.deckHandles`, `Game.linking`,

@@ -151,7 +151,7 @@ Use the world's words instead. This table is binding for Opus and for every scre
 | commit / submit | **EXECUTE** |
 | console / terminal | the **shell** (your deck talking to the box) |
 | hint | **ping Dispatch** |
-| walk me through it | **SHOW ME** (the NPC takes your hands) |
+| walk me through it | a **fixer** (paid; that run pays nothing and the notes go to the CODEX) |
 | flash card / quiz | a **call** from your crew; a **Board question** |
 | the exam / the cert | **the Board** (Netrunner Certification Board, classes D → A) |
 | stats | your **RECORD** |

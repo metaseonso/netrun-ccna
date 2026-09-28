@@ -1,0 +1,66 @@
+/* screens.css — the codex, the fixer, popups. Tokens from style.css only. */
+
+/* popups */
+.modal-back{position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(3,4,8,.78);animation:mfade .15s ease-out}
+.modal{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:20px 22px;background:var(--panel);border:1px solid var(--yel);box-shadow:0 20px 60px rgba(0,0,0,.7);animation:mrise .18s ease-out}
+.modal.wide{width:min(900px,100%);border-color:var(--cyan)}
+.modal h3{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-family:var(--disp);font-size:15px;letter-spacing:.14em;color:var(--yel)}
+.modal.wide h3{color:var(--cyan)}
+.modal p{margin:0 0 12px;color:var(--ink)}
+.warns{list-style:none;margin:0 0 16px;padding:0;display:flex;flex-direction:column;gap:8px}
+.warns li{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;background:var(--bg2);border:1px solid var(--line);font-size:13px;line-height:1.5}
+.warns li .ic{color:var(--yel);margin-top:1px} .warns b{color:var(--yel)}
+@keyframes mfade{from{opacity:0}} @keyframes mrise{from{opacity:0;transform:translateY(8px)}}
+
+/* the fixer in the dive */
+.btn .ic{width:15px;height:15px;margin-right:6px;vertical-align:-3px}
+.btn.fx{border-color:var(--yel);color:var(--yel)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.fxnote{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:9px 11px;border:1px solid var(--yel);background:rgba(255,210,63,.06);font-size:12px;color:var(--ink)} .fxnote .ic{color:var(--yel)}
+
+/* codex */
+.ctabs{display:flex;gap:4px;padding:4px;border:1px solid var(--line);background:var(--bg2)}
+.ctabs button{height:34px;padding:0 14px;background:transparent;border:1px solid transparent;color:var(--ink2);font-size:11px;letter-spacing:.14em}
+.ctabs button:hover{color:var(--ink);border-color:var(--line)} .ctabs button.on{color:var(--cyan);border-color:var(--cyan);background:var(--panel2)}
+.codex{display:grid;grid-template-columns:340px 1fr;gap:16px;margin-top:14px}
+@media (max-width:860px){.codex{grid-template-columns:1fr}}
+.clist{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cfilters{display:flex;flex-wrap:wrap;gap:6px}
+.chipb{height:32px;padding:0 10px;background:transparent;border:1px solid var(--line);color:var(--ink2);font-size:11px;letter-spacing:.1em}
+.chipb b{color:var(--ink);font-weight:400;margin-left:4px} .chipb:hover{border-color:var(--cyan);color:var(--ink)} .chipb.on{border-color:var(--cyan);color:var(--cyan);background:var(--panel2)}
+.csearch{width:100%;height:38px;padding:0 12px;background:var(--bg);border:1px solid var(--line);color:var(--ink);font:inherit}
+.csearch:focus{outline:none;border-color:var(--cyan)}
+.cgroup{border:1px solid var(--line);background:var(--bg2)}
+.cgh{padding:9px 12px;font-size:11px;letter-spacing:.18em;color:var(--ink2);border-bottom:1px solid var(--line)}
+.crow{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;background:transparent;border:0;border-left:3px solid transparent;border-bottom:1px solid #1a2233;color:var(--ink);text-align:left}
+.crow:last-child{border-bottom:0} .crow:hover{background:var(--panel2)} .crow.on{background:var(--panel2);border-left-color:var(--cyan)}
+.crow .ct{flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crow .cls{font-size:10px;padding:1px 6px}
+.crow.greenlit>.ic{color:var(--grn)} .crow.paid>.ic{color:var(--yel)} .crow.sealed{color:var(--ink2)} .crow.sealed>.ic{color:var(--ink3)}
+.crite{font-size:10px;letter-spacing:.12em;color:var(--mag)}
+.ctag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;font-size:10px;letter-spacing:.16em;border:1px solid currentColor}
+.ctag.greenlit{color:var(--grn)} .ctag.paid{color:var(--yel)} .ctag.sealed{color:var(--ink2)}
+.centry{min-width:0;border:1px solid var(--line);background:var(--bg2);padding:16px 18px}
+.chead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.chead h3{margin:8px 0 4px;font-family:var(--disp);font-size:18px;letter-spacing:.08em;color:var(--ink)}
+.cstate{margin:12px 0 0;padding:8px 11px;font-size:12px;border:1px solid var(--line)}
+.cstate.greenlit{border-color:rgba(77,255,136,.35);color:var(--grn)} .cstate.paid{border-color:rgba(255,210,63,.4);color:var(--yel)} .cstate.sealed{color:var(--ink2)}
+.ctaught{margin-top:10px;font-size:12px;color:var(--ink2)} .ctaught a{cursor:pointer}
+.cfloors{display:flex;flex-direction:column;margin-top:12px}
+.cfloor{padding:14px 0;border-top:1px solid #1a2233} .cfloor.now{background:rgba(63,246,255,.05);padding:14px 12px;border:1px solid var(--cyan)}
+.cfh{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink2)} .cfh .fl{font-family:var(--disp);font-size:11px;letter-spacing:.16em;color:var(--cyan)}
+.cfh .here{margin-left:auto;font-size:10px;letter-spacing:.16em;color:var(--cyan)}
+.cfloor.sealed .cfh .fl{color:var(--ink3)} .cfloor.sealed .ic{margin-left:auto;color:var(--ink3)}
+.cask,.cq{margin-top:8px;font-size:13px;line-height:1.6}
+.cmove{display:flex;gap:12px;align-items:baseline;margin-top:10px;padding:9px 12px;border:1px solid var(--line);background:var(--bg)}
+.cmove span{font-size:10px;letter-spacing:.16em;color:var(--ink2);white-space:nowrap} .cmove code{color:var(--grn);font-size:13px;white-space:pre-wrap}
+.cwhy{margin-top:8px;font-size:12px;line-height:1.6;color:var(--ink2)}
+.cwords{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin-top:12px}
+.cword{padding:10px 12px;border:1px solid var(--line);background:var(--bg2);display:flex;flex-direction:column;gap:4px;font-size:12px;line-height:1.5}
+.cword b{color:var(--term);font-weight:700} .cword span{color:var(--ink2)}
+.clocked{margin-top:14px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--ink2)} .clocked div{display:flex;gap:8px;align-items:center}
+.cpeople{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px;margin-top:12px}
+.cperson{padding:14px;border:1px solid var(--line);background:var(--bg2)}
+.cph{display:flex;gap:12px;align-items:center;margin-bottom:6px} .cph b{color:var(--ink)} .cph .muted{font-size:11px}
+.ctalk{padding:10px 0;border-top:1px solid #1a2233;font-size:13px} .ctalk a{cursor:pointer}
+@media (prefers-reduced-motion:reduce){.modal-back,.modal{animation:none}}
