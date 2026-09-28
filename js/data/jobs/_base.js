@@ -10,8 +10,8 @@
   // 68 gigs in order (docs/HANDOFF.md, Rules): a runner who misses 8 times a gig ends Normal with about 1,340 creds, and
   // runs out at the Class B rite on Cyberpsycho, which is for runners who rarely miss.
   window.DIFFICULTY = {
-    easy:        { name: 'EASY',        pay: [60, 100, 150, 220], wear: 1 },
-    normal:      { name: 'NORMAL',      pay: [60, 95, 135, 190],  wear: 1 },
+    easy:        { name: 'ROOKIE',        pay: [60, 100, 150, 220], wear: 1 },
+    normal:      { name: 'EDGERUNNER',      pay: [60, 95, 135, 190],  wear: 1 },
     cyberpsycho: { name: 'CYBERPSYCHO', pay: [60, 90, 130, 180],  wear: 2 }
   };
   window.DIFFICULTY_ORDER = ['easy', 'normal', 'cyberpsycho'];

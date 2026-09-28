@@ -328,7 +328,8 @@ the world remembers even when the runner rewinds.
 
 A sync is the only save. The deck syncs after every talk and every gig, on its own, and says so once. There are no
 chips, no export, no manual save; the pacing belongs to the street, not the player. Words: **food**, **chrome**,
-**sync**, **flatline**, **ripperdoc**, **the tab**. Never "health", "HP", "hunger bar", "save game", "checkpoint",
+**sync**, **flatline**, **ripperdoc**, **the tab**, **clearance run** (the gig that gates a class; never "rite of
+passage"), **Rookie · Edgerunner · Cyberpsycho** (the difficulty names). Never "health", "HP", "hunger bar", "save game", "checkpoint",
 "respawn". "Game over" appears in exactly one place: the flatline screen.
 
 When the player is broke and under 30 food, Marrow puts one bowl on the tab, once per class. He is not kind about it.

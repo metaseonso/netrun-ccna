@@ -2,7 +2,7 @@
    Used in the game (the completion screen) and by tools/hall.js (the Hall of Fame robot), so every card is the same.
    LicenseCard.svg({ number, issued, handle, cls, difficulty, theme, stats: { nights, gigs, clean, hours, saved, lost, flatlines, fixers } })
    theme: the deck skin the card is printed in (default, ember, ghost, noir), one the runner used during the run.
-   difficulty: easy is a plain card; normal adds a holographic sheen and a stamp; cyberpsycho adds a glowing double
+   difficulty (printed as Rookie, Edgerunner, Cyberpsycho): easy is a plain card; normal adds a holographic sheen and a stamp; cyberpsycho adds a glowing double
    frame, a glitching title, a hazard stripe and circuit traces from the chip. */
 (function(root){
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -21,7 +21,7 @@
     const handle = String(r.handle || 'unknown').slice(0, 18);
     const size = handle.length > 12 ? 52 : 68;
     const title = (x, y, c1, c2, c3) => '<text x="' + x + '" y="' + y + '" class="d" font-size="36" font-weight="800" fill="' + c1 + '" letter-spacing="6">NETRUNNER<tspan fill="' + c2 + '">://</tspan><tspan fill="' + (c3 || c1) + '">CCNA</tspan></text>';
-    const name = String(r.difficulty || '').toUpperCase();
+    const name = ({ easy: 'ROOKIE', normal: 'EDGERUNNER', cyberpsycho: 'CYBERPSYCHO' })[r.difficulty] || String(r.difficulty || '').toUpperCase();
     const line = 'Cleared the Watson Exchange on Opening Night' + (name ? ' at ' + name.charAt(0) + name.slice(1).toLowerCase() + ' difficulty.' : '.');
 
     let defs = '<style>@import url(https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap);' +

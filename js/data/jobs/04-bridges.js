@@ -197,7 +197,7 @@
     { id: 'c-n33-every-road-home', cls: 'C', rep: 60, creds: 300, food: 30, chrome: 23, rite: true, from: 'dispatch', title: 'Every Road Home', day: [33],
       requires: ['n33-routes-to-the-wing'],
       devices: ['SW1', 'SW2', 'R1', 'R2', 'R3', 'PCA'],
-      brief: 'DISPATCH » Class C rite. The clinic\'s two sites on one network, the old annex and the new wing, before the rehearsals for Opening Night start. The tree, the bundle, the guards, the gateway, the roads between the buildings, and one IPv6 route. No fixers on this one.\n\nCLIENT (Imani, reception) » "Both buildings, every road between them. If something goes down tonight, I don\'t want to find out from a patient."',
+      brief: 'DISPATCH » Class C clearance run. The clinic\'s two sites on one network, the old annex and the new wing, before the rehearsals for Opening Night start. The tree, the bundle, the guards, the gateway, the roads between the buildings, and one IPv6 route. No fixers on this one.\n\nCLIENT (Imani, reception) » "Both buildings, every road between them. If something goes down tonight, I don\'t want to find out from a patient."',
       net: {
         stpMode: 'pvst',
         devices: {

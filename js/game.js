@@ -115,7 +115,7 @@
   let run = null;
   function startJob(id, opts){ const job = JOBS.find(j => j.id === id); if (!job) return null; opts = opts || {};
     if (!opts.silent) { const c = body.cost(job); state.body.food = Math.max(0, state.body.food - c.food); state.body.chrome = Math.max(0, state.body.chrome - c.chrome); ev('body', { job: job.id, food: state.body.food, chrome: state.body.chrome });
-      if (state.body.food <= 0) { flatline('you went in hungry. ' + (job.rite ? 'the rite' : 'the dive') + ' took the rest.'); return null; } if (state.body.chrome <= 0) { flatline('the chrome was already failing. it quit two floors down.'); return null; } save(); }
+      if (state.body.food <= 0) { flatline('you went in hungry. ' + (job.rite ? 'the clearance run' : 'the dive') + ' took the rest.'); return null; } if (state.body.chrome <= 0) { flatline('the chrome was already failing. it quit two floors down.'); return null; } save(); }
     const topo = job.topo ? JSON.parse(JSON.stringify(job.topo)) : null; const netDef = job.net ? JSON.parse(JSON.stringify(job.net)) : null;
     const devices = {}; const R = { job, topo, netDef, devices, step: 0, hinted: {}, sharpened: {}, fails: {}, done: [], selected: null, feedback: null, calc: {}, choice: null, multi: new Set(), order: null, form: {}, text: '', active: job.devices[0], history: [], startedAt: Date.now(), stepStart: Date.now(), lastWhy: null, hintShown: null, _netKey: null, _net: null };
     const ctx = { job, topo, netDef, devices, get selected(){ return R.selected; },
@@ -183,7 +183,7 @@
   const fixer = {
     price(job){ return pay(job); },
     can(){ if (!run || run.result) return { ok: false, why: 'Not in a dive.' }; if (run.outsourced) return { ok: false, why: 'The fixer is already on it.' };
-      if (run.job.rite) return { ok: false, why: 'The Board watches rites. No fixer will touch this one.' };
+      if (run.job.rite) return { ok: false, why: 'The Board watches clearance runs. No fixer will touch this one.' };
       if (codexStatus(run.job) !== 'sealed') return { ok: false, why: 'You already have the notes for this gig. They are in the CODEX.', have: true }; const price = fixer.price(run.job);
       if ((state.creds || 0) < price) return { ok: false, why: 'A fixer wants ' + price + ' creds for this gig. You have ' + (state.creds || 0) + '.', price }; return { ok: true, price }; },
     hire(){ const c = fixer.can(); if (!c.ok) return c; addCreds(-c.price, 'fixer ' + run.job.id); run.outsourced = true; if (!state.jobsDone[run.job.id]) state.codex[run.job.id] = 'paid';
