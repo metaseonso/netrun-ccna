@@ -130,6 +130,7 @@
       if (line === 'no service password-encryption') { enc = false; const i = b.findIndex(x => x.line === 'service password-encryption'); if (i >= 0) b.splice(i, 1); continue; }
       if (line === 'no shutdown') { const i = b.findIndex(x => x.line === 'shutdown'); if (i >= 0) b.splice(i, 1); b.noShut = true; continue; }
       if (line === 'shutdown') b.noShut = false;
+      { const na = line.match(/^no access-list (\d+)$/); if (na) { for (let i = b.length - 1; i >= 0; i--) if (b[i].line.startsWith('access-list ' + na[1] + ' ')) b.splice(i, 1); continue; } } // the whole numbered list goes
       if (line.startsWith('no ')) { const what = line.slice(3); const i = b.findIndex(x => x.line === what || x.line.startsWith(what + ' ') || keyOf(x.line) && keyOf(x.line) === keyOf(what)); if (i >= 0) b.splice(i, 1); else if (what === 'ip address') { const j = b.findIndex(x => /^ip address /.test(x.line)); if (j >= 0) b.splice(j, 1); } continue; }
       const e = put(b, line); if (/^enable password |^password |^username \S+ password /.test(line)) { e.enc = enc; secrets.push(e); } }
     const show = x => { let m; const l = x.line;

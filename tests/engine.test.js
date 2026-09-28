@@ -131,6 +131,8 @@ module.exports.run = function({ out }){
     ok(c.ntp.join() === '10.0.0.8' && c.ntpMaster === 4, 'ntp: no ntp server removes one server; ntp master stratum parsed');
     ok(c.logging.join() === '10.0.9.51', 'syslog: no logging removes a host');
     ok(c.snmp.length === 1 && c.snmp[0].community === 'watson' && c.snmp[0].mode === 'ro', 'snmp: no snmp-server community removes it; ro stays read-only');
+    const r1 = new Sim.Device('R1', { kind: 'ios' }); ['en', 'conf t', 'access-list 1 remark x', 'access-list 1 deny 10.0.0.0 0.0.0.255', 'access-list 1 permit any', 'access-list 2 permit any', 'no access-list 1', 'do show running-config'].forEach(l => r1.exec(l));
+    const run = r1.out[r1.out.length - 1].s; ok(!/access-list 1 /.test(run) && /access-list 2 permit any/.test(run), 'shell: no access-list 1 removes every line of list 1 from the running-config');
   }
   return { pass, fails };
 };

@@ -140,6 +140,7 @@ Definition of done for a day:
   so CDP could not be turned off and LLDP never on), `sh ip int br` and `sh ip int g0/1` (they became `show ip interfaces`, which
   had no output), `logging trap N` and `snmp-server community X ro`. The parser honours `no ntp server X`, `no logging X`,
   `no snmp-server community X`, and reads `ntp master [stratum]` (`cfg.ntpMaster`, default 8). Tested (section 10).
+  `no access-list N` removes every line of list N from the running-config, not just the first. Tested (section 10).
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
