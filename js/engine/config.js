@@ -75,7 +75,7 @@
         else if (s === 'no cdp run') cfg.cdp = false; else if (s === 'cdp run') cfg.cdp = true;
         else if (s === 'lldp run') cfg.lldp = true; else if (s === 'no lldp run') cfg.lldp = false;
         else if (/^errdisable recovery cause/.test(s)) cfg.errdisableRecovery = true;
-        else if ((m = s.match(/^no ip route (\S+) (\S+) (\S+)/))) cfg.routes = cfg.routes.filter(x => !(x.prefix === m[1] && x.mask === m[2] && x.via === m[3]));
+        else if ((m = s.match(/^no ip route (\S+) (\S+)(?: (\S+))?/))) cfg.routes = cfg.routes.filter(x => !(x.prefix === m[1] && x.mask === m[2] && (!m[3] || x.via === m[3] || x.exit === m[3])));
         else if ((m = s.match(/^no access-list (\d+)$/))) delete cfg.acls[m[1]];
         else if ((m = s.match(/^no vlan (\d+)$/))) delete cfg.vlans[+m[1]];
       }
