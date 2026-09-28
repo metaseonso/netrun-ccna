@@ -136,6 +136,8 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · `show interfaces description` (status, protocol, description per port). Tested in `tests/engine.test.js` (section 1).
+
 - 2026-09-28 · Learning, opt-in per gig with `net.learn: true`: switches learn source MACs and hosts and routers learn ARP
   entries only from pings and traceroutes typed in a shell (checks never teach the network); the first ping over a hop with no
   ARP entry loses one packet (`Request timed out.` / `.!!!!`); `clear mac address-table dynamic [address|interface]`,

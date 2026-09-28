@@ -15,6 +15,8 @@ module.exports.run = function({ out }){
     d.R1.exec('ip route 10.0.2.0 255.255.255.0 10.0.12.2'); A = Net.api(Net.build(net, d)); const p1 = A.ping('PC1', '10.0.2.10'); ok(!p1.ok && /reply failed/.test(p1.reason), 'static: one-way route fails on the reply (' + p1.reason + ')');
     d.R2.exec('ip route 10.0.1.0 255.255.255.0 10.0.12.1'); A = Net.api(Net.build(net, d)); const p2 = A.ping('PC1', '10.0.2.10'); ok(p2.ok, 'static: both routes → ping works (' + p2.reason + ')'); ok(A.route('R1', '10.0.2.0/24') && A.route('R1', '10.0.2.0/24').proto === 'S', 'static: route appears as S');
     ok(/S\s+10\.0\.2\.0\/24/.test(Show.render(d.R1, 'show ip route', A.state)), 'show ip route lists the static route');
+    d.R1.exec('int g0/0'); d.R1.exec('description ## to PC1 ##'); A = Net.api(Net.build(net, d)); const idesc = Show.render(d.R1, 'show interfaces description', A.state);
+    ok(/Gi0\/0\s+up\s+up\s+## to pc1 ##/.test(idesc) && /Gi0\/1\s+up\s+up/.test(idesc), 'show interfaces description lists status, protocol and the description (' + idesc + ')');
     // shutdown breaks it
     // traceroute shows the forward path only: each router's ingress address, then the target
     const tr = A.ping('PC1', '10.0.2.10'); ok(JSON.stringify(tr.trail) === JSON.stringify(['10.0.1.1', '10.0.12.2', '10.0.2.10']), 'trace: hops are the ingress addresses, forward only (' + JSON.stringify(tr.trail) + ')');
