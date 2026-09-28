@@ -1,9 +1,9 @@
 /* glossary.js — the "unique NPC" terms. Dialogue writes [[Term]]; the renderer highlights it and shows this on hover. */
 window.GLOSSARY = {
   'osi model': 'Seven-layer reference model (ISO 7498, 1984): Physical, Data Link, Network, Transport, Session, Presentation, Application. A way to talk about the net, not the net itself.',
-  'tcp/ip suite': 'The four-layer model the real internet runs on: Link, Internet, Transport, Application. It won the protocol wars of the 80s.',
+  'tcp/ip suite': 'The family of protocols the internet runs on (IP, TCP, UDP and the rest), and the layered model named after it: Physical, Data Link, Network, Transport, Application. It won the protocol wars of the 80s.',
   'encapsulation': 'Each layer wraps the data from the layer above with its own header. Segment → packet → frame → bits.',
-  'pdu': 'Protocol Data Unit. The name of the "thing" at each layer: L4 segment, L3 packet, L2 frame, L1 bits.',
+  'pdu': 'Protocol data unit: what one layer hands to the layer below it. L4 segment (TCP) or datagram (UDP), L3 packet, L2 frame, L1 bits.',
   'node': 'Any device on a network that sends or receives data: a PC, a phone, a server, a switch, a router.',
   'end hosts': 'The devices at the edges of a network where people work or services run, such as PCs, phones and servers. Also called endpoints.',
   'client': 'A device that asks for a service from a server, such as a laptop asking for a web page.',
@@ -161,5 +161,17 @@ window.GLOSSARY = {
   'chef': 'Agent-based config management using Ruby "recipes" and "cookbooks".',
   'ice': 'Intrusion Countermeasures Electronics. Watson slang for anything that pushes back: firewalls, ACLs, port security.',
   'deck': 'In this game: the commands and numbers you carry out of each scene, and the skills you have shown you can use without a hint.',
-  'jack in': 'Start a gig. Open the console and touch the live system.'
+  'jack in': 'Start a gig. Open the console and touch the live system.',
+  'decapsulation': 'The receiving host removing each layer\'s header (and the Layer 2 trailer) in turn, from the bottom up, until only the data is left. The reverse of encapsulation.',
+  'tcp/ip model': 'The five-layer model of the TCP/IP suite: 1 Physical, 2 Data Link (also called Local Network), 3 Network (also called Internet), 4 Transport, 5 Application. Application is also called Layer 7, after the OSI model.',
+  'segment': 'The Layer 4 PDU when the transport protocol is TCP: a TCP header plus the application data.',
+  'datagram': 'The Layer 4 PDU when the transport protocol is UDP: a UDP header plus the application data.',
+  'packet': 'The Layer 3 PDU: an IP header plus a segment or datagram. Routers read it to forward it end to end.',
+  'frame': 'The Layer 2 PDU: a header in front of the packet and a trailer behind it. Switches read it to forward it one hop.',
+  'payload': 'Everything a PDU carries inside its header and trailer. A frame\'s payload is a packet, a packet\'s payload is a segment or datagram, and a segment\'s payload is data.',
+  'ip address': 'A Layer 3 address that identifies a host across networks, used for end-to-end delivery. IPv4 addresses are 32 bits.',
+  'ietf': 'Internet Engineering Task Force. Writes the standards used on the internet (IP, TCP, UDP, OSPF, DHCP) and publishes them as RFCs.',
+  'rfc': 'Request for Comments: a numbered document in which the IETF publishes an internet standard. IPv4 is RFC 791.',
+  'adjacent-layer interaction': 'A layer working with the layers directly above and below it on the same host: it serves the layer above and uses the layer below.',
+  'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.'
 };
