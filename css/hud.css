@@ -12,9 +12,9 @@
 
 /* band 1 · identity */
 .b-id{min-height:54px;border-bottom:1px solid #1a2233}
-.b-id .logo{font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:.16em;color:var(--cyan);text-shadow:0 0 12px rgba(63,246,255,.45);white-space:nowrap;flex-shrink:0;display:flex}
+.b-id .logo{font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:.16em;color:var(--cyan);text-shadow:0 0 12px rgba(63,246,255,.45);white-space:nowrap;flex-shrink:0;display:flex;align-items:baseline;line-height:1}
 .b-id .logo .sh{display:none}
-.b-id .logo small{color:var(--mag);font-size:inherit;font-weight:800}
+.b-id .logo small{color:var(--mag);font-size:inherit;font-weight:800;line-height:1;vertical-align:baseline;position:static}
 .b-id .who{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink)}
 .b-id .who img,.b-id .who .ava{width:30px;height:30px;border-radius:50%;border:1px solid var(--cyan);object-fit:cover}
 .b-id .who .ava{display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:10px;color:var(--cyan);background:var(--panel)}
@@ -86,7 +86,7 @@
 @media (max-width:760px){
   #app{padding-bottom:96px}
   .hud2 .band{gap:12px;padding:0 12px}
-  .b-id{min-height:50px;overflow:hidden} .b-id .logo{font-size:14px} .b-id .logo .lg{display:none} .b-id .logo .sh{display:inline}
+  .b-id{min-height:50px;overflow:hidden} .b-id .logo{font-size:14px} .b-id .logo .lgo{display:none} .b-id .logo .sh{display:inline}
   .b-id .who{min-width:0} .b-id .who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .b-id .cls{padding:3px 7px;letter-spacing:.12em} .b-id .riteline,.b-id .syncchip,.hud2 .sep{display:none}
   .b-body{flex-wrap:wrap;gap:10px 16px;padding:10px 12px}
   .meter{flex:1 1 40%} .meter .mhead{flex-wrap:wrap;gap:2px 8px} .segs i{width:auto;flex:1} .meter .mcol{flex:1} .meter .segs{width:100%}
