@@ -218,7 +218,7 @@
 
 /* the door: story left, sign-in card right, live numbers, footer */
 .intro.door2{max-width:1100px;margin:0 auto;padding:clamp(28px,6vh,64px) 16px 28px;text-align:left}
-.dhero{text-align:center;margin-bottom:clamp(28px,6vh,56px)} .door2 .dhero h1{font-size:clamp(20px,6.4vw,72px);overflow-wrap:anywhere}
+.dhero{text-align:center;margin-bottom:clamp(28px,6vh,56px)} .door2 .dhero h1{font-size:clamp(17px,4.4vw,58px);white-space:nowrap}
 .dgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(20px,4vw,48px);align-items:center}
 .door2 .lede{margin:0 0 22px;max-width:none;font-size:15px;line-height:1.8;color:var(--ink)}
 .doorwhat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
