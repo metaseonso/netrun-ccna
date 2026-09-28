@@ -211,6 +211,45 @@
           why: 'Vee Lan: Frames in the native VLAN cross a trunk without a tag, and a switch that receives an untagged frame on a trunk assigns it to the native VLAN. The native VLAN is VLAN 1 by default; here it was changed to 99 on both ends.' } }
       ] },
 
+    // ------------------------------------------------------------ night 18 · VLANs, part 3: multilayer switching
+    { id: 'n18-the-busiest-wire', title: 'The busiest wire in the building', sub: 'multilayer switching, SVIs and routed ports', npc: 'veelan', day: [18], src: [PS('VLAN_Part3.md')], unlocks: ['l3-switching'],
+      beats: [
+        { k: 'SCENE', where: 'The Kabuki market · the office · a Saturday, at the lunch rush',
+          lines: [
+            { who: 'narr', text: 'Saturday lunch fills the market until the floor shakes, and the office smells of the dumplings everybody is eating at their desks. On the monitor the camera feeds stutter again, and at the counter below Hanna waves a receipt that came out half-printed. Vee Lan has her hand flat on the cable that runs up to the router, as if she could feel the traffic in it.' },
+            { who: 'veelan', text: 'Every packet from one VLAN to another goes up this cable to the router and comes straight back down it. On a Saturday that\'s the cameras, the tills, the printers and the office, all squeezing through one gigabit, twice.' },
+            { who: 'veelan', text: 'So the switch does the routing itself. A [[multilayer switch]], a Layer 3 switch, can route between VLANs as well as switch inside them. Each VLAN gets a [[SVI]], a switch virtual interface, interface vlan 10 and so on, with the gateway address on it, and the switch routes between them at full speed without anything leaving the box.' },
+            { who: 'veelan', text: 'Two things catch everyone. SVIs start shut down, so each one needs no shutdown. And a switch won\'t route between them until you type ip routing in global configuration. Without it, the SVIs are just addresses the switch answers on.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why does an SVI stay down even after no shutdown sometimes?', reply: 'Vee Lan: "Because its VLAN has to exist on the switch, and at least one port in that VLAN, or a trunk carrying it, has to be up. An SVI for a VLAN with nobody in it stays down. That saves you routing to an empty room."' },
+            { tone: 'press', say: 'Then what\'s the router for?', reply: 'Vee Lan: "The way out. The switch routes inside the market, and the router joins the market to everything else: the internet, the other districts. The link between them doesn\'t need to be a trunk any more. It\'s one network with two ends."' },
+            { tone: 'care', say: 'Hanna looks close to throwing that printer.', reply: 'Vee Lan glances down at the counter. "She\'s thrown one before. Go and tell her the receipts will be fine by three, and then make it true."' }
+          ] } },
+        { k: 'SCENE', where: 'The office · the new switch on the rack',
+          lines: [
+            { who: 'veelan', text: 'A switch port can also stop being a switchport altogether. no switchport on the interface turns it into a [[routed port]], like a router\'s: it leaves every VLAN, it doesn\'t trunk, spanning tree ignores it, and you put an IP address straight on it. The link up to the router is going to be one of those, a /30 with an address at each end.' },
+            { who: 'veelan', text: 'That uplink is a trunk right now. The quickest way to wipe a port back to how it left the factory is default interface and its name, in global configuration. Then no switchport, then the address.' },
+            { who: 'veelan', text: 'The router\'s subinterfaces have to go, or two boxes will answer for the same gateway addresses. no interface g0/0.10 deletes a subinterface outright.' },
+            { who: 'veelan', text: 'One more thing from the router-on-a-stick days, because the Board still asks. If a router subinterface should carry the native VLAN, untagged, you write encapsulation dot1q and the VLAN, then the word native.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What does the switch\'s routing table look like after?', reply: 'Vee Lan: "Like a router\'s. A C route for each SVI\'s network and for the uplink, an L for each of its own addresses, and whatever static routes you give it. A default route pointing at the router covers everything outside the market."' },
+            { tone: 'press', say: 'Couldn\'t the switch just do everything and lose the router?', reply: 'Vee Lan: "For routing between our own VLANs, yes. For the internet, the market still needs NAT and a firewall and a provider link, and that\'s router work. Nat would tell you the same thing, at length."' },
+            { tone: 'quiet', say: '(Watch the camera feed while she works.)', reply: 'The stairwell feed freezes on a delivery man with a crate of cabbages, then jumps forward. Vee Lan doesn\'t look up from the rack.' }
+          ] } },
+        { k: 'LORE', title: 'THE BOX THAT DID BOTH', year: 1999, real: ['cisco'], vibe: 'Da bomb. One chassis that switched and routed at full speed, and every campus wanted one.',
+          text: 'Vee Lan, sliding the new switch into the rack: "Cisco shipped the Catalyst 6500 in 1999, a big chassis that could switch and route in hardware at the same time. For twenty years you could find one in the middle of half the campuses and hospitals on earth. The clinic had one. Old Root called it the fridge, because of the noise, and kept one of its fans on his desk after it went."' },
+        { k: 'KIT', text: 'Vee Lan writes on the rack\'s blanking plate in grease pencil.', real: ['cisco'], kit: [
+          { cmd: 'ip routing', what: 'a multilayer switch routes only after this' },
+          { cmd: 'interface vlan 10 → ip address 10.18.10.1 255.255.255.0 → no shutdown', what: 'an SVI: starts shut down; up only when its VLAN has a live port' },
+          { cmd: 'default interface g0/2 → no switchport → ip address 10.18.0.1 255.255.255.252', what: 'a routed port: no VLANs, no trunk, no spanning tree' },
+          { cmd: 'no interface g0/0.10', what: 'delete a subinterface' },
+          { cmd: 'encapsulation dot1q 99 native', what: 'a router subinterface for the native VLAN (untagged)' } ] },
+        { k: 'SYNC', q: { prompt: 'Mac, from the doorway: "You gave the switch three SVIs with addresses and the PCs still can\'t reach each other. What\'s missing?"', opts: ['ip routing, and no shutdown on each SVI', 'A trunk to the router', 'A default gateway on the switch', 'VTP'], a: 0,
+          yes: 'Vee Lan: "Both. SVIs start shut, and the switch won\'t route until it\'s told to."', no: 'Vee Lan: "SVIs start shut down, and a switch won\'t route between them without ip routing."',
+          why: 'Vee Lan: An SVI is administratively down until no shutdown is entered on it. Even with the SVIs up, a multilayer switch only routes between them after ip routing is enabled in global configuration. Without it, the SVIs are just management addresses.' } }
+      ] },
     // ------------------------------------------------------------ night 36 · CDP and LLDP
     { id: 'n36-next-door', title: 'Everyone next door', sub: 'CDP and LLDP', npc: 'mac', day: [36], src: [PS('CDP_and_LLDP.md')], unlocks: ['cdp-lldp'],
       beats: [

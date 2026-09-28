@@ -58,7 +58,7 @@ window.GLOSSARY = {
   '802.1q': 'The IEEE VLAN tagging standard (dot1q). A 4-byte tag inserted after the source MAC: TPID 0x8100 (16 bits), PCP (3 bits, priority), DEI (1 bit), VID (12 bits, VLANs 1–4094).',
   'native vlan': 'The VLAN whose frames cross a trunk untagged; untagged frames received on a trunk are put in it. VLAN 1 by default. Must match on both ends; best changed to an unused VLAN.',
   'router on a stick': 'Inter-VLAN routing over one router interface: the switch port is a trunk and the router has one subinterface per VLAN (encapsulation dot1q N, plus an IP address).',
-  'svi': 'Switch Virtual Interface. "interface vlan 10" on a Layer 3 switch. Routing without a separate router.',
+  'svi': 'Switch virtual interface (interface vlan N): a virtual interface for a VLAN that can take an IP address, used as that VLAN\'s gateway on a multilayer switch. Starts shut down; up only when its VLAN exists and has a live port.',
   'dtp': 'Dynamic Trunking Protocol. Cisco ports negotiating trunk vs access by themselves. Turn it off: "switchport nonegotiate".',
   'vtp': 'VLAN Trunking Protocol. One switch pushes its VLAN list to others. Powerful, dangerous, usually left transparent or off.',
   'etherchannel': 'Bundle several links into one logical link. More bandwidth, no STP blocking. LACP (open) or PAgP (Cisco).',
@@ -229,5 +229,7 @@ window.GLOSSARY = {
   'nms': 'Network Management Station. The server that runs the SNMP manager software: it polls managed devices (UDP 161) and receives their Traps and Informs (UDP 162).',
   'mib': 'Management Information Base. The structure of variables an SNMP agent keeps about its device (CPU, interfaces, counters), each identified by an OID.',
   'oid': 'Object ID. The dotted number that names one variable in an SNMP MIB, such as a port\'s input counter.',
-  'fqdn': 'Fully Qualified Domain Name: a host\'s name with its domain, hostname.domainname (R1.watson.net). crypto key generate rsa names the RSA key pair after it.'
+  'fqdn': 'Fully Qualified Domain Name: a host\'s name with its domain, hostname.domainname (R1.watson.net). crypto key generate rsa names the RSA key pair after it.',
+  'multilayer switch': 'A Layer 3 switch: switches frames inside VLANs and routes packets between them in hardware, using SVIs and routed ports. Needs ip routing.',
+  'routed port': 'A switch port made into a Layer 3 interface with no switchport: it leaves all VLANs, does not trunk or run spanning tree, and takes an IP address like a router interface.'
 };
