@@ -384,6 +384,46 @@
         { k: 'SYNC', q: { prompt: 'Clerk Adebayo reads a line from Halvorsen\'s file: ""poe": false". "Is that a string, or something else?"', opts: ['A boolean', 'A string', 'A number', 'Null'], a: 0,
           yes: 'Jason: "A boolean. No quotes, so not a string."', no: 'Jason: "A boolean. true and false without quotes are booleans."',
           why: 'Jason: In JSON, true and false without quotation marks are booleans. With quotation marks they would be strings. A number has no quotes and is a numeric value, and null means the intentional absence of any value.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 61 · REST APIs and authentication
+    { id: 'n61-asking-politely', title: 'Asking the boxes politely', sub: 'REST APIs and authentication', npc: 'jason', day: [61], src: [PS('REST_APIs.md')], unlocks: ['rest-api'],
+      beats: [
+        { k: 'SCENE', where: 'The Lab · Jason\'s desk · a quarter to midnight',
+          lines: [
+            { who: 'narr', text: 'The Lab\'s racks hum behind you, and Jason\'s desk lamp makes a neat circle of yellow light on a single sheet headed OPENING NIGHT DASHBOARD. A council laptop sits open beside it, showing an empty page with the council\'s crest and nothing else.' },
+            { who: 'jason', text: 'The council wants to watch the Exchange live on Opening Night: every box, up or down, on that page. The page will ask the street\'s controller for the data through a [[REST API]]. REST stands for Representational State Transfer, and a REST API is asked things over HTTP, one request at a time. It is stateless: every request carries everything the server needs, and the server remembers nothing between them.' },
+            { who: 'jason', text: 'Everything you can do to data is one of four things, CRUD: create, read, update, delete. HTTP has a verb for each. POST creates, GET reads, PUT or PATCH updates, and DELETE deletes.' },
+            { who: 'jason', text: 'A request goes to a [[URI]], a uniform resource identifier. In https://exchange.watson.lab/api/v1/devices, the scheme is https, the authority is exchange.watson.lab, the server, and the path is /api/v1/devices, the thing you are asking about.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What comes back?', reply: 'Jason: "A status code, and usually some JSON. The first digit is the class: 1xx informational, 2xx successful, 3xx redirection, 4xx client error, 5xx server error. 200 is OK, 201 is Created, 102 is Processing, 301 is Moved Permanently, 401 is Unauthorized, 404 is Not Found and 500 is Internal Server Error."' },
+            { tone: 'press', say: 'Why not just log in to each box?', reply: 'Jason: "Because a web page cannot type into a shell, and a thousand web pages should not try. The controller already knows every box through Ansible\'s plays. The dashboard asks the controller once, with GET, and gets the whole district back as one JSON array."' },
+            { tone: 'joke', say: 'What\'s the verb for making coffee?', reply: 'Jason: "POST, since it creates a coffee. If the machine is empty, it answers with a 5xx, because the fault is on the server\'s side. If you ask for tea, it answers 404."' }
+          ] } },
+        { k: 'SCENE', where: 'The Lab · Jason\'s desk · Halvorsen\'s API sample',
+          lines: [
+            { who: 'narr', text: 'Jason unfolds a page from Halvorsen\'s bid: an example request to their controller, printed in a pale grey typeface. One header line is underlined twice in red: Authorization: Basic YWRtaW46aGFsdm9yc2Vu.' },
+            { who: 'jason', text: 'That is [[Basic authentication]]: a username and password joined by a colon and encoded in Base64, in the Authorization header. Base64 is encoding, not encryption. Anyone can reverse it.' },
+            { who: 'narr', text: 'He writes on the margin without looking anything up: admin:halvorsen.' },
+            { who: 'jason', text: 'There are better ways. [[Bearer authentication]] sends a token in the same Authorization header, and the token expires after a set time. An API key is a static key the provider issues, which does not expire; it belongs in the Authorization header too, though people also put it in the URL or a cookie. And [[OAuth 2.0]] delegates access: the council\'s page can act for Clerk Adebayo without ever seeing his password.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How does OAuth 2.0 work?', reply: 'Jason: "Four parties. The resource owner is the person whose data it is, Clerk Adebayo. The client app is the council\'s page. The authorisation server checks who he is and hands the page an access token. The resource server is the controller\'s API, which accepts the token. When the token expires, a refresh token gets a new one without asking him to log in again."' },
+            { tone: 'press', say: 'Is that really Halvorsen\'s password?', reply: 'Jason: "It is the one in their example, printed in a public bid. Whether it is still the password on their live controller I will not be finding out. The point for the council is that they sent an example with Basic authentication over a public page."' },
+            { tone: 'care', say: 'Who will watch the dashboard on the night?', reply: 'Jason: "Clerk Adebayo, on a laptop in the Exchange\'s hall. If a box goes red, he will write down the time. He asked me to make the page large enough to read without his glasses."' }
+          ] } },
+        { k: 'LORE', title: 'THE WEB EXPLAINS ITSELF', year: 2000, vibe: 'Y2K came and went. Somebody finally wrote down why the web works.',
+          text: 'Jason, slipping the sample into a folder: "In 2000 Roy Fielding finished his doctoral dissertation at the University of California, Irvine, on the architecture of network software. One chapter described the style the web itself was built in, and called it Representational State Transfer. Fielding had helped write the HTTP standard, so he was describing a building he had helped put up. I keep it because the best specification of the web was written after the web already worked."' },
+        { k: 'KIT', text: 'Jason prints it on council paper.', kit: [
+          { cmd: 'Create POST · Read GET · Update PUT, PATCH · Delete DELETE', what: 'CRUD and the HTTP verbs. REST is stateless' },
+          { cmd: 'https :// exchange.watson.lab /api/v1/devices', what: 'a URI: scheme, authority, path' },
+          { cmd: '1xx informational · 2xx successful · 3xx redirection · 4xx client error · 5xx server error', what: 'response classes' },
+          { cmd: '200 OK · 201 Created · 102 Processing · 301 Moved Permanently · 401 Unauthorized · 404 Not Found · 500 Internal Server Error', what: 'response codes' },
+          { cmd: 'Basic (Base64 user:password) · Bearer (expiring token) · API key (static) · OAuth 2.0 (delegation, refresh token)', what: 'REST authentication. Credentials go in the HTTP Authorization header' } ] },
+        { k: 'SYNC', q: { prompt: 'Clerk Adebayo: "If the dashboard asks the controller for the device list twice, does the controller remember the first time?"', opts: ['No. REST APIs are stateless: each request carries everything it needs', 'Yes. It keeps a session for each page', 'Only if the page uses POST', 'Only with Basic authentication'], a: 0,
+          yes: 'Jason: "No. Each GET stands on its own."', no: 'Jason: "No. REST is stateless. Every request is complete in itself."',
+          why: 'Jason: REST APIs must be stateless: the server keeps no memory of earlier requests, so every request includes all the information needed to handle it, including its authentication.' } }
       ] }
   ] });
 })();

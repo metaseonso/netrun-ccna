@@ -234,5 +234,10 @@ window.GLOSSARY = {
   'asic': 'Application-Specific Integrated Circuit. A chip built for one job; switches use ASICs to forward frames in hardware (the data plane). TCAM holds routing and ACL lookups; the MAC table is in CAM.',
   'northbound interface': 'The interface between an SDN controller and the applications and scripts that use it, usually a REST API.',
   'southbound interface': 'The interface between an SDN controller and the network devices it controls: OpenFlow, OpFlex, onePK, NETCONF.',
-  'machine learning': 'A subset of AI in which computers learn from data instead of being explicitly programmed. Supervised (labelled data), unsupervised (unlabelled), reinforcement (rewards and penalties), deep (many-layered neural networks).'
+  'machine learning': 'A subset of AI in which computers learn from data instead of being explicitly programmed. Supervised (labelled data), unsupervised (unlabelled), reinforcement (rewards and penalties), deep (many-layered neural networks).',
+  // ---- night 61 · REST APIs and authentication
+  'uri': 'Uniform Resource Identifier. In https://sandboxdnac.cisco.com/dna/intent/api/v1/network-device the scheme is https, the authority is sandboxdnac.cisco.com and the path is /dna/intent/api/v1/network-device.',
+  'basic authentication': 'REST authentication with a username and password, encoded in Base64 in the HTTP Authorization header. Base64 is encoding, not encryption, so it is not secure on its own.',
+  'bearer authentication': 'REST authentication with a token (a bearer token) in the HTTP Authorization header. Tokens expire after a set period.',
+  'oauth 2.0': 'REST authentication that provides access delegation. Four entities: resource owner, client app, authorisation server, resource server. A refresh token renews access tokens without the user logging in again.'
 };
