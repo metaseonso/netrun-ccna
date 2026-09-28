@@ -116,5 +116,11 @@ module.exports.run = function({ out }){
     ok(!d.lines.some(r => r.line === 'broth' || r.line === 'noodles'), 'shell: typed passwords are not recorded');
     d.exec('copy running-config startup-config'); d.exec('show startup-config'); ok(/hostname KB-R1/.test(last()) && /Using \d+ out of/.test(last()), 'shell: write saves the running-config to startup');
   }
+  // 10. interface ranges on three-part port names (Catalyst 1/0/x), as the Mega Lab's switches use them
+  {
+    ok(JSON.stringify(Stp.expandRange('gigabitethernet1/0/4 - 5')) === JSON.stringify(['gigabitethernet1/0/4', 'gigabitethernet1/0/5']), 'range: g1/0/4 - 5 expands to two ports (' + JSON.stringify(Stp.expandRange('gigabitethernet1/0/4 - 5')) + ')');
+    const c = NetConfig.parse(dev('DSW1', 'ios', ['en', 'conf t', 'int range g1/0/4 - 5', 'channel-group 1 mode active', 'int range f0/1 - 2', 'switchport mode access']));
+    ok(c.interfaces['gigabitethernet1/0/5'] && c.interfaces['gigabitethernet1/0/5'].channel && c.interfaces['fastethernet0/2'].mode === 'access', 'range: config lands on every port of a 1/0/x range and a 0/x range');
+  }
   return { pass, fails };
 };

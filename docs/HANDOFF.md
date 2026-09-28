@@ -136,6 +136,9 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · `interface range` works on three-part port names (`int range g1/0/4 - 5` on a Catalyst 3650), so the
+  Mega Lab's switches can be configured the way the course does it (`Stp.expandRange`, tested).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a

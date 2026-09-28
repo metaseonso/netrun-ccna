@@ -46,7 +46,7 @@
   }
   function vlanIn(spec, vlan){ return spec.split(',').some(s => { const [a, b] = s.split('-').map(Number); return b ? (vlan >= a && vlan <= b) : a === vlan; }); }
   function expandRange(spec){ // "fastethernet0/1 - 12" or "fastethernet0/1-12" or "fastethernet0/1 , fastethernet0/5"
-    const out = []; spec.split(',').forEach(part => { part = part.trim(); const m = part.match(/^([a-z-]+\d+\/)(\d+)\s*-\s*(\d+)$/); if (m) { for (let i = +m[2]; i <= +m[3]; i++) out.push(m[1] + i); } else if (part) out.push(part.replace(/\s+/g, '')); }); return out; }
+    const out = []; spec.split(',').forEach(part => { part = part.trim(); const m = part.match(/^([a-z-]+(?:\d+\/)+)(\d+)\s*-\s*(\d+)$/); if (m) { for (let i = +m[2]; i <= +m[3]; i++) out.push(m[1] + i); } else if (part) out.push(part.replace(/\s+/g, '')); }); return out; }
 
   // main election
   function compute(topo, vlan, devices){
