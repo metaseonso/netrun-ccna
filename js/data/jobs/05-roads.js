@@ -1,5 +1,103 @@
 /* jobs/05-roads.js — District 05 · The Roads (the cab rank and the map room): static routes, the life of a packet, dynamic routing, RIP, EIGRP, OSPF, HSRP. */
 (function(){
   JOBS.push(
+    // ------------------------------------------------------------------ night 11 · from Lab 11 (configuring static routes)
+    { id: 'd-n11-bread-run', cls: 'D', rep: 10, from: 'nexthop', title: 'The Bread Run', day: [11], requires: ['n11-the-fare'], devices: ['R1', 'R2', 'R3', 'ORDERS'],
+      brief: 'DISPATCH » Ma Tsai wants to order bread from the Two Loaves. Three routers between the noodle bar and the bakery, and none of them knows the way. Nexthop is driving.\n\nCLIENT (Ma Tsai) » "Tomas says his till never sees my orders. I am tired of phoning them in."',
+      net: {
+        devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' },
+          ORDERS: { kind: 'host', ip: '192.168.10.20', mask: '255.255.255.0', gw: '192.168.10.1' }, TILL: { kind: 'host', ip: '192.168.8.10', mask: '255.255.255.0', gw: '192.168.8.1' } },
+        links: [ { a: 'ORDERS', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/0' }, { a: 'R2', ap: 'gigabitethernet0/1', b: 'R3', bp: 'gigabitethernet0/1' }, { a: 'R3', ap: 'gigabitethernet0/0', b: 'TILL' } ],
+        preconfig: {
+          R1: ['hostname SEVEN-BOWLS', 'interface gigabitethernet0/0', 'ip address 192.168.10.1 255.255.255.0', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 10.0.12.1 255.255.255.252', 'no shutdown'],
+          R2: ['hostname WIRES-EDGE', 'interface gigabitethernet0/0', 'ip address 10.0.12.2 255.255.255.252', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 10.0.23.1 255.255.255.252', 'no shutdown'],
+          R3: ['hostname LOAVES', 'interface gigabitethernet0/0', 'ip address 192.168.8.1 255.255.255.0', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 10.0.23.2 255.255.255.252', 'no shutdown'] }
+      },
+      map: { w: 580, h: 250, nodes: [ { id: 'ORDERS', label: 'noodle bar orders PC', type: 'pc', x: 50, y: 190 }, { id: 'R1', label: 'SEVEN-BOWLS', type: 'router', x: 140, y: 80 }, { id: 'R2', label: 'WIRES-EDGE', type: 'router', x: 290, y: 80 },
+          { id: 'R3', label: 'LOAVES', type: 'router', x: 440, y: 80 }, { id: 'TILL', label: 'bakery till', type: 'pc', x: 530, y: 190 } ],
+        links: [ { a: 'ORDERS', b: 'R1' }, { a: 'R1', b: 'R2', tag: '10.0.12.0/30' }, { a: 'R2', b: 'R3', tag: '10.0.23.0/30' }, { a: 'R3', b: 'TILL' } ] },
+      steps: [
+        { type: 'cmd', skill: 'static-route', text: 'Nexthop: "Look in the noodle bar router\'s book first. What does it already know?"',
+          need: [ { dev: 'R1', line: /^(do )?show ip route$/ } ], hint: 'SEVEN-BOWLS> enable\nSEVEN-BOWLS# show ip route', ok: 'Nexthop: "Its own two networks and its own two addresses. Nothing about the bakery."',
+          why: 'Nexthop: Configuring an address on an interface adds two routes: a connected route (C) for the interface\'s network and a local route (L) for the interface\'s own address as a /32. A router knows nothing beyond its own networks until someone adds a static route or a routing protocol.' },
+        { type: 'form', skill: 'static-route', text: 'Nexthop: "Read me the codes off that table."',
+          fields: [ { key: 'l', label: 'Code L means', options: ['local', 'loopback', 'learned', 'last resort'], answer: 'local' }, { key: 'len', label: 'Prefix length of an L route', options: ['/24', '/30', '/32', 'the interface\'s own'], answer: '/32' },
+            { key: 'c', label: 'Prefix length of a C route', options: ['/24', '/32', 'the one configured on the interface'], answer: 'the one configured on the interface' }, { key: 's', label: 'Code for a static route', options: ['S', 'C', 'O', 'L'], answer: 'S' } ],
+          hint: 'A local route is the interface\'s own address. A connected route is its whole network.', ok: 'Nexthop: "Local is the house, connected is the street."',
+          why: 'Nexthop: L is a local route to the exact IP address on the interface, so it is always a /32. C is a connected route to the network the interface is on, with the prefix length configured on the interface. S marks a static route.' },
+        { type: 'cmd', skill: 'static-route', text: 'Nexthop: "Tell the noodle bar router the way to the bakery\'s network, 192.168.8.0/24. Its next stop is my router, WIRES-EDGE, at 10.0.12.2."',
+          check: (d, ctx) => { const r = ctx.net().route('R1', '192.168.8.0/24'); return !!(r && r.proto === 'S' && r.via === '10.0.12.2'); },
+          hint: 'SEVEN-BOWLS# configure terminal\nSEVEN-BOWLS(config)# ip route 192.168.8.0 255.255.255.0 10.0.12.2', ok: 'Nexthop: "S, via 10.0.12.2. One stop, and that\'s all it needs to know."',
+          why: 'Nexthop: ip route 192.168.8.0 255.255.255.0 10.0.12.2 tells the router to send anything for 192.168.8.0/24 to the next hop 10.0.12.2. The next hop must be on one of the router\'s connected networks. The route appears in the table with code S.' },
+        { type: 'cmd', skill: 'static-route', text: 'Nexthop: "My router in the middle needs both directions. Send the bakery\'s network out G0/1 to 10.0.23.2, naming the exit interface as well as the next hop, and send the noodle bar\'s network, 192.168.10.0/24, back to 10.0.12.1."',
+          check: (d, ctx) => { const n = ctx.net(); const a = n.route('R2', '192.168.8.0/24'), b = n.route('R2', '192.168.10.0/24'); return !!(a && a.iface === 'gigabitethernet0/1' && a.via === '10.0.23.2' && b && b.via === '10.0.12.1'); },
+          hint: 'WIRES-EDGE(config)# ip route 192.168.8.0 255.255.255.0 g0/1 10.0.23.2\nWIRES-EDGE(config)# ip route 192.168.10.0 255.255.255.0 10.0.12.1', ok: 'Nexthop: "Both ways through the middle. Now try it."',
+          why: 'Nexthop: A static route can name the next hop, the exit interface, or both. ip route 192.168.8.0 255.255.255.0 g0/1 10.0.23.2 uses both. The router in the middle must know both end networks, because packets and their replies both pass through it.' },
+        { type: 'cmd', skill: 'static-route', text: 'Nexthop: "Ping the bakery till, 192.168.8.10, from the noodle bar\'s orders PC, and tell me what you see."',
+          need: [ { dev: 'ORDERS', line: /^ping 192\.168\.8\.10$/ } ], check: (d, ctx) => !ctx.net().ping('ORDERS', '192.168.8.10').ok,
+          hint: 'ORDERS shell:\nC:\\> ping 192.168.8.10', ok: 'Nexthop: "Timed out. The order gets there. The reply doesn\'t know the way home."',
+          why: 'Nexthop: The request reaches the bakery, because every router on the way there has a route. The bakery router has no route back to 192.168.10.0/24, so it drops the reply. A ping needs routes in both directions.' },
+        { type: 'cmd', skill: 'static-route', text: 'Nexthop: "The bakery router only ever talks to one neighbour. Give it a default route to my router and ping again."',
+          check: (d, ctx) => { const n = ctx.net(); const r = n.route('R3', '0.0.0.0/0'); return !!(r && r.via === '10.0.23.1') && n.ping('ORDERS', '192.168.8.10').ok; },
+          hint: 'LOAVES(config)# ip route 0.0.0.0 0.0.0.0 10.0.23.1\nORDERS shell:\nC:\\> ping 192.168.8.10', ok: 'Tomas, on the phone: "The till just printed Ma Tsai\'s order!"',
+          why: 'Nexthop: ip route 0.0.0.0 0.0.0.0 10.0.23.1 is a default route: it matches every destination, so the bakery router sends anything it has no better route for to WIRES-EDGE. It shows as S* and becomes the gateway of last resort. With it, the reply finds its way back and the ping works.' },
+        { type: 'choice', skill: 'static-route', text: 'Ma Tsai: "Does my router need a route to that little network in the middle, the 10.0.23 one, for my orders to get through?"',
+          opts: ['No. It only needs a route to the destination network', 'Yes. It needs a route to every network on the path', 'Only if the orders are large', 'Yes, or the TTL runs out'], a: 0,
+          hint: 'Each router only needs to know the next stop toward the destination.', ok: 'Nexthop: "No. Each router only needs to know the next stop toward the destination."',
+          why: 'Nexthop: A router only needs a route to the destination network of each packet. It does not need routes to the networks in between, because each router on the path makes its own forwarding decision.' }
+      ],
+      solution: [ { dev: 'R1', type: ['enable', 'show ip route'] }, 'commit', { form: { l: 'local', len: '/32', c: 'the one configured on the interface', s: 'S' } }, 'commit',
+        { dev: 'R1', type: ['configure terminal', 'ip route 192.168.8.0 255.255.255.0 10.0.12.2'] }, 'commit',
+        { dev: 'R2', type: ['enable', 'configure terminal', 'ip route 192.168.8.0 255.255.255.0 g0/1 10.0.23.2', 'ip route 192.168.10.0 255.255.255.0 10.0.12.1'] }, 'commit',
+        { dev: 'ORDERS', type: ['ping 192.168.8.10'] }, 'commit', { dev: 'R3', type: ['enable', 'configure terminal', 'ip route 0.0.0.0 0.0.0.0 10.0.23.1'] }, { dev: 'ORDERS', type: ['ping 192.168.8.10'] }, 'commit', { choose: 0 }, 'commit' ],
+      outro: 'The next morning a crate of bread arrives at the Seven Bowls on the back of a courier bike, with Ma Tsai\'s printed order taped to the lid. She keeps the order slip and puts it on the wall next to the SEVEN-BOWLS tape on her router.' },
+
+    // ------------------------------------------------------------------ night 11 · from Lab 11 (troubleshooting static routes)
+    { id: 'd-n11-wrong-turns', cls: 'D', rep: 10, from: 'nexthop', title: 'Three Wrong Turns', day: [11], requires: ['n11-the-fare'], devices: ['R1', 'R2', 'R3', 'PC1'],
+      brief: 'DISPATCH » The market office can\'t reach the courier guild\'s depot tracker. Someone typed the static routes in a hurry. Nexthop counts three wrong turns.\n\nCLIENT (Osi Sevenfold) » "The market office sends me its deliveries at noon. It\'s eleven."',
+      net: {
+        devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' },
+          PC1: { kind: 'host', ip: '10.1.0.10', mask: '255.255.255.0', gw: '10.1.0.1' }, SRV1: { kind: 'server', ip: '10.3.0.100', mask: '255.255.255.0', gw: '10.3.0.1' } },
+        links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/0' }, { a: 'R2', ap: 'gigabitethernet0/1', b: 'R3', bp: 'gigabitethernet0/1' }, { a: 'R3', ap: 'gigabitethernet0/0', b: 'SRV1' } ],
+        preconfig: {
+          R1: ['hostname MARKET', 'interface gigabitethernet0/0', 'ip address 10.1.0.1 255.255.255.0', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 10.0.12.1 255.255.255.252', 'no shutdown', 'ip route 10.3.0.0 255.255.255.0 10.0.12.3'],
+          R2: ['hostname WIRES-EDGE', 'interface gigabitethernet0/0', 'ip address 10.0.12.2 255.255.255.252', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 10.0.23.1 255.255.255.252', 'no shutdown', 'ip route 10.3.0.0 255.255.255.0 10.0.23.2', 'ip route 10.1.1.0 255.255.255.0 10.0.12.1'],
+          R3: ['hostname DEPOT', 'interface gigabitethernet0/0', 'ip address 10.3.0.1 255.255.255.0', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 10.0.23.2 255.255.255.252', 'no shutdown', 'ip route 10.1.0.0 255.255.255.0 gigabitethernet0/0'] }
+      },
+      map: { w: 580, h: 250, nodes: [ { id: 'PC1', label: 'market office · 10.1.0.10', type: 'pc', x: 50, y: 190 }, { id: 'R1', label: 'MARKET', type: 'router', x: 140, y: 80 }, { id: 'R2', label: 'WIRES-EDGE', type: 'router', x: 290, y: 80 },
+          { id: 'R3', label: 'DEPOT', type: 'router', x: 440, y: 80 }, { id: 'SRV1', label: 'depot tracker · 10.3.0.100', type: 'server', x: 530, y: 186 } ],
+        links: [ { a: 'PC1', b: 'R1' }, { a: 'R1', b: 'R2', tag: '10.0.12.0/30' }, { a: 'R2', b: 'R3', tag: '10.0.23.0/30' }, { a: 'R3', b: 'SRV1' } ] },
+      steps: [
+        { type: 'cmd', skill: 'static-route', text: 'Nexthop: "Start where the fare starts. Ping the depot tracker, 10.3.0.100, from the market office PC, then trace it."',
+          need: [ { dev: 'PC1', line: /^ping 10\.3\.0\.100$/ }, { dev: 'PC1', line: /^(tracert|traceroute) 10\.3\.0\.100$/ } ], check: (d, ctx) => !ctx.net().ping('PC1', '10.3.0.100').ok,
+          hint: 'PC1 shell:\nC:\\> ping 10.3.0.100\nC:\\> tracert 10.3.0.100', ok: 'Nexthop: "It dies at the first router. That\'s wrong turn number one."',
+          why: 'Nexthop: The ping fails and the trace stops after the market router, 10.1.0.1. The first router the packet reaches cannot forward it, so the first fault is on MARKET.' },
+        { type: 'cmd', skill: 'static-route', text: 'Nexthop: "Read the market router\'s routes, and the lines that were typed into its config."',
+          need: [ { dev: 'R1', line: /^(do )?show ip route$/ }, { dev: 'R1', line: /^(do )?show running-config$/ } ],
+          hint: 'MARKET# show ip route\nMARKET# show running-config | include ip route', ok: 'Nexthop: "The route is in the config and not in the table. Its next hop, 10.0.12.3, isn\'t anyone on that link."',
+          why: 'Nexthop: A static route only goes into the routing table if the router can reach its next hop. 10.0.12.3 is not WIRES-EDGE\'s address (10.0.12.2), so the route sits in the running-config and never appears in show ip route. show running-config | include ip route shows the typed routes.' },
+        { type: 'cmd', skill: 'static-route', text: 'Nexthop: "Take the wrong one out and put in the right one."',
+          check: (d, ctx) => { const n = ctx.net(); const r = n.route('R1', '10.3.0.0/24'); return !!(r && r.via === '10.0.12.2') && !ctx.cfg('R1').routes.some(x => x.via === '10.0.12.3'); },
+          hint: 'MARKET(config)# no ip route 10.3.0.0 255.255.255.0 10.0.12.3\nMARKET(config)# ip route 10.3.0.0 255.255.255.0 10.0.12.2', ok: 'Nexthop: "S, via 10.0.12.2. On to the next wrong turn."',
+          why: 'Nexthop: no ip route followed by the same destination, mask and next hop removes the bad route. The new route points at 10.0.12.2, WIRES-EDGE\'s address on the shared link, so the router can reach the next hop and installs the route.' },
+        { type: 'cmd', skill: 'static-route', text: 'Nexthop: "The trace will get further now. My router in the middle has a route back to the market that looks almost right. Find it and fix it."',
+          check: (d, ctx) => { const n = ctx.net(); const r = n.route('R2', '10.1.0.0/24'); return !!(r && r.via === '10.0.12.1') && !n.route('R2', '10.1.1.0/24'); },
+          hint: 'WIRES-EDGE# show ip route\nWIRES-EDGE(config)# no ip route 10.1.1.0 255.255.255.0 10.0.12.1\nWIRES-EDGE(config)# ip route 10.1.0.0 255.255.255.0 10.0.12.1', ok: 'Nexthop: "10.1.1.0 instead of 10.1.0.0. One digit, and the whole market was off the map."',
+          why: 'Nexthop: WIRES-EDGE had a route to 10.1.1.0/24, but the market office is on 10.1.0.0/24, so replies to 10.1.0.10 matched nothing. Removing the wrong route and adding ip route 10.1.0.0 255.255.255.0 10.0.12.1 gives the replies a way back.' },
+        { type: 'cmd', skill: 'static-route', text: 'Nexthop: "Last wrong turn, on the depot router. Its route back to the market uses an exit interface. Look at which one."',
+          check: (d, ctx) => { const n = ctx.net(); const r = n.route('R3', '10.1.0.0/24') || n.route('R3', '0.0.0.0/0'); return !!(r && r.iface === 'gigabitethernet0/1') && n.ping('PC1', '10.3.0.100').ok; },
+          hint: 'DEPOT# show ip route\nDEPOT(config)# no ip route 10.1.0.0 255.255.255.0 g0/0\nDEPOT(config)# ip route 10.1.0.0 255.255.255.0 10.0.23.1\nPC1 shell:\nC:\\> ping 10.3.0.100', ok: 'Osi, on the line: "The tracker just logged the market\'s noon delivery. At eleven forty."',
+          why: 'Nexthop: DEPOT\'s route to 10.1.0.0/24 named G0/0 as its exit interface, which is the depot\'s own LAN, so replies were sent the wrong way. The route must leave through G0/1 toward WIRES-EDGE: ip route 10.1.0.0 255.255.255.0 10.0.23.1 (or naming G0/1). Then the ping works in both directions.' },
+        { type: 'multi', skill: 'static-route', text: 'Nexthop, writing in his book: "Which of tonight\'s wrong turns would stop a static route from ever showing up in show ip route?"',
+          opts: ['A next hop that is not on any connected network', 'The exit interface going down', 'A destination network with the wrong third octet', 'An exit interface that points the wrong way'], answers: [0, 1],
+          hint: 'Which ones make the router unable to use the route at all, and which ones make it use a route that is simply wrong?', ok: 'Nexthop: "An unreachable next hop or a dead exit interface, and the route vanishes. The other two sit there looking fine."',
+          why: 'Nexthop: A static route is only installed when the router can use it: its next hop must be on a connected network and its exit interface must be up. A wrong destination network or an exit interface pointing the wrong way still installs, which is why those are harder to spot: the route is there, and wrong.' }
+      ],
+      solution: [ { dev: 'PC1', type: ['ping 10.3.0.100', 'tracert 10.3.0.100'] }, 'commit', { dev: 'R1', type: ['enable', 'show ip route', 'show running-config | include ip route'] }, 'commit',
+        { dev: 'R1', type: ['configure terminal', 'no ip route 10.3.0.0 255.255.255.0 10.0.12.3', 'ip route 10.3.0.0 255.255.255.0 10.0.12.2'] }, 'commit',
+        { dev: 'R2', type: ['enable', 'configure terminal', 'no ip route 10.1.1.0 255.255.255.0 10.0.12.1', 'ip route 10.1.0.0 255.255.255.0 10.0.12.1'] }, 'commit',
+        { dev: 'R3', type: ['enable', 'configure terminal', 'no ip route 10.1.0.0 255.255.255.0 g0/0', 'ip route 10.1.0.0 255.255.255.0 10.0.23.1'] }, { dev: 'PC1', type: ['ping 10.3.0.100'] }, 'commit',
+        { multi: [0, 1] }, 'commit' ],
+      outro: 'The market\'s deliveries reach the guild at twenty to twelve. Nexthop writes the three wrong turns in the back of his book, under the loop at Cider\'s.' }
   );
 })();

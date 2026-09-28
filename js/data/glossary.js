@@ -72,13 +72,13 @@ window.GLOSSARY = {
   'portfast': 'Skip listening/learning on an access port so a PC gets link in seconds, not 30. Only on host ports.',
   'bpdu guard': 'If a portfast port ever hears a BPDU, shut it down. Stops someone plugging in a rogue switch.',
   'rstp': 'Rapid STP, 802.1w. Same idea, converges in seconds instead of ~50. Roles: root, designated, alternate, backup.',
-  'routing table': 'The router\'s list of known networks and how to reach them. "show ip route".',
-  'connected route': 'A network the router has an interface in. Code C. Appears the moment the interface is up.',
-  'static route': 'A route a human typed: "ip route <net> <mask> <next-hop>". Code S. Does not change unless you do.',
-  'default route': '0.0.0.0/0. "If you don\'t know where, send it here." Usually toward the ISP.',
-  'next hop': 'The IP of the next router in the path. The only thing a router needs to know to forward.',
+  'routing table': 'The list of routes a router uses to forward packets: each has a destination network, a next hop or exit interface, and a code (C, L, S, O...). View it with show ip route.',
+  'connected route': 'Code C: a route to the network an interface is on, added automatically when the interface has an IP address and is up.',
+  'static route': 'Code S: a route configured by hand with ip route network mask next-hop | exit-interface | exit-interface next-hop.',
+  'default route': '0.0.0.0/0, the least specific route, matching any destination. Code S* when static. Used when nothing more specific matches; the gateway of last resort.',
+  'next hop': 'The next router on the path to a destination; the address a route sends packets to.',
   'administrative distance': 'Trust score for a route source. Connected 0, static 1, EIGRP 90, OSPF 110, RIP 120. Lower wins.',
-  'longest prefix match': 'When several routes fit, the most specific (/24 beats /16 beats /0) wins. Always.',
+  'longest prefix match': 'When several routes match a destination, the router uses the most specific one, the route with the longest prefix length.',
   'dynamic routing': 'Routers tell each other what they know. RIP, EIGRP, OSPF. Adapts when links die.',
   'distance vector': 'Routing by rumour: neighbours tell you their distance, you add yours. RIP, EIGRP.',
   'link state': 'Every router learns the whole map (LSDB) and computes best paths itself. OSPF, IS-IS.',
@@ -204,5 +204,7 @@ window.GLOSSARY = {
   'mtu': 'Maximum Transmission Unit: the largest packet a link can carry, usually 1500 bytes on Ethernet. Larger IPv4 packets are fragmented.',
   'fragment': 'A piece of an IPv4 packet that was too large for a link\'s MTU. Fragments share the Identification value; the Fragment Offset says where each belongs.',
   'df': 'Don\'t Fragment: bit 1 of the IPv4 Flags field. When set, a router drops a packet that is too big instead of fragmenting it.',
-  'mf': 'More Fragments: bit 2 of the IPv4 Flags field. Set on every fragment except the last; 0 on unfragmented packets.'
+  'mf': 'More Fragments: bit 2 of the IPv4 Flags field. Set on every fragment except the last; 0 on unfragmented packets.',
+  'local route': 'Code L: a /32 route to an interface\'s own IP address, added automatically with the connected route.',
+  'default gateway': 'The router address a host sends packets to when the destination is outside its own network.'
 };
