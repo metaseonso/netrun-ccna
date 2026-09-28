@@ -11,9 +11,9 @@ window.PROTEGE_LINES = {
   clients: ['a corpo tech who keeps checking his watch', 'the building manager', 'a fixer I do not know', 'the owner, who is standing right behind me', 'two guys from the client who have not said a word'],
   keepsakes: ['a cracked deck with the old handle still burned into the boot screen', 'a noodle bar loyalty card, one stamp from free', 'a photo of the two of them at the Kabuki market, out of focus', 'a paper tag that says DO NOT UNPLUG', 'a pair of chopsticks in a paper sleeve, unused'],
   dispatch: {
-    send: ['Dispatch: "You do not send them because you want to. You send them because the street has no junior tier. Everybody was somebody\'s risk once. You were mine."', 'Dispatch: "{name} took the {job}. I told them to call you if it gets loud. It will get loud."'],
-    favor: ['Dispatch: "I pulled {name}. Told the client the runner had a seizure. They bought it. You owe me, and I collect."', 'Dispatch: "Done. {name} is in a cab. Do not make a habit of this. I only have so many lies."'],
-    favorEmpty: 'Dispatch: "No favor on the books. Buy one from Marrow before you need it, not after."'
+    send: ['Dispatch: "{name} saw your work and asked for your handle, so I put them on your crew. They will call you when a gig goes wrong."', 'Dispatch: "{name} took {job} and will call you if it goes wrong."'],
+    favor: ['Dispatch: "I pulled {name} off the job and told the client the runner had a seizure, so you owe me one."', 'Dispatch: "{name} is in a cab and off the job, but I can\'t keep lying to clients for you."'],
+    favorEmpty: 'Dispatch: "There\'s no favor on the books. Buy one from Marrow before you need it."'
   },
   common: {
     open: { 0: ['{name}: hey {sib}, quick one. I am on {job} and I do not want to guess. {client} is watching.'], 1: ['{name}: {sib} I need this one fast. {client} is not happy about the last answer.'], 2: ['{name}: I am locked in. they said one more mistake. {sib} please.'] },

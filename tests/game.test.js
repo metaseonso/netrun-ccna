@@ -34,6 +34,13 @@ module.exports.run = function({ out }){
     ok(!c.ok && c.have, 'fixer: not offered when the notes are already paid (' + JSON.stringify(c) + ')');
     Object.assign(Game.state, JSON.parse(snap));
   }
+  // a gig sharpens each quickhack by one step at most, however many floors use it
+  {
+    const snap = JSON.stringify(Game.state); const one = JOBS.find(j => j.solution && new Set(j.steps.map(x => x.skill)).size === 1 && j.steps.length > 2);
+    if (one) { const k = one.steps[0].skill; const before = (Game.state.skills[k] || {}).clean || 0; const r = Game.runSolution(one.id, { keepState: true });
+      ok(r.ok && ((Game.state.skills[k] || {}).clean || 0) === before + 1, 'sharpening: one gig adds one clean use to ' + k + ' (' + ((Game.state.skills[k] || {}).clean) + ')'); }
+    Object.keys(Game.state).forEach(key => delete Game.state[key]); Object.assign(Game.state, JSON.parse(snap));
+  }
   // nothing leaked out of the probe runs
   ok(!Game.state.codex || !Game.state.codex[first.id], 'runs do not leak into the saved state');
   return { pass, fails };

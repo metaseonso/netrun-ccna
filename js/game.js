@@ -116,7 +116,7 @@
     if (!opts.silent) { const c = body.cost(job); state.body.food = Math.max(0, state.body.food - c.food); state.body.chrome = Math.max(0, state.body.chrome - c.chrome); ev('body', { job: job.id, food: state.body.food, chrome: state.body.chrome });
       if (state.body.food <= 0) { flatline('you went in hungry. ' + (job.rite ? 'the rite' : 'the dive') + ' took the rest.'); return null; } if (state.body.chrome <= 0) { flatline('the chrome was already failing. it quit two floors down.'); return null; } save(); }
     const topo = job.topo ? JSON.parse(JSON.stringify(job.topo)) : null; const netDef = job.net ? JSON.parse(JSON.stringify(job.net)) : null;
-    const devices = {}; const R = { job, topo, netDef, devices, step: 0, hinted: {}, walked: {}, fails: {}, done: [], selected: null, feedback: null, calc: {}, choice: null, multi: new Set(), order: null, form: {}, text: '', active: job.devices[0], history: [], startedAt: Date.now(), stepStart: Date.now(), lastWhy: null, walk: null, hintShown: null, _netKey: null, _net: null };
+    const devices = {}; const R = { job, topo, netDef, devices, step: 0, hinted: {}, walked: {}, sharpened: {}, fails: {}, done: [], selected: null, feedback: null, calc: {}, choice: null, multi: new Set(), order: null, form: {}, text: '', active: job.devices[0], history: [], startedAt: Date.now(), stepStart: Date.now(), lastWhy: null, walk: null, hintShown: null, _netKey: null, _net: null };
     const ctx = { job, topo, netDef, devices, get selected(){ return R.selected; },
       state(){ if (!netDef) return null; const key = Object.values(devices).map(d => d.lines.length).join(',') + '|' + JSON.stringify(Object.keys(netDef.devices).map(n => !!netDef.devices[n].removed)); if (R._netKey !== key) { R._net = Net.build(netDef, devices); R._netKey = key; } return R._net; },
       net(){ const s = ctx.state(); return s ? Net.api(s) : null; }, cfg(dev){ return devices[dev] ? NetConfig.parse(devices[dev]) : null; },
@@ -150,7 +150,9 @@
 
   function commit(){ const st = currentStep(); if (!st) return { ok: false }; const r = evaluate(); const i = run.step; const ms = Date.now() - run.stepStart;
     if (!r.ok) { run.fails[i] = (run.fails[i] || 0) + 1; run.feedback = { ok: false, text: r.why, bad: r.bad }; ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: false, ms }); if (body.wear(1, 'the chrome burned out mid-dive, ' + (run.job.steps.length - i) + ' floors from the top.')) return { ok: false, dead: true, why: 'flatlined' }; return r; }
-    const clean = !run.hinted[i] && !run.walked[i] && !run.outsourced; const k = skill(st.skill); k.uses++; if (clean) k.clean++; const before = k.level; k.level = skillLevel(k.clean); k.slotted = true;
+    const clean = !run.hinted[i] && !run.walked[i] && !run.outsourced; const k = skill(st.skill); k.uses++;
+    // one step of sharpening per quickhack per gig: a skill burns in over several nights, never in one dive
+    if (clean && !run.sharpened[st.skill]) { k.clean++; run.sharpened[st.skill] = true; } const before = k.level; k.level = skillLevel(k.clean); k.slotted = true;
     const leveled = k.level > before ? { skill: st.skill, level: k.level } : null; run.done.push({ step: i, clean, leveled, ms, fails: run.fails[i] || 0 });
     ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: true, ms, failsBefore: run.fails[i] || 0, hinted: !!run.hinted[i], walked: !!run.walked[i] });
     if (st.onPass) { try { st.onPass(run.ctx); } catch (e) { console.error(e); } }
