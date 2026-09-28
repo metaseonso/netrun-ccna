@@ -213,6 +213,65 @@
         { dev: 'SW1', type: ['interface range f0/1 - 2, g0/1', 'switchport mode access', 'switchport access vlan 10'] }, 'commit',
         { dev: 'SW1', type: ['interface range f0/5, g0/2', 'switchport mode access', 'switchport access vlan 20', 'interface range f0/8, f0/24', 'switchport mode access', 'switchport access vlan 30'] }, 'commit',
         { dev: 'OFFICE1', type: ['ping 10.16.20.21'] }, 'commit', { choose: 0 }, 'commit' ],
-      outro: 'The accountant closes the books that night without once seeing a stranger\'s phone in the network list. Vee Lan peels the yellow tape off the carpet, because the border it marked is in the switch now, and throws it in the bin by the stairs.' }
+      outro: 'The accountant closes the books that night without once seeing a stranger\'s phone in the network list. Vee Lan peels the yellow tape off the carpet, because the border it marked is in the switch now, and throws it in the bin by the stairs.' },
+
+    // ------------------------------------------------------------------ night 17 · from Lab 17 (VLANs, part 2)
+    { id: 'd-n17-one-cable', cls: 'D', rep: 10, from: 'veelan', title: 'One Cable Upstairs', day: [17], requires: ['n17-one-cable'], devices: ['SW1', 'SW2', 'R1', 'OFFICE'],
+      brief: 'DISPATCH » The market has a second switch in the stall hall and one cable between the floors. Office, stalls and cameras have ports on both. The router is down to one port. Make it work.\n\nCLIENT (Vee Lan) » "Trunk between the switches, native 99 on both ends, only the VLANs we use. Then put the router on a stick."',
+      net: {
+        devices: { SW1: { kind: 'switch', mac: '0011.2217.0001' }, SW2: { kind: 'switch', mac: '0011.2217.0002' }, R1: { kind: 'router' },
+          OFFICE: { kind: 'host', ip: '10.17.10.11', mask: '255.255.255.0', gw: '10.17.10.1' }, STALL1: { kind: 'host', ip: '10.17.20.21', mask: '255.255.255.0', gw: '10.17.20.1' },
+          STALL2: { kind: 'host', ip: '10.17.20.22', mask: '255.255.255.0', gw: '10.17.20.1' }, CAM: { kind: 'host', ip: '10.17.30.31', mask: '255.255.255.0', gw: '10.17.30.1' } },
+        links: [ { a: 'SW1', ap: 'fastethernet0/1', b: 'OFFICE' }, { a: 'SW1', ap: 'fastethernet0/5', b: 'STALL1' }, { a: 'SW1', ap: 'gigabitethernet0/1', b: 'SW2', bp: 'gigabitethernet0/1' },
+          { a: 'SW2', ap: 'fastethernet0/5', b: 'STALL2' }, { a: 'SW2', ap: 'fastethernet0/8', b: 'CAM' }, { a: 'SW1', ap: 'gigabitethernet0/2', b: 'R1', bp: 'gigabitethernet0/0' } ],
+        preconfig: {
+          SW1: ['hostname OFFICE-SW', 'vlan 10', 'name OFFICE', 'vlan 20', 'name STALLS', 'vlan 30', 'name CAMERAS', 'vlan 99', 'name NATIVE', 'interface fastethernet0/1', 'switchport mode access', 'switchport access vlan 10', 'interface fastethernet0/5', 'switchport mode access', 'switchport access vlan 20'],
+          SW2: ['hostname HALL-SW', 'vlan 10', 'name OFFICE', 'vlan 20', 'name STALLS', 'vlan 30', 'name CAMERAS', 'vlan 99', 'name NATIVE', 'interface fastethernet0/5', 'switchport mode access', 'switchport access vlan 20', 'interface fastethernet0/8', 'switchport mode access', 'switchport access vlan 30'],
+          R1: ['hostname MARKET-R'] }
+      },
+      map: { w: 560, h: 300, nodes: [ { id: 'R1', label: 'MARKET-R', type: 'router', x: 150, y: 50 }, { id: 'SW1', label: 'OFFICE-SW (upstairs)', type: 'switch', x: 150, y: 150 }, { id: 'SW2', label: 'HALL-SW (stall hall)', type: 'switch', x: 410, y: 150 },
+          { id: 'OFFICE', label: 'office PC · VLAN 10', type: 'pc', x: 70, y: 250 }, { id: 'STALL1', label: 'stall PC · VLAN 20', type: 'pc', x: 220, y: 250 }, { id: 'STALL2', label: 'stall PC · VLAN 20', type: 'pc', x: 350, y: 250 }, { id: 'CAM', label: 'camera · VLAN 30', type: 'pc', x: 480, y: 250 } ],
+        links: [ { a: 'R1', b: 'SW1', ap: 'gigabitethernet0/0', bp: 'gigabitethernet0/2' }, { a: 'SW1', b: 'SW2', ap: 'gigabitethernet0/1', bp: 'gigabitethernet0/1', tag: 'the one cable' }, { a: 'SW1', b: 'OFFICE' }, { a: 'SW1', b: 'STALL1' }, { a: 'SW2', b: 'STALL2' }, { a: 'SW2', b: 'CAM' } ] },
+      steps: [
+        { type: 'form', skill: 'trunk-config', text: 'Vee Lan: "Before you touch the cable, tell me what goes into the tag."',
+          fields: [ { key: 'tpid', label: 'TPID value', options: ['0x0800', '0x8100', '0x86DD', '0x0806'], answer: '0x8100' }, { key: 'pcp', label: 'PCP (priority) size', options: ['1 bit', '3 bits', '12 bits', '16 bits'], answer: '3 bits' },
+            { key: 'vid', label: 'VID size', options: ['8 bits', '12 bits', '16 bits', '32 bits'], answer: '12 bits' }, { key: 'where', label: 'Inserted after', options: ['the destination MAC', 'the source MAC', 'the type field', 'the FCS'], answer: 'the source MAC' } ],
+          hint: 'Four bytes: 16 + 3 + 1 + 12 bits.', ok: 'Vee Lan: "Four bytes, and every switch in the world agrees on them."',
+          why: 'Vee Lan: The 802.1Q tag is 4 bytes inserted after the source MAC address: a 16-bit TPID, always 0x8100, a 3-bit PCP for class of service, a 1-bit DEI, and a 12-bit VID carrying the VLAN number.' },
+        { type: 'form', skill: 'trunk-config', text: 'Vee Lan: "And the ranges."',
+          fields: [ { key: 'use', label: 'Usable VLANs', options: ['0–4095', '1–4094', '1–1005', '2–1001'], answer: '1–4094' }, { key: 'norm', label: 'Normal range', options: ['1–1005', '1–4094', '1006–4094'], answer: '1–1005' },
+            { key: 'ext', label: 'Extended range', options: ['1–1005', '1006–4094', '4095'], answer: '1006–4094' } ],
+          hint: '0 and 4095 are reserved.', ok: 'Vee Lan: "Good."',
+          why: 'Vee Lan: Twelve bits give 0 to 4095, but VLANs 0 and 4095 are reserved, so 1 to 4094 are usable. VLANs 1 to 1005 are the normal range and 1006 to 4094 the extended range.' },
+        { type: 'cmd', skill: 'trunk-config', text: 'Vee Lan: "The cable between the switches is Gi0/1 on both ends. Make it a trunk on both, with native VLAN 99 and only VLANs 10, 20 and 30 allowed. Then the two stall PCs should see each other."',
+          check: (d, ctx) => { const n = ctx.net(); const a = ctx.cfg('SW1').interfaces['gigabitethernet0/1'] || {}, b = ctx.cfg('SW2').interfaces['gigabitethernet0/1'] || {}; const allow = i => !!(i.allowed && [10, 20, 30].every(v => i.allowed.has(v)) && ![1].some(v => i.allowed.has(v)));
+            return a.mode === 'trunk' && b.mode === 'trunk' && n.trunk('SW1', 'g0/1') && a.native === 99 && b.native === 99 && allow(a) && allow(b) && !n.issues.some(x => x.kind === 'native-vlan-mismatch') && n.sameSegment('STALL1', 'STALL2'); },
+          hint: 'On both switches:\n  interface g0/1\n  switchport mode trunk\n  switchport trunk native vlan 99\n  switchport trunk allowed vlan 10,20,30', ok: 'Vee Lan: "The stalls upstairs and down are in one room again, down one cable."',
+          why: 'Vee Lan: switchport mode trunk makes the port a trunk that tags frames with their VLAN. switchport trunk native vlan 99 moves the untagged VLAN to an unused one, and must match on both ends. switchport trunk allowed vlan 10,20,30 stops the trunk carrying any other VLAN. With the trunk up, VLAN 20 on both switches is one broadcast domain.' },
+        { type: 'cmd', skill: 'trunk-config', text: 'Vee Lan: "Check it the way I would."',
+          need: [ { dev: 'SW1', line: /^(do )?show interfaces trunk$/ } ], hint: 'OFFICE-SW# show interfaces trunk', ok: 'Vee Lan: "Gi0/1 trunking, native 99, 10, 20 and 30 allowed."',
+          why: 'Vee Lan: show interfaces trunk lists every port that is trunking, its mode, its encapsulation, its native VLAN, and the VLANs allowed and active on it. A port missing from this list is not a trunk, whatever you meant to type.' },
+        { type: 'cmd', skill: 'trunk-config', text: 'Vee Lan: "Now the router\'s cable, Gi0/2 on the office switch. It carries all three VLANs up to the router, so it\'s a trunk too, native 99, same three VLANs."',
+          check: (d, ctx) => { const i = ctx.cfg('SW1').interfaces['gigabitethernet0/2'] || {}; return i.mode === 'trunk' && i.native === 99 && !!(i.allowed && [10, 20, 30].every(v => i.allowed.has(v))); },
+          hint: 'interface g0/2\nswitchport mode trunk\nswitchport trunk native vlan 99\nswitchport trunk allowed vlan 10,20,30', ok: 'Vee Lan: "The switch side is done. The router has to learn to read the tags."',
+          why: 'Vee Lan: For router on a stick, the switch port facing the router is a trunk, so frames from all three VLANs go up one cable, each tagged with its VLAN.' },
+        { type: 'cmd', skill: 'trunk-config', text: 'Vee Lan: "The router. One subinterface per VLAN on G0/0, each with its tag and its gateway: .1 in 10.17.10.0/24, 10.17.20.0/24 and 10.17.30.0/24. Bring G0/0 up. Then have the office PC reach the camera downstairs."',
+          check: (d, ctx) => { const I = ctx.cfg('R1').interfaces; const ok = (p, v, ip) => I[p] && I[p].dot1q === v && I[p].ip === ip; return ok('gigabitethernet0/0.10', 10, '10.17.10.1') && ok('gigabitethernet0/0.20', 20, '10.17.20.1') && ok('gigabitethernet0/0.30', 30, '10.17.30.1') && ctx.net().ping('OFFICE', '10.17.30.31').ok && ctx.net().ping('STALL2', '10.17.10.11').ok; },
+          hint: 'MARKET-R(config)# interface g0/0\nMARKET-R(config-if)# no shutdown\nMARKET-R(config)# interface g0/0.10\nMARKET-R(config-subif)# encapsulation dot1q 10\nMARKET-R(config-subif)# ip address 10.17.10.1 255.255.255.0\n(then .20 and .30 the same way)',
+          ok: 'Vee Lan: "The office sees the stairs camera, through one port."',
+          why: 'Vee Lan: Each subinterface of G0/0 answers for one VLAN: encapsulation dot1q 10 makes G0/0.10 send and receive frames tagged 10, and its IP address is that VLAN\'s gateway. The physical G0/0 needs no shutdown, and the subinterfaces come up with it. A packet from VLAN 10 to VLAN 30 goes up the trunk tagged 10 and comes back down tagged 30.' },
+        { type: 'choice', skill: 'trunk-config', text: 'Mac, reading over your shoulder: "What happens if one end of the switch trunk says native 99 and the other still says native 1?"',
+          opts: ['Untagged frames land in the wrong VLAN on the far side, and the switches report a native VLAN mismatch', 'Nothing. The native VLAN only matters on access ports', 'The trunk goes down', 'Both ends switch to VLAN 1 automatically'], a: 0,
+          hint: 'Untagged frames on a trunk go into whatever the receiver calls native.', ok: 'Vee Lan: "They leak between rooms. That\'s why I set both ends."',
+          why: 'Vee Lan: Frames in the native VLAN cross untagged, and each switch puts untagged frames into its own native VLAN. If the two ends disagree, frames from VLAN 99 on one side arrive in VLAN 1 on the other. CDP notices and logs a native VLAN mismatch, but the trunk stays up and the leak continues until someone fixes it.' }
+      ],
+      solution: [ { form: { tpid: '0x8100', pcp: '3 bits', vid: '12 bits', where: 'the source MAC' } }, 'commit', { form: { use: '1–4094', norm: '1–1005', ext: '1006–4094' } }, 'commit',
+        { dev: 'SW1', type: ['enable', 'configure terminal', 'interface g0/1', 'switchport mode trunk', 'switchport trunk native vlan 99', 'switchport trunk allowed vlan 10,20,30'] },
+        { dev: 'SW2', type: ['enable', 'configure terminal', 'interface g0/1', 'switchport mode trunk', 'switchport trunk native vlan 99', 'switchport trunk allowed vlan 10,20,30'] }, 'commit',
+        { dev: 'SW1', type: ['do show interfaces trunk'] }, 'commit',
+        { dev: 'SW1', type: ['interface g0/2', 'switchport mode trunk', 'switchport trunk native vlan 99', 'switchport trunk allowed vlan 10,20,30'] }, 'commit',
+        { dev: 'R1', type: ['enable', 'configure terminal', 'interface g0/0', 'no shutdown', 'interface g0/0.10', 'encapsulation dot1q 10', 'ip address 10.17.10.1 255.255.255.0', 'interface g0/0.20', 'encapsulation dot1q 20', 'ip address 10.17.20.1 255.255.255.0', 'interface g0/0.30', 'encapsulation dot1q 30', 'ip address 10.17.30.1 255.255.255.0'] }, 'commit',
+        { choose: 0 }, 'commit' ],
+      outro: 'That night the office, the stalls and the cameras each keep to their own room on both floors, and every crossing goes up the one cable to the router and back down it. Mac brings Vee Lan a bag of dumplings from the stairs and says nothing about the two router ports he borrowed, which she counts as an apology.' }
   );
 })();

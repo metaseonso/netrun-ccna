@@ -167,5 +167,44 @@
           yes: 'Vee Lan: "No. It stops at the tape."', no: 'Vee Lan: "No. A VLAN is its own broadcast domain, so a broadcast only reaches ports in the same VLAN."',
           why: 'Vee Lan: Each VLAN is a separate broadcast domain. The switch floods a broadcast only out of ports in the VLAN it arrived on, and routers do not forward broadcasts, so a broadcast from the stalls\' VLAN never reaches the office VLAN.' } }
       ] },
+    // ------------------------------------------------------------ night 17 · VLANs, part 2: trunks and router on a stick
+    { id: 'n17-one-cable', title: 'Three borders down one cable', sub: 'trunks, 802.1Q and router on a stick', npc: 'veelan', day: [17], src: [PS('VLAN_Part2.md')], unlocks: ['trunk-config'],
+      beats: [
+        { k: 'SCENE', where: 'The Kabuki market · the stall hall · a service corridor behind the stalls',
+          lines: [
+            { who: 'narr', text: 'The service corridor behind the stalls is narrow and hot, lit by a single tube, and it smells of cardboard boxes and the grease trap from the dumpling stand. A second switch hangs on the wall here, new, with one cable running from it up through a hole in the ceiling to the office. Vee Lan is standing on a crate with a torch in her mouth, and takes it out when she sees you.' },
+            { who: 'veelan', text: 'The market grew. The stalls on this side hang off this switch now, and the office switch is upstairs, and there\'s one cable between them. Office, stalls and cameras all have ports on both switches.' },
+            { who: 'veelan', text: 'An access port carries one VLAN, so one cable would mean one VLAN. A [[trunk port]] carries many. Every frame that goes across it gets a tag with its VLAN number, so the switch at the other end knows which room to let it into. Access ports are untagged; trunk ports are the tagged ones.' },
+            { who: 'veelan', text: 'The tag is [[802.1Q]], dot1q for short, the standard one. Cisco had its own once, ISL, which you\'ll only meet in old closets. The tag is four bytes, slipped into the frame right after the source MAC address.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What\'s in those four bytes?', reply: 'Vee Lan: "Sixteen bits of TPID, always 0x8100, which says a tag follows. Three bits of PCP, the priority, which is class of service. One bit of DEI, which says the frame can be dropped first if the link is busy. Twelve bits of VID, the VLAN ID."' },
+            { tone: 'press', say: 'Twelve bits. So how many VLANs can there be?', reply: 'Vee Lan: "Twelve bits count 0 to 4095, but 0 and 4095 are reserved, so 1 to 4094. The normal range is 1 to 1005 and the extended range is 1006 to 4094. This market will never need more than about ten."' },
+            { tone: 'care', say: 'Do you ever stop working?', reply: 'Vee Lan: "When the market closes. Then Mac and I eat dumplings on the stairs and argue about cable." She almost smiles. "Don\'t tell him I said that."' }
+          ] } },
+        { k: 'SCENE', where: 'The office · the router shelf',
+          lines: [
+            { who: 'veelan', text: 'One VLAN on every trunk rides without a tag, the [[native VLAN]]. It\'s VLAN 1 unless you change it, and a switch that gets an untagged frame on a trunk puts it in the native VLAN. Both ends must agree which one that is, or frames leak from one room into another.' },
+            { who: 'veelan', text: 'I set the native VLAN to one nobody uses, 99, on both ends, and I tell the trunk which VLANs it may carry with switchport trunk allowed vlan. Left alone, a trunk carries every VLAN on the switch, including the ones that have no business upstairs.' },
+            { who: 'veelan', text: 'The router had one port per VLAN last night. Mac has since borrowed two of them for the cameras, so now it gets one cable, a trunk, and I cut that one port into [[subinterface]]s, one per VLAN. That\'s [[router on a stick]]. Each subinterface says which VLAN tag it answers with encapsulation dot1q and the number, and gets the gateway address for that VLAN.' },
+            { who: 'veelan', text: 'show interfaces trunk shows which ports are trunking, their native VLAN, and which VLANs are allowed and active on each.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why change the native VLAN at all?', reply: 'Vee Lan: "Because untagged frames on a trunk land in the native VLAN, and anyone who can send untagged frames can try to get into it. Put the native VLAN somewhere empty and there\'s nothing in there to reach."' },
+            { tone: 'press', say: 'Isn\'t one cable to the router a bottleneck?', reply: 'Vee Lan: "Every packet between VLANs goes up that cable and back down it, so yes, it\'s the busiest wire in the building. For a market it\'s fine. When it isn\'t fine, the switch does the routing itself, and that\'s tomorrow."' },
+            { tone: 'quiet', say: '(Watch her label the cable.)', reply: 'She writes TRUNK 10 20 30 / NATIVE 99 on a cable tie and pulls it tight, then snips the tail off with her teeth.' }
+          ] } },
+        { k: 'LORE', title: 'FOUR BYTES AFTER THE SOURCE', year: 1998, real: ['ieee'], vibe: 'Phat. Four bytes in the header, and every switch on earth could share its borders.',
+          text: 'Vee Lan, climbing down off the crate: "The IEEE approved 802.1Q in December 1998. Before that, if your switches came from two makers, they couldn\'t agree how to mark a VLAN on a shared cable, and every vendor had its own trick. Four bytes after the source address settled it. Old Root still has the ISL switches from the clinic in a box, and he won\'t throw them out."' },
+        { k: 'KIT', text: 'Vee Lan writes on a cable tie and hands you the spare.', real: ['ieee'], kit: [
+          { cmd: '802.1Q tag: 4 bytes after the source MAC · TPID 0x8100 (16) · PCP (3) · DEI (1) · VID (12)', what: 'VLANs 1–4094 · normal 1–1005 · extended 1006–4094' },
+          { cmd: 'switchport trunk encapsulation dot1q → switchport mode trunk', what: 'the first line only on switches that also know ISL' },
+          { cmd: 'switchport trunk allowed vlan 10,20,30 · switchport trunk native vlan 99', what: 'limit the trunk; native VLAN on both ends, unused' },
+          { cmd: 'interface g0/0.10 → encapsulation dot1q 10 → ip address 10.17.10.1 255.255.255.0', what: 'router on a stick: one subinterface per VLAN, then no shutdown on g0/0' },
+          { cmd: 'show interfaces trunk', what: 'trunking ports, native VLAN, allowed and active VLANs' } ] },
+        { k: 'SYNC', q: { prompt: 'Mac, reading the cable tie: "A frame arrives on the trunk with no tag at all. Which VLAN does the switch put it in?"', opts: ['The native VLAN', 'VLAN 1, always', 'None. It drops untagged frames on a trunk', 'The VLAN of the port it leaves on'], a: 0,
+          yes: 'Vee Lan: "The native VLAN. On this trunk, 99."', no: 'Vee Lan: "The native VLAN. That\'s what native means."',
+          why: 'Vee Lan: Frames in the native VLAN cross a trunk without a tag, and a switch that receives an untagged frame on a trunk assigns it to the native VLAN. The native VLAN is VLAN 1 by default; here it was changed to 99 on both ends.' } }
+      ] },
   ] });
 })();

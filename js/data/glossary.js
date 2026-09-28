@@ -55,9 +55,9 @@ window.GLOSSARY = {
   'vlan': 'Virtual LAN: a Layer 2 broadcast domain configured on a switch. Ports in different VLANs cannot exchange frames; traffic between VLANs must be routed. Usable VLANs 1–4094.',
   'access port': 'A port in one VLAN, for end hosts. Frames leave untagged.',
   'trunk port': 'A port carrying many VLANs between switches or to a router, each frame tagged with its VLAN.',
-  '802.1q': 'The trunk tagging standard. A 4-byte tag inside the Ethernet frame holding the VLAN ID (12 bits: 1–4094).',
-  'native vlan': 'The one VLAN on a trunk that goes untagged. Default is VLAN 1. Attackers love a mismatched one.',
-  'router on a stick': 'One router interface, many subinterfaces, one per VLAN, over a single trunk. Inter-VLAN routing on a budget.',
+  '802.1q': 'The IEEE VLAN tagging standard (dot1q). A 4-byte tag inserted after the source MAC: TPID 0x8100 (16 bits), PCP (3 bits, priority), DEI (1 bit), VID (12 bits, VLANs 1–4094).',
+  'native vlan': 'The VLAN whose frames cross a trunk untagged; untagged frames received on a trunk are put in it. VLAN 1 by default. Must match on both ends; best changed to an unused VLAN.',
+  'router on a stick': 'Inter-VLAN routing over one router interface: the switch port is a trunk and the router has one subinterface per VLAN (encapsulation dot1q N, plus an IP address).',
   'svi': 'Switch Virtual Interface. "interface vlan 10" on a Layer 3 switch. Routing without a separate router.',
   'dtp': 'Dynamic Trunking Protocol. Cisco ports negotiating trunk vs access by themselves. Turn it off: "switchport nonegotiate".',
   'vtp': 'VLAN Trunking Protocol. One switch pushes its VLAN list to others. Powerful, dangerous, usually left transparent or off.',
@@ -221,5 +221,6 @@ window.GLOSSARY = {
   'shaping': 'QoS: traffic over the configured rate is buffered in a queue and sent later, smoothing it to the rate.',
   'subnet': 'A smaller network made by splitting a larger one: bits are borrowed from the host part and added to the network part. Each borrowed bit doubles the number of subnets and halves their size.',
   'point-to-point': 'A link with exactly two devices on it, usually two routers. Needs only two addresses: a /30 (two usable) or a /31 (both usable, RFC 3021).',
-  'broadcast domain': 'The group of devices that receive a broadcast (destination FFFF.FFFF.FFFF) sent by any one of them. Switches forward broadcasts; routers stop them; each VLAN is its own broadcast domain.'
+  'broadcast domain': 'The group of devices that receive a broadcast (destination FFFF.FFFF.FFFF) sent by any one of them. Switches forward broadcasts; routers stop them; each VLAN is its own broadcast domain.',
+  'subinterface': 'A logical interface cut from a physical router interface, e.g. g0/0.10. In router on a stick each subinterface has encapsulation dot1q with one VLAN ID and that VLAN\'s gateway address.'
 };
