@@ -207,7 +207,7 @@
           { cmd: 'interface g0/0.10 → encapsulation dot1q 10 → ip address 10.17.10.1 255.255.255.0', what: 'router on a stick: one subinterface per VLAN, then no shutdown on g0/0' },
           { cmd: 'show interfaces trunk', what: 'trunking ports, native VLAN, allowed and active VLANs' } ] },
         { k: 'SYNC', q: { prompt: 'Mac, reading the cable tie: "A frame arrives on the trunk with no tag at all. Which VLAN does the switch put it in?"', opts: ['The native VLAN', 'VLAN 1, always', 'None. It drops untagged frames on a trunk', 'The VLAN of the port it leaves on'], a: 0,
-          yes: 'Vee Lan: "The native VLAN. On this trunk, 99."', no: 'Vee Lan: "The native VLAN. That\'s what native means."',
+          yes: 'Vee Lan: "The native VLAN. On this trunk, 99."', no: 'Vee Lan: "The native VLAN, the one VLAN that crosses a trunk without a tag."',
           why: 'Vee Lan: Frames in the native VLAN cross a trunk without a tag, and a switch that receives an untagged frame on a trunk assigns it to the native VLAN. The native VLAN is VLAN 1 by default; here it was changed to 99 on both ends.' } }
       ] },
 
@@ -263,7 +263,7 @@
           choice: { opts: [
             { tone: 'ask', say: 'Is there a mode that doesn\'t copy anyone?', reply: 'Vee Lan: "[[VTP transparent]]. A transparent switch keeps its own VLANs, lets you add and delete them locally, and passes other switches\' adverts along without taking them. Its revision stays at zero. Servers and transparent switches keep their VLANs in NVRAM. A client on version 1 or 2 doesn\'t, and learns them again after a reboot."' },
             { tone: 'press', say: 'How do you make a spare switch safe before you plug it in?', reply: 'Vee Lan: "Knock its revision back to zero. Change its domain to a name nobody uses, or set it to transparent, and the revision resets. Then it can\'t win anything. Whoever plugged this one in either didn\'t know that or knew it very well."' },
-            { tone: 'quiet', say: '(Put your hand on the grey switch. It is warm.)', reply: 'It has been running for a while. The asset tag on its side has been scraped off with something sharp, and the only marking left is a strip of label tape that reads TEST-03.' }
+            { tone: 'quiet', say: '(Put your hand on the grey switch.)', reply: 'It is warm under your palm, and has been running for a while. The asset tag on its side has been scraped off with something sharp, and the only marking left is a strip of label tape that reads TEST-03.' }
           ] } },
         { k: 'SCENE', where: 'The service corridor · the hall switch',
           lines: [

@@ -29,7 +29,7 @@
           ],
           choice: { opts: [
             { tone: 'ask', say: 'If the switch dies, what stops working?', reply: 'Osi: "Everything inside the building, because every desk goes through it. The laptops couldn\'t reach the grey box or each other, even though the router would be perfectly fine."' },
-            { tone: 'press', say: 'Why not plug everything into the router?', reply: 'Osi: "It has four ports and we have forty devices. A switch gives you lots of ports cheaply and moves traffic fast inside one network, and the router is built to choose paths between networks. We need both."' },
+            { tone: 'press', say: 'Why not plug everything into the router?', reply: 'Osi: "It has four ports and we have forty devices. A switch gives you lots of ports cheaply and moves traffic fast inside one network, and the router is built to choose paths between networks, so we need both."' },
             { tone: 'care', say: 'How long have you been keeping this room running?', reply: 'She glances at the clipboard as if the answer is written there. "Eleven years. I started as a driver. Someone had to learn what the boxes did, and nobody else wanted to."' }
           ] } },
         { k: 'LORE', title: 'THE FIRST ROUTER', year: 1969, real: ['bbn'], vibe: 'Far out. A box the size of a fridge whose only friends were other boxes.',

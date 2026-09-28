@@ -130,7 +130,7 @@
         { k: 'SCENE', where: 'Cider\'s bar · the back room · an afternoon',
           lines: [
             { who: 'narr', text: 'In daylight the back room smells of cardboard and the vinegar Cider cleans the taps with. A roll of floor plan is pinned flat on a trestle table under two bottles, showing the empty building across the street divided into three units in blue pencil: a tattoo studio, a pharmacy and a phone repair shop.' },
-            { who: 'cider', text: 'The landlord has one /24 for the whole building, 192.168.13.0/24, and three tenants who each want their own network. Nobody gets the whole block. I cut it.' },
+            { who: 'cider', text: 'The landlord has one /24 for the whole building, 192.168.13.0/24, and three tenants who each want their own network, so I cut it.' },
             { who: 'cider', text: 'Cutting is borrowing. Every bit I take from the host part and give to the network part doubles the number of pieces and halves the size of each one. Borrow one bit from a /24 and you get a /25: two [[subnet]]s of 128 addresses, 126 hosts each. Borrow two and you get a /26: four subnets of 64, 62 hosts each.' },
             { who: 'cider', text: 'Three tenants, so one bit isn\'t enough and two gives me four pieces. Each shop gets a /26 and the fourth one sits in the drawer for whoever moves in next.' }
           ],
@@ -238,7 +238,7 @@
           { cmd: 'router port = first usable of its piece', what: '.1 · .129 · .193 · .225 · .241' },
           { cmd: 'outside, one route for the whole /24', what: 'inside, every piece is a connected route' } ] },
         { k: 'SYNC', q: { prompt: 'Imani, checking her clipboard: "Admin has twenty-five people. Why a /27 and not a /28?"', opts: ['A /28 only has 14 usable hosts; a /27 has 30', 'A /28 is only for links', 'A /27 is the smallest subnet allowed', 'Admin needs room to double'], a: 0,
-          yes: 'Cider: "Fourteen won\'t hold twenty-five. Thirty will."', no: 'Cider: "A /28 holds fourteen hosts. Twenty-five needs the next size up, a /27, with thirty."',
+          yes: 'Cider: "A /28 holds fourteen, and a /27 holds the thirty you need."', no: 'Cider: "A /28 holds fourteen hosts. Twenty-five needs the next size up, a /27, with thirty."',
           why: 'Cider: A /28 has 4 host bits: 2^4 − 2 = 14 usable hosts, too few for 25. A /27 has 5 host bits: 2^5 − 2 = 30, the smallest subnet that fits 25 hosts.' } }
       ] },
   ] });

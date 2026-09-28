@@ -66,7 +66,7 @@
             { who: 'osi', text: 'Then it needs the next hop\'s MAC, so it runs ARP again on the link across the river, and wraps the same packet in a new frame: source MAC its own port on that link, destination MAC the depot router. The IP addresses inside haven\'t changed since the laptop.' },
             { who: 'nexthop', text: 'At the depot router it happens a third time. Frame off, TTL down one, look up the tracker\'s network, and this time it\'s directly connected, so the router ARPs for the tracker itself and sends the last frame straight to it.' },
             { who: 'osi', text: 'And the reply comes back the same way, hop by hop, except every router already has the MAC it needs written down, so nobody has to ask twice.' },
-            { who: 'nexthop', text: 'That\'s why the first ping over a new path loses one and the second doesn\'t. Every hop is doing the asking the first time.' }
+            { who: 'nexthop', text: 'That\'s why the first ping over a new path loses one and the second doesn\'t: on the first one, every hop is asking for the first time.' }
           ],
           choice: { opts: [
             { tone: 'ask', say: 'What changes at each hop and what stays the same?', reply: 'Nexthop: "The frame changes at every router: new source MAC, new destination MAC, new FCS. The packet keeps its source and destination IP the whole way, and loses one off the TTL at each router, so its header checksum gets redone too."' },
@@ -82,7 +82,7 @@
           { cmd: 'IP source and destination unchanged end to end', what: 'switches change nothing in the frame' },
           { cmd: 'arp -a · show arp · show ip route · tracert', what: 'follow a parcel hop by hop' } ] },
         { k: 'SYNC', q: { prompt: 'Osi, as the depot\'s door opens: "On the link across the river, whose MAC address is the destination on the frame?"', opts: ['The depot router\'s interface on that link', 'The depot tracker\'s', 'The dispatch laptop\'s', 'The broadcast address'], a: 0,
-          yes: 'Nexthop: "The next stop. Always the next stop."', no: 'Nexthop: "The depot router\'s. A frame is only ever addressed to the next hop."',
+          yes: 'Nexthop: "The depot router\'s, because a frame only ever goes as far as the next stop."', no: 'Nexthop: "The depot router\'s. A frame is only ever addressed to the next hop."',
           why: 'Nexthop: Each frame carries the packet one hop, so its destination MAC is the next device on that link: across the river, the depot router\'s interface. Only on the last hop, from the depot router to the tracker, is the tracker\'s MAC the destination.' } }
       ] }
   ] });
