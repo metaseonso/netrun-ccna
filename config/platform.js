@@ -3,7 +3,7 @@
    Fill it in and players get SIGN IN WITH GOOGLE; their records are stored in their own Google Drive
    (the hidden app folder), so they follow the player across devices. Setup: docs/AUTH_PLAN.md. */
 window.PLATFORM = {
-  googleClientId: '',           // e.g. '1234567890-abc123.apps.googleusercontent.com'
+  googleClientId: '18221020659-3is07svdcb7d15gk27hkhhukge6mud8t.apps.googleusercontent.com',         // e.g. '1234567890-abc123.apps.googleusercontent.com'
   dmCooldownMs: 3 * 60 * 1000,  // minimum gap between crew calls
   dmMaxPerSession: 12,
   dev: /[?&]dev=1/.test(location.search) // dev panel: lint, engine state, step evaluation, golden runs
