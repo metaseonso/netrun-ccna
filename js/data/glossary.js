@@ -218,5 +218,13 @@ window.GLOSSARY = {
   // ---- night 56 · wireless architectures
   'autonomous ap': 'A self-contained AP that does not rely on a WLC and is configured on its own. Connects to a switch trunk port, because it maps SSIDs to VLANs itself.',
   'split-mac': 'The lightweight AP architecture: the AP handles real-time radio functions and the WLC handles the rest (security, management, client roaming). Lightweight APs connect to access ports.',
-  'capwap': 'Control and Provisioning of Wireless Access Points. The tunnels between a lightweight AP and its WLC: control on UDP 5246 (encrypted by default) and data on UDP 5247 (not encrypted by default). Replaced LWAPP.'
+  'capwap': 'Control and Provisioning of Wireless Access Points. The tunnels between a lightweight AP and its WLC: control on UDP 5246 (encrypted by default) and data on UDP 5247 (not encrypted by default). Replaced LWAPP.',
+  // ---- night 57 · wireless security
+  '802.1x': 'Port-based network access control. Roles: the supplicant (the device that wants to connect), the authenticator (the device that provides access, a switch, AP or WLC) and the authentication server (AS, usually RADIUS). Uses EAP.',
+  'open authentication': 'Wireless authentication that accepts every request to join. No credentials at all.',
+  'supplicant': 'In 802.1X, the device that wants to connect to the network.',
+  'eap': 'Extensible Authentication Protocol, used with 802.1X. Methods: LEAP (challenge phrases, dynamic WEP keys), EAP-FAST (PAC, then a TLS tunnel), PEAP (certificate on the server only), EAP-TLS (certificates on the server and the client).',
+  'tkip': 'Temporal Key Integrity Protocol. Encryption and MIC used by WPA, built as an improvement on WEP for the same hardware.',
+  'ccmp': 'Counter/CBC-MAC Protocol. Used by WPA2: AES counter mode for encryption, CBC-MAC as the MIC.',
+  'gcmp': 'Galois/Counter Mode Protocol. Used by WPA3: AES counter mode for encryption, GMAC as the MIC.'
 };

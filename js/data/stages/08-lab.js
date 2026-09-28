@@ -216,6 +216,48 @@
         { k: 'SYNC', q: { prompt: 'Imani, holding one of the boxed APs: "If we go with a controller, and the controller is built into the clinic\'s switch, what kind is that?"', opts: ['An embedded WLC', 'A unified WLC', 'A cloud-based WLC', 'Mobility Express'], a: 0,
           yes: 'Beacon: "Embedded. About two hundred APs, and you\'ve got forty."', no: 'Beacon: "Embedded. A WLC inside a switch is embedded."',
           why: 'Beacon: An embedded WLC is built into a switch and handles about 200 APs. A unified WLC is a separate hardware appliance (about 6000), a cloud-based WLC is a VM on a server (about 3000), and Mobility Express runs inside an AP (about 100).' } }
+      ] },
+
+    // ------------------------------------------------------------ night 57 · wireless security
+    { id: 'n57-weak-keys', title: 'The door nobody tried', sub: 'wireless security', npc: 'beacon', day: [57], src: [PS('Wireless_Security.md')], unlocks: ['wifi-security'],
+      beats: [
+        { k: 'SCENE', where: 'The clinic\'s new wing · the ground-floor lobby · two in the morning',
+          lines: [
+            { who: 'narr', text: 'Rain drums on the lobby\'s new glass roof, and the air smells of wet concrete and dog. Ace Elle sits on an unopened crate of chairs with a laptop on her knees, and Sticky lies across her boots, watching the door. Beacon leans on the reception desk beside her, scanner in hand, unusually quiet.' },
+            { who: 'ace', text: 'Every test on this district came in through a cable. The rogue switch, the rogue DHCP server, the ARP spoof. Nobody tried the air. Before Opening Night I want that door shut too.' },
+            { who: 'beacon', text: 'And the builders\' network is still up. WING-TEMP. Tell them what it\'s running, Ace.' },
+            { who: 'ace', text: '[[WEP]], Wired Equivalent Privacy, on kit older than Sticky. I recovered its key from this crate in eleven minutes, just by listening. Wireless security is three jobs: authentication, which proves who is joining, encryption, which keeps the frames private, and integrity, which proves nobody changed them on the way. WEP does all three badly.' },
+            { who: 'ace', text: 'The fix is [[WPA2]] or [[WPA3]]. Each comes in two modes. Personal mode uses one pre-shared key, a PSK, the passphrase everybody types. Enterprise mode uses [[802.1X]] with EAP, so every nurse logs in as herself.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why is WEP so easy to break?', reply: 'Ace: "It encrypts with RC4 using a key of 40 bits or 104 bits, plus a 24-bit initialisation vector sent in the open, which makes 64 or 128. Twenty-four bits of IV repeats fast on a busy network, and every repeat leaks a little of the key. Collect enough frames and the key falls out."' },
+            { tone: 'press', say: 'What about networks with no key at all?', reply: 'Ace: "[[Open authentication]] accepts every request to join. No password, nothing. Cafés use it with a web page afterwards. On a clinic network it means anyone in the street can associate."' },
+            { tone: 'care', say: '(Crouch down and let Sticky smell your hand.)', reply: 'Sticky sniffs, considers you for a long moment, and settles back across Ace\'s boots. "Faces on ports," Ace says. "That\'s what the dog remembers. The ones in the air don\'t have a smell."' }
+          ] } },
+        { k: 'SCENE', where: 'The new wing · the lobby · the rain easing',
+          lines: [
+            { who: 'beacon', text: 'Enterprise mode has three players. The [[supplicant]] is the device that wants on, a nurse\'s tablet. The authenticator is the thing that lets it on or doesn\'t, the AP or the WLC. The authentication server, the AS, checks the credentials and says yes or no, usually a RADIUS server, and ours lives in the Lab.' },
+            { who: 'ace', text: 'They speak [[EAP]], the Extensible Authentication Protocol, and there are four kinds you\'ll meet. LEAP is Cisco\'s old one: challenge phrases both ways and dynamic WEP keys, so it\'s dead. EAP-FAST passes the client a PAC, a protected access credential, builds a TLS tunnel with it, and authenticates the client inside the tunnel. PEAP needs a certificate on the server only, and the client logs in inside the tunnel, often with MS-CHAP. EAP-TLS needs certificates on both the server and every client.' },
+            { who: 'beacon', text: 'Then the encryption. WPA used [[TKIP]], built to fix WEP on the same old hardware. WPA2 uses [[CCMP]], AES in counter mode with CBC-MAC as its message integrity check, its MIC. WPA3 uses [[GCMP]], AES counter mode with GMAC. The AP also holds a group key for frames it sends to all its clients at once.' },
+            { who: 'ace', text: 'WPA3 personal adds SAE, simultaneous authentication of equals, which protects the four-way handshake, so nobody can grab it and guess the passphrase at home. And it has forward secrecy: steal the key next year and tonight\'s traffic still can\'t be decrypted.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Which EAP type should the clinic use?', reply: 'Ace: "EAP-TLS for staff, if the clinic will look after a certificate on every tablet. It\'s the strongest because both ends prove who they are with certificates. PEAP if it won\'t: the server proves itself with its certificate, and the nurse proves herself with a password inside the tunnel."' },
+            { tone: 'press', say: 'Isn\'t one passphrase for everyone good enough?', reply: 'Beacon: "For the guests in reception, fine, WPA3 personal with a long one. For staff, no. When one nurse leaves, you change the passphrase on every device in the wing. With 802.1X you switch off one login."' },
+            { tone: 'joke', say: 'Can Sticky be the authentication server?', reply: 'Ace, almost smiling: "At the gate, the dog already is. But a dog checks one face per port, and the AS checks every login against a list in the Lab, a lot faster than a dog reads."' }
+          ] } },
+        { k: 'LORE', title: 'THE KEY IN THE NOISE', year: 2001, vibe: 'Off the hook. A laptop in a car park reading everyone\'s mail.',
+          text: 'Ace, closing the laptop: "In August 2001 three cryptographers, Scott Fluhrer, Itsik Mantin and Adi Shamir, published a flaw in the way RC4 starts up its keys. WEP fed RC4 exactly the kind of keys the flaw needed. Within weeks a program called AirSnort was recovering WEP keys from a laptop just by listening to the traffic. I keep this one because WEP was switched on in buildings for years after that, and it still is, in this one."' },
+        { k: 'KIT', text: 'Ace writes it on the back of the builders\' handover sheet in capitals.', kit: [
+          { cmd: 'authentication · encryption · integrity (MIC)', what: 'the three jobs. The group key encrypts what the AP sends to all clients' },
+          { cmd: 'open authentication · WEP (RC4, 40 or 104-bit key + 24-bit IV = 64 or 128)', what: 'accepts everyone · broken' },
+          { cmd: '802.1X: supplicant · authenticator · authentication server (AS)', what: 'the tablet · the AP or WLC · the RADIUS server' },
+          { cmd: 'LEAP · EAP-FAST (PAC, TLS tunnel, then client auth) · PEAP (server cert) · EAP-TLS (server and client certs)', what: 'the EAP methods' },
+          { cmd: 'WPA TKIP · WPA2 CCMP (AES counter mode + CBC-MAC) · WPA3 GCMP (AES counter mode + GMAC)', what: 'encryption and MIC' },
+          { cmd: 'Personal (PSK) · Enterprise (802.1X/EAP) · WPA3: SAE, forward secrecy', what: 'the modes' } ] },
+        { k: 'SYNC', q: { prompt: 'Beacon, packing up the scanner: "Say someone records the wing\'s WPA3 traffic tonight and steals the passphrase next year. Can they read tonight\'s recording?"', opts: ['No. WPA3 has forward secrecy', 'Yes. The passphrase unlocks everything it ever protected', 'Only if they also steal the WLC', 'Only on the 2.4 GHz band'], a: 0,
+          yes: 'Ace: "No. Tonight stays tonight."', no: 'Ace: "No. Forward secrecy means an old recording stays locked."',
+          why: 'Ace: WPA3 provides forward secrecy: the keys protecting each session are not derived in a way that a stolen passphrase can recreate later, so traffic captured before the theft cannot be decrypted. SAE also protects the four-way handshake in personal mode.' } }
       ] }
   ] });
 })();
