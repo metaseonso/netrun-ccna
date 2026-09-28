@@ -136,6 +136,10 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Traceroute prints the forward path only, one line per hop with the ingress address of each router, then the
+  target (`Net.ping(...).trail`, `Net.traceLines`); PC `tracert` and IOS `traceroute` share it. Tested in `tests/engine.test.js`.
+  `tools/play.js <night|a-b|all>` plays nights headless through the Game API (talks, calls, jack-in cost, golden run, pay, fixer, CODEX).
+
 - 2026-09-28 · Every router and switch in a gig's `net` gets a device at jack-in, so `preconfig` applies to boxes with no
   console too; only `devices` show as consoles. A gig sharpens each quickhack one step at most. Spanning-tree marks on the
   map show only for gigs with a `topo` or `stpView: true`. Class thresholds C 180, B 420, A 820; pay and rep default per class.

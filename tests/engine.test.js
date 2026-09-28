@@ -16,6 +16,10 @@ module.exports.run = function({ out }){
     d.R2.exec('ip route 10.0.1.0 255.255.255.0 10.0.12.1'); A = Net.api(Net.build(net, d)); const p2 = A.ping('PC1', '10.0.2.10'); ok(p2.ok, 'static: both routes → ping works (' + p2.reason + ')'); ok(A.route('R1', '10.0.2.0/24') && A.route('R1', '10.0.2.0/24').proto === 'S', 'static: route appears as S');
     ok(/S\s+10\.0\.2\.0\/24/.test(Show.render(d.R1, 'show ip route', A.state)), 'show ip route lists the static route');
     // shutdown breaks it
+    // traceroute shows the forward path only: each router's ingress address, then the target
+    const tr = A.ping('PC1', '10.0.2.10'); ok(JSON.stringify(tr.trail) === JSON.stringify(['10.0.1.1', '10.0.12.2', '10.0.2.10']), 'trace: hops are the ingress addresses, forward only (' + JSON.stringify(tr.trail) + ')');
+    const pc = new Sim.Device('PC1', { kind: 'host', netState: () => A.state }); pc.exec('tracert 10.0.2.10'); const txt = pc.out.map(o => o.s).join('\n'); ok(/10\.0\.12\.2/.test(txt) && !/R2|PC1\s*$/m.test(txt.split('\n').slice(1).join('\n')) && /Trace complete/.test(txt), 'trace: PC tracert prints addresses, not names');
+    ok(JSON.stringify(A.ping('R1', '10.0.2.10').trail) === JSON.stringify(['10.0.12.2', '10.0.2.10']), 'trace: a router tracing lists the next hops, not itself');
     d.R2.exec('int g0/0'); d.R2.exec('shutdown'); A = Net.api(Net.build(net, d)); ok(!A.ping('PC1', '10.0.2.10').ok, 'static: shutdown interface breaks reachability');
   }
   // 2. OSPF adjacency and learned routes, passive interface

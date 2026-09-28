@@ -257,11 +257,11 @@
     if (S.hosts[from]) { const h = S.hosts[from]; if (!h.up) return fail(from + ' has no link'); if (!h.ip) return fail(from + ' has no IP address' + (h.lease && h.lease.reason ? ' (' + h.lease.reason + ')' : '')); pkt.src = h.ip; cur = { kind: 'host', dev: from, seg: h.seg, ip: h.ip, mask: h.mask, gw: h.gw }; }
     else if (S.routers.includes(from)) { const rt = lookup(S, from, dstIp); if (!rt) return fail(from + ' has no route to ' + dstIp); const o = S.l3.find(x => x.dev === from && x.iface === rt.iface); pkt.src = opts.src || (o ? o.ip : null); if (!pkt.src) return fail('no source address'); cur = { kind: 'router', dev: from, inIf: null }; }
     else return fail(from + ' cannot originate traffic');
-    const res = forward(S, cur, pkt, path, natTbl, 'request'); if (!res.ok) return fail(res.reason, { hops: res.hops });
+    const res = forward(S, cur, pkt, path, natTbl, 'request'); const trail = (path.trail || []).slice(); if (res.ok && trail[trail.length - 1] !== dstIp) trail.push(dstIp); if (!res.ok) return fail(res.reason, { hops: res.hops, trail });
     // reply
     const rpkt = { src: res.dstIp, dst: pkt.src === res.srcSeen ? pkt.src : res.srcSeen, proto, sport: pkt.dport, dport: pkt.sport, reply: true };
-    const back = forward(S, res.at, rpkt, path, natTbl, 'reply'); if (!back.ok) return fail('reply failed: ' + back.reason, { hops: res.hops });
-    return { ok: true, reason: 'reply from ' + res.dstDev, path, nat: natTbl, hops: res.hops, dst: res.dstDev };
+    const back = forward(S, res.at, rpkt, path, natTbl, 'reply'); if (!back.ok) return fail('reply failed: ' + back.reason, { hops: res.hops, trail });
+    return { ok: true, reason: 'reply from ' + res.dstDev, path, nat: natTbl, hops: res.hops, dst: res.dstDev, trail };
   }
   function forward(S, cur, pkt, path, natTbl, dir){
     const D = S.net.devices; let ttl = 30; const visited = new Set(); let hops = 0; let srcSeen = pkt.src;
@@ -274,7 +274,7 @@
         if (target.ip === pkt.dst || (target.kind === 'cloud' && target.ip !== pkt.dst)) { if (target.kind === 'iface' || target.kind === 'vip') { const c = { kind: 'router', dev: target.dev, inIf: target.iface }; return deliverRouter(S, c, pkt, path, natTbl, hops, srcSeen); } return { ok: true, at: { kind: target.kind === 'cloud' ? 'cloud' : 'host', dev: target.dev, seg: target.seg }, dstDev: target.dev, dstIp: pkt.dst, hops, srcSeen }; }
         cur = { kind: 'router', dev: target.dev, inIf: target.iface }; continue; }
       // router
-      const r = cur.dev; hops++; const key = r + '|' + pkt.dst + '|' + dir; if (visited.has(key)) return { ok: false, reason: 'loop at ' + r, hops }; visited.add(key);
+      const r = cur.dev; hops++; if (dir === 'request' && cur.inIf) { const ii = S.ifaces[r][cur.inIf]; (path.trail = path.trail || []).push(ii && ii.cfg.ip || r); } const key = r + '|' + pkt.dst + '|' + dir; if (visited.has(key)) return { ok: false, reason: 'loop at ' + r, hops }; visited.add(key);
       if (cur.inIf) { const ii = S.ifaces[r][cur.inIf]; if (ii && ii.cfg.aclIn) { const v = aclEval(S, r, ii.cfg.aclIn, pkt); if (v.action === 'deny') { path.push({ dev: r, act: 'DENIED inbound on ' + short(cur.inIf) + ' by ACL ' + ii.cfg.aclIn + (v.implicit ? ' (implicit deny)' : ' line ' + v.seq) }); return { ok: false, reason: 'denied by ACL ' + ii.cfg.aclIn + ' inbound on ' + r + ' ' + short(cur.inIf), hops }; } }
         // NAT inbound from outside: translate global -> inside local
         if (ii && ii.cfg.natOutside) { const t = natTbl.find(x => x.global === pkt.dst); if (t) { path.push({ dev: r, act: 'NAT ' + pkt.dst + ' → ' + t.inside }); pkt = Object.assign({}, pkt, { dst: t.inside }); } else { const st = S.cfg[r].natStatic.find(x => x.outside === pkt.dst); if (st) { path.push({ dev: r, act: 'NAT ' + pkt.dst + ' → ' + st.inside }); pkt = Object.assign({}, pkt, { dst: st.inside }); } } } }
@@ -316,5 +316,8 @@
     };
   }
 
-  window.Net = { build, api, ping, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
+  // traceroute as the consoles print it: the forward path only, one line per hop, the ingress address of each router, then the target
+  function traceLines(r, style){ const t = r.trail || []; const row = (i, ip) => style === 'pc' ? '  ' + String(i).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + i + ' ' + ip + ' 0 msec 0 msec 0 msec';
+    const out = t.map((ip, i) => row(i + 1, ip)); if (!r.ok) out.push(style === 'pc' ? '  ' + String(t.length + 1).padStart(2) + '     *        *        *     Request timed out.' : '  ' + (t.length + 1) + '  *  *  * '); return out; }
+  window.Net = { build, api, ping, traceLines, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
 })();

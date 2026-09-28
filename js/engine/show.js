@@ -72,7 +72,7 @@
     if (c === 'arp') { const seg = h.seg; const rows = (S.owners[seg] || []).filter(o => o.dev !== dev.name && o.mac); return 'Interface: ' + (h.ip || '0.0.0.0') + '\n  Internet Address      Physical Address      Type\n' + rows.map(o => '  ' + pad(o.ip, 22) + pad(o.mac, 22) + 'dynamic').join('\n'); }
     if (c === 'ping' || c === 'tracert' || c === 'traceroute') { const ip = t[1]; if (!ip) return 'Usage: ' + c + ' <ip>'; const r = Net.ping(S, dev.name, ip); dev._lastPing = r;
       if (c === 'ping') return 'Pinging ' + ip + ' with 32 bytes of data:\n' + (r.ok ? 'Reply from ' + ip + ': bytes=32 time=1ms TTL=' + (128 - (r.hops || 0)) + '\n'.repeat(1).repeat(1) + 'Reply from ' + ip + ': bytes=32 time<1ms\nReply from ' + ip + ': bytes=32 time<1ms\nReply from ' + ip + ': bytes=32 time<1ms\n\nPing statistics: Sent = 4, Received = 4, Lost = 0 (0% loss)' : 'Request timed out.\nRequest timed out.\nRequest timed out.\nRequest timed out.\n\nPing statistics: Sent = 4, Received = 0, Lost = 4 (100% loss)\n  [why: ' + r.reason + ']');
-      return 'Tracing route to ' + ip + ':\n' + r.path.filter(p => p.act.startsWith('route') || p.act.startsWith('deliver')).map((p, i) => '  ' + (i + 1) + '   <1 ms   ' + p.dev).join('\n') + (r.ok ? '\nTrace complete.' : '\n  *    *    *   ' + r.reason); }
+      return 'Tracing route to ' + ip + ' over a maximum of 30 hops:\n\n' + Net.traceLines(r, 'pc').join('\n') + (r.ok ? '\n\nTrace complete.' : '\n  [why: ' + r.reason + ']'); }
     return "'" + t[0] + "' is not recognized. Type help."; }
 
   window.Show = { render, host, renderers: R, long };
