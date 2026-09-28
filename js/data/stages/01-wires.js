@@ -2,7 +2,7 @@
    Osi Sevenfold's courier guild and Enable's console. Written to docs/STORY_BIBLE.md (Voice) and docs/CAMPAIGN_MAP.md. */
 (function(){
   const { PS } = SRC;
-  STAGES.push({ id: 'wires', arc: 'grid', title: 'STAGE 1 · THE WIRES', sub: 'devices, cables, the OSI model, the console', npc: 'osi', status: 'live', levels: [
+  STAGES.push({ id: 'wires', arc: 'grid', title: 'STAGE 1 · THE WIRES', sub: 'devices, cables, the OSI model, the command line', npc: 'osi', status: 'live', levels: [
     // ------------------------------------------------------------ night 1 · network devices
     { id: 'n01-back-room', title: 'The back room', sub: 'network devices', npc: 'osi', day: [1], src: [PS('Network_Devices.md')], unlocks: ['net-devices'],
       beats: [
@@ -29,7 +29,7 @@
           ],
           choice: { opts: [
             { tone: 'ask', say: 'If the switch dies, what stops working?', reply: 'Osi: "Everything inside the building, because every desk goes through it. The laptops couldn\'t reach the grey box or each other, even though the router would be perfectly fine."' },
-            { tone: 'press', say: 'Why not plug everything into the router?', reply: 'Osi: "It has four ports and we have forty devices. A switch gives you lots of ports cheaply and moves traffic fast inside one network, and the router is built to choose paths between networks. We need both."' },
+            { tone: 'press', say: 'Why not plug everything into the router?', reply: 'Osi: "It has four ports and we have forty devices. A switch gives you lots of ports cheaply and moves traffic fast inside one network, and the router is built to choose paths between networks, so we need both."' },
             { tone: 'care', say: 'How long have you been keeping this room running?', reply: 'She glances at the clipboard as if the answer is written there. "Eleven years. I started as a driver. Someone had to learn what the boxes did, and nobody else wanted to."' }
           ] } },
         { k: 'LORE', title: 'THE FIRST ROUTER', year: 1969, real: ['bbn'], vibe: 'Far out. A box the size of a fridge whose only friends were other boxes.',
@@ -85,39 +85,90 @@
           yes: 'Osi: "Straight-through. A scanner and a switch are different kinds of box."', no: 'Osi: "Straight-through. Different kinds of box, so the pins already line up."',
           why: 'Osi: A scanner sends on pins 1 and 2, like a PC, and the switch listens on 1 and 2, so a straight-through cable lines them up. Crossover is for two boxes of the same kind. Fiber would need SFPs at both ends, and a console cable is for configuring a box, not for data.' } }
       ] },
-    { id: 'osi-intro', title: 'Seven floors, four in practice', sub: 'OSI model, TCP/IP, devices, cables', npc: 'osi', day: [3], src: [PS('OSI_Model_TCPSuite.md'), PS('Network_Devices.md'), PS('Interfaces_and_Cables.md')], unlocks: ['osi-layers'],
+    // ------------------------------------------------------------ night 3 · the OSI model and TCP/IP
+    { id: 'n03-sorting-floor', title: 'The parcel in five wrappers', sub: 'the OSI model and TCP/IP', npc: 'osi', day: [3], src: [PS('OSI_Model_TCPSuite.md')], unlocks: ['osi-layers'],
       beats: [
-        { k: 'SCENE', where: 'Courier guild · sorting floor · your first morning',
+        { k: 'SCENE', where: 'The courier guild · the sorting floor · a quarter to midnight',
           lines: [
-            { who: 'narr', text: 'Seven conveyor belts, one above the other. Parcels come in at the bottom and rise. A woman with a purple bob and a clipboard watches you watch them.' },
-            { who: 'osi', text: 'You are Dispatch\'s new one. Good. Everything that moves through this district passes through seven floors of this building. We call the blueprint the [[OSI model]]. Physical at the bottom, then Data Link, Network, Transport, Session, Presentation, Application.' },
-            { who: 'you', text: 'Seven seems like a lot of floors.' },
-            { who: 'osi', text: 'It is. The street only uses four. The [[TCP/IP suite]]: Link, Internet, Transport, Application. Same building, fewer stairs. When you argue with a corpo engineer, you say OSI. When you fix something, you touch TCP/IP.' }
+            { who: 'narr', text: 'The sorting floor rattles with rollers and smells of packing tape and the hot dust that comes off the belt motors. Under the one good lamp, a parcel has been taken apart on a steel table, and its wrappers are laid out in a row, each one smaller than the last. Osi is writing a number on each wrapper in marker.' },
+            { who: 'osi', text: 'The depot sent this back tonight. Our tracker says it left the building on Tuesday, and the depot says it turned up with a label nobody there could use. Before anyone gets blamed, I want to see it the way the depot saw it.' },
+            { who: 'osi', text: 'Everything that leaves a computer goes out the way this parcel did, in wrappers. The customer\'s letter is in the middle, and each floor of the sending machine puts its own wrapper round it, with its own label. Adding the wrappers is [[encapsulation]]. The machine at the other end takes them off in the opposite order, which is [[decapsulation]].' },
+            { who: 'osi', text: 'The street counts five floors, the [[TCP/IP model]]. From the bottom: Physical, Data Link, Network, Transport and Application. Some people call Data Link the local network floor and Network the internet floor, and they mean the same thing.' }
           ],
           choice: { opts: [
-            { say: 'What is actually on the parcels?', reply: '"Labels. Every floor wraps the parcel from the floor above and adds its own. That is [[encapsulation]]. Going down: the Transport floor makes a segment, Network makes a packet, Data Link makes a frame, Physical turns it into bits on a wire. Four names for the [[PDU]]. Learn them. Half of what the Board will ask you are only asking which one you mean."' },
-            { say: 'Which floor do I care about most?', reply: '"Depends on the job. A [[switch]] works on floor two and reads frames. A [[router]] works on floor three and reads packets. A [[firewall]] reads three and up and has opinions. When someone says the network is down, your first question is which floor."' }
+            { tone: 'ask', say: 'What does each wrapper get called?', reply: 'Osi: "Each floor has its own word for what it hands down, and the general name is a [[PDU]], a protocol data unit. The letter itself is data. Transport wraps it into a [[segment]], or a [[datagram]] if it\'s UDP. Network wraps that into a [[packet]]. Data Link wraps the packet into a [[frame]], with a header in front and a trailer behind. Physical sends the frame as bits. Whatever sits inside a wrapper is its [[payload]]."' },
+            { tone: 'press', say: 'Why five floors? Why not one big label?', reply: 'Osi: "Because each floor does one job and doesn\'t care how the others do theirs. The Network floor doesn\'t care whether the frame goes out on copper, glass or radio, and the cable doesn\'t care what\'s in the letter. You can change one floor without rebuilding the whole building."' },
+            { tone: 'quiet', say: '(Pick up the smallest wrapper and read it.)', reply: 'It is a delivery note in a customer\'s handwriting: a shop address in Kabuki and a request for printer ink. Osi watches you read it and nods at the next wrapper out.' }
           ] } },
-        { k: 'LORE', title: 'THE SEVEN-FLOOR PLAN', year: 1984, vibe: 'Bodacious paperwork. The street shipped four floors and moved on.', text: 'Osi, walking you to the loading dock: "ISO published this seven-floor plan in 1984. It lost. TCP/IP was already running on ARPANET, which switched over on 1 January 1983, and it came from a 1974 paper by Cerf and Kahn. We kept OSI as the language and TCP/IP as the building. That is why the Board asks about seven layers and your router only knows four."' },
-        { k: 'KIT', text: 'She hands you a laminated card from the clipboard.', kit: [ { cmd: 'L1 bits · L2 frame · L3 packet · L4 segment', what: 'the four parcel names, bottom up' }, { cmd: 'switch = L2 · router = L3 · firewall = L3 and up', what: 'which box works on which floor' }, { cmd: 'UTP up to 100 m · fibre for distance', what: 'cable rule of thumb. [[Auto MDI-X]] means crossover cables are history' } ] },
-        { k: 'SYNC', q: { prompt: 'A courier stops you at the door: "The router upstairs, what does it read to decide where I go?"', opts: ['The frame, Layer 2', 'The packet, Layer 3', 'The segment, Layer 4', 'The bits, Layer 1'], a: 1, yes: 'Osi, from across the floor: "Floor three. That is where the maps are."', no: 'Osi: "Routers read packets, floor three. Switches read frames, floor two."' , why: 'Osi: A switch reads the frame, Layer 2, to find the MAC address. A router reads the packet, Layer 3, to find the IP address and choose the next hop. The router decides on floor three.' } }
+        { k: 'SCENE', where: 'The sorting floor · the steel table', real: ['ieee', 'ietf'],
+          lines: [
+            { who: 'osi', text: 'The Transport floor picks which program on the far machine gets the letter, by its [[port number]], so the depot\'s tracker program gets our tracker\'s messages and not the payroll\'s. The Network floor carries it from end to end, across any number of networks, by [[IP address]], and routers read that floor.' },
+            { who: 'osi', text: 'The Data Link floor only gets it to the next stop, one hop at a time, by [[MAC address]], and switches read that floor. Physical turns the bits into electricity, light or radio.' },
+            { who: 'narr', text: 'She lays the two outer wrappers side by side under the lamp. The outermost label names the depot\'s loading door. The one inside it names a depot on the other side of the river.' },
+            { who: 'osi', text: 'So that\'s what happened. The outer label was right, so the depot\'s door signed for it, and the door only reads the outer label. The inner label, the one that says where it\'s really going, had the wrong depot on it. The frame got to the next stop and the packet was addressed to somewhere else.' },
+            { who: 'you', text: 'Who decides what goes on the labels?' },
+            { who: 'osi', text: 'Two groups. The IEEE writes the rules for the local floors, Ethernet and Wi-Fi. The [[IETF]] writes the rules for the internet, IP and TCP and the rest, and publishes them as [[RFC]]s, requests for comments. The corp towers downtown wrap their messages by the same rules we do.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'I\'ve heard of seven layers, not five.', reply: 'Osi: "That\'s the [[OSI model]], from 1984. Physical, Data Link, Network, Transport, Session, Presentation, Application. It has Session and Presentation between Transport and Application, and the TCP/IP model folds them into Application. OSI never won as a way of building networks, but everyone still talks in its numbers. That\'s why the Application floor gets called Layer 7 when it\'s the fifth floor here."' },
+            { tone: 'press', say: 'How do the floors on two machines talk to each other?', reply: 'Osi: "Two ways. Each floor serves the one above it and uses the one below it on its own machine, which is [[adjacent-layer interaction]]. And each floor talks to the same floor on the other machine through its header, so our Transport floor and the depot\'s Transport floor agree about the letter without the others knowing. That\'s [[same-layer interaction]]."' },
+            { tone: 'care', say: 'Is the ink going to reach the shop?', reply: 'Osi: "Tomorrow, with a label that\'s right all the way through. The shop has been waiting three days, and I\'ll take it over myself with a note."' }
+          ] } },
+        { k: 'LORE', title: 'FLAG DAY', year: 1983, real: ['ietf'], vibe: 'Totally tubular. Every host on the net switched languages overnight or got left behind.',
+          text: 'Osi, folding the wrappers into a box: "My first boss kept a badge from the ARPANET that said I SURVIVED THE TCP/IP TRANSITION. On the first of January 1983, every machine on the ARPANET had to stop speaking the old protocol, NCP, and start speaking TCP/IP on the same day. Anyone who hadn\'t switched was cut off. That\'s the day the internet started wrapping parcels the way we still wrap them."' },
+        { k: 'KIT', text: 'Osi writes the floors on the back of the depot\'s return slip.', real: ['ieee', 'ietf'], kit: [
+          { cmd: '5 Application · 4 Transport · 3 Network · 2 Data Link · 1 Physical', what: 'the TCP/IP model. OSI adds Session (5) and Presentation (6), so Application is Layer 7' },
+          { cmd: 'data → segment or datagram → packet → frame → bits', what: 'the PDU at each floor, going down. Encapsulation down, decapsulation up' },
+          { cmd: 'L4 port numbers · L3 IP addresses, routers · L2 MAC addresses, switches', what: 'program to program, end to end, hop to hop' },
+          { cmd: 'IEEE: Ethernet, Wi-Fi · IETF: IP, TCP, UDP, in RFCs', what: 'who writes the rules' } ] },
+        { k: 'SYNC', q: { prompt: 'The driver who brought the parcel back leans on the table: "So the depot\'s door signed for it. What did the door actually read?"', opts: ['The frame\'s label, at Layer 2', 'The packet\'s label, at Layer 3', 'The segment\'s port number, at Layer 4', 'The letter inside'], a: 0,
+          yes: 'Osi: "The frame. It only ever reads the outer wrapper."', no: 'Osi: "The frame, the outer wrapper. The door never opens the parcel."',
+          why: 'Osi: The loading door works like a switch: it reads the frame\'s label, the MAC address at Layer 2, which only gets the parcel to the next stop. The packet\'s IP address at Layer 3 says where it is really going, and the door never looks at it.' } }
       ] },
-    { id: 'cli-intro', title: 'Three doors', sub: 'the Cisco IOS command line', npc: 'enable', day: [4], src: [PS('Intro_to_CLI.md')], unlocks: ['cli-modes'],
+    // ------------------------------------------------------------ night 4 · the command line and device security
+    { id: 'n04-three-doors', title: 'Three doors', sub: 'the command line and device security', npc: 'enable', day: [4], src: [PS('Intro_to_CLI.md')], unlocks: ['cli-modes'],
       beats: [
-        { k: 'SCENE', where: 'A pop-up router in Kabuki · console port · evening',
+        { k: 'SCENE', where: 'Kabuki · the Seven Bowls noodle bar · the back corridor · evening',
           lines: [
-            { who: 'narr', text: 'A bald man with a grey beard sits on a stool beside a rack. Three doors are painted on the wall behind him. He does not get up.' },
-            { who: 'enable', text: 'First door. [[User EXEC mode]]. The prompt ends in a greater-than sign. You can look. You cannot change anything.' },
-            { who: 'you', text: 'How do I get past it?' },
-            { who: 'enable', text: 'You say my name. The second door is [[privileged EXEC mode]]. The prompt ends in a hash. You can see everything and you can save. The third door is "configure terminal". [[Global configuration mode]]. The prompt shows (config). That is where the box changes.' }
+            { who: 'narr', text: 'Steam rolls out of the kitchen with the smell of pork broth and star anise, and the extractor fan above the freezer rattles like it has a stone in it. On a shelf over the freezer sits a small router with its lights blinking. A bald man with a grey-flecked beard sits on an upturned crate beneath it, a laptop on his knees, a flat blue cable running from the laptop up into the back of the box.' },
+            { who: 'enable', text: 'You are the runner Dispatch sent. Sit down. This router belongs to Ma Tsai, who owns this bar, and tonight it gets a name and a lock.' },
+            { who: 'enable', text: 'The blue cable is a [[rollover cable]]. It plugs into the [[console port]], the RJ45 socket marked CONSOLE. Newer boxes have a USB console port beside it. The console speaks at 9600 bits per second, with 8 data bits, no parity, 1 stop bit and no flow control. If your deck is set to anything else, you see nothing.' },
+            { who: 'enable', text: 'The box only listens in the old tongue, and your deck translates. Speak plainly to it.' },
+            { who: 'narr', text: 'He turns the laptop towards you. The screen shows one line, Router>, with a cursor blinking after it.' },
+            { who: 'enable', text: 'That is the first door, [[user EXEC mode]]. The greater-than sign means you may look and nothing more. Type enable and the second door opens, [[privileged EXEC mode]], and the prompt ends in a hash. From there you can see everything and save. Type configure terminal and you are through the third door, [[global configuration mode]], with (config)# in the prompt. Only there can you change the box.' }
           ],
           choice: { opts: [
-            { say: 'And when I am done changing things?', reply: '"You save. The box keeps two copies of its settings. The [[running-config]] is what it is doing right now, in memory. The [[startup-config]] is what it will do after a reboot. Change the first, save it to the second, or the next power blip takes your work with it."' },
-            { say: 'What if someone else gets to door two?', reply: '"Put a password on it. "enable secret" stores it hashed. "enable password" stores it in plain text. I have watched people type the second one for twenty years and I still do not know why."' }
+            { tone: 'ask', say: 'How do I know what I\'m allowed to type?', reply: 'Enable: "Type a question mark. The box lists every command it will take behind the door you are standing at. Behind the third door the list is long. At the first it is short, because there is little you may do there."' },
+            { tone: 'press', say: 'Why three doors? Why not just let me in?', reply: 'Enable: "Because a person who only needs to look should not be one keystroke from changing the building. Most people who connect to a box only need to look. Anyone who needs more has to ask for it, and I can put a password on the asking."' },
+            { tone: 'joke', say: 'Do you have a name besides the command?', reply: 'He looks at you for a long moment. "I had one. People stopped using it after I spent twenty years saying enable to every box in Kabuki."' }
           ] } },
-        { k: 'LORE', title: 'TWO CAMPUSES, ONE BRIDGE', year: 1984, real: ['cisco'], vibe: 'Gnarly. A router built to make two networks talk, and it never stopped.', text: 'Enable: "Two people at Stanford, Bosack and Lerner, started Cisco in December 1984 so two campus networks could talk to each other. The logo is the Golden Gate Bridge. The prompts you are about to type into are older than most of the people who type into them."' },
-        { k: 'KIT', text: 'He writes on the wall with a marker, under the doors.', kit: [ { cmd: 'enable', what: 'door one to door two' }, { cmd: 'configure terminal', what: 'door two to door three' }, { cmd: 'hostname NAME', what: 'name the box. it shows in the prompt' }, { cmd: 'enable secret PASSWORD', what: 'hashed password for door two' }, { cmd: 'write memory  or  copy running-config startup-config', what: 'save it' }, { cmd: 'show running-config', what: 'what the box is doing right now' } ] },
-        { k: 'SYNC', q: { prompt: 'Enable, without looking up: "Which prompt tells you the third door is open?"', opts: ['SW1>', 'SW1#', 'SW1(config)#', 'SW1(config-if)#'], a: 2, yes: 'He nods. "Go on in."', no: '"(config)#. The others are door one, door two, and a side room off door three."' , why: 'Enable: The > prompt is door one, look only. The # prompt is door two, see everything and save. (config)# is door three, change the box. (config-if)# is a side room off door three for one interface.' } }
-      ] }
+        { k: 'SCENE', where: 'The Seven Bowls · the counter', real: ['cisco'],
+          lines: [
+            { who: 'enable', text: 'The box keeps two copies of its settings. The [[running-config]] is what it is doing right now, and it lives in RAM, which forgets everything when the power goes. The [[startup-config]] is the saved copy in NVRAM, and that is what the box reads when it starts. Whatever you type changes the running-config. Nothing reaches the startup-config until you save.' },
+            { who: 'enable', text: 'You save with write, or write memory, or copy running-config startup-config. All three do the same thing. If you are behind the third door, put do in front of it, and the box runs it as if you had stepped back to the second.' },
+            { who: 'Ma Tsai', text: 'Last winter the power went for ten minutes and the card reader came back with nothing on it. My nephew had set it up that afternoon.' },
+            { who: 'enable', text: 'Then your nephew never saved. The second door needs a lock as well. The command enable password stores it in plain text, where anyone who reads the configuration can see it. The command service password-encryption scrambles it with type 7, which a child can reverse with a website. The command enable secret stores a type 5 hash, and if both are set, the secret is the one the box asks for.' },
+            { who: 'narr', text: 'At the far end of the counter a woman in a charcoal coat puts her chopsticks down. Her hair is a sharp silver bob, and a thin silver pin on her lapel catches the light from the kitchen.' },
+            { who: 'vesper', text: 'Ma Tsai, put the runner\'s bowl on my bill. I\'m told somebody vouched for you when you came to Watson.' },
+            { who: 'narr', text: 'She pays, nods to Enable as if they have met before, and goes out into the rain before you can ask her name.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'If I switch the encryption off again, do the passwords go back to plain text?', reply: 'Enable: "No. The command no service password-encryption only stops it scrambling new ones. Whatever it has already scrambled stays scrambled. Putting no in front of almost any command removes that command from the running-config."' },
+            { tone: 'press', say: 'If type 7 is that weak, why use it at all?', reply: 'Enable: "It stops the person reading over your shoulder. It does not stop anyone with the file and five minutes, so the door itself gets enable secret. Use both, and let the secret do the real work."' },
+            { tone: 'care', say: 'Who was she?', reply: 'Enable watches the door swing shut behind her. "Someone who worked at the clinic a long time ago, before she wore a pin like that." He turns back to the router and says nothing more about it.' }
+          ] } },
+        { k: 'LORE', title: 'TWO CAMPUSES, ONE BRIDGE', year: 1984, real: ['cisco'], vibe: 'Totally radical. Two sweethearts at Stanford got their buildings talking and sold the box.',
+          text: 'Enable, closing the laptop: "Leonard Bosack ran the computers in one Stanford building and Sandy Lerner ran them in another, and the two networks could not talk to each other. They built a box that joined them, and in December 1984 they started a company to sell it. They named it after San Francisco and put the Golden Gate Bridge in the logo. Every prompt I have typed into for twenty years comes from that company."' },
+        { k: 'KIT', text: 'Enable writes on the back of Ma Tsai\'s order pad.', real: ['cisco'], kit: [
+          { cmd: 'Router>  ·  Router#  ·  Router(config)#', what: 'user EXEC, privileged EXEC, global configuration' },
+          { cmd: 'enable  ·  configure terminal  ·  exit  ·  end  ·  ?', what: 'through the doors, back out, and help at any door' },
+          { cmd: 'console: rollover cable · 9600 baud · 8 data bits · no parity · 1 stop bit · no flow control', what: 'how your deck connects to a box' },
+          { cmd: 'hostname NAME', what: 'names the box. The prompt changes at once' },
+          { cmd: 'enable password X  ·  service password-encryption  ·  enable secret X', what: 'plain text, then type 7, then type 5. The secret wins when both are set' },
+          { cmd: 'show running-config  ·  show startup-config  ·  write memory', what: 'RAM now, NVRAM after a reboot, save. Behind the third door, add do' } ] },
+        { k: 'SYNC', q: { prompt: 'Ma Tsai, wiping the counter: "My nephew set both: enable password noodles and enable secret broth. Which one opens the second door?"', opts: ['broth, the secret', 'noodles, the password', 'Either of them', 'Neither, until the box reboots'], a: 0,
+          yes: 'Enable: "The secret. The other one is only there to be read."', no: 'Enable: "The secret. When both are set, the box only asks for the secret."',
+          why: 'Enable: When enable secret and enable password are both configured, the box uses the enable secret and ignores the enable password. The secret is stored as a type 5 hash, so it is also the safer of the two.' } }
+      ] },
   ] });
 })();

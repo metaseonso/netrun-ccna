@@ -1,8 +1,7 @@
 # NETRUNNER://CCNA — Story Bible
 
-This is the brief for rewriting every level and gig as lived-in story. The current text in
-`js/data/grid.js` and `js/data/jobs.js` is a placeholder: correct facts, wrong form. It explains.
-It should not explain. It should put the player inside a situation where the fact is the way out.
+This is the brief every level and gig is written to, and the rule for anything added later. A line that explains is
+wrong. A line should put the player inside a situation where the fact is the way out.
 
 ## The one rule
 
@@ -157,6 +156,31 @@ Rules and numbers live there, never in a character's mouth.
 | Marrow | dry and fond, talks through food, never asks where the creds came from |
 | Dispatch | clipped like a radio with a bad battery, no pleasantries, sends a better gig instead of praise |
 | The Kid (crew) | types in bursts, caps when scared, lowercase when relieved, apologises twice |
+| Nat | smooth and unhurried, paints while talking, jokes about temporary fixes that outlived everyone, talks about addresses as faces |
+| Ace Elle | plain and exact, reads things out in order, says a rule once; keeps her suspicions on a clipboard, not in her mouth |
+| Denise | an operator on a long shift: warm, quick, practical, thinks in order of events, apologises for the coffee |
+| Dora (walk-on) | Denise's intern: eager, checks her own answers aloud, writes everything on a clipboard, admits what she got wrong |
+| Shell | a locksmith in a hood and a mask: quiet, careful, short practical sentences, talks with the hands busy, never says a password aloud |
+| Prof. Hypervisor | cheerful and a little scattered, thinks out loud, calls every machine a little instance, talks to the cat |
+| Clerk Adebayo | formal and exact, says what the record needs, reads the minutes back word for word |
+| Beacon | loud and warm, talks like she is still on air, takes channel 6 personally, always knows how many are listening |
+| Ansible | calm and spare, short sentences in the order he would run them, finishes typing before he looks up |
+| Jason | neat and exact, says things once in the right order, dry about sloppy data, proud of a file that parses |
+| Osi Sevenfold | orderly and kind under the clipboard; counts and sorts as she talks, remembers dates, never raises her voice |
+| Mac | quick and friendly, keeps a ledger, jokes to fill the silence, notices a face twice before anyone else does |
+| Cider | precise and dry, shows her working, wastes nothing, patient with people who count on paper; family history of the block |
+| Vee Lan | practical and fast, few pleasantries, gets on her knees to fix things, owes Old Root and hates it; almost smiles, once |
+| Nexthop | chatty cab driver, streetwise, one stop at a time, notices when something is too tidy to be a mistake |
+| Vesper Kade | polished and patient, never raises her voice, speaks for Halvorsen as if it were the weather, knows people's names before they say them |
+| Imani (walk-on) | a ward nurse: direct, tired, protective of patients, remembers the night the clinic went to paper |
+| Ma Tsai, Tomas, Hanna, Voss (walk-ons) | shopkeepers and a landlord: short, concrete, about their own business and what it costs them |
+| Pell (walk-on) | the Kabuki market pharmacist: careful, counts pills and change aloud, worries about the card reader more than the money |
+| Ospef | careful and exact, won't act on hearsay, talks about Dijkstra the way other people talk about saints |
+| Stan (Nexthop's cousin) | easy and unbothered, Nexthop's shorter sentences, takes over without making a fuss about it |
+| Syn | quick and exact, counts everything twice, says what she's doing as she does it |
+| Ack (Syn's twin) | dry, finishes Syn's sentences, answers the question you didn't ask yet |
+| Hollis, Tobiah (walk-ons) | Hollis: the cab co-op's dispatcher, forty years on the radio, card-table dry. Tobiah: the tram yard foreman, practical, on a speakerphone over the yard noise |
+| Sixx | unhurried and tall in the voice, amused by anyone still counting in dotted decimal, says long numbers slowly and exactly |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that
@@ -289,7 +313,8 @@ A netrunner is a body on a street with a deck in it. The body eats and the chrom
 free. Two meters, FOOD and CHROME, sit in the HUD next to the creds. Nothing but work drains them: every gig costs
 both at jack-in, and every bad call inside a dive burns a point of chrome. Getting paid is how you fill them again.
 Marrow sells food (a bar, a bowl, a hot plate at Cider's) and knows a ripperdoc two doors down who does not do
-partials: one price, full service, every time. Prices climb with class, like everything at the stall.
+partials: one price, full service, every time. For a runner who can't pay the doc, Marrow keeps sealant and tape under
+the counter that puts back part of it. Prices climb with class, like everything at the stall.
 
 The cost is never hidden. The board says what a dive costs and what you have. When a dive would kill you, the board
 says so in red and the button says JACK IN ANYWAY. A flatline is therefore a choice the player made with open eyes,
@@ -303,7 +328,8 @@ the world remembers even when the runner rewinds.
 
 A sync is the only save. The deck syncs after every talk and every gig, on its own, and says so once. There are no
 chips, no export, no manual save; the pacing belongs to the street, not the player. Words: **food**, **chrome**,
-**sync**, **flatline**, **ripperdoc**, **the tab**. Never "health", "HP", "hunger bar", "save game", "checkpoint",
+**sync**, **flatline**, **ripperdoc**, **the tab**, **clearance run** (the gig that gates a class; never "rite of
+passage"), **Rookie · Edgerunner · Cyberpsycho** (the difficulty names). Never "health", "HP", "hunger bar", "save game", "checkpoint",
 "respawn". "Game over" appears in exactly one place: the flatline screen.
 
 When the player is broke and under 30 food, Marrow puts one bowl on the tab, once per class. He is not kind about it.

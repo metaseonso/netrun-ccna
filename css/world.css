@@ -19,11 +19,9 @@
 .bd .card .v{font-size:12px;color:var(--ink2);font-style:italic;letter-spacing:.02em} .bd .body{padding:14px 16px;font-size:14.5px;line-height:1.6}
 .bd .rec{position:absolute;right:10px;top:10px;font-size:9px;letter-spacing:.2em;color:var(--red)} .bd .rec::before{content:"●";margin-right:5px;animation:blink 1.2s infinite}
 
-/* shop */
-.stall{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
-.item{border:1px solid var(--line);background:var(--panel2);padding:12px;display:flex;flex-direction:column;gap:6px}
-.item .n{font-weight:700} .item .b{font-size:12px;color:var(--ink2);line-height:1.5;flex:1} .item .p{font-family:var(--disp);color:var(--yel);letter-spacing:.1em}
-.item .k{font-size:10px;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase} .item.owned{border-color:rgba(77,255,136,.5)} .item.cant{opacity:.6}
+
+
+
 .creds{font-family:var(--disp);color:var(--yel);letter-spacing:.08em} .creds small{color:var(--ink3);font-family:var(--mono);letter-spacing:0}
 .gift{font-size:11px;margin-top:6px} .gift button{background:transparent;border:1px solid var(--yel);color:var(--yel);padding:2px 8px;font:10px var(--disp);letter-spacing:.1em;margin:2px 4px 2px 0}
 .letter{border:1px solid rgba(77,255,136,.5);background:rgba(77,255,136,.05);padding:10px 12px;margin:8px 0;white-space:pre-wrap;line-height:1.55}
@@ -34,24 +32,19 @@ body.theme-ember{--cyan:#ff9f43;--cyan2:#e07b2a;--mag:#ff4b5c;--term:#ffd23f;--c
 body.theme-ghost{--cyan:#e6f1ff;--cyan2:#9fb3d1;--mag:#c9ced8;--term:#ffffff;--bg:#0b0d12;--panel:#12151d;--panel2:#171b25}
 body.theme-noir{--cyan:#4dff88;--cyan2:#2fbf66;--mag:#4dff88;--term:#b9f5c9;--yel:#b9f5c9}
 
-/* stall sections and kind colours */
-.stallsec{margin-top:14px} .stallsec h3{margin:0 0 8px}
-.stallsec.gift h3{color:var(--grn)} .stallsec.favor h3{color:var(--mag)} .stallsec.bd h3{color:var(--yel)} .stallsec.skin h3{color:var(--cyan)}
-.item.gift{border-top:3px solid var(--grn)} .item.favor{border-top:3px solid var(--mag)} .item.bd{border-top:3px solid var(--yel)} .item.skin{border-top:3px solid var(--cyan)}
-.item .kb{display:inline-block;font-family:var(--disp);font-size:9px;letter-spacing:.16em;padding:1px 6px;border:1px solid currentColor;border-radius:2px;margin-right:4px}
-.item.gift .kb{color:var(--grn)} .item.favor .kb{color:var(--mag)} .item.bd .kb{color:var(--yel)} .item.skin .kb{color:var(--cyan)}
+
+
+
+
 .npcbox img{background:#0b0f18}
 
-.hud .nav #reconnect.warn{color:var(--mag);border-color:var(--mag);animation:pulse 1.6s infinite}
 
-/* the body: two meters in the HUD */
-.hud .body{display:flex;gap:10px} .hud .body .m{display:flex;align-items:center;gap:5px;font-family:var(--disp);font-size:9px;letter-spacing:.14em;color:var(--ink2)}
-.hud .body .m .bar{width:54px;height:6px;background:#0b0f18;border:1px solid var(--line);border-radius:2px;overflow:hidden} .hud .body .m .bar i{display:block;height:100%;background:#ff9f43}
-.hud .body .m.chrome .bar i{background:#9b8cff} .hud .body .m b{color:var(--ink);font-family:var(--mono);font-size:11px}
-.hud .body .m.low span,.hud .body .m.low b{color:var(--red)} .hud .body .m.low .bar i{background:var(--red);animation:pulse 1.2s infinite}
-.panel.low{border-color:#ff9f43} .panel.low b{color:#ff9f43}
-.lethal{margin-top:10px;padding:10px 12px;border:1px solid var(--red);color:var(--red);font-size:12px;line-height:1.5} .msg .meta .red{color:var(--red)}
-.stallsec.food h3{color:#ff9f43} .stallsec.service h3{color:#9b8cff} .item.food{border-top:3px solid #ff9f43} .item.service{border-top:3px solid #9b8cff} .item.food .kb{color:#ff9f43} .item.service .kb{color:#9b8cff}
+
+
+
+
+
+
 /* flatline */
 .flatline{position:fixed;inset:0;z-index:130;background:#06030a;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;animation:divein .4s ease-out}
 .flatline .grid{position:absolute;inset:0;background:linear-gradient(rgba(255,60,90,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,60,90,.08) 1px,transparent 1px);background-size:38px 38px}

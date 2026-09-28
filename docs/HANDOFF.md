@@ -22,33 +22,22 @@ then `docs/CAMPAIGN_GUIDE.md` (how to write content), `docs/STORY_BIBLE.md` (how
 | The dive transition, braindance title cards, in-world interface vocabulary | `js/ui.js`, `css/world.css` | done |
 | Golden-solution runner | `Game.runSolution` in `js/game.js`, `tools/check.js` | done |
 | Dev panel (`?dev=1`): lint, step diagnosis, net state, ping tester, golden runs, cards | `js/ui.js` | done |
-| Sign in with Google + saves in the player's Drive | `js/platform/*.js`, `config/platform.js`, `docs/AUTH_PLAN.md` | complete; switches on when the owner pastes the Google client ID |
+| Sign in with Google + saves in the player's Drive | `js/platform/*.js`, `config/platform.js`, `docs/AUTH_PLAN.md` | live |
 | Local handles: name + passcode, remembered until LOG OUT | `Game.setHandle(h, pass)` in `js/game.js`, the door in `js/ui.js` | complete; not security, by design |
-| The body: FOOD and CHROME meters, gig costs, food + ripperdoc at the stall, Marrow's tab | `Game.body` in `js/game.js`, `js/data/shop.js` | complete; numbers are first-pass, tune by playing |
+| The body: FOOD and CHROME meters, gig costs, food + ripperdoc at the stall, Marrow's tab | `Game.body` in `js/game.js`, `js/data/shop.js` | tuned 2026-09-28 by simulation (see Rules) |
 | Syncs (the only save) + the FLATLINED screen with reload / exit | `Game.sync`, `Game.reload`, `Game.flatline`; `deadView()` in `js/ui.js` | complete; no export/import exists on purpose |
 | Anki importer + page registration | `tools/import_apkg.py`, `tools/register_cards.py` | done; course files at `C:\Users\Seonso\Desktop\CCNA Course Files` |
-| Content: Stage 4 (Days 20–21) | `js/data/stages/04-bridges.js`, 7 gigs in `js/data/jobs.js`, 30 cards | built, the reference for tone and depth |
-| Content: Stages 1–3, 5–8 | `js/data/stages/*.js` | one intro level each; everything else is yours |
+| Content: 63 nights, 68 gigs, three rites and the finale | `js/data/stages/01–09`, `js/data/jobs/01–09`, `js/data/syllabus.js` | complete; `node tools/play.js all` plays it in order |
+| Owner's dashboard | `owner.html`, `tools/watson-db.gs`, `docs/WATSON_DB.md` | live after the 2026-09-28 redeploy |
 
 ## Your first hour
 
-0. **Your first message to the owner is the sign-in walkthrough.** Open `docs/AUTH_PLAN.md` and take them through it
-   live, one screen at a time: ask what they see, give the next click, wait. Stop when the Google client ID is in
-   `config/platform.js`, pushed, and SIGN IN WITH GOOGLE works on the live site. About ten minutes. Do this before any
-   campaign work.
 1. `npm test`. Green. Then `python -m http.server 8765` and open `http://localhost:8765/?dev=1`. Make a handle (name +
    any passcode). Press DEV.
 2. Read `docs/STORY_BIBLE.md` end to end, then `docs/CREW_ARCHETYPES.md`. These are not suggestions.
-3. Play Stage 4 as a player: meet Old Root, take the Class D dives, watch FOOD and CHROME drop, eat at Marrow's, pick up
-   one crew call, buy Dev a bowl of noodles, go in on empty once and read the FLATLINED screen. That is the bar.
-4. **Your first deliverable is the HUD.** The menu is full: MAP GRID BOARD CREW STALL DECK CODEX RECORD JOURNAL, plus
-   DEV, LOG OUT, sign-in, two meters, rep, class, creds, crew count, the rite line. Give every nav item a proper icon
-   (inline SVG, one stroke style, 16–18px, label beside it, badge kept), group the HUD into three clear bands
-   (identity · body and rep · nav), make the meters readable at a glance on a phone, and give the stall, board and crew
-   screens the same clarity pass. No new colours; the tokens in `css/style.css` are the palette. Commit that before Day 22.
-5. Warm up on **Day 22 (Rapid STP)**: one level in `04-bridges.js` with a braindance, one gig with a `net` topology and
-   a golden solution, register nothing new (same stage file). `npm test` green. Commit.
-6. Then work `docs/TASKS.md` in order, one day per commit.
+3. Play Act I as a player: meet Osi, take the Class D dives, watch HUNGER and CHROME drop, eat at Marrow's, pick up
+   one crew call, go in on empty once and read the FLATLINED screen. That is the bar.
+4. `node tools/play.js all` must print PLAYTEST CLEAN. Then read `docs/TASKS.md` for what is left.
 
 ## How to work
 
@@ -100,41 +89,264 @@ Definition of done for a day:
 
 ## Known gaps you will inherit (not engine limits)
 
-- **HUD and menu clarity** (first deliverable, see "Your first hour" step 4): icons for every nav item, three bands,
-  meters readable on a phone.
-- **Survival numbers are a first pass.** Costs 15 + 5 × classRank food and 10 + 5 × classRank chrome, 1 chrome per bad
-  call; food at 12 / 30 / 70 creds for 15 / 40 / 100; the ripperdoc at 120 for a full chrome. A Class D gig pays 90.
-  Play three classes and tune. Marrow's tab (one free bowl per class rank when the player is broke and under 30 food)
-  is the anti-soft-lock; keep something like it.
+- **Survival numbers.** Costs 15 + 5 × classRank food and 10 + 5 × classRank chrome, 1 chrome per bad
+  call; food at 12 / 30 / 70 creds for 15 / 40 / 100; Marrow's patch at 50 for 35 chrome; the ripperdoc at 120 for a full
+  chrome; stall prices × (1 + 0.5 × classRank). A Class D gig pays 60.
+  Marrow's tab (food or the patch on credit when broke and under 70, repaid from the next pay) is the
+  anti-soft-lock; keep it. Tuned by simulation over all 68 gigs (a runner who clears each gig once, in night order):
+  3 failed commits per gig ends with about 3,000 creds, 8 with about 2,000, 15 with about 1,000 and a few tabs.
+  That is EASY. NORMAL (C 95, B 135, A 190): 2,360 / 1,340 / 885 with 18 tabs. CYBERPSYCHO (C 90, B 130, A 180, 2
+  chrome a miss): 1,360 at 3 misses a gig; at 8 a gig the runner runs dry at the Class B rite and drops a setting.
 
 - **Rites are now a real gate.** `Game.classFor` only promotes when the rep is there **and** the rite gig of the class
-  below is done (`rite: true` + `cls`). No rite written for a class = no gate, so the campaign can grow in order.
-  The three flagged demo gigs (`c-rogue-switch`, `b-per-vlan-split`, `a-last-storm`) are placeholders: write the
-  true rites for D→C (a Class D rite does not exist yet), C→B and B→A. Bigger topologies, a payday, an outro where
-  the district starts calling the player by their class. Retcon the demo gigs freely; nothing is saved from the alpha.
-- All twenty NPCs have portraits. New NPCs you add get the procedural sprite until the owner runs `tools/gen_npcs.py`
-  (add a `SUBJECTS` line for them). Do not run it yourself; it spends money.
+  below is done (`rite: true` + `cls`). The rites are `d-n19-clinic-front-door`, `c-n33-every-road-home`,
+  `b-n51-nobody-answers-but-us` and the finale `z-watson-exchange`.
+- Every NPC but Vesper Kade has a portrait; she has a `SUBJECTS` line and waits for the owner to run `tools/gen_npcs.py`.
+  New NPCs get the procedural sprite until then (add a `SUBJECTS` line for them). Do not run it yourself; it spends money.
 - Archetype voice lines are seed content: 3–4 lines per situation. Add depth, keep every situation covered (lint warns).
 - The crew's calls use real-time spacing (10 min, 1 h, 1 d …). In dev, DEV → CALLS → FORCE CALL.
 - All 72 decks are imported. Six decks (days 3, 5, 59, 61) and Terraform use Anki's compressed format; `tools/import_apkg.py` now reads it (needs `pip install zstandard`). Card pictures: `tools/extract_card_images.py` → `js/data/cards/images.js`, shown in crew calls.
-- Sign-in is code-complete (Google, saves in the player's own Drive). It is off until the owner pastes a client ID
-  into `config/platform.js`; `docs/AUTH_PLAN.md` has the ten-minute setup. Never touch `js/platform/` for content.
+- Sign-in is live (Google, saves in the player's own Drive; `docs/AUTH_PLAN.md`). Never touch `js/platform/` for content.
 - Save records are `VERSION` 3. Older records are dropped, not migrated. New keys go in `fresh()` with a default;
   do not raise `VERSION` for that.
-- Mobile: the door, MAP, STALL and HUD fit a 375px phone. The dive (map + console side by side) stacks; test it once
+- Mobile: every screen fits a 360px phone (checked 2026-09-28). The dive (map + console side by side) stacks; test it once
   per new gig shape.
 
 ## Known limits of the engine (extend with tests if a day needs them)
 
-- OSPF: single process, areas honoured for adjacency, no DR/BDR, no LSA types, cost from bandwidth or `ip ospf cost`.
+- OSPF: single process, areas and O IA routes, DR/BDR by priority, point-to-point, ECMP; no LSA types, cost from bandwidth or `ip ospf cost`.
 - RIP/EIGRP: adjacency and hop-style metrics only; enough for `show ip route` codes and reachability.
-- IPv6: interface addresses, link-local/EUI-64, connected + static routes; no OSPFv3, no ping6 through the forwarding engine yet.
+- IPv6: interface addresses, link-local/EUI-64, connected + static routes, ping6 end to end (`ctx.net().ping6`); no OSPFv3, no SLAAC or DHCPv6 on hosts.
 - NAT: static, dynamic pool, PAT overload; translation table is built from pings sent in the console.
 - Wireless: no radio model. Use `form`, `choice`, `order` steps for WLC configuration days.
 - QoS, SNMP, syslog, NTP, CDP/LLDP, FTP/TFTP: config is parsed and shown; no traffic effect. Use `need` + `show`.
 - Automation days: use `text` steps with a validator (JSON.parse, regex) and `order` steps.
 
 ## CHANGELOG (append engine changes here)
+
+- 2026-09-28 · Difficulty is picked once before the campaign (`diffGate` replaces every screen until `state.diffPicked`);
+  after that `Game.setDifficulty` only lowers it, never raises it. Lowering lives in the account menu (LOWER DIFFICULTY,
+  with a warning that it can't be undone and the higher license is gone); the HUD shows the stars with a help tip.
+  Records already under way skip the pick and keep Normal. Tested in tests/game.test.js.
+- 2026-09-28 · The license card grows with the setting: Easy prints the word, Normal adds a stamp and a holographic sheen,
+  Cyberpsycho a glowing double frame, a glitching title, a sliding hazard stripe and circuit traces
+  (SMIL animation; the PNG export freezes a frame). The card prints in any deck skin the runner switched on during the run
+  (`state.perks.used`, `Game.cardThemes()`); with more than one, the completion screen asks before issuing. The choice
+  rides on the record (`theme`) to the DB and the Hall of Fame. Tested in tests/game.test.js.
+- 2026-09-28 · Settings: `DIFFICULTY` in js/data/jobs/_base.js (easy, normal, cyberpsycho) sets the class pay for every
+  gig without its own `creds` (rites keep theirs) and the chrome a wrong commit burns. `state.difficulty` (default
+  normal), `Game.setDifficulty(id)`: easier at any time, harder only before the first gig. Picked once on the map
+  (`diffPicker`), changed on the DECK; carried on the license record, the card, the Hall of Fame, the pulse and the
+  owner's dashboard. Also: the license's fixer count now counts only paid notes. Tested in tests/game.test.js.
+- 2026-09-28 · Marrow's tab opens under 70, not at 30 or under: at 30 a broke runner at 40 chrome could not afford a
+  rite's 38 and could not get credit either, so the flatline reload looped. Tested in tests/game.test.js.
+- 2026-09-28 · Pulse and dashboard: `flatline()` counts flatlines by night in `state.meta.flatNights`; the pulse adds the
+  first day, the furthest night, fixers bought, the build (?v=), the day each night was first finished
+  (`state.meta.nightAt`), flatlines by night and licensed. tools/watson-db.gs stores them (old sheets grow the columns)
+  and answers `?action=dashboard` with the key; `owner.html` draws it. Checked against a fake sheet.
+- 2026-09-28 · Marrow's tab is a real tab: a broke runner at hunger 30 or under (food) or chrome 30 or under (the patch)
+  gets the item on credit, up to 2 + classRank items at once (`Game.shop.onTab`). `state.body.owed` holds the creds; the
+  next gig's pay settles it (`result.settled`, shown on the result screen) and the tab opens again. Tested in
+  tests/game.test.js.
+- 2026-09-28 · The stall: prices scale by half the base price per class (D 1×, C 1.5×, B 2×, A 2.5×; was a quarter). A
+  `service` item adds its `effect.chrome` (capped at 100) instead of always filling; the tune-up still fills. New item
+  `patch`, Marrow's sealant and tape: 50 creds for 35 chrome, so a runner short of the tune-up can still dive. Tested in
+  tests/game.test.js.
+- 2026-09-28 · `show spanning-tree` names the root of the switch's own part of the tree; a rogue cut off by BPDU Guard no longer shows as the Root ID (tested).
+
+- 2026-09-28 · IPv6 forwarding: `ctx.net().ping6(from, to)`, and `ping`/`traceroute` to an IPv6 address on routers and PCs.
+  Hosts take `ip6`, `prefix6` (default 64) and `gw6` (global or link-local) in `job.net`; `ipconfig` shows them. Routers
+  forward IPv6 only with `ipv6 unicast-routing`; recursive, fully specified (`ipv6 route P g0/1 fe80::2`), default and
+  floating (AD) static routes; a static route naming only an Ethernet exit interface fails, as on real IOS; `no ipv6 route`.
+  EUI-64 fixed (it dropped a group: now the /64 prefix plus the 64-bit interface ID) (tested).
+
+- 2026-09-28 · OSPF interarea routes show as `O IA` on routers with no interface in the destination's area (tested).
+
+- 2026-09-28 · OSPF DR and BDR on every broadcast segment (`ip ospf priority`, then the router ID; priority 0 never stands),
+  DROthers stay 2WAY with each other, `ip ospf network point-to-point` has no DR; hello and dead timers
+  (`ip ospf hello-interval|dead-interval`) and unique router IDs are neighbour requirements (`ospf-timer-mismatch`,
+  `ospf-duplicate-router-id`). `show ip ospf neighbor` shows the real state and role, new `show ip ospf interface brief` (tested).
+
+- 2026-09-28 · OSPF ECMP: equal-cost paths all go in the routing table, each with its own next hop (tested).
+
+- 2026-09-28 · An OSPF loopback always costs 1, whatever the reference bandwidth (tested).
+
+- 2026-09-28 · `no router ospf|eigrp|rip [id]` removes the routing process from the parsed config and from the running-config,
+  so a wrong EIGRP AS can be replaced (tested).
+
+- 2026-09-28 · EIGRP neighbours need the same AS number (`eigrp-as-mismatch` issue otherwise); `passive-interface` under
+  `router eigrp` drops the neighbour on that interface but still advertises its network; a passive RIP interface sends
+  no updates. `ctx.net().eigrpNeighbors('R1')` and `show ip eigrp neighbors` (tested).
+- 2026-09-28 · VTP: `vtp mode server|client|transparent`, `vtp domain`, `vtp version`, `vtp password`; every VLAN change on a
+  server or client raises its revision (a net device may set `vtpRevision` to play a spare switch from someone's lab); servers
+  and clients in one domain joined by trunks take the VLAN database with the highest revision, transparent switches keep
+  their own at revision 0, a switch with no domain joins the one it hears; access ports whose VLAN vanished go `inactive`;
+  clients refuse `vlan N`; `switchport access vlan N` creates a missing VLAN like IOS; `show vtp status`; `api.vtp`, `api.vlans`.
+  DTP: `switchport nonegotiate` on a trunk leaves a dynamic neighbour as access (a mismatch). Tested (section 28).
+  `no vlan 10` is no longer read as `no vlan10` (interface Vlan10).
+
+- 2026-09-28 · Multilayer switching: SVIs start shut down (all of them, not only VLAN 1) and their line protocol is up only when
+  the VLAN exists and a switchport carrying it is up (autostate); a `switch` routes between its interfaces only with `ip
+  routing` (without it, it still answers on its own SVIs); `no switchport` makes a routed port with its own address (it leaves
+  VLANs, trunking and spanning tree); `default interface X` resets a port; `default` is no longer expanded to
+  `default-information`; `no interface X` deletes a subinterface, SVI or loopback. Tested in `tests/engine.test.js` (section 27).
+
+- 2026-09-28 · The shell keeps the case you typed for VLAN names and interface descriptions (`show vlan brief`, `show interfaces
+  description`, `show interfaces`, running-config), while the parsed config keeps them lower case for checks (`name`, `desc`;
+  the typed form is `shown`, `descShown`). `show vlan brief` lists the legacy VLANs 1002–1005. Tested (section 18).
+- 2026-09-28 · Sticky secure MAC addresses appear in `show running-config` under their port (`switchport port-security mac-address
+  sticky <mac>`), as IOS writes them. Tested in `tests/engine.test.js` (section 18).
+
+- 2026-09-28 · Switch security, for nights 49–51: a port err-disabled by port security stays err-disabled after the offender is
+  unplugged, until `shutdown` then `no shutdown` on it or `errdisable recovery cause psecure-violation` (no clock: recovery counts
+  as the interval passed); while the offender is still plugged in the port follows the config as before. `errdisable recovery
+  cause|interval`, `[no] ip dhcp snooping information option`, `ip dhcp snooping limit rate N`, `ip arp inspection validate
+  src-mac|dst-mac|ip`, `ip arp inspection limit rate N`, `ip arp inspection filter NAME vlan V`, ARP ACL entries (`permit ip host
+  A mac host M`) are parsed (`cfg.sec`, `i.snoopRate`, `i.daiRate`). Option 82, opt-in with `net.option82: true`: the first
+  snooping switch adds it, a snooping switch further up drops it on an untrusted port, and an IOS DHCP server or relay drops a
+  request carrying it with giaddr 0. DAI now inspects everything, not only the rogue: the ARP of any host or router behind an
+  untrusted port on a switch running DAI for its VLAN is dropped unless an ARP ACL permits it or the snooping binding table holds
+  it (a leased host); a dropped box cannot be reached and cannot reach anyone (`api.daiDrops`, issue `dai-dropped-arp`). New
+  shows: `show ip arp inspection interfaces`, `show errdisable recovery`, `show mac address-table secure`; `show ip dhcp snooping`
+  prints option 82 and rate limits, the binding table prints the VLAN and port, `show ip arp inspection` the validation, the ACL and a log line for each
+  drop (a rogue `arpspoof` may carry `claims: IP` and `mac`, printed as the spoofed sender).
+  Tested in `tests/engine.test.js` (section 18).
+
+- 2026-09-28 · Static routes three ways: `ip route P M NEXTHOP`, `ip route P M EXIT` (the router ARPs for the destination and
+  the neighbour answers by proxy ARP) and `ip route P M EXIT NEXTHOP`, each with an optional AD; a route whose exit
+  interface is down leaves the table. `show ip route` prints like IOS: full codes, local /32 routes, entries grouped under
+  their classful network (`is variably subnetted, N subnets, M masks`). Tested in `tests/engine.test.js` (section 13).
+
+- 2026-09-28 · Routing loops: traceroute repeats the looping routers up to hop 30, and a PC ping into a loop answers `TTL expired
+  in transit` from the last router. Tested in `tests/engine.test.js` (section 12).
+
+- 2026-09-28 · Speed and duplex negotiation per link (`i.op`): auto on both ends is the fastest common speed at full duplex; a
+  hard-coded end turns negotiation off, so the auto end senses the speed and falls back to half duplex at 10/100 (a mismatch);
+  different hard-coded speeds keep the link down (`speed-mismatch`). `show interfaces` prints the operating values and error
+  counters (CRC, runts, frame on the full end, late collisions on the half end during a mismatch); `show interfaces status` marks
+  negotiated values `a-`. Tested in `tests/engine.test.js` (section 11).
+
+- 2026-09-28 · `show interfaces description` (status, protocol, description per port). Tested in `tests/engine.test.js` (section 1).
+
+- 2026-09-28 · Learning, opt-in per gig with `net.learn: true`: switches learn source MACs and hosts and routers learn ARP
+  entries only from pings and traceroutes typed in a shell (checks never teach the network); the first ping over a hop with no
+  ARP entry loses one packet (`Request timed out.` / `.!!!!`); `clear mac address-table dynamic [address|interface]`,
+  `clear arp-cache`, PC `arp -d`; `show arp` / `show ip arp` on routers; `api.macTable`, `api.arp`. Without `learn` the tables
+  stay all-knowing as before. PC ping prints real Windows statistics. Tested in `tests/engine.test.js` (section 10).
+- 2026-09-28 · FTP and TFTP in the shell: `copy tftp: flash:`, `copy ftp: flash:` (or `copy tftp://host/file flash:`) ask for
+  the host, the source and the destination like IOS (`Device.ask`, the prompt shows the question; an empty answer takes the
+  default), then the file moves if the router can ping the server, the server's net device lists it in `files: [{ name, size }]`,
+  and for FTP the box's `ip ftp username`/`ip ftp password` match the server's `ftp: { user, pass }`. Downloads land in
+  `dev.flash`; `copy running-config|startup-config|flash:<file> tftp:|ftp:` records uploads in `dev.sent`; both add a
+  `copy <proto>://host/file ...` line to the transcript. `show flash`, `show file systems`; `boot system`, `ip ftp username`,
+  `ip ftp password` parsed (`cfg.bootSystem`, `cfg.ftpUser`, `cfg.ftpPass`). Tested.
+- 2026-09-28 · NAT as the shell shows it: a ping from a PC now fills the translation table of every router it crossed (it
+  used to take a ping from the router itself); a dynamic pool gives each inside host its own address and keeps it until
+  `clear ip nat translation *` (new), so a small pool runs out and the next host's packet is dropped; PAT gives each host its
+  own port on the shared address; a new `ip nat inside source list N ...` replaces the old one for that list, and
+  `no ip nat inside source list|static` removes it. `show ip nat translations` lists static mappings from the config and the
+  outside address of every translation. Tested.
+- 2026-09-28 · The internet and NAT: a ping from a `cloud` now leaves as the internet (it used to take the PC path and
+  "deliver" any public address to itself); traffic from the internet for a router's static NAT address or NAT pool is
+  handed to that router (`cloudHandoff`), an address on the provider link that nobody holds answers nothing, and a
+  server's reply leaves wearing its static mapping. Before this, `ping('ISP', <static global>)` passed without reaching
+  the server. Tested.
+- 2026-09-28 · Voice VLANs: `switchport voice vlan N` and `power inline police [action errdisable|log]` are parsed
+  (`cfg.interfaces[p].voiceVlan`, `.powerPolice`); a host with `voice: true` (an IP phone) joins its port's voice VLAN when
+  the port has one, else the access VLAN; `show interfaces X switchport` shows the mode, the access VLAN and the voice VLAN.
+  Tested.
+- 2026-09-28 · QoS (MQC) in the shell: `class-map [match-any|match-all] N` (config-cmap), `policy-map N` (config-pmap) and
+  `class N` inside it (config-pmap-c), plus `arp access-list N` (config-arp-nacl), are real sub-modes; running-config prints
+  class-maps and policy-maps (classes nested) before the interfaces. Parsed into `cfg.qos.classMaps` (matches) and
+  `cfg.qos.policyMaps` (`order`, `classes[n]`: `setDscp`, `setCos`, `priority`, `bandwidth`, `police`, `shape`,
+  `fairQueue`, `wred`); `service-policy input|output N` and `mls qos trust cos|dscp|device cisco-phone` on interfaces.
+  `show class-map`, `show policy-map`, `show policy-map interface [X]` (DSCP names shown with their values; counters stay
+  at zero, there is no traffic model). Tested.
+- 2026-09-28 · The shell's abbreviation expander no longer eats keywords: `cdp run` / `lldp run` (they were read as `running-config`,
+  so CDP could not be turned off and LLDP never on), `sh ip int br` and `sh ip int g0/1` (they became `show ip interfaces`, which
+  had no output), `logging trap N` and `snmp-server community X ro`. The parser honours `no ntp server X`, `no logging X`,
+  `no snmp-server community X`, and reads `ntp master [stratum]` (`cfg.ntpMaster`, default 8). Tested (section 10).
+  `no access-list N` removes every line of list N from the running-config, not just the first. Tested (section 10).
+
+- 2026-09-28 · CDP and LLDP per port: `no cdp enable` / `cdp enable`, `no lldp transmit` / `no lldp receive` on an interface
+  (`Net` `discoveryPorts`: LLDP needs the sender to transmit and the listener to receive); `cdp timer|holdtime N`,
+  `lldp timer|holdtime|reinit N`, `[no] cdp advertise-v2` are parsed; `show cdp` and `show lldp` print the global timers.
+  Tested (section 11).
+
+- 2026-09-28 · NTP has state (`Net.ntpSync`, `ctx.net().ntp('R2')` → `{ synced, stratum, server, reason, tried }`): an `ntp server`
+  must answer a ping and be synchronised itself (a router) or be a server/cloud with `ntpStratum` in the gig's `net`; stratum is the
+  server's plus one, above 15 is unsynchronised; `ntp master [n]` is its own clock (default 8); `ntp authenticate` needs
+  `ntp server X key N`, `ntp trusted-key N` and a matching `ntp authentication-key N md5 K` on the server. Parsed too: `ntp peer`,
+  `ntp source`, `ntp update-calendar`, `clock timezone NAME H [M]`, `clock summer-time NAME recurring`. `show ntp status` and
+  `show ntp associations` follow the real sync; new `show clock [detail]` (the 1993 IOS default with `*` until NTP syncs, then
+  the time in the configured zone) and `show calendar`. `clock set`, `calendar set`, `clock read-calendar`, `clock update-calendar`
+  are accepted in privileged EXEC; `clock summer-time NAME recurring` follows the US rule (second Sunday in March to the first
+  Sunday in November). Tested (section 12).
+
+- 2026-09-28 · DNS (`Net.resolve`, `ctx.net().resolve('PC1', 'records')` → `{ ok, ip, server, reason, nx }`): a host asks its DNS
+  servers (`dns` on the host, or the DHCP lease) over UDP 53, so ACLs apply; a router with `ip dns server` answers from its
+  `ip host NAME IP` table and forwards the rest to its `ip name-server`s while `ip domain lookup` is on (the default); a server or
+  cloud answers from `dnsRecords: { name: ip }` in the gig's `net`. Parsed: `ip host`, `no ip host`, `ip name-server`,
+  `[no] ip dns server`, `[no] ip domain lookup` / `ip domain-lookup`. PCs: `nslookup NAME`, `ping NAME`, `tracert NAME`,
+  `ipconfig /displaydns`, `ipconfig /flushdns`. Routers: `show hosts`, `ping NAME` / `traceroute NAME` (translated first).
+  Tested (section 13).
+
+- 2026-09-28 · DHCP relay to a router's own pool: `ip helper-address` pointing at an interface address of a router that has a pool
+  for the relay interface's subnet gives the host a lease from that pool, after that router's `ip dhcp excluded-address` ranges
+  (before, relay only reached `server` devices with `pools`). The path between relay and server is not checked. Tested (section 14).
+  Two DHCP clients on one segment now get consecutive addresses (.21 and .22); the second used to skip one. Tested (section 14).
+
+- 2026-09-28 · SNMP has state: `ctx.net().snmp(nms, agentIp, community, write)` → `{ ok, reason }` (the community must exist,
+  `rw` for a Set, its ACL from `snmp-server community X ro|rw ACL` must permit the manager, and UDP 161 must get through);
+  `ctx.net().snmpTraps('R1')` → one entry per `snmp-server host` (needs `snmp-server enable traps` and UDP 162). Parsed:
+  `snmp-server contact`, `location`, `host IP [version 1|2c|3] COMMUNITY`, `no snmp-server host`, `enable traps [types]`.
+  New `show snmp` and `show snmp host`. Tested (section 15).
+
+- 2026-09-28 · Syslog has state: `logging console|monitor|buffered|trap LEVEL` (by number or name; `buffered` takes a size),
+  `no logging console|monitor|buffered`, `service timestamps log datetime|uptime [msec]`, `service sequence-numbers`, and
+  `logging synchronous` on a line are parsed (`cfg.logLevels`, `logBufferSize`, `logTs`, `logSeq`, `con.loggingSync`).
+  `ctx.net().syslog('R1')` → one entry per `logging host`, reached over UDP 514, at the trap level (default 6). `show logging`
+  prints the real levels and hosts and a buffer: a gig's old lines (`net.devices.R1.logBuffer: [{ sev, line }]`) plus a
+  `%SYS-5-CONFIG_I` line for the player's own configuring, stamped the way the box is set now (sequence number, datetime from
+  `show clock` with `*` while unsynchronised, or uptime), filtered by the buffer level. Tested (section 16).
+
+- 2026-09-28 · Remote logins: `ctx.net().ssh(from, ip, user)` and `ctx.net().telnet(from, ip)` → `{ ok, dev, reason }`. SSH needs a
+  domain and an RSA key (768+ bits for `ip ssh version 2`), `login local` with the user, `transport input` allowing ssh, the VTY
+  `access-class` to permit the source, and TCP 22 through; Telnet needs transport to allow it (no transport line allows it), a
+  password or local login, the access-class and TCP 23. PCs: `ssh -l USER IP`, `telnet IP`. A Layer 2 switch with an SVI now
+  replies through `ip default-gateway` (it had no way back to other subnets). Tested (section 17).
+  `crypto key generate rsa` names the keys after `ip domain name` as well as the older `ip domain-name`. Tested (section 17).
+- 2026-09-28 · Spanning tree with several Layer 2 islands (joined only by routed links, as in the Mega Lab): `show spanning-tree`
+  names each switch's own island's root (`rootOf` in `Stp.compute`), not the lowest bridge ID in the building. `do show
+  spanning-tree vlan N` from config mode keeps its VLAN number (the shell used to fold it into `vlanN`). Tested (14).
+
+- 2026-09-28 · A Layer 2 switch's management SVI answers pings and can ping: on its own subnet, and beyond it through
+  `ip default-gateway` (`S.hostTables`, kept apart from the routing tables, so `show ip route` still says routing is off).
+  Before, a ping reached the SVI but the reply had no route. Tested (13).
+
+- 2026-09-28 · Routed ports on multilayer switches: `no switchport` on an `l3switch` port makes it a Layer 3 port (no VLAN,
+  no trunk, no spanning tree, no EtherChannel); with an `ip address` it is a point-to-point link like a router's, so a
+  core of multilayer switches can run OSPF over /30s (the Mega Lab). `switchport` turns it back. Tested (12).
+
+- 2026-09-28 · GRE tunnels. `interface tunnelN` with `ip address`, `tunnel source <iface|ip>`, `tunnel destination <ip>`
+  (`tunnel mode gre ip` is accepted). A tunnel is not shut by default; it comes up when both ends name each other and the
+  underlay carries a ping between the two addresses (judged on the network without tunnels). The two ends then form a
+  point-to-point link: connected routes, static routes and OSPF (cost 1000, bandwidth 100 kbps) run over it, and
+  traceroute shows the far end's tunnel address. `show interfaces tunnel0` and `Tunnel0` in the tables. Tested (11).
+
+- 2026-09-28 · `interface range` works on three-part port names (`int range g1/0/4 - 5` on a Catalyst 3650), so the
+  Mega Lab's switches can be configured the way the course does it (`Stp.expandRange`, tested).
+
+- 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
+  hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
+  password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a
+  password or secret is set (the secret wins; typed passwords are never recorded); `write` / `copy run start` saves to
+  `show startup-config` (a gig's preconfig counts as saved); `| include | exclude | begin | section`; `?` lists each mode's
+  commands. Tested in `tests/engine.test.js` (section 9).
+
+- 2026-09-28 · Traceroute prints the forward path only, one line per hop with the ingress address of each router, then the
+  target (`Net.ping(...).trail`, `Net.traceLines`); PC `tracert` and IOS `traceroute` share it. Tested in `tests/engine.test.js`.
+  `tools/play.js <night|a-b|all>` plays nights headless through the Game API (talks, calls, jack-in cost, golden run, pay, fixer, CODEX).
 
 - 2026-09-28 · Every router and switch in a gig's `net` gets a device at jack-in, so `preconfig` applies to boxes with no
   console too; only `devices` show as consoles. A gig sharpens each quickhack one step at most. Spanning-tree marks on the

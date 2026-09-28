@@ -19,8 +19,8 @@ js/data/protege-lines.js     protégé voice lines, timers, rep values
 ## 2. A level
 
 ```js
-{ id: 'stp-states', title: 'Thirty seconds with a stopwatch', sub: 'Day 21 · port states and timers',
-  npc: 'root', day: [21], src: [PS('Spanning_Tree_Protocol_Part2.md'), SJ('09 - Day 21 - STP Part 2.md')],
+{ id: 'stp-states', title: 'Thirty seconds with a stopwatch', sub: 'port states and timers',
+  npc: 'root', day: [21], src: [PS('Spanning_Tree_Protocol_Part2.md'), SJ('09 - STP Part 2.md')],
   unlocks: ['stp-states'],                 // skills slotted at level 0 when the level is read
   cards: [ { q: '...', opts: ['a','b','c','d'], a: 1, why: '...' } ],   // optional extra cards; get skill = unlocks[0]
   beats: [
@@ -39,8 +39,8 @@ Every level needs a KIT, a SYNC with `why`, and at least one skill in `unlocks` 
 ## 3. A gig
 
 ```js
-{ id: 'c-dhcp-lease-wars', cls: 'C', rep: 60, creds: 180, rite: false, from: 'denise', title: 'Lease Wars', day: [38, 49],   // creds default to 3 × rep; rite: true marks a class rite of passage
-  requires: ['denise-intro', 'ace-intro'],          // level ids the player must have read
+{ id: 'c-dhcp-lease-wars', cls: 'C', rep: 60, creds: 180, rite: false, from: 'denise', title: 'Lease Wars', day: [38],   // creds and rep default to the class (section 10); rite: true marks a class rite of passage
+  requires: ['n38-names'],                          // level ids the player must have read
   team: { min: 2 },                                 // optional crew-size gate
   devices: ['R1', 'SW1', 'PC1'],                    // consoles shown (hosts get a PC prompt)
   brief: 'DISPATCH » ...\n\nCLIENT » "..."',
@@ -88,6 +88,7 @@ Lines are normalized: lower-case, abbreviations expanded, interface names canoni
 ```js
 const n = ctx.net();
 n.ping('PC1', '10.0.2.10').ok            // end-to-end, both directions, ACLs and NAT applied; .reason and .path explain failures
+n.ping6('PC1', '2001:db8:2::10').ok       // IPv6 end to end: hosts need ip6/gw6 in net.devices, routers ipv6 unicast-routing
 n.tcp('PC1', '10.0.1.5', 443).ok          // same with a TCP port (extended ACL tests)
 n.route('R1', '10.0.2.0/24')              // { proto:'S'|'O'|'C'|..., via, iface, ad, metric } or null
 n.routes('R1')                            // full table
@@ -129,8 +130,8 @@ Commands, hints and `kit.cmd` are exempt (the old tongue is the old tongue). Lev
 
 ## 10. Creds, the stall, rites
 
-`creds` and `rep` on a gig default to its class (CLASSES in jobs/_base.js: D 60/10, C 100/15, B 150/20, A 220/25). `rite: true` marks a class rite of passage (board badge, result framing, big creds), and it **gates the class**: a player with the rep for the next class stays where they are until the rite gig of their current class is done. One rite per class (`rite: true` with that `cls`). The HUD names the rite; locked gigs say Dispatch wants to see it cleared first. Finish the rite and the promotion fires on the result screen.
-Shop items live in `js/data/shop.js` with kinds `food | service | gift | favor | bd | skin`; a `bd` item needs `title`, `year`, `who`, `text`; a `food` item needs `effect.food` (and may carry `effect.danger` so it doubles as a crew gift).
+`creds` and `rep` on a gig default to its class (CLASSES in jobs/_base.js: rep D 10, C 15, B 20, A 25). The default pay comes from the player's setting (`DIFFICULTY` in jobs/_base.js; Normal pays D 60, C 95, B 135, A 190). A gig that sets `creds` pays that on every setting. `rite: true` marks a class rite of passage (board badge, result framing, big creds), and it **gates the class**: a player with the rep for the next class stays where they are until the rite gig of their current class is done. One rite per class (`rite: true` with that `cls`). The HUD names the rite; locked gigs say Dispatch wants to see it cleared first. Finish the rite and the promotion fires on the result screen.
+Shop items live in `js/data/shop.js` with kinds `food | service | gift | favor | bd | skin`; a `bd` item needs `title`, `year`, `text`; a `food` item needs `effect.food` (and may carry `effect.danger` so it doubles as a crew gift).
 
 ### The body: food and chrome
 

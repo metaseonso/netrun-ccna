@@ -17,9 +17,16 @@ No third-party packages. Uses zipfile + sqlite3 from the standard library.
 import argparse, html, io, json, os, re, sqlite3, sys, tempfile, zipfile
 
 DAY_SKILL = {
-    # Only days with a built level map to a real skill (feeds STATS "weak skills"). Every other day gets
-    # the pseudo-skill 'day-NN'; such cards unlock when any level covering that day has been read.
-    1: 'net-devices', 2: 'cabling', 4: 'cli-modes', 20: 'stp-election', 21: 'stp-config',
+    # every night's quickhack (js/data/grid.js SKILLS). Cards unlock when a level for the day is read or the skill is slotted.
+    1: 'net-devices', 2: 'cabling', 3: 'osi-layers', 4: 'cli-modes', 5: 'mac-table', 6: 'arp', 7: 'ipv4-addr',
+    8: 'ipv4-config', 9: 'switch-ifaces', 10: 'ipv4-header', 11: 'static-route', 12: 'packet-life', 13: 'subnetting', 14: 'subnet-math',
+    15: 'vlsm', 16: 'vlan-config', 17: 'trunk-config', 18: 'l3-switching', 19: 'dtp-vtp', 20: 'stp-election', 21: 'stp-toolkit',
+    22: 'rstp', 23: 'etherchannel', 24: 'dynamic-routing', 25: 'rip-eigrp', 26: 'ospf-basics', 27: 'ospf-tuning', 28: 'ospf-areas',
+    29: 'fhrp', 30: 'tcp-udp', 31: 'ipv6-addr', 32: 'ipv6-eui', 33: 'ipv6-routes', 34: 'acl-standard', 35: 'acl-extended',
+    36: 'cdp-lldp', 37: 'ntp', 38: 'dns', 39: 'dhcp', 40: 'snmp', 41: 'syslog', 42: 'ssh',
+    43: 'ftp-tftp', 44: 'nat-static', 45: 'nat-dynamic', 46: 'voice-vlan', 47: 'qos', 48: 'sec-fundamentals', 49: 'port-security',
+    50: 'dhcp-snooping', 51: 'dai', 52: 'lan-arch', 53: 'wan-arch', 54: 'virtualization', 55: 'wifi-basics', 56: 'wifi-arch',
+    57: 'wifi-security', 58: 'wlc-config', 59: 'automation', 60: 'data-formats', 61: 'rest-api', 62: 'sdn', 63: 'config-mgmt',
 }
 
 TAG = re.compile(r'<[^>]+>')

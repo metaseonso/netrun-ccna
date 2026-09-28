@@ -7,6 +7,8 @@
   window.REAL = {
     cisco: { name: 'Cisco', owner: 'Cisco Systems, Inc.', icon: 'cisco', what: 'Makes the routers and switches the whole course runs on.' },
     xerox: { name: 'Xerox PARC', owner: 'Xerox Corporation', what: 'The lab where Ethernet was invented in 1973.' },
+    kalpana: { name: 'Kalpana', owner: 'Cisco Systems, Inc. (acquired 1994)', what: 'Sold the first Ethernet switch, the EtherSwitch, in 1990.' },
+    target: { name: 'Target', owner: 'Target Corporation', what: 'A US retailer breached in 2013 through a heating contractor\'s login; about 40 million payment cards were stolen.' },
     bbn: { name: 'BBN', owner: 'Raytheon BBN', what: 'Built the IMP, the first router, for the ARPANET in 1969.' },
     ieee: { name: 'IEEE', owner: 'IEEE', icon: 'ieee', what: 'Writes the 802 standards: Ethernet, Wi-Fi, VLAN tags, spanning tree.' },
     ietf: { name: 'IETF', owner: 'Internet Engineering Task Force', what: 'Writes the RFCs: IP, TCP, OSPF, DHCP and the rest.' },
@@ -21,6 +23,15 @@
     aws: { name: 'Amazon Web Services', owner: 'Amazon.com, Inc.', icon: 'amazonwebservices', what: 'Opened the public cloud in 2006.' },
     gcp: { name: 'Google Cloud', owner: 'Google LLC', icon: 'googlecloud', what: 'A public cloud.' },
     wireshark: { name: 'Wireshark', owner: 'the Wireshark Foundation', icon: 'wireshark', what: 'Shows every packet on the wire.' },
-    json: { name: 'JSON', owner: 'ECMA International', icon: 'json', what: 'The data format with matching braces.' }
+    json: { name: 'JSON', owner: 'ECMA International', icon: 'json', what: 'The data format with matching braces.' },
+    vocaltec: { name: 'VocalTec', owner: 'VocalTec Communications (later magicJack VocalTec)', what: 'Sold InternetPhone in February 1995, the first commercial program for talking over the internet.' },
+    mit: { name: 'MIT', owner: 'Massachusetts Institute of Technology', what: 'Where Abhay Bhushan wrote the first file transfer protocol, RFC 114, in 1971.' },
+    dec: { name: 'Digital Equipment Corporation', owner: 'Hewlett Packard Enterprise', what: 'Where Radia Perlman designed the spanning tree algorithm in 1985, and where the first packet-filtering gateways were built in 1988.' },
+    sri: { name: 'SRI International', owner: 'SRI International', what: 'Ran the ARPANET\'s Network Information Center, which kept HOSTS.TXT until DNS replaced it.' },
+    belllabs: { name: 'Bell Labs', owner: 'Nokia Bell Labs', what: 'Where Charles Clos worked out switching networks that never block, in 1953.' },
+    ibm: { name: 'IBM', owner: 'International Business Machines', what: 'Ran the first virtual machines on CP-40 in 1967.' },
+    microsoft: { name: 'Microsoft', owner: 'Microsoft Corporation', what: 'Makes Windows, the Hyper-V hypervisor, Office 365, sold as software as a service, and SQL Server, the server the Slammer worm hit in 2003.' },
+    cert: { name: 'CERT/CC', owner: 'Carnegie Mellon University (Software Engineering Institute)', what: 'The CERT Coordination Center, set up in November 1988 after the Morris worm: the first computer emergency response team.' },
+    lbl: { name: 'Berkeley Lab', owner: 'Lawrence Berkeley National Laboratory', what: 'Where Clifford Stoll followed a 75-cent accounting error to an intruder selling secrets to the KGB, from August 1986.' }
   };
 })();

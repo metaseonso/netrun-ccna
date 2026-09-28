@@ -8,10 +8,8 @@
 textarea.txt{width:100%;min-height:90px;background:#050710;border:1px solid var(--line);color:var(--ink);font:12.5px var(--mono);padding:8px}
 .opts button.sel{border-color:var(--cyan);color:var(--cyan)}
 
-/* HUD extras */
-.hud .crew{font-size:11px;color:var(--ink2)} .hud .crew b{color:var(--grn)} .hud .crew .lost{color:var(--red)}
-.nav button.dmping{border-color:var(--mag);color:var(--mag);animation:pulse 1.2s infinite} @keyframes pulse{50%{box-shadow:0 0 12px rgba(255,63,164,.7)}}
-.nav button.dev{border-color:var(--yel);color:var(--yel)}
+ @keyframes pulse{50%{box-shadow:0 0 12px rgba(255,63,164,.7)}}
+
 
 /* DM overlay */
 .dm-back{position:fixed;inset:0;background:rgba(3,5,10,.82);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -26,14 +24,12 @@ textarea.txt{width:100%;min-height:90px;background:#050710;border:1px solid var(
 .dm .result{margin-top:10px;padding:10px;border:1px dashed var(--line);white-space:pre-wrap;line-height:1.55}
 .dm .result.good{border-color:var(--grn)} .dm .result.bad{border-color:var(--red)} .dm .result.flat{border-color:var(--mag);color:var(--mag)}
 
-/* crew */
-.crewgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.pcard{border:1px solid var(--line);background:var(--panel2);padding:10px;display:flex;gap:10px;align-items:flex-start}
-.pcard canvas,.pcard img{width:56px;height:56px;image-rendering:pixelated;border:1px solid var(--line);flex:none}
-.pcard .n{font-weight:700} .pcard .h{font-size:11px;color:var(--ink3)} .pcard .d{font-size:11px;margin-top:4px}
-.pcard.flat{opacity:.55;border-color:rgba(255,75,92,.5)} .pcard .dots i{display:inline-block;width:10px;height:10px;border:1px solid var(--line);margin-right:3px} .pcard .dots i.on{background:var(--red);border-color:var(--red)}
-.dmlog .row1{display:flex;justify-content:space-between;font-size:11px;color:var(--ink3)} .dmlog .item{border-top:1px dashed var(--line);padding:8px 0;font-size:13px}
-.dmlog .item .t{color:var(--ink2);white-space:pre-wrap;margin-top:4px}
+
+
+
+
+
+
 
 /* stats dashboard */
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
@@ -52,4 +48,4 @@ textarea.txt{width:100%;min-height:90px;background:#050710;border:1px solid var(
 .devbar input{background:#0b0f18;border:1px solid var(--line);color:var(--ink);font:inherit;padding:3px 6px} .devbar button.act{background:transparent;border:1px solid var(--yel);color:var(--yel);padding:2px 8px;font:10px var(--disp);letter-spacing:.1em;margin-left:6px}
 body.devon #app{padding-bottom:44vh}
 .errbanner{position:fixed;top:0;left:0;right:0;z-index:90;background:#3a0d14;color:#ffd5da;border-bottom:1px solid var(--red);padding:6px 12px;font:12px var(--mono);white-space:pre-wrap}
-.signin{font-size:11px;color:var(--ink2)} .signin img{width:18px;height:18px;border-radius:50%;vertical-align:middle;margin-right:4px}
+

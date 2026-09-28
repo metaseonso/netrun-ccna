@@ -19,7 +19,7 @@
 .fxnote{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:9px 11px;border:1px solid var(--yel);background:rgba(255,210,63,.06);font-size:12px;color:var(--ink)} .fxnote .ic{color:var(--yel)}
 
 /* codex */
-.ctabs{display:flex;gap:4px;padding:4px;border:1px solid var(--line);background:var(--bg2)}
+.ctabs{display:flex;flex-wrap:wrap;gap:4px;padding:4px;border:1px solid var(--line);background:var(--bg2)}
 .ctabs button{height:34px;padding:0 14px;background:transparent;border:1px solid transparent;color:var(--ink2);font-size:11px;letter-spacing:.14em}
 .ctabs button:hover{color:var(--ink);border-color:var(--line)} .ctabs button.on{color:var(--cyan);border-color:var(--cyan);background:var(--panel2)}
 .codex{display:grid;grid-template-columns:340px 1fr;gap:16px;margin-top:14px}
@@ -68,7 +68,7 @@
 /* the board */
 .board{display:grid;grid-template-columns:220px minmax(0,1fr) minmax(0,1.05fr);gap:16px;margin-top:10px}
 @media (max-width:1100px){.board{grid-template-columns:200px minmax(0,1fr)} .bdetail{grid-column:1 / -1}}
-@media (max-width:760px){.board{grid-template-columns:1fr} .brail{flex-direction:row;flex-wrap:wrap;gap:8px} .brail .bgrp{flex:1 1 100%} .brail .bgrp:first-child{display:flex;flex-wrap:wrap;gap:6px} .brail .bgrp:first-child .blbl{flex-basis:100%} .brail .bgrp:first-child .brow{flex:0 0 auto;border:1px solid var(--line)} .brail .bgrp:last-child{display:none}}
+@media (max-width:760px){.board{grid-template-columns:1fr} .board .brail{flex-direction:row;flex-wrap:wrap;gap:8px} .brail .bgrp{flex:1 1 100%} .brail .bgrp:first-child{display:flex;flex-wrap:wrap;gap:6px} .brail .bgrp:first-child .blbl{flex-basis:100%} .brail .bgrp:first-child .brow{flex:0 0 auto;border:1px solid var(--line)} .brail .bgrp:last-child{display:none}}
 .brail{display:flex;flex-direction:column;gap:18px}
 .blbl{font-size:10px;letter-spacing:.2em;color:var(--ink2);padding:0 0 6px}
 .brow{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:8px 10px;background:transparent;border:0;border-left:2px solid transparent;color:var(--ink);font-size:12px;text-align:left}
@@ -201,7 +201,7 @@
 .chead2{display:flex;justify-content:space-between;align-items:center} .chead2 h3{margin:0;font-family:var(--disp);letter-spacing:.14em;color:var(--cyan)}
 .companion .muted{text-align:left}
 .cact h4{margin:18px 0 8px;font-family:var(--disp);font-size:12px;letter-spacing:.16em;color:var(--ink)} .cact h4 span{color:var(--mag);margin-left:8px}
-.cact ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:4px 18px}
+.cact ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:4px 18px}
 .cact li{display:grid;grid-template-columns:18px 26px 1fr auto;gap:10px;align-items:center;padding:5px 0;font-size:13px;border-bottom:1px solid #1a2233;color:var(--ink2)}
 .cact li.ok{color:var(--ink)} .cact .box{width:16px;height:16px;border:1px solid var(--ink3);display:flex;align-items:center;justify-content:center}
 .cact li.ok .box{border-color:var(--grn);color:var(--grn)} .cact .nn{font-family:var(--disp);font-size:11px;color:var(--cyan)} .cact .dist{font-size:10px;letter-spacing:.1em;color:var(--ink3)}
@@ -218,7 +218,7 @@
 
 /* the door: story left, sign-in card right, live numbers, footer */
 .intro.door2{max-width:1100px;margin:0 auto;padding:clamp(28px,6vh,64px) 16px 28px;text-align:left}
-.dhero{text-align:center;margin-bottom:clamp(28px,6vh,56px)} .door2 .dhero h1{font-size:clamp(34px,7vw,72px)}
+.dhero{text-align:center;margin-bottom:clamp(28px,6vh,56px)} .door2 .dhero h1{font-size:clamp(20px,6.4vw,72px);overflow-wrap:anywhere}
 .dgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(20px,4vw,48px);align-items:center}
 .door2 .lede{margin:0 0 22px;max-width:none;font-size:15px;line-height:1.8;color:var(--ink)}
 .doorwhat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
@@ -284,3 +284,21 @@
 
 /* a card's picture in a crew call */
 .cardimg{display:block;max-width:220px;max-height:140px;margin:8px 0;padding:6px;background:#fff;border-radius:6px}
+
+/* the setting: easy, normal, cyberpsycho */
+.diffpick{margin-bottom:16px} .diffpick h3{margin:0 0 12px;font-family:var(--disp);font-size:14px;letter-spacing:.16em;color:var(--yel)}
+.diffs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin:0 0 10px}
+.diff{display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px 14px;background:var(--panel);border:1px solid var(--line);color:var(--ink);cursor:pointer}
+.diff b{display:flex;align-items:center;font-family:var(--disp);font-size:15px;letter-spacing:.14em;color:var(--cyan)} .diff.cyberpsycho b{color:var(--mag)}
+.diff span{font-size:13px;color:var(--ink2)} .diff em{font-style:normal;font-size:12px;color:var(--ink)}
+.diff:hover{border-color:var(--cyan)}
+.lthemes{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:center;margin:12px 0} .lthemes .btn.on{border-color:var(--cyan);color:var(--cyan)}
+.diff .stars{font-style:normal;font-size:24px;line-height:1;vertical-align:-2px;margin-left:10px;letter-spacing:3px;color:var(--yel)} .diff .stars s{text-decoration:none;color:var(--ink3);opacity:.6}
+.diffchip{display:inline-flex;align-items:center;gap:6px;margin-left:8px;color:var(--ink2);cursor:help} .diffchip .stars{font-style:normal;font-size:16px;letter-spacing:2px;color:var(--yel)} .diffchip .stars s{text-decoration:none;color:var(--ink3);opacity:.6}
+.modal .diffs{margin:12px 0}
+.b-id .who .ava,.b-id .who img{flex:none} .diffchip{flex:none}
+@media (max-width:520px){.b-id .who{min-width:30px} .diffchip{margin-left:0;gap:0} .diffchip .stars{font-size:12px;letter-spacing:0} .diffchip > svg{display:none}}
+.dicon{display:inline-flex;vertical-align:middle;margin-right:10px} .dicon .ic{width:30px;height:30px;stroke-width:1.8}
+.dicon.easy{color:var(--cyan)} .dicon.normal{color:var(--yel)} .dicon.cyberpsycho{color:var(--mag);filter:drop-shadow(0 0 6px rgba(255,63,164,.55))}
+.diffchip .dicon{margin-right:0} .diffchip .dicon .ic{width:18px;height:18px}
+@media (max-width:520px){.diffchip .dicon .ic{width:16px;height:16px}}

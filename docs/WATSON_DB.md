@@ -34,3 +34,16 @@ node tools/watson-db.js licenses        # every license issued
 
 Claude's routine when asked to "check the suggestion box": list `new`, mark each `ticketed` with a one-line scope
 note, fix or build what fits the plan, and mark it `done` with the commit, or `declined` with the reason.
+
+## The owner's dashboard
+
+`owner.html` on the live site (for example `https://<site>/owner.html`). Paste the private key and press OPEN. Tick
+"Remember the key on this device" only on your own machine. It shows: players, active players, licenses, nights
+finished, flatlines, fixers, new players by week, the furthest night reached, where players stall, flatlines by night,
+median days to each rite, classes and builds, open suggestions and every license. `owner.html?demo=1` draws made-up
+numbers without the key.
+
+The page reads `?action=dashboard`, added on 2026-09-28. **After that date, redeploy the script once:** paste the new
+`tools/watson-db.gs` into the Apps Script editor, save, then **Deploy → Manage deployments → edit → Version: New
+version → Deploy**. The URL stays the same. The `pulse` tab grows its new columns by itself on the next write. Players on
+older builds keep sending the short record; they show as "older" and have no dates.

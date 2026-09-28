@@ -1,6 +1,6 @@
 /* game.js — state, progression, the run loop, protégé DMs, telemetry hooks, the golden-solution runner.
    LAYER 1 (Grid): reading a level slots a skill at level 0. Nothing levels by reading.
-   LAYER 2 (Jobs): a skill levels only when used in a practicum step WITHOUT a hint or walk-through.
+   LAYER 2 (Jobs): a skill levels only when used in a practicum step WITHOUT a hint or a fixer.
    Rep comes from gigs and from keeping protégés alive. Rep sets class. Class + reads + crew size gate gigs. */
 (function(){
   const VERSION = 3; // records from earlier builds are dropped, not migrated (alpha reset)
@@ -8,9 +8,9 @@
   const LEVEL_AT = [0, 1, 3, 6];
   const P = () => window.PLATFORM || {};
 
-  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null, owner: null, codex: {}, completedAt: null, license: null });
+  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [], used: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0, owed: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null, owner: null, codex: {}, completedAt: null, license: null, difficulty: 'normal', diffPicked: false });
   // fill in keys added since a record was written (same VERSION only; older records are dropped in load())
-  function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); out.body = Object.assign({ food: 100, chrome: 100, tab: 0 }, out.body || {}); out.meta = Object.assign({ deaths: 0, syncs: 0, lastSync: 0 }, out.meta || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
+  function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [], used: [] }, out.perks || {}); if (out.perks.theme && !out.perks.used.includes(out.perks.theme)) out.perks.used.push(out.perks.theme); out.body = Object.assign({ food: 100, chrome: 100, tab: 0, owed: 0 }, out.body || {}); if (!(window.DIFFICULTY || {})[out.difficulty]) out.difficulty = 'normal'; if (!out.diffPicked && (Object.keys(out.read || {}).length || Object.keys(out.jobsDone || {}).length)) out.diffPicked = true; out.meta = Object.assign({ deaths: 0, syncs: 0, lastSync: 0 }, out.meta || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
   const usable = s => !!s && (s.v || 0) >= VERSION;
   let state = fresh();
   function load(h){ const s = Storage.local.loadSync(h); if (s && !usable(s)) { Storage.local.remove(h); console.info('record from an earlier build dropped:', h); } return usable(s) ? migrate(s) : Object.assign(fresh(), { handle: h }); }
@@ -36,7 +36,8 @@
   const classRank = id => CLASSES.findIndex(k => k.id === id);
   // what a gig pays on a first clear, and the rep it is worth: its own numbers, else its class's
   const clsOf = id => CLASSES.find(c => c.id === id) || CLASSES[0];
-  const pay = job => job.creds != null ? job.creds : clsOf(job.cls).pay;
+  const diff = () => (window.DIFFICULTY || {})[state.difficulty] || { pay: [], wear: 1 };
+  const pay = job => job.creds != null ? job.creds : (diff().pay[classRank(job.cls)] != null ? diff().pay[classRank(job.cls)] : clsOf(job.cls).pay);
   const repOf = job => job.rep != null ? job.rep : clsOf(job.cls).rep;
   const riteFor = cls => (window.JOBS || []).find(j => j.rite && j.cls === cls) || null;
   const riteCleared = cls => { const r = riteFor(cls); return !r || !!state.jobsDone[r.id]; };
@@ -56,7 +57,7 @@
       state.inventory[id]--; const before = state.body.food; state.body.food = Math.min(body.max, state.body.food + (it.effect.food || 0)); ev('eat', { item: id, food: state.body.food }); log('Ate ' + it.name + ' (food ' + before + ' → ' + state.body.food + ')'); save(); return { ok: true, item: it, food: state.body.food }; },
     wear(n, why){ if (!state.handle) return false; state.body.chrome = Math.max(0, state.body.chrome - n); if (state.body.chrome <= 0) { flatline(why || 'the chrome gave out.'); return true; } return false; }
   };
-  function flatline(why){ state.dead = { at: Date.now(), why, food: state.body.food, chrome: state.body.chrome, job: run ? run.job.id : null }; state.meta.deaths++; ev('flatline', { why, job: state.dead.job }); log('FLATLINED. ' + why); run = null; save(); }
+  function flatline(why){ state.dead = { at: Date.now(), why, food: state.body.food, chrome: state.body.chrome, job: run ? run.job.id : null }; state.meta.deaths++; const fn = run && run.job.day ? run.job.day[0] : null; if (fn) { state.meta.flatNights = state.meta.flatNights || {}; state.meta.flatNights[fn] = (state.meta.flatNights[fn] || 0) + 1; } ev('flatline', { why, job: state.dead.job }); log('FLATLINED. ' + why); run = null; save(); }
   // a sync is the only save the player gets: after a talk, after a gig. no chips, no manual saves. pacing stays ours.
   // telemetry, the journal and the passcode ride outside the snapshot so a reload never erases the record of what happened.
   const KEEP = ['events', 'log', 'dmLog', 'meta', 'checkpoint', 'pass', 'owner', 'codex', 'completedAt', 'license'];
@@ -114,9 +115,9 @@
   let run = null;
   function startJob(id, opts){ const job = JOBS.find(j => j.id === id); if (!job) return null; opts = opts || {};
     if (!opts.silent) { const c = body.cost(job); state.body.food = Math.max(0, state.body.food - c.food); state.body.chrome = Math.max(0, state.body.chrome - c.chrome); ev('body', { job: job.id, food: state.body.food, chrome: state.body.chrome });
-      if (state.body.food <= 0) { flatline('you went in hungry. ' + (job.rite ? 'the rite' : 'the dive') + ' took the rest.'); return null; } if (state.body.chrome <= 0) { flatline('the chrome was already failing. it quit two floors down.'); return null; } save(); }
+      if (state.body.food <= 0) { flatline('you went in hungry. ' + (job.rite ? 'the clearance run' : 'the dive') + ' took the rest.'); return null; } if (state.body.chrome <= 0) { flatline('the chrome was already failing. it quit two floors down.'); return null; } save(); }
     const topo = job.topo ? JSON.parse(JSON.stringify(job.topo)) : null; const netDef = job.net ? JSON.parse(JSON.stringify(job.net)) : null;
-    const devices = {}; const R = { job, topo, netDef, devices, step: 0, hinted: {}, walked: {}, sharpened: {}, fails: {}, done: [], selected: null, feedback: null, calc: {}, choice: null, multi: new Set(), order: null, form: {}, text: '', active: job.devices[0], history: [], startedAt: Date.now(), stepStart: Date.now(), lastWhy: null, walk: null, hintShown: null, _netKey: null, _net: null };
+    const devices = {}; const R = { job, topo, netDef, devices, step: 0, hinted: {}, sharpened: {}, fails: {}, done: [], selected: null, feedback: null, calc: {}, choice: null, multi: new Set(), order: null, form: {}, text: '', active: job.devices[0], history: [], startedAt: Date.now(), stepStart: Date.now(), lastWhy: null, hintShown: null, _netKey: null, _net: null };
     const ctx = { job, topo, netDef, devices, get selected(){ return R.selected; },
       state(){ if (!netDef) return null; const key = Object.values(devices).map(d => d.lines.length).join(',') + '|' + JSON.stringify(Object.keys(netDef.devices).map(n => !!netDef.devices[n].removed)); if (R._netKey !== key) { R._net = Net.build(netDef, devices); R._netKey = key; } return R._net; },
       net(){ const s = ctx.state(); return s ? Net.api(s) : null; }, cfg(dev){ return devices[dev] ? NetConfig.parse(devices[dev]) : null; },
@@ -151,38 +152,38 @@
     return { ok: false, why: '?' }; }
 
   function commit(){ const st = currentStep(); if (!st) return { ok: false }; const r = evaluate(); const i = run.step; const ms = Date.now() - run.stepStart;
-    if (!r.ok) { run.fails[i] = (run.fails[i] || 0) + 1; run.feedback = { ok: false, text: r.why, bad: r.bad }; ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: false, ms }); if (body.wear(1, 'the chrome burned out mid-dive, ' + (run.job.steps.length - i) + ' floors from the top.')) return { ok: false, dead: true, why: 'flatlined' }; return r; }
-    const clean = !run.hinted[i] && !run.walked[i] && !run.outsourced; const k = skill(st.skill); k.uses++;
+    if (!r.ok) { run.fails[i] = (run.fails[i] || 0) + 1; run.feedback = { ok: false, text: r.why, bad: r.bad }; ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: false, ms }); if (body.wear(diff().wear || 1, 'the chrome burned out mid-dive, ' + (run.job.steps.length - i) + ' floors from the top.')) return { ok: false, dead: true, why: 'flatlined' }; return r; }
+    const clean = !run.hinted[i] && !run.outsourced; const k = skill(st.skill); k.uses++;
     // one step of sharpening per quickhack per gig: a skill burns in over several nights, never in one dive
     if (clean && !run.sharpened[st.skill]) { k.clean++; run.sharpened[st.skill] = true; } const before = k.level; k.level = skillLevel(k.clean); k.slotted = true;
     const leveled = k.level > before ? { skill: st.skill, level: k.level } : null; run.done.push({ step: i, clean, leveled, ms, fails: run.fails[i] || 0 });
-    ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: true, ms, failsBefore: run.fails[i] || 0, hinted: !!run.hinted[i], walked: !!run.walked[i] });
+    ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: true, ms, failsBefore: run.fails[i] || 0, hinted: !!run.hinted[i] });
     if (st.onPass) { try { st.onPass(run.ctx); } catch (e) { console.error(e); } }
-    run.feedback = { ok: true, text: st.ok || 'Done.', leveled }; run.lastWhy = st.why || null; run.step++; run.selected = null; run.choice = null; run.calc = {}; run.multi = new Set(); run.order = null; run.form = {}; run.text = ''; run.walk = null; run.hintShown = null; run.stepStart = Date.now(); save();
+    run.feedback = { ok: true, text: st.ok || 'Done.', leveled }; run.lastWhy = st.why || null; run.step++; run.selected = null; run.choice = null; run.calc = {}; run.multi = new Set(); run.order = null; run.form = {}; run.text = ''; run.hintShown = null; run.stepStart = Date.now(); save();
     if (run.step >= run.job.steps.length) return finishJob(); return r; }
   function useHint(){ run.hinted[run.step] = true; ev('hint', { job: run.job.id, step: run.step, skill: currentStep().skill }); return currentStep().hint; }
   function answerOf(st){ if (!st) return ''; if (st.type === 'choice') return String.fromCharCode(65 + st.a) + '. ' + st.opts[st.a]; if (st.type === 'multi') return st.answers.map(i => String.fromCharCode(65 + i) + '. ' + st.opts[i]).join('  ·  '); if (st.type === 'find') return 'Click ' + (st.targets || [st.target]).join(' or ') + ' on the map.'; if (st.type === 'calc') return st.answer || st.fields.map(f => f.label).join(' · '); if (st.type === 'order') return st.items.map((x, i) => (i + 1) + '. ' + x).join('\n'); if (st.type === 'form') return st.fields.map(f => f.label + ': ' + f.answer).join('\n'); if (st.type === 'text') return st.answer || '(see explanation)'; return st.hint || ''; }
-  function reveal(){ run.walked[run.step] = true; run.hinted[run.step] = true; ev('walk', { job: run.job.id, step: run.step, skill: currentStep().skill }); const st = currentStep(); return { answer: answerOf(st), why: st.why || '' }; }
   function finishJob(){ const job = run.job; const prev = state.jobsDone[job.id]; const hintedCount = Object.keys(run.hinted).length; const fails = Object.values(run.fails).reduce((a, b) => a + b, 0); const ms = Date.now() - run.startedAt;
     // a fixer's run: the client is served, the fixer keeps the pay. nothing greenlit, no rep, no sync. the gig stays on the Board.
     if (run.outsourced) { ev('job_finish', { job: job.id, ms, fails, hints: hintedCount, rep: 0, outsourced: true }); log('Gig handed off: ' + job.title + ' (the fixer kept the pay)'); save();
       run.result = { rep: 0, creds: 0, hintedCount, fails, ms, leveled: [], promoted: null, repeat: !!prev, recruit: null, outsourced: true }; return { ok: true, finished: true, result: run.result }; }
     let rep = repOf(job); if (prev) rep = Math.round(rep * 0.4); rep = Math.max(Math.round(repOf(job) * 0.2), Math.round(rep * Math.max(0.3, 1 - 0.1 * hintedCount)));
     const creds = Math.round(pay(job) * (prev ? 0.4 : 1)); addCreds(creds, 'gig ' + job.id);
+    const settled = Math.min(state.body.owed || 0, creds); if (settled) { addCreds(-settled, 'marrow tab'); state.body.owed -= settled; log('Marrow took ' + settled + ' creds off the tab'); } if (!state.body.owed) state.body.tab = 0;
     const before = classFor(state.rep).id; state.jobsDone[job.id] = { times: (prev ? prev.times : 0) + 1, last: Date.now(), best: Math.max(prev ? prev.best : 0, run.done.filter(d => d.clean).length), bestMs: Math.min(prev && prev.bestMs || Infinity, ms) };
     if (job.id === window.FINALE && !state.completedAt) { state.completedAt = Date.now(); log('Opening Night. The Watson Exchange held.'); ev('complete', { job: job.id }); }
     const promoted = addRep(rep, 'gig ' + job.id, before); // a rite clears the gate, so the class is re-read after the gig is on the books
     const leveled = run.done.filter(d => d.leveled).map(d => d.leveled); ev('job_finish', { job: job.id, ms, fails, hints: hintedCount, rep });
     log('Gig done: ' + job.title + ' (+' + rep + ' rep, ' + Math.round(ms / 1000) + 's' + (hintedCount ? ', ' + hintedCount + ' hinted' : ', clean') + (fails ? ', ' + fails + ' failed attempts' : '') + ')');
     let recruit = null; if (!state.roster.list.length) { recruit = Protege.recruit(state.roster, 'first gig'); log(Protege.fill((PROTEGE_LINES.recruit || [])[1] || '{name} joined your crew.', recruit)); }
-    sync('gig · ' + job.title); run.result = { rep, creds, hintedCount, fails, ms, leveled, promoted, repeat: !!prev, recruit }; return { ok: true, finished: true, result: run.result }; }
+    sync('gig · ' + job.title); run.result = { rep, creds, settled, hintedCount, fails, ms, leveled, promoted, repeat: !!prev, recruit }; return { ok: true, finished: true, result: run.result }; }
   // ---- the fixer: a subcontractor who sells the whole gig's notes for the gig's pay ---------------
   // the run that hires one pays nothing, greenlights nothing and sharpens nothing. the notes stay in the codex for good,
   // readable in that dive only through the fixer's button, and after it only outside a dive. rites are watched: no fixers.
   const fixer = {
     price(job){ return pay(job); },
     can(){ if (!run || run.result) return { ok: false, why: 'Not in a dive.' }; if (run.outsourced) return { ok: false, why: 'The fixer is already on it.' };
-      if (run.job.rite) return { ok: false, why: 'The Board watches rites. No fixer will touch this one.' };
+      if (run.job.rite) return { ok: false, why: 'The Board watches clearance runs. No fixer will touch this one.' };
       if (codexStatus(run.job) !== 'sealed') return { ok: false, why: 'You already have the notes for this gig. They are in the CODEX.', have: true }; const price = fixer.price(run.job);
       if ((state.creds || 0) < price) return { ok: false, why: 'A fixer wants ' + price + ' creds for this gig. You have ' + (state.creds || 0) + '.', price }; return { ok: true, price }; },
     hire(){ const c = fixer.can(); if (!c.ok) return c; addCreds(-c.price, 'fixer ' + run.job.id); run.outsourced = true; if (!state.jobsDone[run.job.id]) state.codex[run.job.id] = 'paid';
@@ -195,25 +196,35 @@
   // a night is done when every talk set on it was heard and every gig set on it was cleared at least once
   function nightDone(n){ const ls = []; STAGES.forEach(stg => stg.levels.forEach(l => { if ((l.day || []).includes(n)) ls.push(l); })); if (!ls.length) return false;
     const gs = JOBS.filter(j => (j.day || []).includes(n)); return ls.every(l => state.read[l.id]) && gs.every(j => state.jobsDone[j.id]); }
-  function licenseRecord(){ const st = state.stats || {}, steps = st.steps || {}; const nights = (window.SYLLABUS || []).filter(x => nightDone(x.night)).length;
+  // difficulty: picked once, before the campaign starts; after that it can only go down, never back up, so a hard license means a hard run
+  function setDifficulty(id){ const D = window.DIFFICULTY || {}, order = window.DIFFICULTY_ORDER || []; if (!D[id]) return { ok: false, why: 'no such difficulty' };
+    if (state.diffPicked && order.indexOf(id) >= order.indexOf(state.difficulty)) return { ok: false, why: 'Difficulty can only be lowered.' };
+    const was = state.difficulty; state.difficulty = id; state.diffPicked = true; if (was !== id) { ev('difficulty', { from: was, to: id }); log('Difficulty: ' + D[id].name); } save(); return { ok: true, difficulty: id }; }
+  // the colours a license can be printed in: the default deck and every skin the runner switched on during the run
+  function cardThemes(){ return ['default', ...(state.perks.used || []).filter(t => t && t !== 'default')]; }
+  function licenseRecord(theme){ const st = state.stats || {}, steps = st.steps || {}; const nights = (window.SYLLABUS || []).filter(x => nightDone(x.night)).length;
     const fp = [state.handle, state.created, state.completedAt].join('|'); let h = 0x811c9dc5; for (const c of fp) { h ^= c.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
-    return { fingerprint: h.toString(16) + '-' + (state.completedAt || 0).toString(36), completedAt: state.completedAt ? new Date(state.completedAt).toISOString() : null, cls: classFor(state.rep).id,
+    return { fingerprint: h.toString(16) + '-' + (state.completedAt || 0).toString(36), completedAt: state.completedAt ? new Date(state.completedAt).toISOString() : null, cls: classFor(state.rep).id, difficulty: state.difficulty, theme: cardThemes().includes(theme) ? theme : (state.license && state.license.theme) || (cardThemes().includes(state.perks.theme) ? state.perks.theme : 'default'),
       stats: { nights, gigs: Object.keys(state.jobsDone).length, clean: steps.passes ? Math.round(100 * (steps.firstTry || 0) / steps.passes) : null, hours: Math.round((st.playMs || 0) / 360000) / 10,
-        saved: state.roster.list.reduce((a, p) => a + (p.saved || 0), 0), lost: Protege.lost(state.roster).length, flatlines: state.meta.deaths || 0, fixers: Object.keys(state.codex || {}).length } }; }
+        saved: state.roster.list.reduce((a, p) => a + (p.saved || 0), 0), lost: Protege.lost(state.roster).length, flatlines: state.meta.deaths || 0, fixers: Object.values(state.codex || {}).filter(v => v === 'paid').length } }; }
   function setLicense(l){ state.license = l; log('Licensed: ' + l.number); save(); }
 
   // ---- the stall -----------------------------------------------------------------------
   const shop = {
     items(){ return window.SHOP || []; },
-    price(item){ return Math.round(item.price * (1 + 0.25 * classRank(classFor(state.rep).id))); },
+    price(item){ return Math.round(item.price * (1 + 0.5 * classRank(classFor(state.rep).id))); },
+    // Marrow's tab: a broke runner under 70 gets food or the patch on credit, up to 2 + classRank items at once. Under 70, not
+    // 30: a rite costs up to 45 hunger and 38 chrome, and a runner at 40 with no creds must still be able to get in. The next
+    // pay settles it, and the tab opens again, so nobody is ever stuck outside a dive.
+    onTab(it){ const low = (it.kind === 'food' && state.body.food < 70) || (it.kind === 'service' && (it.effect.chrome || 100) < 100 && state.body.chrome < 70); return low && state.creds < shop.price(it) && state.body.tab < 2 + classRank(classFor(state.rep).id); },
     owned(id){ const it = shop.items().find(x => x.id === id); if (!it) return 0; if (it.kind === 'bd') return state.bd.includes(id) ? 1 : 0; if (it.kind === 'skin') return state.perks.skins.includes(id) ? 1 : 0; return state.inventory[id] || 0; },
-    buy(id){ const it = shop.items().find(x => x.id === id); if (!it) return { ok: false, why: 'no such item' }; let price = shop.price(it); if ((it.kind === 'bd' || it.kind === 'skin') && shop.owned(id)) return { ok: false, why: 'you already have it' }; if (it.kind === 'service' && state.body.chrome >= body.max) return { ok: false, why: 'nothing to fix. the ripperdoc sends you home.' };
-      let onTheHouse = false; if (state.creds < price) { if (it.kind === 'food' && state.body.food <= 30 && state.body.tab < classRank(classFor(state.rep).id) + 1) { onTheHouse = true; price = 0; state.body.tab++; } else return { ok: false, why: 'not enough creds. ' + (price - state.creds) + ' short.' }; }
-      if (price) addCreds(-price, 'bought ' + it.id); if (it.kind === 'gift' || it.kind === 'food' || it.kind === 'perk') state.inventory[id] = (state.inventory[id] || 0) + 1; if (it.kind === 'service') state.body.chrome = body.max; if (it.kind === 'bd') state.bd.push(id); if (it.kind === 'skin') { state.perks.skins.push(id); state.perks.theme = it.effect.theme; }
+    buy(id){ const it = shop.items().find(x => x.id === id); if (!it) return { ok: false, why: 'no such item' }; let price = shop.price(it); if ((it.kind === 'bd' || it.kind === 'skin') && shop.owned(id)) return { ok: false, why: 'you already have it' }; if (it.max && shop.owned(id) >= it.max) return { ok: false, why: 'you can only hold ' + it.max + '.' }; if (it.kind === 'service' && state.body.chrome >= body.max) return { ok: false, why: 'nothing to fix. the ripperdoc sends you home.' };
+      let onTheHouse = false; if (state.creds < price) { if (shop.onTab(it)) { onTheHouse = true; state.body.tab++; state.body.owed = (state.body.owed || 0) + price; price = 0; } else return { ok: false, why: 'not enough creds. ' + (price - state.creds) + ' short.' }; }
+      if (price) addCreds(-price, 'bought ' + it.id); if (it.kind === 'gift' || it.kind === 'food' || it.kind === 'favor') state.inventory[id] = (state.inventory[id] || 0) + 1; if (it.kind === 'service') state.body.chrome = Math.min(body.max, state.body.chrome + (it.effect.chrome || body.max)); if (it.kind === 'bd') state.bd.push(id); if (it.kind === 'skin') { state.perks.skins.push(id); state.perks.theme = it.effect.theme; if (!state.perks.used.includes(it.effect.theme)) state.perks.used.push(it.effect.theme); }
       ev('buy', { item: id, price, tab: onTheHouse }); log((onTheHouse ? 'Marrow put it on the tab: ' : 'Bought ') + it.name + (onTheHouse ? '' : ' from Marrow (' + price + ' creds)')); save(); return { ok: true, item: it, price, onTheHouse }; },
     give(itemId, protegeId){ const it = shop.items().find(x => x.id === itemId); const p = state.roster.list.find(x => x.id === protegeId); if (!it || !p || !(state.inventory[itemId] > 0) || p.status !== 'active') return { ok: false }; state.inventory[itemId]--; const line = Protege.give(p, it); ev('gift', { item: itemId, protege: protegeId }); log('Gave ' + it.name + ' to ' + p.name); state.dmLog.unshift({ t: Date.now(), protege: p.id, name: p.name, letter: true, text: line }); save(); return { ok: true, line }; },
     favor(protegeId){ const p = state.roster.list.find(x => x.id === protegeId); if (!p || p.status !== 'active') return { ok: false, why: 'no such runner' }; if (!(state.inventory.favor > 0)) return { ok: false, why: (PROTEGE_LINES.dispatch || {}).favorEmpty || 'no favor on the books' }; state.inventory.favor--; const out = Protege.favor(p); ev('favor', { protege: protegeId }); log('Called in a favor for ' + p.name); state.dmLog.unshift({ t: Date.now(), protege: p.id, name: 'Dispatch', letter: true, text: out.dispatch }, { t: Date.now() + 1, protege: p.id, name: p.name, letter: true, text: out.them }); if (state.dm && state.dm.protege === p.id) state.dm = null; save(); return { ok: true, out }; },
-    setTheme(id){ if (id && !state.perks.skins.some(s => shop.items().find(x => x.id === s).effect.theme === id)) return false; state.perks.theme = id || null; save(); return true; }
+    setTheme(id){ if (id && !state.perks.skins.some(s => shop.items().find(x => x.id === s).effect.theme === id)) return false; state.perks.theme = id || null; if (id && !state.perks.used.includes(id)) state.perks.used.push(id); save(); return true; }
   };
   function abort(){ if (run && !run.result) { ev('job_abort', { job: run.job.id, step: run.step }); log('Jacked out early: ' + run.job.title); } run = null; }
 
@@ -298,5 +309,5 @@
   // closing the tab with a Google record not yet in Drive: push it, and let the browser ask before it goes.
   window.addEventListener('beforeunload', e => { const unsaved = state.owner && (dirty || inflight); Telemetry.touch(state); if (!state.owner) return save(); if (unsaved) { flush(true); e.preventDefault(); e.returnValue = ''; } });
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get driveOk(){ return driveOk; }, get driveWhy(){ return driveWhy; }, recheckDrive(){ const u = gUser(); return u ? onAuth(u) : Promise.resolve(); }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, pay, repOf, shop, fixer, codexStatus, nightDone, licenseRecord, setLicense, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get driveOk(){ return driveOk; }, get driveWhy(){ return driveWhy; }, recheckDrive(){ const u = gUser(); return u ? onAuth(u) : Promise.resolve(); }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, pay, repOf, shop, fixer, codexStatus, nightDone, licenseRecord, cardThemes, setLicense, setDifficulty, get difficulty(){ return state.difficulty; }, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
 })();

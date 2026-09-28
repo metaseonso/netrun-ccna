@@ -15,7 +15,7 @@ const HANDLE = /^[\p{L}\p{N} ._\-]{1,18}$/u; // what a handle may be on a public
   const d = await r.json(); if (!d.ok) throw new Error('DB said no: ' + d.why);
   const idx = path.join(ROOT, 'hall', 'index.json'); const old = fs.existsSync(idx) ? JSON.parse(fs.readFileSync(idx, 'utf8')) : { cards: [] };
   const makers = (old.cards || []).filter(c => c.maker);
-  const cards = d.licenses.filter(l => l.hall && HANDLE.test(String(l.handle))).map(l => ({ number: l.number, issued: l.issued, handle: String(l.handle), cls: l.record.cls || 'A', stats: l.record.stats || {} }));
+  const cards = d.licenses.filter(l => l.hall && HANDLE.test(String(l.handle))).map(l => ({ number: l.number, issued: l.issued, handle: String(l.handle), cls: l.record.cls || 'A', difficulty: l.record.difficulty || '', theme: l.record.theme || 'default', stats: l.record.stats || {} }));
   const dir = path.join(ROOT, 'hall', 'cards'); fs.mkdirSync(dir, { recursive: true });
   const keep = new Set(makers.concat(cards).map(c => c.number + '.svg'));
   for (const f of fs.readdirSync(dir)) if (f.endsWith('.svg') && !keep.has(f)) fs.unlinkSync(path.join(dir, f));

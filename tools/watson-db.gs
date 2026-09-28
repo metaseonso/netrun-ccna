@@ -1,13 +1,15 @@
 /* watson-db.gs — the game's only database: a Google Sheet the owner owns, behind an Apps Script web app.
    Three tabs: `suggestions` (the in-game suggestion box), `licenses` (the numbered license issued on completion) and
-   `pulse` (anonymous progress counts, one row per player id: class, nights finished, flatlines). The public `stats`
-   action adds `pulse` and `licenses` up for the sign-in page; it never returns a row.
+   `pulse` (anonymous progress, one row per random player id: class, nights finished, flatlines, first day, furthest
+   night, fixers bought, build, the day each night was first finished, flatlines by night). The public `stats` action
+   adds `pulse` and `licenses` up for the sign-in page; it never returns a row. The owner's dashboard (owner.html) reads
+   all three with the key through `?action=dashboard`.
    Anyone may write (rate limited, sizes capped). Reading and updating need the private key, which only the owner,
    the Hall of Fame robot (.github/workflows/hall.yml) and tools/watson-db.js hold. Setup: docs/WATSON_DB.md. */
 
 const SUG_HEAD = ['id', 'received', 'handle', 'screen', 'night', 'version', 'text', 'status', 'note', 'updated'];
 const LIC_HEAD = ['number', 'issued', 'handle', 'hall', 'record'];
-const PULSE_HEAD = ['id', 'updated', 'cls', 'nights', 'flatlines'];
+const PULSE_HEAD = ['id', 'updated', 'cls', 'nights', 'flatlines', 'first', 'reached', 'fixers', 'version', 'trail', 'flats', 'licensed', 'difficulty'];
 const STATUSES = ['new', 'ticketed', 'scoped', 'in progress', 'done', 'declined'];
 
 // Run once from the editor (pick setup, press Run). Makes both tabs and a private key, and logs the key.
@@ -22,6 +24,7 @@ function tab_(name, head) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(name) || ss.insertSheet(name);
   if (sh.getLastRow() === 0) sh.appendRow(head);
+  else if (sh.getLastColumn() < head.length) sh.getRange(1, 1, 1, head.length).setValues([head]); // an older sheet grows new columns
   return sh;
 }
 const rows_ = (sh, n) => sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, n).getValues() : [];
@@ -61,7 +64,10 @@ function pulse_(d) {
   if (!limit_('p:' + id, 60)) return json_({ ok: true, later: true });
   const cls = /^[ABCD]$/.test(d.cls) ? d.cls : 'D', nights = Math.max(0, Math.min(63, Number(d.nights) || 0)), flat = Math.max(0, Math.min(9999, Number(d.flatlines) || 0));
   const sh = tab_('pulse', PULSE_HEAD); const rows = rows_(sh, PULSE_HEAD.length); const i = rows.findIndex(r => r[0] === id);
-  const row = [id, new Date().toISOString(), cls, nights, flat];
+  const day = v => /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
+  const nightMap = (o, ok) => { const out = {}; Object.keys(o && typeof o === 'object' ? o : {}).slice(0, 70).forEach(k => { const n = Number(k); if (n >= 1 && n <= 64 && ok(o[k])) out[n] = o[k]; }); return JSON.stringify(out); };
+  const row = [id, new Date().toISOString(), cls, nights, flat, day(d.first), Math.max(0, Math.min(64, Number(d.reached) || 0)), Math.max(0, Math.min(999, Number(d.fixers) || 0)),
+    clip_(d.version, 12), nightMap(d.trail, v => !!day(v)), nightMap(d.flats, v => Number(v) >= 0 && Number(v) < 10000), d.licensed ? 'yes' : 'no', /^(easy|normal|cyberpsycho)$/.test(d.difficulty) ? d.difficulty : ''];
   if (i < 0) sh.appendRow(row); else sh.getRange(i + 2, 1, 1, PULSE_HEAD.length).setValues([row]);
   CacheService.getScriptCache().remove('stats');
   return json_({ ok: true });
@@ -77,7 +83,7 @@ function license_(d, who) {
   if (!limit_('l:' + who, 60)) return json_({ ok: false, why: 'one license a minute' });
   const number = 'NR-' + String(rows.length + 1).padStart(6, '0');
   const issued = new Date().toISOString();
-  const keep = JSON.stringify({ fingerprint: fp, completedAt: clip_(rec.completedAt, 40), cls: clip_(rec.cls, 2), stats: rec.stats || {} }).slice(0, 4000);
+  const keep = JSON.stringify({ fingerprint: fp, completedAt: clip_(rec.completedAt, 40), cls: clip_(rec.cls, 2), difficulty: clip_(rec.difficulty, 12), theme: clip_(rec.theme, 12), stats: rec.stats || {} }).slice(0, 4000);
   sh.appendRow([number, issued, who, d.hall ? 'yes' : 'no', keep]);
   return json_({ ok: true, number, issued });
 }
@@ -87,6 +93,7 @@ function doGet(e) {
   const p = e.parameter || {};
   if (p.action === 'stats') return json_(stats_());
   if (!keyOk_(p)) return json_({ ok: false, why: 'key' });
+  if (p.action === 'dashboard') return json_(dashboard_());
   if (p.action === 'licenses') {
     const list = rows_(tab_('licenses', LIC_HEAD), LIC_HEAD.length).map(r => ({ number: r[0], issued: r[1], handle: r[2], hall: r[3] === 'yes', record: JSON.parse(r[4] || '{}') }));
     return json_({ ok: true, count: list.length, licenses: list });
@@ -100,6 +107,16 @@ function doGet(e) {
   }
   const list = rows.map(r => Object.fromEntries(SUG_HEAD.map((h, k) => [h, r[k]]))).filter(r => !p.status || r.status === p.status);
   return json_({ ok: true, count: list.length, suggestions: list });
+}
+
+// everything the owner's dashboard draws, in one read: every pulse row, every suggestion, every license (without the record)
+function dashboard_() {
+  const pj = v => { try { return JSON.parse(v || '{}'); } catch (e) { return {}; } };
+  const pulse = rows_(tab_('pulse', PULSE_HEAD), PULSE_HEAD.length).map(r => ({ id: r[0], updated: r[1], cls: r[2], nights: Number(r[3]) || 0, flatlines: Number(r[4]) || 0,
+    first: r[5] || '', reached: Number(r[6]) || 0, fixers: Number(r[7]) || 0, version: r[8] || '', trail: pj(r[9]), flats: pj(r[10]), licensed: r[11] === 'yes', difficulty: r[12] || '' }));
+  const suggestions = rows_(tab_('suggestions', SUG_HEAD), SUG_HEAD.length).map(r => Object.fromEntries(SUG_HEAD.map((h, k) => [h, r[k]])));
+  const licenses = rows_(tab_('licenses', LIC_HEAD), LIC_HEAD.length).map(r => { const rec = pj(r[4]); return { number: r[0], issued: r[1], handle: r[2], hall: r[3] === 'yes', cls: rec.cls || '', difficulty: rec.difficulty || '' }; });
+  return { ok: true, at: new Date().toISOString(), pulse, suggestions, licenses };
 }
 
 // public numbers for the sign-in page, cached for five minutes
