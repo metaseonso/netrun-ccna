@@ -184,5 +184,17 @@ module.exports.run = function({ out }){
     pc.exec('ipconfig /flushdns'); pc.exec('ipconfig /displaydns'); ok(/empty/.test(pc.out[pc.out.length - 1].s), 'pc: ipconfig /flushdns empties it');
     const r1 = d.R1; r1.netState = null; r1._netState = () => A.state; r1.exec('end'); r1.exec('ping records'); ok(r1.out.some(o => /Success rate is 100/.test(o.s)) && r1.out.filter(o => /ping records/.test(o.s)).length === 1, 'router: ping by name uses the host table, echoed once');
   }
+  // 14. DHCP relay to a router's own pool, with that router's exclusions; the lease carries the DNS server
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, PC1: { kind: 'host', dhcp: true }, PC3: { kind: 'host', dhcp: true } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/0', b: 'PC3' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.1.1.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.12.1 255.255.255.252', 'no shut', 'exit', 'ip route 10.3.3.0 255.255.255.0 10.0.12.2',
+        'ip dhcp excluded-address 10.3.3.1 10.3.3.20', 'ip dhcp pool FAR', 'network 10.3.3.0 255.255.255.0', 'default-router 10.3.3.1', 'dns-server 10.1.1.1'],
+      R2: ['en', 'conf t', 'int g0/0', 'ip add 10.3.3.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.12.2 255.255.255.252', 'no shut', 'exit', 'ip route 0.0.0.0 0.0.0.0 10.0.12.1'] });
+    let A = Net.api(Net.build(net, d)); ok(!A.lease('PC3').ok, 'dhcp relay: no helper, no lease across the router (' + A.lease('PC3').reason + ')');
+    d.R2.exec('int g0/0'); d.R2.exec('ip helper-address 10.0.12.1'); A = Net.api(Net.build(net, d)); const l = A.lease('PC3');
+    ok(l.ok && l.server === 'R1' && l.ip === '10.3.3.21' && l.gw === '10.3.3.1' && [].concat(l.dns).includes('10.1.1.1'), 'dhcp relay: helper to R1 gets a lease from R1\'s pool after its exclusions (' + JSON.stringify(l) + ')');
+    ok(A.ping('PC3', '10.1.1.1').ok && /10\.3\.3\.21/.test(Show.render(d.R1, 'show ip dhcp binding', A.state)), 'dhcp relay: the relayed host routes home and shows in the server\'s bindings');
+  }
   return { pass, fails };
 };

@@ -165,6 +165,10 @@ Definition of done for a day:
   `ipconfig /displaydns`, `ipconfig /flushdns`. Routers: `show hosts`, `ping NAME` / `traceroute NAME` (translated first).
   Tested (section 13).
 
+- 2026-09-28 · DHCP relay to a router's own pool: `ip helper-address` pointing at an interface address of a router that has a pool
+  for the relay interface's subnet gives the host a lease from that pool, after that router's `ip dhcp excluded-address` ranges
+  (before, relay only reached `server` devices with `pools`). The path between relay and server is not checked. Tested (section 14).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a

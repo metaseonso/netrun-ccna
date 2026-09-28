@@ -156,6 +156,10 @@
     for (const o of S.owners[seg] || []) { if (o.kind !== 'iface') continue; const pools = S.cfg[o.dev].dhcp.pools; for (const pn in pools) { const p = pools[pn]; if (p.network && inSubnet(o.ip, p.network, p.mask)) cands.push({ dev: o.dev, via: o, pool: p, kind: 'router', rogue: false }); }
       // relay: helper-address to a server device by IP
       const i = S.ifaces[o.dev][o.iface]; for (const h of i.cfg.helpers) { for (const sn in D) { const sd = D[sn]; if ((sd.kind === 'server' || sd.kind === 'host') && sd.ip === h && sd.pools) for (const p of sd.pools) if (p.network && inSubnet(o.ip, p.network, p.mask)) cands.push({ dev: sn, via: o, pool: p, kind: 'relay', rogue: false, relayIf: o }); } } }
+    // relay to a router's own pool: the helper-address is one of that router's interface addresses (the path between them is not checked)
+    for (const o of S.owners[seg] || []) { if (o.kind !== 'iface') continue; const i = S.ifaces[o.dev][o.iface];
+      for (const h of i.cfg.helpers) { const srv = Object.keys(D).find(n => (D[n].kind === 'router' || D[n].kind === 'l3switch') && S.ifaces[n] && Object.values(S.ifaces[n]).some(x => x.up && x.cfg.ip === h)); if (!srv) continue;
+        const pools = S.cfg[srv].dhcp.pools; for (const pn in pools) { const p = pools[pn]; if (p.network && inSubnet(o.ip, p.network, p.mask)) cands.push({ dev: srv, via: o, pool: p, kind: 'relay', rogue: false, relayIf: o }); } } }
     // servers directly on segment
     for (const n in D) { const d = D[n]; if ((d.kind === 'server') && d.pools && S.uf.find(S.hostNode(n)) === seg) for (const p of d.pools) cands.push({ dev: n, pool: p, kind: 'server', rogue: false }); if (d.kind === 'rogue' && d.role === 'dhcp' && S.uf.find(S.hostNode(n)) === seg && !d.removed) cands.push({ dev: n, pool: null, kind: 'rogue', rogue: true, offer: d.offer || {} }); }
     // snooping filter: walk from candidate to host through switches; every switch with snooping on this VLAN must receive the offer on a trusted port
