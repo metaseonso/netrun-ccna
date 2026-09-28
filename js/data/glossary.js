@@ -50,7 +50,7 @@ window.GLOSSARY = {
   'flooding': 'A switch sending a frame out of every port except the one it arrived on: done for broadcasts and for unknown unicast frames.',
   'arp': 'Address Resolution Protocol: finds the MAC address that goes with a known IPv4 address on the local network. Request broadcast, reply unicast. EtherType 0x0806. View with arp -a (PC) or show arp (Cisco).',
   'broadcast': 'A frame to FF:FF:FF:FF:FF:FF. Everyone in the VLAN gets it.',
-  'full duplex': 'Send and receive at the same time. Modern switch ports. Half duplex is the old hub world with collisions.',
+  'full duplex': 'A port sends and receives at the same time. Possible on switch ports, where each port is its own collision domain.',
   'speed/duplex mismatch': 'One side auto, one side hardwired. Classic slow-link cause. Check "show interfaces status".',
   'vlan': 'Virtual LAN. One switch, many broadcast domains. Each VLAN is its own street.',
   'access port': 'A port in one VLAN, for end hosts. Frames leave untagged.',
@@ -189,5 +189,13 @@ window.GLOSSARY = {
   'ping': 'A tool that tests reachability with ICMP: it sends echo requests and waits for echo replies.',
   'octet': 'A group of 8 bits. An IPv4 address is four octets; each is 0 to 255 (11111111 = 255).',
   'loopback address': 'An address in 127.0.0.0/8 (usually 127.0.0.1) that a device uses to talk to itself and test its own network software.',
-  'multicast': 'Traffic sent to a group of hosts that asked to receive it. IPv4 multicast uses class D, 224.0.0.0 to 239.255.255.255.'
+  'multicast': 'Traffic sent to a group of hosts that asked to receive it. IPv4 multicast uses class D, 224.0.0.0 to 239.255.255.255.',
+  'half duplex': 'A port can send or receive, but not both at once. Needed on shared media (hubs), where devices use CSMA/CD.',
+  'duplex mismatch': 'One end of a link at full duplex and the other at half. Classic cause: one end hard-coded, the other on auto, so the auto end falls back to half. Shows as CRC errors and runts on the full end and late collisions on the half end.',
+  'runts': 'Frames smaller than the minimum Ethernet frame size, 64 bytes. Counted in show interfaces.',
+  'giants': 'Frames larger than the maximum Ethernet frame size, 1518 bytes. Counted in show interfaces.',
+  'crc': 'Cyclic redundancy check: the math behind the Ethernet FCS. The CRC counter in show interfaces counts frames whose FCS did not match.',
+  'late collision': 'A collision detected after the first 64 bytes of a frame. Should never happen on a working link; the usual cause is a duplex mismatch.',
+  'collision domain': 'The part of a network where two frames sent at once collide. Everything on a hub shares one; each switch port is its own.',
+  'csma/cd': 'Carrier Sense Multiple Access with Collision Detection: on half-duplex Ethernet, listen before sending, and if a collision happens, stop, send a jam signal and wait a random time before trying again.'
 };

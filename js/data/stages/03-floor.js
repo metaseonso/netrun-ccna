@@ -86,6 +86,46 @@
           yes: 'Mac: "Everyone hears it, and only the printer answers."', no: 'Mac: "Everyone. The request goes to FFFF.FFFF.FFFF, and only the printer answers it."',
           why: 'Mac: An ARP request is sent to the broadcast MAC address FFFF.FFFF.FFFF, so the switch floods it to every device in the LAN. Every device reads it, but only the one with the requested IP address answers, and its ARP reply is unicast back to the asker.' } }
       ] },
+    // ------------------------------------------------------------ night 9 · switch interfaces
+    { id: 'n09-dropped-frames', title: 'The cameras that stutter', sub: 'speed, duplex and interface errors', npc: 'mac', day: [9], src: [PS('Switch_Interfaces.md')], unlocks: ['switch-ifaces'],
+      beats: [
+        { k: 'SCENE', where: 'The switch floor · the camera closet at the end of the aisle',
+          lines: [
+            { who: 'narr', text: 'The camera closet is barely wide enough for two people and a rack, and it smells of dust cooking on warm electronics. On a monitor bolted to the wall, sixteen grey squares show the market above, and every few seconds the picture in each one freezes, smears and jumps forward. Mac is in the doorway with his arms folded. A woman with long black hair and a thin scar through one eyebrow is kneeling at the rack with a torch.' },
+            { who: 'veelan', text: 'I\'m Vee Lan. I draw the borders on this floor, and I get called when something crosses one. The cameras have been stuttering for a month, and it started the week he touched this port.' },
+            { who: 'mac', text: 'I set it to a hundred, full duplex, because auto is lazy. The cable\'s bad, that\'s all it is.' },
+            { who: 'veelan', text: 'The cable\'s fine. Every port starts on auto for speed and duplex, and two ends on auto negotiate the fastest speed they share, at full duplex. You hard-coded your end, so it stopped negotiating. The camera switch on the other end is still on auto, and when nobody answers the negotiation it has to guess.' },
+            { who: 'veelan', text: 'It can hear the speed on the wire, so it gets 100 right. It can\'t hear the duplex, so at 10 or 100 it falls back to [[half duplex]]. Mac\'s end is on [[full duplex]] and the camera end is on half. That\'s a [[duplex mismatch]].' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What\'s actually different between half and full?', reply: 'Vee Lan: "At full duplex a port sends and receives at the same time. At half duplex it can only do one at a time, and if it hears something arrive while it\'s sending, it thinks there\'s been a collision, stops, and tries again later. Mac\'s end never stops to listen, so the camera end keeps backing off, and frames get cut short."' },
+            { tone: 'press', say: 'Mac, why hard-code it at all?', reply: 'Mac: "Because a switch once came up at ten meg on auto and nobody noticed for a week." Vee Lan: "Then you set both ends, not one. With one end on manual and the other on auto you get exactly this."' },
+            { tone: 'quiet', say: '(Watch the camera picture freeze and jump.)', reply: 'The feed from the stairs freezes on a man halfway down a step and then jumps to an empty stairwell. Vee Lan watches it too and says nothing.' }
+          ] } },
+        { k: 'SCENE', where: 'The camera closet · the rack',
+          lines: [
+            { who: 'veelan', text: 'The counters on show interfaces tell you which end is suffering. [[Runts]] are frames shorter than 64 bytes, and [[giants]] are longer than 1518. [[CRC]] errors are frames whose FCS didn\'t add up. Frame errors are frames with a bad format. Input errors is the total of all the receive problems, and output errors counts frames the port failed to send.' },
+            { who: 'veelan', text: 'A duplex mismatch has a signature. The full-duplex end fills up with CRC errors and runts, because the half-duplex end keeps abandoning frames partway through. The half-duplex end counts [[late collision]]s, collisions after the first 64 bytes, which should never happen on a working link.' },
+            { who: 'mac', text: 'Before switches, this floor ran on hubs. Everything plugged into a hub shared one [[collision domain]], and they all had to run half duplex with [[CSMA/CD]]: listen before you send, and if two send at once, both stop and wait a random time. Every switch port is its own collision domain, so full duplex works.' },
+            { who: 'veelan', text: 'When you configure more than one port the same way, use interface range, so you type the settings once. Switch ports come up on their own: up/up with a device on the end, down/down with nothing plugged in.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'So how do we fix it?', reply: 'Vee Lan: "Make both ends agree. Either both on auto, which is what I\'d do, or both hard-coded to speed 100 and duplex full. Then read the status again and watch the errors stop climbing."' },
+            { tone: 'press', say: 'Why does Vee Lan owe Old Root?', reply: 'Mac glances at her. She keeps her eyes on the rack. "He taught me this floor when nobody else would. I\'ll pay him back when I find something he couldn\'t fix. Get on with the cameras."' },
+            { tone: 'joke', say: 'Should I stand between you two?', reply: 'Mac grins. "Every time she\'s on this floor. She\'s usually right, which makes it worse."' }
+          ] } },
+        { k: 'LORE', title: 'A HUNDRED MEG', year: 1995, real: ['ieee'], vibe: 'All that. Ten times the speed, and everybody still blamed the cable.',
+          text: 'Vee Lan, coiling the torch cable: "The IEEE approved Fast Ethernet, 802.3u, in June 1995. A hundred megabits on the same kind of copper that carried ten, and it brought autonegotiation with it, so a new card and an old card could agree on a speed without anyone touching them. Old Root put the first hundred-meg switch into the clinic. He says he still has the box it came in."' },
+        { k: 'KIT', text: 'Vee Lan writes on the closet door in grease pencil.', kit: [
+          { cmd: 'speed 100 · duplex full · speed auto · duplex auto', what: 'defaults are auto. Set both ends the same, or leave both on auto' },
+          { cmd: 'hard-coded end + auto end: auto senses speed, uses half duplex at 10/100', what: 'the duplex mismatch' },
+          { cmd: 'show interfaces status · show interfaces g0/1', what: 'a- means negotiated. Counters: runts <64 B, giants >1518 B, CRC, frame, input and output errors, late collisions' },
+          { cmd: 'interface range f0/2 - 4', what: 'configure several ports at once' },
+          { cmd: 'hub: one collision domain, half duplex, CSMA/CD · switch: one collision domain per port', what: 'why full duplex needs a switch' } ] },
+        { k: 'SYNC', q: { prompt: 'Mac, still not convinced: "My end is 100 and full. The camera end is on auto. What does the camera end end up running?"', opts: ['100 Mb/s at half duplex', '100 Mb/s at full duplex', '10 Mb/s at half duplex', 'Nothing. The link stays down'], a: 0,
+          yes: 'Vee Lan: "A hundred, half. Now you know why the cameras stutter."', no: 'Vee Lan: "It hears 100 on the wire and can\'t negotiate the duplex, so it uses half."',
+          why: 'Vee Lan: Hard-coding speed and duplex on one end disables autonegotiation there. The auto end can still sense the speed, 100 Mb/s, but not the duplex, so at 10 or 100 Mb/s it defaults to half duplex. One end at full and the other at half is a duplex mismatch.' } }
+      ] },
     { id: 'vlan-intro', title: 'Borders inside one building', sub: 'VLANs, trunks, DTP/VTP, EtherChannel', npc: 'veelan', day: [16,17,18,19,23], src: [PS('VLAN_Part1.md'), PS('VLAN_Part2.md'), SJ('04 - Day 16 - VLANs Part 1.md'), SJ('11 - Day 23 - EtherChannel.md')], unlocks: ['vlan-config', 'trunk-config'],
       beats: [
         { k: 'SCENE', where: 'Second floor of the clinic annex · a taped line down the middle of the corridor',
