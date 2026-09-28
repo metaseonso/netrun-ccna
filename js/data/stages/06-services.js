@@ -100,6 +100,48 @@
         { k: 'SYNC', q: { prompt: 'Syn, arriving at the top of the stairs with a tray: "Sixx says an address can only have one double colon. Why not two?"', opts: ['With two, nobody could tell how many zero quartets each one replaced', 'Two would make the address longer', 'The second one would mean a different prefix length', 'Routers only read the first colon'], a: 0,
           yes: 'Sixx: "Exactly. One gap, you can count it. Two gaps, you\'re guessing."', no: 'Sixx: "Because :: means as many zero quartets as it takes to make eight. With two of them, the split between them would be a guess."',
           why: 'Sixx: A double colon stands for however many all-zero quartets are needed to bring the address back to eight. If an address had two, there would be no way to know how many zeros each one replaced, so :: may be used only once.' } }
+      ] },
+    // ------------------------------------------------------------ night 32 · IPv6, part 2
+    { id: 'n32-names-from-serials', title: 'Names from serial numbers', sub: 'EUI-64, link-local, address types, multicast', npc: 'sixx', day: [32], src: [PS('IPv6_Part2.md')], unlocks: ['ipv6-eui'],
+      beats: [
+        { k: 'SCENE', where: 'The top gallery · Thursday, 21:30',
+          lines: [
+            { who: 'narr', text: 'Cardamom and steam drift along the gallery from a tray balanced on the bench: Syn\'s Thursday tea, two cups, one already empty. The gallery hums as before, but four more brass flags stand on the mailboxes now, and a delivery crate full of small grey card readers sits by the stairs.' },
+            { who: 'sixx', text: 'The new wing\'s card readers. Forty of them, and I\'m not typing forty addresses. Each one will build its own interface ID out of its MAC address. That\'s [[EUI-64]], Extended Unique Identifier.' },
+            { who: 'sixx', text: 'Three steps. Cut the forty-eight-bit MAC in half. Put FFFE in the middle, which makes sixty-four bits. Then flip the seventh bit. A MAC of 0019.E8A1.1C20 becomes 0019E8, FFFE, A11C20, and flipping the seventh bit turns the 00 at the front into 02: 0219:E8FF:FEA1:1C20. Put the /64 prefix in front and it has its address.' },
+            { who: 'you', text: 'Why flip the seventh bit?' },
+            { who: 'sixx', text: 'It\'s the U/L bit, universal or local. In a MAC a 0 there means a universally administered address, burned in by the maker, a UAA. A 1 means somebody set it by hand, a locally administered address, an LAA. EUI-64 turns that bit over. On the router it\'s one word at the end: ipv6 address 2001:db8:32:1::/64 eui-64.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What\'s the FE80 address I saw on every interface?', reply: 'Sixx: "The [[link-local]] address. Every IPv6 interface makes one for itself the moment IPv6 is on it, from FE80::/10, with an EUI-64 interface ID. It only works on its own link, so routers never forward it. Routers use it for their hellos and as next hops, and hosts can use the router\'s as their gateway. ipv6 enable switches IPv6 on without any global address, and you get the link-local alone."' },
+            { tone: 'press', say: 'Isn\'t building an address from a MAC a privacy problem?', reply: 'Sixx: "Yes. Carry your laptop from one network to another and the last sixty-four bits follow you everywhere. That\'s why a laptop usually makes random interface IDs for itself instead. Card readers bolted to a wall don\'t mind being recognised."' },
+            { tone: 'joke', say: 'Syn left you an empty cup.', reply: 'Sixx: "Ack drank it. Ack always drinks the first one, and Syn always brings two, and neither of them has ever mentioned it."' }
+          ] } },
+        { k: 'SCENE', where: 'The top gallery · the address board · 22:10',
+          lines: [
+            { who: 'narr', text: 'Sixx pulls a dust sheet off a board on the wall, a chart of every kind of IPv6 address, lettered in careful brass paint.' },
+            { who: 'sixx', text: '[[Global unicast]] addresses are the public ones, originally 2000::/3: a global routing prefix, usually 48 bits, a 16-bit subnet ID and a 64-bit interface ID. [[Unique local]] addresses are the private ones, FC00::/7, and in practice they start with FD, then a 40-bit global ID you pick at random, then the subnet ID and the interface ID. Link-local is FE80::/10.' },
+            { who: 'sixx', text: 'Unicast is one to one. [[Anycast]] is one to the nearest of many: several routers carry the same address and the network delivers to whichever is closest, ipv6 address with anycast on the end. Multicast is one to many, FF00::/8. There is no broadcast in IPv6 at all.' },
+            { who: 'sixx', text: 'FF02::1 is every node on the link, like 224.0.0.1. FF02::2 is every router, like 224.0.0.2. FF02::5 and ::6 are OSPF routers and DRs, ::9 is RIP, ::A is EIGRP. The digit after FF0 is the scope: 1 interface-local, 2 link-local, 5 site-local, 8 organization-local, E global. :: on its own is the unspecified address, and ::1 is the loopback.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'So who answers FF02::2?', reply: 'Sixx: "Every router on the link, and nothing else. A host that wants to find a router asks FF02::2 instead of shouting at everyone, which is the whole point of having no broadcast."' },
+            { tone: 'press', say: 'Why would anyone want private IPv6 addresses?', reply: 'Sixx: "For things that should never be reachable from outside, like the new wing\'s door readers. Unique local addresses aren\'t routed on the internet. The FD tells every router on the way that it\'s a local address."' },
+            { tone: 'care', say: 'Do you paint every board by hand?', reply: 'Sixx: "Every one. The board downstairs was printed by Halvorsen\'s people last month. It has a spelling mistake in FF0E." Sixx sounds pleased about it.' }
+          ] } },
+        { k: 'LORE', title: 'THE DAY THEY LEFT THE LIGHT ON', year: 2012, vibe: 'Epic win: the big sites switched IPv6 on and just left it on.',
+          text: 'Sixx: "On the 6th of June 2012 the world\'s big websites, network makers and internet providers switched IPv6 on for good, all on the same day. They called it World IPv6 Launch. A year before there had been a one-day test, and this time nobody switched it off again. I spent that day up here watching the first flags go up on the boxes, and I stopped counting at a thousand."' },
+        { k: 'KIT', text: 'Sixx copies the board onto the back of a card reader\'s packing slip.', kit: [
+          { cmd: 'EUI-64: split the MAC in half · insert FFFE · invert the 7th bit', what: '0019.E8A1.1C20 → 0219:E8FF:FEA1:1C20' },
+          { cmd: 'ipv6 address 2001:db8:32:1::/64 eui-64', what: 'the router builds its own interface ID. U/L bit 0 = UAA, 1 = LAA' },
+          { cmd: 'ipv6 address fe80::1 link-local · ipv6 enable', what: 'set the link-local by hand · IPv6 on, link-local only' },
+          { cmd: 'global unicast 2000::/3 (48 prefix + 16 subnet + 64 interface) · unique local FC00::/7, FD + 40-bit global ID · link-local FE80::/10', what: 'public, private, this link only' },
+          { cmd: 'multicast FF00::/8 · FF02::1 all nodes · ::2 all routers · ::5 OSPF · ::6 OSPF DR/BDR · ::9 RIP · ::A EIGRP', what: 'IPv4: 224.0.0.1, .2, .5, .6, .9, .10. No broadcast in IPv6' },
+          { cmd: 'scope FF01 interface · FF02 link · FF05 site · FF08 organization · FF0E global', what: 'the digit after FF0' },
+          { cmd: 'ipv6 address 2001:db8:32:9::1/64 anycast · :: unspecified · ::1 loopback', what: 'anycast: to the nearest of many' } ] },
+        { k: 'SYNC', q: { prompt: 'Syn, collecting the cups: "Sixx says a host looking for a router doesn\'t broadcast. What does it send to instead?"', opts: ['FF02::2, all routers on the link', 'FF02::1, all nodes on the link', 'FFFF:FFFF::, the IPv6 broadcast', '::1, the loopback'], a: 0,
+          yes: 'Sixx: "All routers, and only routers. Nobody else has to listen."', no: 'Sixx: "FF02::2. IPv6 has no broadcast, so it asks the all-routers group."',
+          why: 'Sixx: IPv6 has no broadcast. A message for every router on the link goes to the link-local multicast group FF02::2, all routers. FF02::1 is all nodes, and ::1 is the host\'s own loopback.' } }
       ] }
   ] });
 })();
