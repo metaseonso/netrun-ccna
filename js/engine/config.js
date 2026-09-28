@@ -115,6 +115,8 @@
           else if (s === 'ip dhcp snooping trust') i.snoopTrust = true; else if (s === 'ip arp inspection trust') i.daiTrust = true;
           else if ((m = s.match(/^speed (\S+)$/))) i.speed = m[1]; else if ((m = s.match(/^duplex (\S+)$/))) i.duplex = m[1];
           else if ((m = s.match(/^ip ospf network (\S+)$/))) i.ospfNetwork = m[1];
+          if ((m = s.match(/^ip ospf (priority|hello-interval|dead-interval) (\d+)$/))) i[{ priority: 'ospfPriority', 'hello-interval': 'ospfHello', 'dead-interval': 'ospfDead' }[m[1]]] = +m[2];
+          if (/^no ip ospf (hello|dead)-interval/.test(s)) { i.ospfHello = null; i.ospfDead = null; } if (s === 'no ip ospf network') i.ospfNetwork = null;
         }
       }
       // ---------------- line config

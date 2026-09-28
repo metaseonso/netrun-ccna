@@ -159,5 +159,24 @@ module.exports.run = function({ out }){
     d.R4.exec('int g0/1'); d.R4.exec('ip ospf cost 10'); A = Net.api(Net.build(net, d)); const r1 = A.routes('R4').filter(e => e.prefix === '10.7.1.0');
     ok(r1.length === 1 && r1[0].via === '10.7.34.1', 'ospf: ip ospf cost breaks the tie (' + JSON.stringify(r1) + ')');
   }
+  // 13. OSPF on a shared segment: DR and BDR by priority then router ID, DROthers stay 2WAY, point-to-point has no DR, timers and router IDs must match
+  {
+    const net = { devices: { SW: { kind: 'switch', mac: '0011.2233.0001' }, R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' }, R4: { kind: 'router' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/0', b: 'SW', bp: 'gigabitethernet0/2' }, { a: 'R3', ap: 'gigabitethernet0/0', b: 'SW', bp: 'gigabitethernet0/3' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R4', bp: 'gigabitethernet0/1' } ] };
+    const base = (n, ip, extra) => ['en', 'conf t', 'int g0/0', 'ip add 10.6.0.' + ip + ' 255.255.255.0', 'no shut'].concat(extra || [], ['router ospf 1', 'router-id ' + n + '.' + n + '.' + n + '.' + n, 'network 10.6.0.0 0.0.255.255 area 0']);
+    const d = devs({ R1: base(1, 1, ['int g0/1', 'ip add 10.6.14.1 255.255.255.252', 'no shut']), R2: base(2, 2), R3: base(3, 3), R4: ['en', 'conf t', 'int g0/1', 'ip add 10.6.14.2 255.255.255.252', 'no shut', 'router ospf 1', 'router-id 4.4.4.4', 'network 10.6.0.0 0.0.255.255 area 0'] });
+    let A = Net.api(Net.build(net, d)); const st = r => A.ospfNeighbors(r).map(n => n.id + ':' + n.state + '/' + n.role).sort().join(' ');
+    ok(st('R1') === '2.2.2.2:FULL/BDR 3.3.3.3:FULL/DR 4.4.4.4:FULL/DR', 'ospf dr: highest router ID is DR, next is BDR (' + st('R1') + ')');
+    d.R1.exec('int g0/0'); d.R1.exec('ip ospf priority 255'); A = Net.api(Net.build(net, d));
+    ok(/3\.3\.3\.3:FULL\/BDR/.test(st('R2')) && /1\.1\.1\.1:FULL\/DR/.test(st('R2')) && st('R2').split(' ').length === 2, 'ospf dr: priority 255 makes R1 the DR (' + st('R2') + ')');
+    d.R2.exec('int g0/0'); d.R2.exec('ip ospf priority 0'); d.R3.exec('int g0/0'); d.R3.exec('ip ospf priority 0'); d.R1.exec('ip ospf priority 1'); A = Net.api(Net.build(net, d));
+    ok(/3\.3\.3\.3:2WAY\/DROTHER/.test(st('R2')) && /1\.1\.1\.1:FULL\/DR/.test(st('R2')), 'ospf dr: priority 0 never stands, two DROthers stay 2WAY (' + st('R2') + ')');
+    ok(/FULL\/DROTHER/.test(Show.render(d.R1, 'show ip ospf neighbor', A.state)) && /DR/.test(Show.render(d.R1, 'show ip ospf interface brief', A.state)), 'show ip ospf neighbor and show ip ospf interface brief show the roles');
+    d.R1.exec('int g0/1'); d.R1.exec('ip ospf network point-to-point'); d.R4.exec('int g0/1'); d.R4.exec('ip ospf network point-to-point'); A = Net.api(Net.build(net, d));
+    ok(/4\.4\.4\.4:FULL\/-/.test(st('R1')), 'ospf: point-to-point network type has no DR (' + st('R1') + ')');
+    d.R4.exec('ip ospf hello-interval 5'); A = Net.api(Net.build(net, d)); ok(!A.ospfNeighbors('R1').some(n => n.dev === 'R4') && A.issues.some(i => i.kind === 'ospf-timer-mismatch'), 'ospf: a hello timer mismatch stops the adjacency');
+    d.R4.exec('no ip ospf hello-interval'); A = Net.api(Net.build(net, d)); ok(A.ospfNeighbors('R1').some(n => n.dev === 'R4'), 'ospf: resetting the hello timer brings the neighbour back');
+    d.R4.exec('router ospf 1'); d.R4.exec('router-id 1.1.1.1'); A = Net.api(Net.build(net, d)); ok(!A.ospfNeighbors('R1').some(n => n.dev === 'R4') && A.issues.some(i => i.kind === 'ospf-duplicate-router-id'), 'ospf: duplicate router IDs never become neighbours');
+  }
   return { pass, fails };
 };

@@ -136,6 +136,11 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · OSPF DR and BDR on every broadcast segment (`ip ospf priority`, then the router ID; priority 0 never stands),
+  DROthers stay 2WAY with each other, `ip ospf network point-to-point` has no DR; hello and dead timers
+  (`ip ospf hello-interval|dead-interval`) and unique router IDs are neighbour requirements (`ospf-timer-mismatch`,
+  `ospf-duplicate-router-id`). `show ip ospf neighbor` shows the real state and role, new `show ip ospf interface brief` (tested).
+
 - 2026-09-28 · OSPF ECMP: equal-cost paths all go in the routing table, each with its own next hop (tested).
 
 - 2026-09-28 · An OSPF loopback always costs 1, whatever the reference bandwidth (tested).
