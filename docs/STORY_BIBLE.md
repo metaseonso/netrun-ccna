@@ -161,6 +161,7 @@ Rules and numbers live there, never in a character's mouth.
 | Denise | an operator on a long shift: warm, quick, practical, thinks in order of events, apologises for the coffee |
 | Dora (walk-on) | Denise's intern: eager, checks her own answers aloud, writes everything on a clipboard, admits what she got wrong |
 | Beacon | a pirate DJ on and off air: loud, warm, exclamation marks, radio patter even off mic, picks fights about channel 6 |
+| Shell | a locksmith in a hood and a mask: quiet, careful, short practical sentences, talks with the hands busy, never says a password aloud |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that

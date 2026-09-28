@@ -179,5 +179,6 @@ window.GLOSSARY = {
   'stratum': 'An NTP server\'s distance from a reference clock. Reference clocks (atomic, GPS) are stratum 0, servers wired to them stratum 1, and each server that learns time from another adds one. Lower is preferred; above 15 is unreliable and 16 means unsynchronised.',
   'nms': 'Network Management Station. The server that runs the SNMP manager software: it polls managed devices (UDP 161) and receives their Traps and Informs (UDP 162).',
   'mib': 'Management Information Base. The structure of variables an SNMP agent keeps about its device (CPU, interfaces, counters), each identified by an OID.',
-  'oid': 'Object ID. The dotted number that names one variable in an SNMP MIB, such as a port\'s input counter.'
+  'oid': 'Object ID. The dotted number that names one variable in an SNMP MIB, such as a port\'s input counter.',
+  'fqdn': 'Fully Qualified Domain Name: a host\'s name with its domain, hostname.domainname (R1.watson.net). crypto key generate rsa names the RSA key pair after it.'
 };

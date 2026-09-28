@@ -5,7 +5,7 @@
     devices: Object.assign({ R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' },
       CLOCK: { kind: 'server', ip: '10.37.9.9', mask: '255.255.255.0', gw: '10.37.9.1', ntpStratum: 1 } }, extra || {}),
     links: [ { a: 'CLOCK', b: 'R1', bp: 'gigabitethernet0/2' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' }, { a: 'R1', ap: 'gigabitethernet0/0', b: 'R3', bp: 'gigabitethernet0/0' } ].concat(extraLinks || []),
-    preconfig: {
+    preconfig: Object.assign({}, extraPre || {}, {
       R1: ['hostname R1', 'interface gigabitethernet0/2', 'ip address 10.37.9.1 255.255.255.0', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 10.37.12.1 255.255.255.252', 'no shutdown',
         'interface gigabitethernet0/0', 'ip address 10.37.13.1 255.255.255.252', 'no shutdown', 'interface loopback0', 'ip address 10.37.255.1 255.255.255.255', 'exit',
         'ip route 10.37.2.0 255.255.255.0 10.37.12.2', 'ip route 10.37.3.0 255.255.255.0 10.37.13.2'].concat((extraPre || {}).R1 || []),
@@ -13,7 +13,7 @@
         'ip route 0.0.0.0 0.0.0.0 10.37.12.1'].concat((extraPre || {}).R2 || []),
       R3: ['hostname R3', 'interface gigabitethernet0/0', 'ip address 10.37.13.2 255.255.255.252', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 10.37.3.1 255.255.255.0', 'no shutdown', 'exit',
         'ip route 0.0.0.0 0.0.0.0 10.37.13.1'].concat((extraPre || {}).R3 || [])
-    }
+    })
   });
   const hallMap = (extraNodes, extraLinks) => ({ w: 560, h: 340, nodes: [
       { id: 'CLOCK', label: 'roof clock (GPS)', type: 'server', x: 280, y: 40 }, { id: 'R1', label: 'gate router', type: 'router', x: 280, y: 130 },
@@ -310,6 +310,67 @@
         { dev: 'R1', type: ['service timestamps log datetime msec', 'service sequence-numbers'] }, 'commit',
         { dev: 'R1', type: ['logging buffered 16384 informational', 'line con 0', 'logging synchronous', 'end'] }, 'commit',
         { form: { port: 'UDP 514', def: 'the console line and the buffer', mon: 'terminal monitor', vty: 'the VTY lines' } }, 'commit' ],
-      outro: 'At the top of the hour Beacon reads the dawn line on air, the address and all, and says the name the box gave itself. Nobody on the Watson night band calls in. Ace listens from the gate with the sound turned low, and in the morning Shell turns up at the exchange hall with a bag of locks.' }
+      outro: 'At the top of the hour Beacon reads the dawn line on air, the address and all, and says the name the box gave itself. Nobody on the Watson night band calls in. Ace listens from the gate with the sound turned low, and in the morning Shell turns up at the exchange hall with a bag of locks.' },
+
+    // ------------------------------------------------------------------ night 42 · from Lab 42 (SSH)
+    { id: 'b-n42-new-locks', cls: 'B', rep: 20, from: 'shell', title: 'Sixteen Doors', day: [42], requires: ['n42-new-locks'], devices: ['ADM', 'R2', 'SWC'],
+      brief: 'DISPATCH » The clinic router and the clinic switch still take Telnet and one shared password. Shell has the locks; fit them with Shell and Enable watching.\n\nCLIENT (Shell) » "SSH version 2 only, a name for every person, and only my admin subnet, 10.37.9.0/24, may knock. The switch too."',
+      net: hallNet({ ADM: { kind: 'host', ip: '10.37.9.20', mask: '255.255.255.0', gw: '10.37.9.1' }, SWC: { kind: 'switch', mac: '0042.0000.0001' },
+          PC1: { kind: 'host', ip: '10.37.2.10', mask: '255.255.255.0', gw: '10.37.2.1' } },
+        [ { a: 'ADM', b: 'R1', bp: 'gigabitethernet0/2' }, { a: 'R2', ap: 'gigabitethernet0/0', b: 'SWC', bp: 'gigabitethernet0/1' }, { a: 'SWC', ap: 'fastethernet0/1', b: 'PC1' } ],
+        { R2: ['line vty 0 15', 'password watson', 'login'], SWC: ['hostname SWC', 'interface vlan1', 'ip address 10.37.2.2 255.255.255.0', 'no shutdown', 'line vty 0 15', 'password watson', 'login'] }),
+      map: Object.assign(hallMap([ { id: 'ADM', label: 'Shell\'s laptop', type: 'pc', x: 440, y: 50 }, { id: 'SWC', label: 'clinic switch', type: 'switch', x: 120, y: 300 }, { id: 'PC1', label: 'clinic front desk', type: 'pc', x: 240, y: 360 } ],
+        [ { a: 'ADM', b: 'R1', tag: 'g0/2' }, { a: 'R2', b: 'SWC', tag: 'g0/0' }, { a: 'SWC', b: 'PC1' } ]), { h: 400 }),
+      steps: [
+        { type: 'cmd', skill: 'ssh', text: 'Shell: "First see what the street sees. From my laptop, Telnet to the clinic router at 10.37.12.2."',
+          need: [ { dev: 'ADM', line: /^telnet 10\.37\.12\.2$/ } ], check: (d, ctx) => ctx.net().telnet('ADM', '10.37.12.2').ok,
+          hint: 'ADM console:\nC:\\> telnet 10.37.12.2', ok: 'Shell: "Open, one word, and every letter of it in the clear."',
+          why: 'Shell: Telnet connects to the VTY lines over TCP port 23 and sends everything unencrypted: the password, every command and every answer. With password and login on the VTY lines, anyone who knows or overhears the one shared word gets in, and the log cannot say who.' },
+        { type: 'cmd', skill: 'ssh', text: 'Shell: "The router needs a domain and a key before it can speak SSH. Domain watson.net, and a 2048-bit RSA key."',
+          check: (d, ctx) => { const c = ctx.cfg('R2'); return c.domain === 'watson.net' && c.sshKeyBits >= 768; },
+          hint: 'R2> enable\nR2# configure terminal\nR2(config)# ip domain name watson.net\nR2(config)# crypto key generate rsa modulus 2048', ok: 'Shell: "The name for the keys will be R2.watson.net. That\'s the FQDN."',
+          why: 'Shell: crypto key generate rsa builds the RSA key pair SSH uses, and it names the keys after the FQDN, hostname.domain, so the box needs a hostname and ip domain name first. SSH version 2 needs at least 768 bits; 2048 is what I fit.' },
+        { type: 'cmd', skill: 'ssh', text: 'Shell: "Version 2 only. And a user for me: shell, with a secret."',
+          check: (d, ctx) => { const c = ctx.cfg('R2'); return c.sshVersion === 2 && c.users.some(u => u.name === 'shell' && u.kind === 'secret'); },
+          hint: 'R2(config)# ip ssh version 2\nR2(config)# username shell secret <password>', ok: 'Enable: "A secret, not a password. Hashed. Good."',
+          why: 'Shell: ip ssh version 2 stops the box speaking the older, weaker version 1; without it show ip ssh says 1.99, both. username shell secret stores the user\'s password hashed, like enable secret; username with password stores it in plain text or type 7.' },
+        { type: 'cmd', skill: 'ssh', text: 'Shell: "Now the sixteen doors. Local logins, SSH only, and throw out anyone idle for five minutes. My laptop must get in with SSH, and Telnet must be refused."',
+          check: (d, ctx) => { const n = ctx.net(); return n.ssh('ADM', '10.37.12.2', 'shell').ok && !n.telnet('ADM', '10.37.12.2').ok; },
+          hint: 'R2(config)# line vty 0 15\nR2(config-line)# login local\nR2(config-line)# transport input ssh\nR2(config-line)# exec-timeout 5 0\n\nADM: ssh -l shell 10.37.12.2', ok: 'Shell: "Encrypted, and the log says shell. Telnet gets a closed door."',
+          why: 'Shell: line vty 0 15 selects all sixteen VTY lines. login local makes them ask for a username and password from the local user list. transport input ssh refuses every other protocol, Telnet included. exec-timeout 5 0 closes a session idle for five minutes and zero seconds.' },
+        { type: 'cmd', skill: 'ssh', text: 'Shell: "Only my admin subnet, 10.37.9.0/24, may knock at all. The clinic\'s front desk should not even see a login prompt."',
+          check: (d, ctx) => { const n = ctx.net(); return n.ssh('ADM', '10.37.12.2', 'shell').ok && !n.ssh('PC1', '10.37.2.1', 'shell').ok && /access-class/.test(n.ssh('PC1', '10.37.2.1', 'shell').reason); },
+          hint: 'R2(config)# access-list 5 permit 10.37.9.0 0.0.0.255\nR2(config)# line vty 0 15\nR2(config-line)# access-class 5 in', ok: 'Shell: "The front desk knocks and nothing answers."',
+          why: 'Shell: access-class 5 in on the VTY lines checks the source address of every incoming session against standard ACL 5. The admin subnet matches the permit; everyone else meets the implicit deny and is refused before the login prompt.' },
+        { type: 'cmd', skill: 'ssh', text: 'Enable: "The switch next. It has an address on vlan1, and my laptop is on another subnet. Make it able to answer."',
+          check: (d, ctx) => ctx.net().ping('ADM', '10.37.2.2').ok,
+          hint: 'SWC> enable\nSWC# configure terminal\nSWC(config)# ip default-gateway 10.37.2.1', ok: 'Enable: "It answers now, from across the router."',
+          why: 'Shell: A Layer 2 switch has no routing table. Its management address on interface vlan1 answers its own subnet, but a reply to another subnet needs somewhere to go: ip default-gateway 10.37.2.1 sends it to the clinic router.' },
+        { type: 'cmd', skill: 'ssh', text: 'Shell: "Same locks on the switch: domain, key, version 2, my user, local logins, SSH only, my subnet only."',
+          check: (d, ctx) => { const n = ctx.net(); return n.ssh('ADM', '10.37.2.2', 'shell').ok && !n.telnet('ADM', '10.37.2.2').ok && !n.ssh('PC1', '10.37.2.2', 'shell').ok && ctx.cfg('SWC').sshVersion === 2; },
+          hint: 'SWC(config)# ip domain name watson.net\nSWC(config)# crypto key generate rsa modulus 2048\nSWC(config)# ip ssh version 2\nSWC(config)# username shell secret <password>\nSWC(config)# access-list 5 permit 10.37.9.0 0.0.0.255\nSWC(config)# line vty 0 15\nSWC(config-line)# login local\nSWC(config-line)# transport input ssh\nSWC(config-line)# access-class 5 in',
+          ok: 'Shell: "Two boxes, one kind of lock. That\'s how I like a district."',
+          why: 'Shell: A switch takes the same SSH setup as a router: a hostname and ip domain name for the FQDN, crypto key generate rsa, ip ssh version 2, a local user, and on the VTY lines login local, transport input ssh and access-class. Once it answers through its default gateway, the admin laptop can reach it by SSH and nobody else can.' },
+        { type: 'form', skill: 'ssh', text: 'Enable, before you save: "Answer me four things."',
+          fields: [ { key: 'tel', label: 'Telnet listens on', options: ['TCP 22', 'TCP 23', 'UDP 22', 'UDP 514'], answer: 'TCP 23' }, { key: 'ssh', label: 'SSH listens on', options: ['TCP 22', 'TCP 23', 'UDP 22', 'UDP 514'], answer: 'TCP 22' },
+            { key: 'fqdn', label: 'the RSA keys on R2 are named', options: ['R2', 'watson.net', 'R2.watson.net', 'shell'], answer: 'R2.watson.net' },
+            { key: 'img', label: 'IOS images that can do SSH', options: ['K9', 'NPE', 'any image'], answer: 'K9' }, { key: 'con', label: 'by default the console port asks for', options: ['no password', 'the enable secret', 'a username'], answer: 'no password' } ],
+          hint: 'Twenty-three is the old one. The FQDN is hostname dot domain.', ok: 'Enable: "Correct. Now do the part that matters."',
+          why: 'Shell: Telnet is TCP 23 and SSH is TCP 22. The RSA key pair is named after the FQDN, hostname.domain, R2.watson.net. Only K9 images carry the cryptography SSH needs; NPE images have none. And the console port asks for no password until you configure line console 0.' },
+        { type: 'cmd', skill: 'ssh', text: 'Enable: "Save both. A lock you did not save falls off at the next power cut."',
+          check: (d) => !!(d.R2 && d.R2.startup && /transport input ssh/.test(d.R2.startup) && /ip ssh version 2/.test(d.R2.startup) && d.SWC && d.SWC.startup && /transport input ssh/.test(d.SWC.startup)),
+          hint: 'R2# write memory\nSWC# write memory   (or copy running-config startup-config)', ok: 'Enable: "[OK], twice. Root would have saved a third time."',
+          why: 'Enable: write memory, or copy running-config startup-config, copies the running configuration into the startup-config. Until then the new locks live only in memory, and a reboot puts the old Telnet door back.' }
+      ],
+      solution: [ { dev: 'ADM', type: ['telnet 10.37.12.2'] }, 'commit',
+        { dev: 'R2', type: ['enable', 'configure terminal', 'ip domain name watson.net', 'crypto key generate rsa modulus 2048'] }, 'commit',
+        { dev: 'R2', type: ['ip ssh version 2', 'username shell secret brass'] }, 'commit',
+        { dev: 'R2', type: ['line vty 0 15', 'login local', 'transport input ssh', 'exec-timeout 5 0', 'exit'] }, { dev: 'ADM', type: ['ssh -l shell 10.37.12.2'] }, 'commit',
+        { dev: 'R2', type: ['access-list 5 permit 10.37.9.0 0.0.0.255', 'line vty 0 15', 'access-class 5 in', 'exit'] }, 'commit',
+        { dev: 'SWC', type: ['enable', 'configure terminal', 'ip default-gateway 10.37.2.1'] }, 'commit',
+        { dev: 'SWC', type: ['ip domain name watson.net', 'crypto key generate rsa modulus 2048', 'ip ssh version 2', 'username shell secret brass', 'access-list 5 permit 10.37.9.0 0.0.0.255', 'line vty 0 15', 'login local', 'transport input ssh', 'access-class 5 in', 'end'] }, 'commit',
+        { form: { tel: 'TCP 23', ssh: 'TCP 22', fqdn: 'R2.watson.net', img: 'K9', con: 'no password' } }, 'commit',
+        { dev: 'R2', type: ['end', 'write memory'] }, { dev: 'SWC', type: ['write memory'] }, 'commit' ],
+      outro: 'By midnight the clinic router and its switch answer only to named people, over SSH, from one subnet. Shell starts on the gate router next with the same bag, and Enable stays on the stool to watch every save. Beacon reads it on air as one line: the clinic changed its locks tonight, and you can\'t hear through them any more.' }
   );
 })();

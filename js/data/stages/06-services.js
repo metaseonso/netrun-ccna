@@ -224,6 +224,51 @@
         { k: 'SYNC', q: { prompt: 'Beacon, hand over the microphone switch: "A line comes in marked 4. Is that worse or better news than a 6?"', opts: ['Better. Higher numbers are worse', 'Worse. 4 is a Warning, 6 is only Informational', 'The same. Both are notifications', 'It depends on the facility'], a: 1,
           yes: 'Beacon: "Worse. A 4 is a Warning."', no: 'Beacon: "Worse. The lower the number, the worse the news."',
           why: 'Beacon: Syslog severity runs from 0, Emergency, the worst, down to 7, Debugging. 4 is Warning and 6 is Informational, so a 4 is worse news. The facility says which part of the box is talking, not how bad it is.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 42 · SSH
+    { id: 'n42-new-locks', title: 'New locks', sub: 'console and VTY security, Telnet and SSH', npc: 'shell', day: [42], src: [PS('SSH.md')], unlocks: ['ssh'],
+      beats: [
+        { k: 'SCENE', where: 'The exchange hall · a workbench by the back stairs · ten at night',
+          lines: [
+            { who: 'narr', text: 'The corner by the back stairs smells of machine oil and brass filings. Someone in a dark hood and a cloth mask sits at a workbench, taking a padlock apart with a jeweller\'s screwdriver, pins laid out in a row on a rag. On a stool beside the bench, arms folded, sits a bald man with a grey beard you last saw guarding three painted doors in Kabuki.' },
+            { who: 'shell', text: 'The gate\'s VTY lines let anyone in who knew one word, and that word crossed the wire in the clear every time somebody used it. That\'s [[Telnet]], TCP port 23. Anything plugged in along the way can read it all: the password, every command, every answer. The box on slot 24 was plugged in along the way.' },
+            { who: 'enable', text: 'The console port is a door you must stand in front of. The VTY lines are sixteen doors, 0 to 15, and anyone can knock on them from anywhere. I have said so since this hall had a router.' },
+            { who: 'you', text: 'So what goes on those sixteen doors?' },
+            { who: 'shell', text: '[[SSH]], Secure Shell, TCP port 22. The same shell, but everything inside is encrypted, the login included. And every person gets a username of their own, so the log can finally say who.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What does a router need before it can speak SSH?', reply: 'Shell: "A hostname, a domain name, and an RSA key pair. The key is named after the [[FQDN]], the fully qualified domain name, which is the hostname and the domain together: R2.watson.net. crypto key generate rsa makes it, and SSH version 2 wants 768 bits at least. Then ip ssh version 2, a username with a secret, and on the VTY lines, login local and transport input ssh."' },
+            { tone: 'press', say: 'Enable, there was a password on those doors. Why wasn\'t it enough?', reply: 'Enable: "A password is enough if nobody hears you say it. Over Telnet, the whole street hears. One word, shared by everyone, and the log cannot tell you whose mouth it came out of."' },
+            { tone: 'care', say: 'Shell, why locks?', reply: 'Shell sets the screwdriver down. "Years ago somebody read the clinic router\'s password off a Telnet session in the market and switched the pharmacy off for a night. I spent the next month changing every lock in Watson. Now I\'m doing it again."' }
+          ] } },
+        { k: 'SCENE', where: 'The workbench · a router on the bench with its lid off', real: ['cisco'],
+          lines: [
+            { who: 'shell', text: 'Only some software can do it. The IOS images with K9 in their name carry the cryptography; the NPE ones, no payload encryption, can\'t do SSH at all. show version tells you which you have. show ip ssh tells you whether SSH is on and which version: 1.99 means the box speaks both 1 and 2, and I want 2 only.' },
+            { who: 'shell', text: 'On the VTY lines: login local checks the username and password you made. transport input ssh refuses anything else; it can also say telnet, all or none. exec-timeout throws out a session that sits idle, and access-class with a standard list decides who may knock at all.' },
+            { who: 'enable', text: 'And the console. By default it asks for nothing. line console 0, then password and login for one word, or login local for a name. Do not leave the first door open because the other sixteen are locked.' },
+            { who: 'shell', text: 'A switch gets the same locks on its management SVI, interface vlan1 with an address. It isn\'t a router, so it needs ip default-gateway, or it can hear you from another subnet and never answer.' },
+            { who: 'enable', text: 'Then you save. Root always saved first, and twice. A lock you did not save falls off at the next power cut.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why a standard list for access-class?', reply: 'Shell: "Because the question is only who is knocking. access-class 5 in on the VTY lines checks the source address of every new session against list 5, and the implicit deny turns everyone else away before they even see a login prompt."' },
+            { tone: 'press', say: 'You two agree on anything?', reply: 'Enable: "We agree the doors need locks." Shell: "We disagree about which door matters most." Enable: "The one you forgot." Shell goes back to the padlock without answering, which Enable seems to count as a win.' },
+            { tone: 'quiet', say: '(Watch Shell put the padlock back together.)', reply: 'Six pins go back in, each into its own chamber, in an order Shell doesn\'t need to check. The shackle clicks shut. Shell tries three keys from a ring, and only the last one turns.' }
+          ] } },
+        { k: 'LORE', title: 'THE SNIFFER IN HELSINKI', year: 1995, vibe: 'As if! Passwords flying across the wire in plain text for anyone with a sniffer.',
+          text: 'Shell, putting the padlock in the bag: "In the spring of 1995 someone ran a password sniffer on the network at the Helsinki University of Technology and collected thousands of logins. A researcher there, Tatu Ylönen, wrote a program so that nothing typed at a remote shell ever crossed the wire in the clear again. He called it the Secure Shell and gave it away that July. Within months it was on computers all over the world. I learned my trade from his source code, the way other locksmiths learn from an old master\'s locks."' },
+        { k: 'KIT', text: 'Shell hands you a key tag with the steps stamped into the brass.', real: ['cisco'], kit: [
+          { cmd: 'hostname R2 · ip domain name watson.net · crypto key generate rsa modulus 2048', what: 'the key is named after the FQDN, R2.watson.net. 768 bits or more for SSHv2' },
+          { cmd: 'ip ssh version 2 · show ip ssh · show version', what: '1.99 means versions 1 and 2. Only K9 images do SSH' },
+          { cmd: 'username shell secret PASSWORD', what: 'a name for every person' },
+          { cmd: 'line vty 0 15 · login local · transport input ssh · exec-timeout 5 0', what: 'sixteen doors: users, SSH only, out after five idle minutes' },
+          { cmd: 'access-list 5 permit 10.37.9.0 0.0.0.255 · line vty 0 15 · access-class 5 in', what: 'only the admin subnet may knock' },
+          { cmd: 'line console 0 · password WORD · login (or login local)', what: 'the console asks for nothing until you tell it to' },
+          { cmd: 'interface vlan1 · ip address 10.37.2.2 255.255.255.0 · ip default-gateway 10.37.2.1', what: 'a switch you can reach from another subnet' },
+          { cmd: 'Telnet TCP 23, clear text · SSH TCP 22, encrypted · ssh -l shell 10.37.12.2', what: 'from a PC: connect as a user' } ] },
+        { k: 'SYNC', q: { prompt: 'Enable, reading show ip ssh over your shoulder: "SSH Enabled, version 1.99. What does the box mean by that?"', opts: ['It is running a version between 1 and 2', 'It speaks both SSH version 1 and version 2', 'It speaks version 2 only', 'SSH is off until a key is made'], a: 1,
+          yes: 'Shell: "Both. ip ssh version 2 makes it 2 only."', no: 'Shell: "1.99 means both 1 and 2. I want 2 only."',
+          why: 'Shell: A box that supports SSH version 1 and version 2 at the same time reports version 1.99. SSHv1 has known weaknesses, so ip ssh version 2 limits it to version 2. show ip ssh shows the version in use.' } }
       ] }
   ] });
 })();
