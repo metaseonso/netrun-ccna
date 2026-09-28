@@ -46,7 +46,7 @@
   }
   function vlanIn(spec, vlan){ return spec.split(',').some(s => { const [a, b] = s.split('-').map(Number); return b ? (vlan >= a && vlan <= b) : a === vlan; }); }
   function expandRange(spec){ // "fastethernet0/1 - 12" or "fastethernet0/1-12" or "fastethernet0/1 , fastethernet0/5"
-    const out = []; spec.split(',').forEach(part => { part = part.trim(); const m = part.match(/^([a-z-]+\d+\/)(\d+)\s*-\s*(\d+)$/); if (m) { for (let i = +m[2]; i <= +m[3]; i++) out.push(m[1] + i); } else if (part) out.push(part.replace(/\s+/g, '')); }); return out; }
+    const out = []; spec.split(',').forEach(part => { part = part.trim(); const m = part.match(/^([a-z-]+(?:\d+\/)+)(\d+)\s*-\s*(\d+)$/); if (m) { for (let i = +m[2]; i <= +m[3]; i++) out.push(m[1] + i); } else if (part) out.push(part.replace(/\s+/g, '')); }); return out; }
 
   // main election
   function compute(topo, vlan, devices){
@@ -77,8 +77,7 @@
     const seen = new Set(); const roots = [];
     for (const start of names) { if (seen.has(start)) continue; const comp = []; const st = [start]; seen.add(start);
       while (st.length) { const x = st.pop(); comp.push(x); for (const e of adj[x]) if (!seen.has(e.to)) { seen.add(e.to); st.push(e.to); } }
-      let root = comp[0]; for (const c of comp) if (bidLess(sw[c].bid, sw[root].bid)) root = c; roots.push(root); sw[root].isRoot = true; sw[root].rootCost = 0;
-      comp.forEach(c => { sw[c].rootName = root; }); // every switch knows the root of its own part of the tree
+      let root = comp[0]; for (const c of comp) if (bidLess(sw[c].bid, sw[root].bid)) root = c; roots.push(root); sw[root].isRoot = true; sw[root].rootCost = 0; comp.forEach(c => { sw[c].rootOf = root; });
       // Dijkstra-ish with STP tiebreaks: cost, then neighbour BID, then neighbour port id
       const done = new Set([root]); const best = { [root]: { cost: 0, bid: sw[root].bid, nport: 0, via: null } };
       for (;;) { let pick = null;
@@ -107,8 +106,8 @@
     // find my root
     let root = null; for (const n in r.switches) if (r.switches[n].isRoot) { // root of my component: the one reachable; approximate by rootCost finite
       if (n === devName || me.rootCost < Infinity) { root = r.switches[n]; if (n === devName) break; } }
-    if (me.rootName && r.switches[me.rootName]) root = r.switches[me.rootName]; // a cut-off rogue is the root of its own part, not of mine
     if (me.isRoot) root = me;
+    if (me.rootOf && r.switches[me.rootOf]) root = r.switches[me.rootOf]; // several Layer 2 islands (routed links between them): each has its own root
     const mode = me.cfg.mode === 'pvst' ? 'ieee' : me.cfg.mode === 'mst' ? 'mstp' : 'rstp';
     const rp = me.rootPort ? me.ports[me.rootPort] : null;
     const lines = [];

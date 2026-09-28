@@ -161,6 +161,148 @@ Definition of done for a day:
 - 2026-09-28 · EIGRP neighbours need the same AS number (`eigrp-as-mismatch` issue otherwise); `passive-interface` under
   `router eigrp` drops the neighbour on that interface but still advertises its network; a passive RIP interface sends
   no updates. `ctx.net().eigrpNeighbors('R1')` and `show ip eigrp neighbors` (tested).
+- 2026-09-28 · VTP: `vtp mode server|client|transparent`, `vtp domain`, `vtp version`, `vtp password`; every VLAN change on a
+  server or client raises its revision (a net device may set `vtpRevision` to play a spare switch from someone's lab); servers
+  and clients in one domain joined by trunks take the VLAN database with the highest revision, transparent switches keep
+  their own at revision 0, a switch with no domain joins the one it hears; access ports whose VLAN vanished go `inactive`;
+  clients refuse `vlan N`; `switchport access vlan N` creates a missing VLAN like IOS; `show vtp status`; `api.vtp`, `api.vlans`.
+  DTP: `switchport nonegotiate` on a trunk leaves a dynamic neighbour as access (a mismatch). Tested (section 28).
+  `no vlan 10` is no longer read as `no vlan10` (interface Vlan10).
+
+- 2026-09-28 · Multilayer switching: SVIs start shut down (all of them, not only VLAN 1) and their line protocol is up only when
+  the VLAN exists and a switchport carrying it is up (autostate); a `switch` routes between its interfaces only with `ip
+  routing` (without it, it still answers on its own SVIs); `no switchport` makes a routed port with its own address (it leaves
+  VLANs, trunking and spanning tree); `default interface X` resets a port; `default` is no longer expanded to
+  `default-information`; `no interface X` deletes a subinterface, SVI or loopback. Tested in `tests/engine.test.js` (section 27).
+
+- 2026-09-28 · The shell keeps the case you typed for VLAN names and interface descriptions (`show vlan brief`, `show interfaces
+  description`, `show interfaces`, running-config), while the parsed config keeps them lower case for checks (`name`, `desc`;
+  the typed form is `shown`, `descShown`). `show vlan brief` lists the legacy VLANs 1002–1005. Tested (section 18).
+
+- 2026-09-28 · Static routes three ways: `ip route P M NEXTHOP`, `ip route P M EXIT` (the router ARPs for the destination and
+  the neighbour answers by proxy ARP) and `ip route P M EXIT NEXTHOP`, each with an optional AD; a route whose exit
+  interface is down leaves the table. `show ip route` prints like IOS: full codes, local /32 routes, entries grouped under
+  their classful network (`is variably subnetted, N subnets, M masks`). Tested in `tests/engine.test.js` (section 13).
+
+- 2026-09-28 · Routing loops: traceroute repeats the looping routers up to hop 30, and a PC ping into a loop answers `TTL expired
+  in transit` from the last router. Tested in `tests/engine.test.js` (section 12).
+
+- 2026-09-28 · Speed and duplex negotiation per link (`i.op`): auto on both ends is the fastest common speed at full duplex; a
+  hard-coded end turns negotiation off, so the auto end senses the speed and falls back to half duplex at 10/100 (a mismatch);
+  different hard-coded speeds keep the link down (`speed-mismatch`). `show interfaces` prints the operating values and error
+  counters (CRC, runts, frame on the full end, late collisions on the half end during a mismatch); `show interfaces status` marks
+  negotiated values `a-`. Tested in `tests/engine.test.js` (section 11).
+
+- 2026-09-28 · `show interfaces description` (status, protocol, description per port). Tested in `tests/engine.test.js` (section 1).
+
+- 2026-09-28 · Learning, opt-in per gig with `net.learn: true`: switches learn source MACs and hosts and routers learn ARP
+  entries only from pings and traceroutes typed in a shell (checks never teach the network); the first ping over a hop with no
+  ARP entry loses one packet (`Request timed out.` / `.!!!!`); `clear mac address-table dynamic [address|interface]`,
+  `clear arp-cache`, PC `arp -d`; `show arp` / `show ip arp` on routers; `api.macTable`, `api.arp`. Without `learn` the tables
+  stay all-knowing as before. PC ping prints real Windows statistics. Tested in `tests/engine.test.js` (section 10).
+- 2026-09-28 · FTP and TFTP in the shell: `copy tftp: flash:`, `copy ftp: flash:` (or `copy tftp://host/file flash:`) ask for
+  the host, the source and the destination like IOS (`Device.ask`, the prompt shows the question; an empty answer takes the
+  default), then the file moves if the router can ping the server, the server's net device lists it in `files: [{ name, size }]`,
+  and for FTP the box's `ip ftp username`/`ip ftp password` match the server's `ftp: { user, pass }`. Downloads land in
+  `dev.flash`; `copy running-config|startup-config|flash:<file> tftp:|ftp:` records uploads in `dev.sent`; both add a
+  `copy <proto>://host/file ...` line to the transcript. `show flash`, `show file systems`; `boot system`, `ip ftp username`,
+  `ip ftp password` parsed (`cfg.bootSystem`, `cfg.ftpUser`, `cfg.ftpPass`). Tested.
+- 2026-09-28 · NAT as the shell shows it: a ping from a PC now fills the translation table of every router it crossed (it
+  used to take a ping from the router itself); a dynamic pool gives each inside host its own address and keeps it until
+  `clear ip nat translation *` (new), so a small pool runs out and the next host's packet is dropped; PAT gives each host its
+  own port on the shared address; a new `ip nat inside source list N ...` replaces the old one for that list, and
+  `no ip nat inside source list|static` removes it. `show ip nat translations` lists static mappings from the config and the
+  outside address of every translation. Tested.
+- 2026-09-28 · The internet and NAT: a ping from a `cloud` now leaves as the internet (it used to take the PC path and
+  "deliver" any public address to itself); traffic from the internet for a router's static NAT address or NAT pool is
+  handed to that router (`cloudHandoff`), an address on the provider link that nobody holds answers nothing, and a
+  server's reply leaves wearing its static mapping. Before this, `ping('ISP', <static global>)` passed without reaching
+  the server. Tested.
+- 2026-09-28 · Voice VLANs: `switchport voice vlan N` and `power inline police [action errdisable|log]` are parsed
+  (`cfg.interfaces[p].voiceVlan`, `.powerPolice`); a host with `voice: true` (an IP phone) joins its port's voice VLAN when
+  the port has one, else the access VLAN; `show interfaces X switchport` shows the mode, the access VLAN and the voice VLAN.
+  Tested.
+- 2026-09-28 · QoS (MQC) in the shell: `class-map [match-any|match-all] N` (config-cmap), `policy-map N` (config-pmap) and
+  `class N` inside it (config-pmap-c), plus `arp access-list N` (config-arp-nacl), are real sub-modes; running-config prints
+  class-maps and policy-maps (classes nested) before the interfaces. Parsed into `cfg.qos.classMaps` (matches) and
+  `cfg.qos.policyMaps` (`order`, `classes[n]`: `setDscp`, `setCos`, `priority`, `bandwidth`, `police`, `shape`,
+  `fairQueue`, `wred`); `service-policy input|output N` and `mls qos trust cos|dscp|device cisco-phone` on interfaces.
+  `show class-map`, `show policy-map`, `show policy-map interface [X]` (DSCP names shown with their values; counters stay
+  at zero, there is no traffic model). Tested.
+- 2026-09-28 · The shell's abbreviation expander no longer eats keywords: `cdp run` / `lldp run` (they were read as `running-config`,
+  so CDP could not be turned off and LLDP never on), `sh ip int br` and `sh ip int g0/1` (they became `show ip interfaces`, which
+  had no output), `logging trap N` and `snmp-server community X ro`. The parser honours `no ntp server X`, `no logging X`,
+  `no snmp-server community X`, and reads `ntp master [stratum]` (`cfg.ntpMaster`, default 8). Tested (section 10).
+  `no access-list N` removes every line of list N from the running-config, not just the first. Tested (section 10).
+
+- 2026-09-28 · CDP and LLDP per port: `no cdp enable` / `cdp enable`, `no lldp transmit` / `no lldp receive` on an interface
+  (`Net` `discoveryPorts`: LLDP needs the sender to transmit and the listener to receive); `cdp timer|holdtime N`,
+  `lldp timer|holdtime|reinit N`, `[no] cdp advertise-v2` are parsed; `show cdp` and `show lldp` print the global timers.
+  Tested (section 11).
+
+- 2026-09-28 · NTP has state (`Net.ntpSync`, `ctx.net().ntp('R2')` → `{ synced, stratum, server, reason, tried }`): an `ntp server`
+  must answer a ping and be synchronised itself (a router) or be a server/cloud with `ntpStratum` in the gig's `net`; stratum is the
+  server's plus one, above 15 is unsynchronised; `ntp master [n]` is its own clock (default 8); `ntp authenticate` needs
+  `ntp server X key N`, `ntp trusted-key N` and a matching `ntp authentication-key N md5 K` on the server. Parsed too: `ntp peer`,
+  `ntp source`, `ntp update-calendar`, `clock timezone NAME H [M]`, `clock summer-time NAME recurring`. `show ntp status` and
+  `show ntp associations` follow the real sync; new `show clock [detail]` (the 1993 IOS default with `*` until NTP syncs, then
+  the time in the configured zone) and `show calendar`. `clock set`, `calendar set`, `clock read-calendar`, `clock update-calendar`
+  are accepted in privileged EXEC; `clock summer-time NAME recurring` follows the US rule (second Sunday in March to the first
+  Sunday in November). Tested (section 12).
+
+- 2026-09-28 · DNS (`Net.resolve`, `ctx.net().resolve('PC1', 'records')` → `{ ok, ip, server, reason, nx }`): a host asks its DNS
+  servers (`dns` on the host, or the DHCP lease) over UDP 53, so ACLs apply; a router with `ip dns server` answers from its
+  `ip host NAME IP` table and forwards the rest to its `ip name-server`s while `ip domain lookup` is on (the default); a server or
+  cloud answers from `dnsRecords: { name: ip }` in the gig's `net`. Parsed: `ip host`, `no ip host`, `ip name-server`,
+  `[no] ip dns server`, `[no] ip domain lookup` / `ip domain-lookup`. PCs: `nslookup NAME`, `ping NAME`, `tracert NAME`,
+  `ipconfig /displaydns`, `ipconfig /flushdns`. Routers: `show hosts`, `ping NAME` / `traceroute NAME` (translated first).
+  Tested (section 13).
+
+- 2026-09-28 · DHCP relay to a router's own pool: `ip helper-address` pointing at an interface address of a router that has a pool
+  for the relay interface's subnet gives the host a lease from that pool, after that router's `ip dhcp excluded-address` ranges
+  (before, relay only reached `server` devices with `pools`). The path between relay and server is not checked. Tested (section 14).
+  Two DHCP clients on one segment now get consecutive addresses (.21 and .22); the second used to skip one. Tested (section 14).
+
+- 2026-09-28 · SNMP has state: `ctx.net().snmp(nms, agentIp, community, write)` → `{ ok, reason }` (the community must exist,
+  `rw` for a Set, its ACL from `snmp-server community X ro|rw ACL` must permit the manager, and UDP 161 must get through);
+  `ctx.net().snmpTraps('R1')` → one entry per `snmp-server host` (needs `snmp-server enable traps` and UDP 162). Parsed:
+  `snmp-server contact`, `location`, `host IP [version 1|2c|3] COMMUNITY`, `no snmp-server host`, `enable traps [types]`.
+  New `show snmp` and `show snmp host`. Tested (section 15).
+
+- 2026-09-28 · Syslog has state: `logging console|monitor|buffered|trap LEVEL` (by number or name; `buffered` takes a size),
+  `no logging console|monitor|buffered`, `service timestamps log datetime|uptime [msec]`, `service sequence-numbers`, and
+  `logging synchronous` on a line are parsed (`cfg.logLevels`, `logBufferSize`, `logTs`, `logSeq`, `con.loggingSync`).
+  `ctx.net().syslog('R1')` → one entry per `logging host`, reached over UDP 514, at the trap level (default 6). `show logging`
+  prints the real levels and hosts and a buffer: a gig's old lines (`net.devices.R1.logBuffer: [{ sev, line }]`) plus a
+  `%SYS-5-CONFIG_I` line for the player's own configuring, stamped the way the box is set now (sequence number, datetime from
+  `show clock` with `*` while unsynchronised, or uptime), filtered by the buffer level. Tested (section 16).
+
+- 2026-09-28 · Remote logins: `ctx.net().ssh(from, ip, user)` and `ctx.net().telnet(from, ip)` → `{ ok, dev, reason }`. SSH needs a
+  domain and an RSA key (768+ bits for `ip ssh version 2`), `login local` with the user, `transport input` allowing ssh, the VTY
+  `access-class` to permit the source, and TCP 22 through; Telnet needs transport to allow it (no transport line allows it), a
+  password or local login, the access-class and TCP 23. PCs: `ssh -l USER IP`, `telnet IP`. A Layer 2 switch with an SVI now
+  replies through `ip default-gateway` (it had no way back to other subnets). Tested (section 17).
+  `crypto key generate rsa` names the keys after `ip domain name` as well as the older `ip domain-name`. Tested (section 17).
+- 2026-09-28 · Spanning tree with several Layer 2 islands (joined only by routed links, as in the Mega Lab): `show spanning-tree`
+  names each switch's own island's root (`rootOf` in `Stp.compute`), not the lowest bridge ID in the building. `do show
+  spanning-tree vlan N` from config mode keeps its VLAN number (the shell used to fold it into `vlanN`). Tested (14).
+
+- 2026-09-28 · A Layer 2 switch's management SVI answers pings and can ping: on its own subnet, and beyond it through
+  `ip default-gateway` (`S.hostTables`, kept apart from the routing tables, so `show ip route` still says routing is off).
+  Before, a ping reached the SVI but the reply had no route. Tested (13).
+
+- 2026-09-28 · Routed ports on multilayer switches: `no switchport` on an `l3switch` port makes it a Layer 3 port (no VLAN,
+  no trunk, no spanning tree, no EtherChannel); with an `ip address` it is a point-to-point link like a router's, so a
+  core of multilayer switches can run OSPF over /30s (the Mega Lab). `switchport` turns it back. Tested (12).
+
+- 2026-09-28 · GRE tunnels. `interface tunnelN` with `ip address`, `tunnel source <iface|ip>`, `tunnel destination <ip>`
+  (`tunnel mode gre ip` is accepted). A tunnel is not shut by default; it comes up when both ends name each other and the
+  underlay carries a ping between the two addresses (judged on the network without tunnels). The two ends then form a
+  point-to-point link: connected routes, static routes and OSPF (cost 1000, bandwidth 100 kbps) run over it, and
+  traceroute shows the far end's tunnel address. `show interfaces tunnel0` and `Tunnel0` in the tables. Tested (11).
+
+- 2026-09-28 · `interface range` works on three-part port names (`int range g1/0/4 - 5` on a Catalyst 3650), so the
+  Mega Lab's switches can be configured the way the course does it (`Stp.expandRange`, tested).
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service

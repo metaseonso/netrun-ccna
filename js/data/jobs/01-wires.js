@@ -46,26 +46,6 @@
       solution: [ { select: 'SW1' }, 'commit', { select: 'R1' }, 'commit', { select: 'FW1' }, 'commit', { select: 'SRV1' }, 'commit', { multi: [0, 1, 2] }, 'commit', { dev: 'PC1', type: ['ping 192.168.1.100'] }, 'commit', { choose: 0 }, 'commit' ],
       outro: 'Osi pins the new map above the rack, next to a faded photo of her first van. When the new driver comes in tomorrow, every box on the rack will have a name.' },
 
-    // ------------------------------------------------------------------ D · First Jack-In
-    { id: 'd-first-jack', cls: 'D', rep: 30, from: 'enable', title: 'First Jack-In', requires: ['cli-intro'], devices: ['R1'],
-      brief: 'DISPATCH » Enable has a pop-up router in Kabuki with nothing on it yet. Name it, put a password on the second door, save. That is the whole gig. Do not overthink it.\n\nCLIENT (a noodle bar owner) » "The man said it needs a name and a password. I do not know what that means. Please do not break the card reader."',
-      map: { w: 520, h: 200, nodes: [ { id: 'R1', label: 'R1', type: 'router', x: 260, y: 90 }, { id: 'PC', label: 'your deck', type: 'pc', x: 90, y: 90 } ], links: [ { a: 'PC', b: 'R1' } ] },
-      shows: { R1: { 'show version': 'Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.1(4)M4\nR1 uptime is 3 minutes\nSystem image file is "flash0:c2900-universalk9-mz.SPA.151-4.M4.bin"' } },
-      day: [4], team: null,
-      solution: [ { dev: 'R1', type: ['enable', 'configure terminal'] }, 'commit', { dev: 'R1', type: ['hostname NC-R1'] }, 'commit', { dev: 'R1', type: ['enable secret cyber'] }, 'commit', { choose: 1 }, 'commit', { dev: 'R1', type: ['end', 'copy run start'] }, 'commit' ],
-      steps: [
-        { type: 'cmd', skill: 'cli-modes', text: 'Enable, from his stool: "Door one, door two, door three. Get to global configuration on R1. I want to see (config)# in the prompt."', need: [ { dev: 'R1', mode: 'priv', line: 'configure terminal' } ], hint: 'R1> enable\nR1# configure terminal', ok: '"Third door. In."',
-          why: 'Enable: Three doors. When you arrive the prompt ends in > and you can only look. Type enable to open door two. The prompt changes to #. Type configure terminal to open door three. The prompt changes to (config)#. Only behind door three can you change the box. Short forms work: en, then conf t.' },
-        { type: 'cmd', skill: 'cli-modes', text: '"The owner wants it called NC-R1. The prompt will change when you get it right."', need: [ { dev: 'R1', mode: 'config', line: 'hostname nc-r1' } ], hint: 'R1(config)# hostname NC-R1', ok: '"It knows its name."',
-          why: 'Enable: The box has a name and it shows at the start of every prompt. Behind door three, type hostname NC-R1. Look at the prompt. If it now says NC-R1(config)#, it worked. If it still says R1, you are behind the wrong door or the name is misspelled.' },
-        { type: 'cmd', skill: 'cli-modes', text: '"Lock door two. The hashed kind. Any password you like, I will not read it."', need: [ { dev: 'R1', mode: 'config', line: /^enable secret \S+/ } ], hint: 'NC-R1(config)# enable secret <password>', ok: '"Hashed. The other command stores it in plain text. I have never understood who chooses that."',
-          why: 'Enable: This is the password for door two. Type enable secret followed by any word. The word secret matters. It scrambles the password before saving it, so anyone reading the config sees nonsense. The other command, enable password, saves it as plain readable text. Never that one.' },
-        { type: 'choice', skill: 'cli-modes', text: 'The owner, from behind the counter: "So it is done? If the power goes, it stays?"', opts: ['Yes, it is in the startup-config now', 'No. It is in the running-config, in memory. A reboot loses it until it is saved', 'Yes, it is in flash with the software', 'It is only in the terminal history'], a: 1, hint: 'Memory is now. NVRAM is after a reboot.', ok: 'Enable: "Correct. So do something about it."',
-          why: 'Enable: The box keeps two copies of its settings. The running-config is what it is doing right now, and it lives in memory. Memory forgets when the power goes. The startup-config is the saved copy the box reads when it turns on. Nothing you typed has been saved yet. So the honest answer to the owner is: not yet.' },
-        { type: 'cmd', skill: 'cli-modes', text: '"Save it."', need: [ { dev: 'R1', line: /^(do )?write memory$/ } ], hint: 'NC-R1# write memory   (or copy running-config startup-config)', ok: '"[OK]. Door closes behind you."',
-          why: 'Enable: Saving copies memory into the startup file. Two ways to say it: write memory, or copy running-config startup-config. Short forms: wr, or copy run start. The box answers [OK]. If you are still behind door three, type end first, or say do write memory. After that, a power cut cannot take your work.' }
-      ], outro: 'The owner brings you a bowl of noodles you did not order. Enable nods once, which is as much as anyone gets. Dispatch: "Rep credited. Old Root is asking for someone at the clinic."' },
-
     // ------------------------------------------------------------------ night 2 · from Lab 02 (connecting devices)
     { id: 'd-n02-dock-link', cls: 'D', rep: 10, from: 'osi', title: 'The Loading Dock Link', day: [2], requires: ['n02-loading-dock'], devices: ['PC1'],
       brief: 'DISPATCH » The guild\'s link to the loading dock is dead and the drivers are scanning parcels by hand. Osi has the parts. Plan the new cabling with her and get the dock back online.\n\nCLIENT (Osi Sevenfold) » "I need the right cable on every link this time. Last time someone guessed, and it cost us six years of dropped scans."',
@@ -169,6 +149,55 @@
       ],
       solution: [ { order: [1, 3, 0, 4, 2] }, 'commit', { form: { l4: 'segment', l3: 'packet', l2: 'frame', l1: 'bits' } }, 'commit', { dev: 'PC1', type: ['tracert 10.3.0.100'] }, 'commit',
         { form: { sw: 'Layer 2', rt: 'Layer 3', srv: 'all the way to Application' } }, 'commit', { choose: 0 }, 'commit', { choose: 0 }, 'commit', { form: { eth: 'IEEE', wifi: 'IEEE', ip: 'IETF', tcp: 'IETF' } }, 'commit' ],
-      outro: 'Osi paints the five floors on the wall above the sorting table, with the switch at two and the router at three. In the morning she drives the ink to the shop in Kabuki herself, and the owner signs for it at the counter.' }
+      outro: 'Osi paints the five floors on the wall above the sorting table, with the switch at two and the router at three. In the morning she drives the ink to the shop in Kabuki herself, and the owner signs for it at the counter.' },
+    // ------------------------------------------------------------------ night 4 · from Lab 04 (basic device security)
+    { id: 'd-n04-seven-bowls', cls: 'D', rep: 10, from: 'enable', title: 'A Name and a Lock', day: [4], requires: ['n04-three-doors'], devices: ['R1'],
+      brief: 'DISPATCH » Ma Tsai\'s router at the Seven Bowls has no name and no lock. Enable is on site. Name it, lock the second door, save it.\n\nCLIENT (Ma Tsai) » "Last winter the card reader lost everything in a ten-minute power cut. I want it to survive the next one."',
+      net: {
+        devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0011.2204.0001' }, TILL: { kind: 'host', ip: '192.168.10.20', mask: '255.255.255.0', gw: '192.168.10.1' } },
+        links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'TILL' } ],
+        preconfig: { R1: ['interface gigabitethernet0/0', 'ip address 192.168.10.1 255.255.255.0', 'no shutdown'] }
+      },
+      map: { w: 520, h: 250, nodes: [ { id: 'R1', label: 'the router over the freezer', type: 'router', x: 260, y: 60 }, { id: 'SW1', label: 'kitchen switch', type: 'switch', x: 260, y: 140 }, { id: 'TILL', label: 'card reader', type: 'pc', x: 260, y: 214 } ],
+        links: [ { a: 'R1', b: 'SW1' }, { a: 'SW1', b: 'TILL' } ] },
+      steps: [
+        { type: 'form', skill: 'cli-modes', text: 'Enable, handing you the blue cable: "Set your deck to talk to the console port. Get one of these wrong and the screen stays black."',
+          fields: [ { key: 'baud', label: 'Speed (bits per second)', options: ['1200', '9600', '19200', '115200'], answer: '9600' }, { key: 'data', label: 'Data bits', options: ['5', '7', '8'], answer: '8' },
+            { key: 'parity', label: 'Parity', options: ['None', 'Even', 'Odd'], answer: 'None' }, { key: 'stop', label: 'Stop bits', options: ['1', '2'], answer: '1' }, { key: 'flow', label: 'Flow control', options: ['None', 'Hardware', 'XON/XOFF'], answer: 'None' } ],
+          hint: '9600, 8, none, 1, none.', ok: 'Enable: "Router>. You are at the first door."',
+          why: 'Enable: A Cisco console port uses 9600 bits per second, 8 data bits, no parity, 1 stop bit and no flow control, often written 9600 8N1. The cable is a rollover cable into the RJ45 console port, or a USB cable into the USB console port.' },
+        { type: 'cmd', skill: 'cli-modes', text: 'Enable: "Ma Tsai wants it called SEVEN-BOWLS. Go through the doors you need and name it. The prompt will tell you when it has taken."',
+          check: (d, ctx) => /^seven-bowls$/i.test(ctx.cfg('R1').hostname || ''),
+          hint: 'R1> enable\nR1# configure terminal\nR1(config)# hostname SEVEN-BOWLS', ok: 'Enable: "SEVEN-BOWLS(config)#. It knows its name."',
+          why: 'Enable: hostname is a global configuration command, so you need the third door: enable, then configure terminal, then hostname SEVEN-BOWLS. The prompt changes at once to show the new name. Short forms work: en and conf t.' },
+        { type: 'cmd', skill: 'cli-modes', text: 'Enable: "Put a password on the second door, the plain-text kind first, so you can see what is wrong with it. Then read the running-config."',
+          need: [ { dev: 'R1', line: /^(do )?show running-config$/ } ], check: (d, ctx) => !!ctx.cfg('R1').enablePassword && !ctx.cfg('R1').passwordEncryption,
+          hint: 'SEVEN-BOWLS(config)# enable password <word>\nSEVEN-BOWLS(config)# do show running-config', ok: 'Enable: "There it is, in plain letters, for anyone who reads the file."',
+          why: 'Enable: enable password sets the password for privileged EXEC mode, but stores it in plain text, so show running-config displays it to anyone who can read the configuration. From global configuration mode, do show running-config runs the privileged command without leaving.' },
+        { type: 'cmd', skill: 'cli-modes', text: 'Enable: "Now scramble every password on the box, the ones already there and the ones to come. Read the file again."',
+          need: [ { dev: 'R1', line: /^(do )?show running-config$/ } ], check: (d, ctx) => ctx.cfg('R1').passwordEncryption === true && /enable password 7 /.test(d.R1.out.map(o => o.s).join('\n')),
+          hint: 'SEVEN-BOWLS(config)# service password-encryption\nSEVEN-BOWLS(config)# do show running-config', ok: 'Enable: "enable password 7, then a string of hex. Type 7."',
+          why: 'Enable: service password-encryption scrambles every current and future plain-text password in the configuration with type 7 encryption. After it, show running-config shows enable password 7 and a string of hex digits instead of the word. Type 7 can be reversed easily, so it only protects against someone reading over your shoulder.' },
+        { type: 'choice', skill: 'cli-modes', text: 'Ma Tsai, reading over your shoulder: "If my nephew types no service password-encryption tomorrow, does my password come back as plain words?"',
+          opts: ['No. Passwords already scrambled stay scrambled; only new ones would be stored in plain text', 'Yes, every password is decrypted at once', 'Yes, but only after the router reboots', 'The command is refused while passwords exist'], a: 0,
+          hint: 'Removing the command stops future scrambling. What about the past?', ok: 'Enable: "It stays scrambled. Your nephew cannot undo that one."',
+          why: 'Enable: no service password-encryption only stops the router from encrypting passwords set after it. Passwords that were already encrypted stay encrypted in the configuration. Putting no in front of a command removes it.' },
+        { type: 'cmd', skill: 'cli-modes', text: 'Enable: "Now the real lock. Set an enable secret, a different word from the password."',
+          check: (d, ctx) => { const c = ctx.cfg('R1'); return !!c.enableSecret && c.enableSecret !== c.enablePassword; },
+          hint: 'SEVEN-BOWLS(config)# enable secret <another word>', ok: 'Enable: "Type 5. That one is a hash, and a hash cannot be turned back into the word."',
+          why: 'Enable: enable secret stores the privileged EXEC password as a type 5 MD5 hash, which cannot be reversed the way type 7 can. When both enable secret and enable password are set, the router only accepts the secret.' },
+        { type: 'cmd', skill: 'cli-modes', text: 'Enable: "Prove it. Step back to the first door and come through the second again. The box will ask you for a word, and only one of the two will work."',
+          check: (d, ctx) => { const L = d.R1.lines; const set = L.map(r => /^enable secret /.test(r.line)).lastIndexOf(true); return set >= 0 && d.R1.mode !== 'user' && L.slice(set).some(r => r.auth); },
+          hint: 'SEVEN-BOWLS(config)# end\nSEVEN-BOWLS# disable\nSEVEN-BOWLS> enable\nPassword: <your enable secret>', ok: 'Enable: "The secret opened it and the password did nothing. Good."',
+          why: 'Enable: disable drops you back to user EXEC mode. enable then asks for a password, and because an enable secret exists, only the secret works; the enable password is ignored. Three wrong tries and the box stops asking.' },
+        { type: 'cmd', skill: 'cli-modes', text: 'Ma Tsai: "And if the power goes tonight?" Enable, to you: "Make sure it does not matter."',
+          check: (d, ctx) => { const st = d.R1.startup || ''; return /hostname seven-bowls/i.test(st) && /enable secret/.test(st) && /service password-encryption/.test(st); },
+          hint: 'SEVEN-BOWLS# write memory\n(or copy running-config startup-config, or write)', ok: 'Enable: "[OK]. The door closes behind you, and it will still be closed in the morning."',
+          why: 'Enable: Everything you typed changed the running-config in RAM, which is lost when the power goes. write, write memory or copy running-config startup-config saves it to the startup-config in NVRAM, which the router loads when it starts. show startup-config shows what was saved.' }
+      ],
+      solution: [ { form: { baud: '9600', data: '8', parity: 'None', stop: '1', flow: 'None' } }, 'commit', { dev: 'R1', type: ['enable', 'configure terminal', 'hostname SEVEN-BOWLS'] }, 'commit',
+        { dev: 'R1', type: ['enable password noodles', 'do show running-config'] }, 'commit', { dev: 'R1', type: ['service password-encryption', 'do show running-config'] }, 'commit', { choose: 0 }, 'commit',
+        { dev: 'R1', type: ['enable secret broth'] }, 'commit', { dev: 'R1', type: ['end', 'disable', 'enable', 'broth'] }, 'commit', { dev: 'R1', type: ['write memory'] }, 'commit' ],
+      outro: 'Ma Tsai sets a bowl of noodles in front of you that you did not order, and writes SEVEN-BOWLS on a strip of tape across the router. Enable nods once on his way out, which is as much as anyone gets from him.' }
   );
 })();
