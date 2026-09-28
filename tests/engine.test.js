@@ -195,6 +195,8 @@ module.exports.run = function({ out }){
     d.R2.exec('int g0/0'); d.R2.exec('ip helper-address 10.0.12.1'); A = Net.api(Net.build(net, d)); const l = A.lease('PC3');
     ok(l.ok && l.server === 'R1' && l.ip === '10.3.3.21' && l.gw === '10.3.3.1' && [].concat(l.dns).includes('10.1.1.1'), 'dhcp relay: helper to R1 gets a lease from R1\'s pool after its exclusions (' + JSON.stringify(l) + ')');
     ok(A.ping('PC3', '10.1.1.1').ok && /10\.3\.3\.21/.test(Show.render(d.R1, 'show ip dhcp binding', A.state)), 'dhcp relay: the relayed host routes home and shows in the server\'s bindings');
+    const net2 = { devices: Object.assign({}, net.devices, { PC4: { kind: 'host', dhcp: true } }), links: net.links.concat([ { a: 'PC4', b: 'R2', bp: 'gigabitethernet0/0' } ]) }; const B = Net.api(Net.build(net2, d));
+    ok(B.lease('PC3').ip === '10.3.3.21' && B.lease('PC4').ip === '10.3.3.22', 'dhcp: two clients get consecutive addresses (' + B.lease('PC3').ip + ', ' + B.lease('PC4').ip + ')');
   }
   return { pass, fails };
 };

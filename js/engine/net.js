@@ -171,7 +171,7 @@
     return { ok: false, reason: cands.length ? 'offers dropped by DHCP snooping: ' + dropped.join(', ') : 'no DHCP server reachable', dropped };
   }
   function nextFree(S, seg, network, mask, host, serverDev){ // deterministic: hosts in name order get consecutive addresses after excluded/reserved ones
-    const D = S.net.devices; const excl = serverDev && S.cfg[serverDev] ? S.cfg[serverDev].dhcp.excluded : []; const used = new Set((S.owners[seg] || []).map(o => o.ip));
+    const D = S.net.devices; const excl = serverDev && S.cfg[serverDev] ? S.cfg[serverDev].dhcp.excluded : []; const used = new Set((S.owners[seg] || []).filter(o => !(o.kind === 'host' && D[o.dev] && D[o.dev].dhcp)).map(o => o.ip)); // other DHCP hosts are counted by their order, not as taken
     const base = IP.ip2n(network); const size = Math.pow(2, 32 - mlen(mask)); const order = Object.keys(D).filter(n => D[n].dhcp && S.uf.find(S.hostNode(n)) === seg).sort(); const idx = order.indexOf(host);
     let count = 0; for (let k = 1; k < size - 1; k++) { const ip = IP.n2ip(base + k); if (used.has(ip)) continue; if (excl.some(([a, b]) => IP.ip2n(ip) >= IP.ip2n(a) && IP.ip2n(ip) <= IP.ip2n(b))) continue; if (count === idx) return ip; count++; } return null;
   }
