@@ -171,7 +171,7 @@ module.exports.run = function({ out }){
     d = devs({ R1: base1.concat(['ip route 10.0.2.0 255.255.255.0 g0/1 10.0.12.2 5']), R2: base2 }); A = Net.api(Net.build(net, d)); r = A.route('R1', '10.0.2.0/24');
     ok(r && r.via === '10.0.12.2' && r.iface === 'gigabitethernet0/1' && r.ad === 5 && A.ping('PC1', '10.0.2.10').ok, 'static: exit interface plus next hop, with an AD (' + JSON.stringify(r) + ')');
     const txt = Show.render(d.R1, 'show ip route', A.state); ok(/L\s+10\.0\.1\.1\/32 is directly connected/.test(txt) && /10\.0\.0\.0\/8 is variably subnetted/.test(txt) && /\[5\/0\] via 10\.0\.12\.2, GigabitEthernet0\/1/.test(txt), 'show ip route: local /32 routes and classful headers');
-    d.R1.exec('exit'); d.R1.exec('no ip route 10.0.2.0 255.255.255.0 g0/1 10.0.12.2'); A = Net.api(Net.build(net, d)); ok(!A.route('R1', '10.0.2.0/24'), 'static: no ip route removes an exit-interface route');
+    d.R1.exec('no ip route 10.0.2.0 255.255.255.0 g0/1 10.0.12.2'); A = Net.api(Net.build(net, d)); ok(!A.route('R1', '10.0.2.0/24'), 'static: no ip route removes an exit-interface route');
     d.R1.exec('ip route 10.0.2.0 255.255.255.0 10.0.12.2'); d.R1.exec('int g0/1'); d.R1.exec('shutdown'); A = Net.api(Net.build(net, d)); ok(!A.route('R1', '10.0.2.0/24'), 'static: the route leaves the table when its interface goes down');
   }
   return { pass, fails };
