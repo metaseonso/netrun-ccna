@@ -161,13 +161,20 @@ Rules and numbers live there, never in a character's mouth.
 | Ace Elle | plain and exact, reads things out in order, says a rule once; keeps her suspicions on a clipboard, not in her mouth |
 | Denise | an operator on a long shift: warm, quick, practical, thinks in order of events, apologises for the coffee |
 | Dora (walk-on) | Denise's intern: eager, checks her own answers aloud, writes everything on a clipboard, admits what she got wrong |
-| Beacon | a pirate DJ on and off air: loud, warm, exclamation marks, radio patter even off mic, picks fights about channel 6 |
 | Shell | a locksmith in a hood and a mask: quiet, careful, short practical sentences, talks with the hands busy, never says a password aloud |
 | Prof. Hypervisor | cheerful and a little scattered, thinks out loud, calls every machine a little instance, talks to the cat |
 | Clerk Adebayo | formal and exact, says what the record needs, reads the minutes back word for word |
 | Beacon | loud and warm, talks like she is still on air, takes channel 6 personally, always knows how many are listening |
 | Ansible | calm and spare, short sentences in the order he would run them, finishes typing before he looks up |
 | Jason | neat and exact, says things once in the right order, dry about sloppy data, proud of a file that parses |
+| Osi Sevenfold | orderly and kind under the clipboard; counts and sorts as she talks, remembers dates, never raises her voice |
+| Mac | quick and friendly, keeps a ledger, jokes to fill the silence, notices a face twice before anyone else does |
+| Cider | precise and dry, shows her working, wastes nothing, patient with people who count on paper; family history of the block |
+| Vee Lan | practical and fast, few pleasantries, gets on her knees to fix things, owes Old Root and hates it; almost smiles, once |
+| Nexthop | chatty cab driver, streetwise, one stop at a time, notices when something is too tidy to be a mistake |
+| Vesper Kade | polished and patient, never raises her voice, speaks for Halvorsen as if it were the weather, knows people's names before they say them |
+| Imani (walk-on) | a ward nurse: direct, tired, protective of patients, remembers the night the clinic went to paper |
+| Ma Tsai, Tomas, Hanna, Voss (walk-ons) | shopkeepers and a landlord: short, concrete, about their own business and what it costs them |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that
