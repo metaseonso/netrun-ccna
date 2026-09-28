@@ -119,11 +119,11 @@
           ] } },
         { k: 'SCENE', where: 'The switch closet · Friday, 18:10',
           lines: [
-            { who: 'narr', text: 'Rain on wool reaches you first, then a clean, cold scent like the lobby of a tower. A woman in a charcoal coat stands in the closet doorway with her hands in her pockets, silver hair cut straight at the jaw. She looks at the rack for a long time before she looks at either of you.' },
+            { who: 'narr', text: 'Rain on wool reaches you first, then a clean, cold scent like the lobby of a tower. Vesper Kade stands in the closet doorway in her charcoal coat, hands in her pockets, the thin silver pin on her lapel catching the rack lights. She looks at the rack for a long time before she looks at either of you.' },
             { who: 'root', text: 'Vesper.' },
             { who: 'vesper', text: 'Twenty years, and it\'s the same rack. You kept the tag.' },
-            { who: 'root', text: 'Vesper Kade. She kept this closet with me, a long time ago.' },
-            { who: 'vesper', text: 'I speak for Halvorsen Consolidated in Watson these days. I came to see him off, and to meet the runner Dispatch keeps sending into buildings like this one. I\'ve heard your handle more than once this month.' },
+            { who: 'root', text: 'She kept this closet with me, twenty years ago. My apprentice, before Halvorsen.' },
+            { who: 'vesper', text: 'We\'ve met. I came to see him off, and to see how the runner Dispatch keeps sending into buildings like this one is getting on. I\'ve heard your handle more than once this month.' },
             { who: 'vesper', text: 'The night of the loop, this clinic was on paper for nine hours, and one patient\'s records never came back. The street patched it and called it fixed. Halvorsen wants to buy the Watson Exchange so the district never again depends on whoever happens to be on shift.' }
           ],
           choice: { opts: [
