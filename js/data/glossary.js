@@ -184,5 +184,8 @@ window.GLOSSARY = {
   'backup port': 'A rapid spanning tree role: a discarding port that receives a superior BPDU from another port on the same switch (only on a shared segment, such as a hub). It backs up a designated port.',
   'port-channel': 'The logical interface an EtherChannel creates from its member ports. Spanning tree and the switch treat it as one link.',
   'lacp': 'Link Aggregation Control Protocol, IEEE 802.3ad (now 802.1AX). Negotiates an EtherChannel: active sends, passive only answers. Up to 8 active members and 8 standby.',
-  'pagp': 'Port Aggregation Protocol, Cisco proprietary. Negotiates an EtherChannel: desirable sends, auto only answers.'
+  'pagp': 'Port Aggregation Protocol, Cisco proprietary. Negotiates an EtherChannel: desirable sends, auto only answers.',
+  'metric': 'The number a routing protocol uses to compare its own routes to the same network: RIP hop count, EIGRP bandwidth and delay, OSPF cost. Lower wins; equal metrics are load-balanced (ECMP).',
+  'autonomous system': 'A network under one organisation\'s control, with its own routing policy. IGPs share routes inside one; EGPs (BGP) share routes between them.',
+  'floating static route': 'A static route given an administrative distance higher than the dynamic route it backs up, so it stays out of the routing table until that route disappears.'
 };
