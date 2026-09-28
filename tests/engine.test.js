@@ -56,7 +56,9 @@ module.exports.run = function({ out }){
     let d = devs({ R1: base }); let A = Net.api(Net.build(net, d)); const p0 = A.ping('PC1', '8.8.8.8'); ok(!p0.ok && /private/.test(p0.reason), 'nat: ISP drops private source without NAT (' + p0.reason + ')');
     d.R1.exec('access-list 1 permit 192.168.1.0 0.0.0.255'); d.R1.exec('ip nat inside source list 1 interface g0/1 overload'); d.R1.exec('int g0/0'); d.R1.exec('ip nat inside'); d.R1.exec('int g0/1'); d.R1.exec('ip nat outside'); A = Net.api(Net.build(net, d));
     const p1 = A.ping('PC1', '8.8.8.8'); ok(p1.ok && p1.nat.length && p1.nat[0].global === '203.0.113.2', 'nat: PAT translates and ping works (' + p1.reason + ')');
+    const p15 = A.ping('ISP', '203.0.113.3'); ok(!p15.ok, 'nat: an unmapped address on the provider link answers nothing (' + p15.reason + ')');
     d.R1.exec('ip nat inside source static 192.168.1.50 203.0.113.3'); A = Net.api(Net.build(net, d)); const p2 = A.ping('ISP', '203.0.113.3'); ok(p2.ok, 'nat: static NAT reachable from outside (' + p2.reason + ')');
+    ok(p2.dst === 'SRV' && p2.path.some(p => p.act === 'NAT 203.0.113.3 → 192.168.1.50') && p2.path.some(p => p.act === 'NAT 192.168.1.50 → 203.0.113.3'), 'nat: the internet hands the static address to R1, and the server\'s answer leaves translated (' + JSON.stringify(p2.path) + ')');
   }
   // 5. VLANs, trunk, router-on-a-stick, DHCP with snooping and a rogue
   {

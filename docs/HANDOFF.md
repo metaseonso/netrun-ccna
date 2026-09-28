@@ -149,6 +149,11 @@ Definition of done for a day:
   own port on the shared address; a new `ip nat inside source list N ...` replaces the old one for that list, and
   `no ip nat inside source list|static` removes it. `show ip nat translations` lists static mappings from the config and the
   outside address of every translation. Tested.
+- 2026-09-28 · The internet and NAT: a ping from a `cloud` now leaves as the internet (it used to take the PC path and
+  "deliver" any public address to itself); traffic from the internet for a router's static NAT address or NAT pool is
+  handed to that router (`cloudHandoff`), an address on the provider link that nobody holds answers nothing, and a
+  server's reply leaves wearing its static mapping. Before this, `ping('ISP', <static global>)` passed without reaching
+  the server. Tested.
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
