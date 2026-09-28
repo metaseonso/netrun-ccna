@@ -125,6 +125,72 @@
         { dev: 'SW1', type: ['enable', 'configure terminal', 'interface range f0/1 - 12', 'switchport mode access', 'spanning-tree portfast', 'spanning-tree bpduguard enable'] }, 'commit',
         { dev: 'SW1', type: ['exit', 'spanning-tree vlan 1 root primary'] }, { dev: 'SW2', type: ['enable', 'configure terminal', 'spanning-tree vlan 1 root secondary'] }, 'commit',
         { dev: 'SW1', type: ['interface f0/7', 'shutdown', 'no shutdown'] }, 'commit', { dev: 'SW1', type: ['interface g0/1', 'spanning-tree guard root'] }, 'commit', { choose: 0 }, 'commit' ],
-      outro: 'Imani\'s screen finds the network before her coffee has cooled, and the ten o\'clock clinic starts on time. Old Root keeps the little switch in his cardigan pocket all afternoon.' }
+      outro: 'Imani\'s screen finds the network before her coffee has cooled, and the ten o\'clock clinic starts on time. Old Root keeps the little switch in his cardigan pocket all afternoon.' },
+
+    // ------------------------------------------------------------------ night 22 · from Lab 22 (rapid STP)
+    { id: 'c-n22-last-shift', cls: 'C', rep: 15, from: 'root', title: 'The Last Shift', day: [22], requires: ['n22-last-shift'], devices: ['SW1', 'SW2', 'SW3', 'PC2'],
+      brief: 'DISPATCH » Old Root\'s last shift at the clinic annex. He wants all three switches on the rapid tree before he goes, and the wards\' failover down from fifty seconds to one.\n\nCLIENT (Old Root) » "You type. I sit on the crate and watch. Then I go home."',
+      net: {
+        stpMode: 'pvst',
+        devices: {
+          SW1: { kind: 'switch', mac: '0019.e8a1.1c01' }, SW2: { kind: 'switch', mac: '0c11.7a3b.9902' }, SW3: { kind: 'switch', mac: '0001.4a3c.0e03' },
+          PC1: { kind: 'host', ip: '10.20.0.11', mask: '255.255.255.0' }, PC2: { kind: 'host', ip: '10.20.0.21', mask: '255.255.255.0' }
+        },
+        links: [ { a: 'SW3', ap: gi(1), b: 'SW1', bp: gi(1) }, { a: 'SW3', ap: gi(2), b: 'SW2', bp: gi(1) }, { a: 'SW1', ap: gi(2), b: 'SW2', bp: gi(2) }, { a: 'SW1', ap: fa(24), b: 'SW2', bp: fa(24) },
+          { a: 'SW1', ap: fa(1), b: 'PC1' }, { a: 'SW2', ap: fa(1), b: 'PC2' } ],
+        preconfig: { SW1: ['spanning-tree vlan 1 root primary', 'interface range f0/1 - 12', 'switchport mode access', 'spanning-tree portfast', 'spanning-tree bpduguard enable', 'interface g0/1', 'spanning-tree guard root'],
+          SW2: ['spanning-tree vlan 1 root secondary'] }
+      },
+      map: { w: 540, h: 360, nodes: [
+          { id: 'SW1', label: 'SW1 · the root', type: 'switch', x: 150, y: 90 }, { id: 'SW2', label: 'SW2 · the wards', type: 'switch', x: 400, y: 90 }, { id: 'SW3', label: 'SW3 · the pharmacy\'s old box', type: 'switch', x: 275, y: 240 },
+          { id: 'PC1', label: 'reception', type: 'pc', x: 50, y: 200 }, { id: 'PC2', label: 'ward station', type: 'pc', x: 500, y: 200 } ],
+        links: [ { a: 'SW3', b: 'SW1', ap: gi(1), bp: gi(1) }, { a: 'SW3', b: 'SW2', ap: gi(2), bp: gi(1) }, { a: 'SW1', b: 'SW2', ap: gi(2), bp: gi(2) }, { a: 'SW1', b: 'SW2', ap: fa(24), bp: fa(24), tag: 'DO NOT UNPLUG' },
+          { a: 'SW1', b: 'PC1' }, { a: 'SW2', b: 'PC2' } ] },
+      steps: [
+        { type: 'cmd', skill: 'rstp', text: 'Old Root: "show spanning-tree on any of them says protocol ieee. That\'s the classic tree. Put all three on the rapid one."',
+          check: (d, ctx) => ['SW1', 'SW2', 'SW3'].every(n => ctx.compute(1).switches[n].cfg.mode === 'rapid-pvst'),
+          hint: 'SW1# configure terminal\nSW1(config)# spanning-tree mode rapid-pvst\n(the same on SW2 and SW3)', ok: 'Old Root: "protocol rstp on all three. The tree is the same shape. It just stopped waiting."',
+          why: 'Old Root: spanning-tree mode rapid-pvst, in global config, switches a Cisco switch to Rapid PVST+, the rapid tree with one instance per VLAN. It has to be done on every switch: a rapid switch talking to a classic one falls back to the classic tree on that port. show spanning-tree then says protocol rstp instead of ieee.' },
+        { type: 'calc', skill: 'rstp', text: 'Old Root: "The rapid standard came with bigger costs, for faster links than I ever owned. The Board asks them. Give me three."',
+          fields: [ { key: 'g', label: 'RSTP cost of a 1 Gbps port', check: v => String(v).replace(/[,\s_]/g, '') === '20000' },
+            { key: 'f', label: 'RSTP cost of a 100 Mbps port', check: v => String(v).replace(/[,\s_]/g, '') === '200000' },
+            { key: 't', label: 'RSTP cost of a 10 Gbps port', check: v => String(v).replace(/[,\s_]/g, '') === '2000' } ],
+          answer: '1 Gbps 20,000 · 100 Mbps 200,000 · 10 Gbps 2,000', hint: '10 Mbps is 2,000,000, and every step ten times faster divides the cost by ten.', ok: 'Old Root: "Twenty thousand, two hundred thousand, two thousand. These switches still show 4 and 19, because Cisco keeps the short costs unless you tell it otherwise."',
+          why: 'Old Root: The RSTP costs start at 2,000,000 for 10 Mbps and divide by ten for every tenfold step in speed: 100 Mbps is 200,000, 1 Gbps is 20,000, 10 Gbps is 2,000, 100 Gbps is 200, 1 Tbps is 20 and 10 Tbps is 2. Cisco switches keep using the short 802.1D costs, 19 and 4, until you type spanning-tree pathcost method long.' },
+        { type: 'form', skill: 'rstp', text: 'Old Root: "Now the roles, on the rapid tree\'s names. Read SW2 and SW3 if you need to."',
+          fields: [ { key: 'rp', label: 'SW2 Gi0/2 (straight to SW1)', options: ['root', 'designated', 'alternate', 'backup'], answer: 'root' },
+            { key: 'tag', label: 'SW2 Fa0/24 (the tagged cable)', options: ['root', 'designated', 'alternate', 'backup'], answer: 'alternate' },
+            { key: 's3', label: 'SW3 Gi0/2 (to SW2)', options: ['root', 'designated', 'alternate', 'backup'], answer: 'alternate' },
+            { key: 'hub', label: 'a second port on a hub, where the same switch already has the designated port', options: ['root', 'designated', 'alternate', 'backup'], answer: 'backup' },
+            { key: 'st', label: 'the state every alternate and backup port sits in', options: ['blocking', 'listening', 'discarding', 'learning'], answer: 'discarding' } ],
+          hint: 'SW1 is the root now. An alternate port hears a better BPDU from another switch. A backup port hears one from its own switch.', ok: 'Old Root: "Right on all five. The tag\'s an alternate now, which is a better name than I ever gave it."',
+          why: 'Old Root: SW1 is the root, so SW2\'s Gi0/2, one gigabit link straight to it, is SW2\'s root port. The tagged Fa0/24 hears SW1\'s better BPDU from another switch, so it is an alternate. On the SW2 to SW3 cable both switches have root cost 4, and SW2 as secondary root has the lower bridge ID, so SW3\'s Gi0/2 is the alternate end. A port that hears a better BPDU from its own switch, which only happens on a hub, is a backup. Alternate and backup ports are discarding.' },
+        { type: 'cmd', skill: 'rstp', text: 'Old Root: "The ward station waits half a minute every time the night nurse reboots it. Make SW2 Fa0/1 an edge port."',
+          check: (d, ctx) => { const p = ctx.compute(1).switches.SW2.ports[fa(1)]; return !!(p && p.portfast); },
+          hint: 'SW2(config)# interface f0/1\nSW2(config-if)# switchport mode access\nSW2(config-if)# spanning-tree portfast', ok: 'Old Root: "P2p Edge on the screen. The station forwards the moment it wakes."',
+          why: 'Old Root: On the rapid tree, spanning-tree portfast makes a port an edge port: it goes straight to forwarding and never waits for the handshake. It belongs only on ports that face end hosts, like the ward station on SW2 Fa0/1. show spanning-tree marks it P2p Edge.' },
+        { type: 'choice', skill: 'rstp', text: 'Old Root: "SW2\'s uplinks are full-duplex gigabit. The old hub in the pharmacy is half duplex. What link type does the rapid tree give each?"',
+          opts: ['Uplinks point-to-point, the hub shared', 'Uplinks shared, the hub point-to-point', 'Both edge', 'Both point-to-point'], a: 0,
+          hint: 'Full duplex is point-to-point. Half duplex is shared.', ok: 'Old Root: "Point-to-point where the handshake works, shared where it can\'t."',
+          why: 'Old Root: The rapid tree gives every port a link type. A full-duplex link between switches is point-to-point, and the quick handshake works on it. A half-duplex port, such as one to a hub, is shared, and it falls back to the slower classic behaviour. Ports facing end hosts are edge. You can set the type by hand with spanning-tree link-type point-to-point or shared.' },
+        { type: 'cmd', skill: 'rstp', text: 'Old Root: "Now the test I waited twenty years to see. Shut SW2 Gi0/2, its root port, and ping reception at 10.20.0.11 from the ward station."',
+          need: [ { dev: 'PC2', line: /^ping 10\.20\.0\.11$/ } ], check: (d, ctx) => !ctx.net().up('SW2', 'g0/2') && ctx.compute(1).switches.SW2.rootPort === gi(1) && ctx.compute(1).switches.SW2.cfg.mode === 'rapid-pvst' && ctx.net().ping('PC2', '10.20.0.11').ok,
+          hint: 'SW2(config)# interface g0/2\nSW2(config-if)# shutdown\n\nPC2:\nC:\\> ping 10.20.0.11', ok: 'Old Root, very quietly: "Not one reply lost."',
+          why: 'Old Root: When SW2\'s root port goes down, the rapid tree does not wait out max age. The best alternate path, Gi0/1 through SW3 at 4 + 4 = 8, becomes the root port and forwards within about a second, so the ward station\'s ping to reception gets through straight away. The tagged cable at 19 stays an alternate.' },
+        { type: 'choice', skill: 'rstp', text: 'Imani, from the corridor: "And if the cable doesn\'t die cleanly, and the other switch just goes quiet?"',
+          opts: ['It gives up after three missed hellos, about six seconds', 'It waits out max age, 20 seconds', 'It waits the full 50 seconds', 'It never notices'], a: 0,
+          hint: 'Hellos every 2 seconds. How many missed?', ok: 'Old Root: "Three hellos. Six seconds, not fifty."',
+          why: 'Old Root: On the rapid tree every switch sends its own BPDU every 2 seconds, so a neighbour that goes quiet is noticed quickly: after three missed hellos, about 6 seconds, the switch treats it as gone and the alternate takes over. On the classic tree a switch waited out max age, 20 seconds, then 15 and 15 more.' },
+        { type: 'cmd', skill: 'rstp', text: 'Old Root: "Bring Gi0/2 back, and save all three. If the power goes tonight, I don\'t want them waking up classic."',
+          check: (d, ctx) => ctx.net().up('SW2', 'g0/2') && ['SW1', 'SW2', 'SW3'].every(n => d[n].startup && /spanning-tree mode rapid-pvst/.test(d[n].startup)),
+          hint: 'SW2(config-if)# no shutdown\nSW2(config-if)# end\nSW2# write memory\n(and write memory on SW1 and SW3)', ok: 'Old Root: "[OK], three times. That\'s the closet done."',
+          why: 'Old Root: no shutdown on SW2 Gi0/2 brings the root port back. Everything typed lives in the running-config, in memory, until you save it: write memory, or copy running-config startup-config, on each switch. After that a reboot comes back on the rapid tree.' }
+      ],
+      solution: [ { dev: 'SW1', type: ['enable', 'configure terminal', 'spanning-tree mode rapid-pvst'] }, { dev: 'SW2', type: ['enable', 'configure terminal', 'spanning-tree mode rapid-pvst'] }, { dev: 'SW3', type: ['enable', 'configure terminal', 'spanning-tree mode rapid-pvst'] }, 'commit',
+        { calc: { g: '20000', f: '200000', t: '2000' } }, 'commit', { form: { rp: 'root', tag: 'alternate', s3: 'alternate', hub: 'backup', st: 'discarding' } }, 'commit',
+        { dev: 'SW2', type: ['interface f0/1', 'switchport mode access', 'spanning-tree portfast'] }, 'commit', { choose: 0 }, 'commit',
+        { dev: 'SW2', type: ['interface g0/2', 'shutdown'] }, { dev: 'PC2', type: ['ping 10.20.0.11'] }, 'commit', { choose: 0 }, 'commit',
+        { dev: 'SW2', type: ['no shutdown', 'end', 'write memory'] }, { dev: 'SW1', type: ['end', 'write memory'] }, { dev: 'SW3', type: ['end', 'write memory'] }, 'commit' ],
+      outro: 'At seven Old Root unhooks the paper tag from the grey cable, smooths it flat on his knee and hands it to you. The cable stays in. He picks up his box, nods once to Imani at the counter and once to the woman in the charcoal coat waiting by the doors, and walks out into the rain.' }
   );
 })();

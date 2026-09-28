@@ -178,5 +178,8 @@ window.GLOSSARY = {
   'bridge id': 'A switch\'s spanning tree identity: a 4-bit priority, a 12-bit extended system ID (the VLAN number) and the 48-bit MAC address. The lowest bridge ID becomes the root bridge.',
   'root port': 'The one port on each non-root switch with the lowest root cost to the root bridge (ties: lowest neighbour bridge ID, then lowest neighbour port ID). It forwards.',
   'designated port': 'The one forwarding port on each segment: the end with the lower root cost, ties to the lower bridge ID. Every port on the root bridge is designated.',
-  'non-designated port': 'A switch port that is neither a root port nor a designated port. In classic STP it sits in the blocking state and carries no traffic.'
+  'non-designated port': 'A switch port that is neither a root port nor a designated port. In classic STP it sits in the blocking state and carries no traffic.',
+  'edge port': 'On the rapid tree, a port that faces an end host and goes straight to forwarding. Configured with spanning-tree portfast.',
+  'alternate port': 'A rapid spanning tree role: a discarding port that receives a superior BPDU from another switch. It takes over if the root port fails.',
+  'backup port': 'A rapid spanning tree role: a discarding port that receives a superior BPDU from another port on the same switch (only on a shared segment, such as a hub). It backs up a designated port.'
 };
