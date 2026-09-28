@@ -136,6 +136,13 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · VTP: `vtp mode server|client|transparent`, `vtp domain`, `vtp version`, `vtp password`; every VLAN change on a
+  server or client raises its revision (a net device may set `vtpRevision` to play a spare switch from someone's lab); servers
+  and clients in one domain joined by trunks take the VLAN database with the highest revision, transparent switches keep
+  their own at revision 0, a switch with no domain joins the one it hears; access ports whose VLAN vanished go `inactive`;
+  clients refuse `vlan N`; `switchport access vlan N` creates a missing VLAN like IOS; `show vtp status`; `api.vtp`, `api.vlans`.
+  DTP: `switchport nonegotiate` on a trunk leaves a dynamic neighbour as access (a mismatch). Tested (section 28).
+
 - 2026-09-28 · Multilayer switching: SVIs start shut down (all of them, not only VLAN 1) and their line protocol is up only when
   the VLAN exists and a switchport carrying it is up (autostate); a `switch` routes between its interfaces only with `ip
   routing` (without it, it still answers on its own SVIs); `no switchport` makes a routed port with its own address (it leaves

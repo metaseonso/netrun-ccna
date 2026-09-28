@@ -11,7 +11,7 @@
       vty: { transport: null, login: null, password: null }, con: { login: null, password: null },
       vlans: {}, interfaces: {}, routes: [], routes6: [], acls: {}, natStatic: [], natDynamic: [], natPools: {},
       dhcp: { excluded: [], pools: {}, snooping: false, snoopVlans: new Set(), daiVlans: new Set() },
-      ospf: null, rip: null, eigrp: null, ipv6Routing: false, ipRouting: false, ntp: [], logging: [], snmp: [], cdp: true, lldp: false, errdisableRecovery: false
+      vtp: { mode: 'server', domain: '', version: 1, password: null, changes: 0 }, ospf: null, rip: null, eigrp: null, ipv6Routing: false, ipRouting: false, ntp: [], logging: [], snmp: [], cdp: true, lldp: false, errdisableRecovery: false
     };
   }
   function iface(cfg, name){
@@ -35,6 +35,8 @@
   }
   const PORTS = { www: 80, http: 80, https: 443, ftp: 21, 'ftp-data': 20, telnet: 23, ssh: 22, smtp: 25, domain: 53, dns: 53, tftp: 69, bootps: 67, bootpc: 68, ntp: 123, snmp: 161, syslog: 514, pop3: 110, imap: 143 };
 
+  // a server's VLAN change raises its VTP revision; a transparent switch keeps revision 0
+  const vtpChange = cfg => { if (cfg.vtp.mode === 'server' || cfg.vtp.mode === 'client') cfg.vtp.changes++; };
   function parse(dev){
     const cfg = blank(); if (!dev) return cfg;
     let aclName = null, dhcpPool = null, ospf = null, natCtx = null;
@@ -57,7 +59,11 @@
         else if ((m = s.match(/^no interface (\S+)$/))) { const nm = (window.Sim && Sim.canonIf(m[1])) || m[1]; delete cfg.interfaces[nm]; } // deletes a subinterface, SVI or loopback
         else if ((m = s.match(/^default interface (\S+)$/))) { const nm = (window.Sim && Sim.canonIf(m[1])) || m[1]; delete cfg.interfaces[nm]; } // back to factory settings; later lines apply again
         else if (s === 'ipv6 unicast-routing') cfg.ipv6Routing = true;
-        else if ((m = s.match(/^vlan ([\d,\-]+)$/))) m[1].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let i = a; i <= (b || a); i++) cfg.vlans[i] = cfg.vlans[i] || { id: i, name: 'VLAN' + String(i).padStart(4, '0') }; });
+        else if ((m = s.match(/^vlan ([\d,\-]+)$/))) { if (cfg.vtp.mode !== 'client') m[1].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let i = a; i <= (b || a); i++) { if (!cfg.vlans[i]) { cfg.vlans[i] = { id: i, name: 'VLAN' + String(i).padStart(4, '0') }; vtpChange(cfg); } } }); }
+        else if ((m = s.match(/^vtp mode (server|client|transparent|off)$/))) { cfg.vtp.mode = m[1]; if (m[1] === 'transparent' || m[1] === 'off') cfg.vtp.changes = 0; }
+        else if ((m = s.match(/^vtp domain (\S+)$/))) { const d = r.raw ? r.raw.trim().split(/\s+/)[2] || m[1] : m[1]; if (d !== cfg.vtp.domain) cfg.vtp.changes = 0; cfg.vtp.domain = d; }
+        else if ((m = s.match(/^vtp version (\d)$/))) cfg.vtp.version = +m[1];
+        else if ((m = s.match(/^vtp password (\S+)$/))) cfg.vtp.password = m[1];
         else if ((m = s.match(/^ip route (\S+) (\S+) (\S+)(?: (\S+))?(?: (\d+))?$/))) { // next hop, exit interface, or exit interface then next hop; an AD may follow
           const isIp = x => /^\d+\.\d+\.\d+\.\d+$/.test(x || ''); let via = m[3], exit = null, ad = 1;
           if (!isIp(m[3])) { exit = m[3]; via = isIp(m[4]) ? m[4] : m[3]; if (isIp(m[4]) && m[5]) ad = +m[5]; else if (!isIp(m[4]) && m[4]) ad = +m[4]; } else if (m[4]) ad = +m[4];
@@ -117,10 +123,10 @@
         else if ((m = s.match(/^ip ftp password (?:\d+ )?(\S+)$/))) cfg.ftpPass = m[1];
         else if ((m = s.match(/^no ip route (\S+) (\S+)(?: (\S+))?/))) cfg.routes = cfg.routes.filter(x => !(x.prefix === m[1] && x.mask === m[2] && (!m[3] || x.via === m[3] || x.exit === m[3])));
         else if ((m = s.match(/^no access-list (\d+)$/))) delete cfg.acls[m[1]];
-        else if ((m = s.match(/^no vlan (\d+)$/))) delete cfg.vlans[+m[1]];
+        else if ((m = s.match(/^no vlan (\d+)$/))) { if (cfg.vlans[+m[1]] && cfg.vtp.mode !== 'client') { delete cfg.vlans[+m[1]]; vtpChange(cfg); } }
       }
       // ---------------- vlan config
-      if (r.mode === 'config-vlan') { const ids = r.ctx.replace('vlan ', '').split(',').map(x => +x.split('-')[0]); if ((m = s.match(/^name (\S+)$/))) { const shown = r.raw ? r.raw.replace(/^\s*\S+\s+/, '') : m[1]; ids.forEach(id => { cfg.vlans[id] = cfg.vlans[id] || { id }; cfg.vlans[id].name = m[1]; cfg.vlans[id].shown = shown; }); } }
+      if (r.mode === 'config-vlan') { const ids = r.ctx.replace('vlan ', '').split(',').map(x => +x.split('-')[0]); if ((m = s.match(/^name (\S+)$/)) && cfg.vtp.mode !== 'client') { vtpChange(cfg); const shown = r.raw ? r.raw.replace(/^\s*\S+\s+/, '') : m[1]; ids.forEach(id => { cfg.vlans[id] = cfg.vlans[id] || { id }; cfg.vlans[id].name = m[1]; cfg.vlans[id].shown = shown; }); } }
       // ---------------- interface config
       if (r.mode === 'config-if' || r.mode === 'config-subif' || r.mode === 'config-if-range') {
         for (const n of ifacesOf(r.ctx)) { const i = iface(cfg, n);
@@ -130,7 +136,7 @@
           else if (s === 'no switchport') i.routed = true; else if (s === 'switchport') i.routed = false; // a routed port on a multilayer switch
           else if ((m = s.match(/^description (.*)$/))) { i.desc = m[1]; i.descShown = r.raw ? r.raw.replace(/^\s*\S+\s+/, '') : m[1]; } // checks compare lower case; the shell shows it as typed
           else if ((m = s.match(/^switchport mode (access|trunk|dynamic (?:auto|desirable))$/))) i.mode = m[1];
-          else if ((m = s.match(/^switchport access vlan (\d+)$/))) i.accessVlan = +m[1];
+          else if ((m = s.match(/^switchport access vlan (\d+)$/))) { i.accessVlan = +m[1]; const v = +m[1]; if (v !== 1 && !cfg.vlans[v] && cfg.vtp.mode !== 'client') { cfg.vlans[v] = { id: v, name: 'VLAN' + String(v).padStart(4, '0') }; vtpChange(cfg); } } // IOS creates a missing VLAN
           else if ((m = s.match(/^switchport trunk allowed vlan (?:add )?([\d,\-]+|all|none)$/))) { if (m[1] === 'all') i.allowed = null; else if (m[1] === 'none') i.allowed = new Set(); else { i.allowed = i.allowed || (s.includes(' add ') ? new Set() : new Set()); m[1].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let v = a; v <= (b || a); v++) i.allowed.add(v); }); } }
           else if ((m = s.match(/^switchport trunk native vlan (\d+)$/))) i.native = +m[1];
           else if ((m = s.match(/^switchport trunk encapsulation (dot1q|isl)$/))) i.encap = m[1];

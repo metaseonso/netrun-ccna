@@ -75,10 +75,24 @@
       const modes = ends.map(([n, p]) => S.ifaces[n][p].mode);
       let trunk;
       if (ends.length === 2) { const [m1, m2] = modes; const on = m => m === 'trunk', acc = m => m === 'access', des = m => m === 'dynamic desirable';
-        trunk = (on(m1) || on(m2) || des(m1) || des(m2)) && !acc(m1) && !acc(m2) && !(modes.every(m => m === 'dynamic auto')); if (acc(m1) && on(m2) || acc(m2) && on(m1)) S.issues.push({ kind: 'trunk-mode-mismatch', where: L.a + '/' + L.b }); }
+        const ng = ends.map(([n, p]) => !!S.ifaces[n][p].cfg.nonegotiate); const dyn = m => /^dynamic/.test(m);
+        trunk = (on(m1) || on(m2) || des(m1) || des(m2)) && !acc(m1) && !acc(m2) && !(modes.every(m => m === 'dynamic auto'));
+        // switchport nonegotiate stops DTP: a dynamic port facing a silent trunk never hears the offer and stays access
+        if ((on(m1) && ng[0] && dyn(m2)) || (on(m2) && ng[1] && dyn(m1))) { trunk = false; S.issues.push({ kind: 'trunk-mode-mismatch', where: L.a + '/' + L.b }); } if (acc(m1) && on(m2) || acc(m2) && on(m1)) S.issues.push({ kind: 'trunk-mode-mismatch', where: L.a + '/' + L.b }); }
       else { const [m] = modes; trunk = m === 'trunk'; }
       ends.forEach(([n, p]) => { S.ifaces[n][p].trunk = trunk; });
       if (trunk && ends.length === 2) { const [n1, p1] = ends[0], [n2, p2] = ends[1]; if (S.ifaces[n1][p1].native !== S.ifaces[n2][p2].native) S.issues.push({ kind: 'native-vlan-mismatch', where: n1 + ' ' + short(p1) + ' (' + S.ifaces[n1][p1].native + ') / ' + n2 + ' ' + short(p2) + ' (' + S.ifaces[n2][p2].native + ')' }); } });
+    // ---- VTP: servers and clients in one domain, joined by trunks, take the VLAN database with the highest revision; transparent
+    // switches keep their own and pass adverts on. A switch with no domain joins the first one it hears. Access ports whose VLAN
+    // is gone go inactive (the classic wipe: a spare switch with a higher revision plugged into a trunk).
+    { const sws = Object.keys(D).filter(isSw); const vt = {}; sws.forEach(n => { const c = S.cfg[n].vtp; vt[n] = { mode: c.mode, domain: c.domain, rev: c.mode === 'transparent' || c.mode === 'off' ? 0 : (D[n].vtpRevision != null ? D[n].vtpRevision : c.changes) }; });
+      const adj = {}; sws.forEach(n => { adj[n] = []; }); S.links.forEach(L => { if (!isSw(L.a) || !isSw(L.b)) return; const a = S.ifaces[L.a][L.ap], b = S.ifaces[L.b][L.bp]; if (a && b && a.up && b.up && a.trunk && b.trunk) { adj[L.a].push(L.b); adj[L.b].push(L.a); } });
+      const seen = new Set(); for (const s0 of sws) { if (seen.has(s0)) continue; const comp = []; const q = [s0]; seen.add(s0); while (q.length) { const n = q.shift(); comp.push(n); adj[n].forEach(m => { if (!seen.has(m)) { seen.add(m); q.push(m); } }); }
+        const sync = comp.filter(n => vt[n].mode === 'server' || vt[n].mode === 'client'); const domains = [...new Set(sync.map(n => vt[n].domain).filter(Boolean))];
+        if (domains.length === 1) sync.forEach(n => { if (!vt[n].domain) vt[n].domain = domains[0]; });
+        domains.forEach(dom => { const mem = sync.filter(n => vt[n].domain === dom); const win = mem.slice().sort((a, b) => vt[b].rev - vt[a].rev)[0]; if (!win) return; const db = JSON.parse(JSON.stringify(S.cfg[win].vlans)); mem.forEach(n => { if (n === win || vt[n].rev === vt[win].rev) return; S.cfg[n].vlans = JSON.parse(JSON.stringify(db)); vt[n].rev = vt[win].rev; vt[n].from = win; }); }); }
+      S.vtp = vt;
+      for (const n of sws) for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' || i.parent || i.cfg.routed || i.trunk) continue; if (i.vlan !== 1 && !S.cfg[n].vlans[i.vlan]) i.inactive = true; } }
     // EtherChannel bundles: same pair of switches, both ends channel-group, compatible modes
     const pairKey = (a, b) => [a, b].sort().join('|');
     const groups = {};
@@ -122,13 +136,13 @@
         const vl = new Set([1]); [L.a, L.b].forEach(n => Object.keys(S.cfg[n].vlans).forEach(v => vl.add(+v))); [a, b].forEach(i => { vl.add(i.vlan); vl.add(i.native); });
         vl.forEach(v => { if (blockedIn(v, L.a, L.ap) || blockedIn(v, L.b, L.bp)) return;
           if (a.trunk && b.trunk) { if (carries(a, v) && carries(b, v)) { const va = v === a.native ? a.native : v, vb = v === b.native ? b.native : v; uf.union(node(L.a, v), node(L.b, v)); if (a.native !== b.native && (v === a.native || v === b.native)) { uf.union(node(L.a, a.native), node(L.b, b.native)); } } }
-          else if (!a.trunk && !b.trunk) { if (a.vlan === v) uf.union(node(L.a, a.vlan), node(L.b, b.vlan)); }
+          else if (!a.trunk && !b.trunk) { if (a.vlan === v && !a.inactive && !b.inactive) uf.union(node(L.a, a.vlan), node(L.b, b.vlan)); }
           else { const t = a.trunk ? a : b, acc = a.trunk ? b : a, tn = a.trunk ? L.a : L.b, an = a.trunk ? L.b : L.a; if (v === t.native) uf.union(node(tn, t.native), node(an, acc.vlan)); } }); }
       else if (l2(L.a, L.ap) || l2(L.b, L.bp)) { const sa = l2(L.a, L.ap); const sw = sa ? L.a : L.b, swp = sa ? L.ap : L.bp, oth = sa ? L.b : L.a, othp = sa ? L.bp : L.ap; const si = S.ifaces[sw][swp]; const ok = D[oth].kind;
         if (ok === 'router' || ok === 'l3switch' || l3(oth, othp)) { // router port and its subinterfaces
           const base = S.ifaces[oth][othp]; if (si.trunk) { uf.union(node(sw, si.native), ifNode(oth, othp)); for (const p in S.ifaces[oth]) { const sub = S.ifaces[oth][p]; if (sub.parent === othp && sub.up && sub.cfg.dot1q != null) { if (!blockedIn(sub.cfg.dot1q, sw, swp) && carries(si, sub.cfg.dot1q)) uf.union(node(sw, sub.cfg.dot1q === si.native ? si.native : sub.cfg.dot1q), ifNode(oth, p)); } } }
           else { if (!blockedIn(si.vlan, sw, swp)) uf.union(node(sw, si.vlan), ifNode(oth, othp)); } }
-        else { const v = si.trunk ? si.native : (D[oth].voice && si.cfg.voiceVlan ? si.cfg.voiceVlan : si.vlan); if (!blockedIn(v, sw, swp)) uf.union(node(sw, v), hostNode(oth)); } } // an IP phone (host with voice: true) tags into the port's voice VLAN when it has one
+        else { const v = si.trunk ? si.native : (D[oth].voice && si.cfg.voiceVlan ? si.cfg.voiceVlan : si.vlan); if (!si.inactive && !blockedIn(v, sw, swp)) uf.union(node(sw, v), hostNode(oth)); } } // an IP phone (host with voice: true) tags into the port's voice VLAN when it has one
       else { // no switch: point to point
         const na = (ka === 'router' || ka === 'l3switch' || l3(L.a, L.ap)) ? ifNode(L.a, L.ap) : hostNode(L.a), nb = (kb === 'router' || kb === 'l3switch' || l3(L.b, L.bp)) ? ifNode(L.b, L.bp) : hostNode(L.b); uf.union(na, nb); } });
     // SVIs join their VLAN node
@@ -429,7 +443,7 @@
       sameSegment: (a, b) => { const na = S.hosts[a] ? S.hostNode(a) : null, nb = S.hosts[b] ? S.hostNode(b) : null; return !!(na && nb && S.uf.find(na) === S.uf.find(nb)); },
       ospfNeighbors: r => S.ospf.neighbors[r] || [], hsrpActive: vip => { const g = Object.values(S.hsrp).find(x => x.vip === vip); return g ? g.active.dev : null; },
       lease: h => S.hosts[h] && S.hosts[h].lease, portsec: (d, p) => S.portsec[d + '|' + (Sim.canonIf(p) || p)], errdisabled: (d, p) => { const i = S.ifaces[d] && S.ifaces[d][Sim.canonIf(p) || p]; return !!(i && i.errdisabled); },
-      threats: S.threats, stp: v => S.stp[v || 1],
+      threats: S.threats, stp: v => S.stp[v || 1], vtp: d => S.vtp && S.vtp[d], vlans: d => S.cfg[d] && S.cfg[d].vlans,
       sshReady: d => { const c = S.cfg[d]; const vty = c.vty; const ok = !!(c.hostname && c.hostname !== d.replace(/\d+$/, '') || true) && !!c.domain && c.sshKeyBits > 0 && !!(vty.transport && vty.transport.includes('ssh')) && vty.login === 'local' && c.users.length > 0; return { ok, hostname: !!c.hostname, domain: !!c.domain, key: c.sshKeyBits, transport: vty.transport, login: vty.login, users: c.users.length }; },
       acl: (d, id) => S.cfg[d].acls[id] || null, aclTest: (d, id, pkt) => aclEval(S, d, id, pkt),
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),

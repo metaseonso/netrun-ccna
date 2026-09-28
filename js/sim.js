@@ -279,10 +279,11 @@
     // ---- config-mode grammar ----
     if (dev.mode === 'user' || dev.mode === 'priv') { dev.out.push({ t:'err', s:'% Invalid input detected. (That looks like a config command — enter global config mode first.)' }); return; }
     // a global command typed inside a sub-mode: IOS accepts it and drops back to global config
-    const GLOBAL_ONLY = /^(no interface |default interface )|^(no )?(ip route|ipv6 route|ip access-list|access-list|hostname|ip dhcp (pool|excluded-address|snooping vlan|snooping$)|ip nat (inside source|pool|outside source)|router |vlan [\d,\-]+$|spanning-tree (mode|vlan [\d,\-]+ (root|priority)|portfast default|portfast bpduguard default)|ip domain-name|ip domain name|crypto key|username|enable (secret|password)|ipv6 unicast-routing|ntp server|logging (host|\d)|snmp-server|ip arp inspection vlan|service |banner|line |ip default-gateway|cdp run|lldp run|errdisable|ip routing|ip name-server|ip ssh|interface )/;
+    const GLOBAL_ONLY = /^(no interface |default interface )|^(no )?(vtp |ip route|ipv6 route|ip access-list|access-list|hostname|ip dhcp (pool|excluded-address|snooping vlan|snooping$)|ip nat (inside source|pool|outside source)|router |vlan [\d,\-]+$|spanning-tree (mode|vlan [\d,\-]+ (root|priority)|portfast default|portfast bpduguard default)|ip domain-name|ip domain name|crypto key|username|enable (secret|password)|ipv6 unicast-routing|ntp server|logging (host|\d)|snmp-server|ip arp inspection vlan|service |banner|line |ip default-gateway|cdp run|lldp run|errdisable|ip routing|ip name-server|ip ssh|interface )/;
     if (dev.mode !== 'config' && GLOBAL_ONLY.test(s)) { dev.mode = 'config'; dev.ctx = ''; dev.stack = [['priv', '']]; rec.mode = 'config'; rec.ctx = ''; }
     dev.lines.push(rec);
     let m;
+    if (/^(no )?vlan [\d,\-]+$/.test(s) && window.NetConfig && NetConfig.parse(dev).vtp.mode === 'client') { dev.lines.pop(); dev.out.push({ t:'err', s:'VTP VLAN configuration not allowed when device is in CLIENT mode.' }); return; }
     if ((m = s.match(/^hostname (\S+)$/))) { dev.host = raw.trim().split(/\s+/)[1]; return; }
     if ((m = s.match(/^interface range (.+)$/))) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter('config-if-range', 'interface range ' + m[1]); return; }
     if ((m = s.match(/^interface (\S+)$/))) { const i = canonIf(m[1]) || m[1]; if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter(i.includes('.') ? 'config-subif' : 'config-if', 'interface ' + i); rec.line = 'interface ' + i; return; }

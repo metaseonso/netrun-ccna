@@ -394,5 +394,25 @@ module.exports.run = function({ out }){
     d = devs({ MLS: base.concat(['int g0/1', 'no switchport', 'ip address 10.18.0.1 255.255.255.252', 'exit', 'default interface g0/1']), R1: r1 }); ok(!NetConfig.parse(d.MLS).interfaces['gigabitethernet0/1'], 'mls: default interface puts a port back to its factory settings');
     const rr = dev('R9', 'ios', ['en', 'conf t', 'int g0/0.10', 'encapsulation dot1q 10', 'ip address 10.9.10.1 255.255.255.0', 'no interface g0/0.10']); ok(!NetConfig.parse(rr).interfaces['gigabitethernet0/0.10'], 'mls: no interface deletes a subinterface, even typed from inside it'); rr.exec('do show running-config'); ok(!/GigabitEthernet0\/0\.10/.test(rr.out[rr.out.length - 1].s), 'mls: the deleted subinterface leaves the running-config');
   }
+  // 28. VTP: one domain over trunks takes the highest revision; transparent keeps its own; ports in a vanished VLAN go inactive; clients cannot add VLANs. DTP: nonegotiate
+  {
+    const net = { devices: { SW1: { kind: 'switch' }, SW2: { kind: 'switch' }, SW3: { kind: 'switch', vtpRevision: 40 }, PC1: { kind: 'host', ip: '10.19.10.1', mask: '255.255.255.0' }, PC2: { kind: 'host', ip: '10.19.10.2', mask: '255.255.255.0' } },
+      links: [ { a: 'SW1', ap: 'gigabitethernet0/1', b: 'SW2', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'SW2', ap: 'fastethernet0/1', b: 'PC2' }, { a: 'SW2', ap: 'gigabitethernet0/2', b: 'SW3', bp: 'gigabitethernet0/1' } ] };
+    const sw1 = ['en', 'conf t', 'vtp domain WATSON', 'vlan 10', 'name TILLS', 'vlan 20', 'int f0/1', 'switchport mode access', 'switchport access vlan 10', 'int g0/1', 'switchport mode trunk'];
+    const sw2 = ['en', 'conf t', 'vtp domain WATSON', 'vtp mode client', 'int f0/1', 'switchport mode access', 'switchport access vlan 10', 'int g0/1', 'switchport mode trunk', 'int g0/2', 'shutdown', 'switchport mode trunk'];
+    const sw3 = ['en', 'conf t', 'vtp domain WATSON', 'vlan 99'];
+    let d = devs({ SW1: sw1, SW2: sw2, SW3: sw3 }); let A = Net.api(Net.build(net, d));
+    ok(A.vlans('SW2')[10] && A.vtp('SW2').rev === A.vtp('SW1').rev && A.ping('PC1', '10.19.10.2').ok, 'vtp: the client learns VLAN 10 from the server and the PCs meet (' + JSON.stringify(A.vtp('SW2')) + ')');
+    d.SW2.exec('vlan 30'); ok(/not allowed when device is in CLIENT mode/.test(d.SW2.out[d.SW2.out.length - 1].s), 'vtp: a client cannot create VLANs');
+    d.SW2.exec('int g0/2'); d.SW2.exec('no shutdown'); A = Net.api(Net.build(net, d));
+    ok(A.vtp('SW1').rev === 40 && !A.vlans('SW1')[10] && A.vlans('SW1')[99] && !A.ping('PC1', '10.19.10.2').ok && /inactive/.test(Show.render(d.SW1, 'show interfaces status', A.state)), 'vtp: a switch with a higher revision wipes the domain and the ports go inactive');
+    ok(/Configuration Revision\s+: 40/.test(Show.render(d.SW1, 'show vtp status', A.state)) && /VTP Operating Mode\s+: Server/.test(Show.render(d.SW1, 'show vtp status', A.state)), 'vtp: show vtp status');
+    d = devs({ SW1: sw1.concat(['vtp mode transparent']), SW2: sw2, SW3: sw3 }); d.SW2.exec('int g0/2'); d.SW2.exec('no shutdown'); A = Net.api(Net.build(net, d));
+    ok(A.vlans('SW1')[10] && A.vtp('SW1').rev === 0, 'vtp: a transparent switch keeps its own VLANs, at revision 0');
+    const n2 = { devices: { A: { kind: 'switch' }, B: { kind: 'switch' } }, links: [ { a: 'A', ap: 'gigabitethernet0/1', b: 'B', bp: 'gigabitethernet0/1' } ] };
+    let e = devs({ A: ['en', 'conf t', 'int g0/1', 'switchport mode trunk'], B: ['en', 'conf t', 'int g0/1', 'switchport mode dynamic auto'] }); ok(Net.api(Net.build(n2, e)).trunk('B', 'g0/1'), 'dtp: trunk facing dynamic auto forms a trunk');
+    e = devs({ A: ['en', 'conf t', 'int g0/1', 'switchport mode trunk', 'switchport nonegotiate'], B: ['en', 'conf t', 'int g0/1', 'switchport mode dynamic auto'] }); ok(!Net.api(Net.build(n2, e)).trunk('B', 'g0/1'), 'dtp: nonegotiate stops the offer, so dynamic auto stays access');
+    e = devs({ A: ['en', 'conf t', 'int g0/1', 'switchport mode dynamic auto'], B: ['en', 'conf t', 'int g0/1', 'switchport mode dynamic auto'] }); ok(!Net.api(Net.build(n2, e)).trunk('A', 'g0/1'), 'dtp: auto and auto stay access');
+  }
   return { pass, fails };
 };
