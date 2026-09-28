@@ -348,7 +348,9 @@
   function arpRows(S, dev){ if (S.learn) return Object.entries(S.learn.arp[dev] || {}).map(([ip, mac]) => ({ ip, mac })); const out = []; const mine = new Set(); Object.values(S.owners).flat().forEach(o => { if (o.dev === dev) mine.add(o.seg); }); mine.forEach(seg => (S.owners[seg] || []).forEach(o => { if (o.dev !== dev && o.mac && o.ip) out.push({ ip: o.ip, mac: o.mac }); })); return out; }
 
   // traceroute as the consoles print it: the forward path only, one line per hop, the ingress address of each router, then the target
-  function traceLines(r, style){ const t = r.trail || []; const row = (i, ip) => style === 'pc' ? '  ' + String(i).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + i + ' ' + ip + ' 0 msec 0 msec 0 msec';
+  function traceLines(r, style){ let t = r.trail || [];
+    // a routing loop: the packet bounces between the same routers until its TTL runs out, so the trace repeats them up to hop 30
+    if (!r.ok && /^loop at |TTL expired/.test(r.reason || '') && t.length >= 2) { const at = String(r.reason).replace('loop at ', ''); const i = Math.max(0, t.length - 2); const cycle = t.slice(i); const out = t.slice(); while (out.length < 30) out.push(cycle[(out.length - t.length) % cycle.length]); const row = (n, ip) => style === 'pc' ? '  ' + String(n).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + n + ' ' + ip + ' 0 msec 0 msec 0 msec'; return out.map((ip, k) => row(k + 1, ip)); } const row = (i, ip) => style === 'pc' ? '  ' + String(i).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + i + ' ' + ip + ' 0 msec 0 msec 0 msec';
     const out = t.map((ip, i) => row(i + 1, ip)); if (!r.ok) out.push(style === 'pc' ? '  ' + String(t.length + 1).padStart(2) + '     *        *        *     Request timed out.' : '  ' + (t.length + 1) + '  *  *  * '); return out; }
   window.Net = { build, api, ping, traceLines, learnFrom, forget, arpRows, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
 })();

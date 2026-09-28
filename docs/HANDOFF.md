@@ -136,6 +136,9 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Routing loops: traceroute repeats the looping routers up to hop 30, and a PC ping into a loop answers `TTL expired
+  in transit` from the last router. Tested in `tests/engine.test.js` (section 12).
+
 - 2026-09-28 · Speed and duplex negotiation per link (`i.op`): auto on both ends is the fastest common speed at full duplex; a
   hard-coded end turns negotiation off, so the auto end senses the speed and falls back to half duplex at 10/100 (a mismatch);
   different hard-coded speeds keep the link down (`speed-mismatch`). `show interfaces` prints the operating values and error

@@ -150,5 +150,15 @@ module.exports.run = function({ out }){
     d = mk(['speed 100', 'duplex full'], ['speed 100', 'duplex full']); A = Net.api(Net.build(net, d)); ok(!A.issues.length && / 0 CRC/.test(Show.render(d.SW1, 'show interfaces f0/10', A.state)), 'nego: matching hard-coded ends are clean');
     d = mk(['speed 100'], ['speed 10']); A = Net.api(Net.build(net, d)); ok(!A.up('SW1', 'f0/10') && A.issues.some(x => x.kind === 'speed-mismatch'), 'nego: different hard-coded speeds keep the link down');
   }
+  // 12. a routing loop: traceroute repeats the two routers to hop 30, a PC ping reports TTL expired in transit
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, PC1: { kind: 'host', ip: '10.0.1.10', mask: '255.255.255.0', gw: '10.0.1.1' } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.1.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.12.1 255.255.255.252', 'no shut', 'ip route 10.9.0.0 255.255.255.0 10.0.12.2'],
+      R2: ['en', 'conf t', 'int g0/1', 'ip add 10.0.12.2 255.255.255.252', 'no shut', 'ip route 10.9.0.0 255.255.255.0 10.0.12.1'] });
+    const A = Net.api(Net.build(net, d)); const r = A.ping('PC1', '10.9.0.5'); const lines = Net.traceLines(r, 'pc');
+    ok(!r.ok && /loop/.test(r.reason) && lines.length === 30 && /10\.0\.12\.2$/.test(lines[1]) && /10\.0\.12\.1$/.test(lines[2]) && /10\.0\.12\.2$/.test(lines[29]), 'loop: tracert bounces between the two routers to hop 30 (' + lines.slice(0, 4).join(' | ') + ')');
+    const pc = new Sim.Device('PC1', { kind: 'host', netState: () => A.state }); pc.exec('ping 10.9.0.5'); ok(/TTL expired in transit/.test(pc.out.map(o => o.s).join('\n')), 'loop: ping reports TTL expired in transit');
+  }
   return { pass, fails };
 };
