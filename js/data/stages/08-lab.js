@@ -424,6 +424,47 @@
         { k: 'SYNC', q: { prompt: 'Clerk Adebayo: "If the dashboard asks the controller for the device list twice, does the controller remember the first time?"', opts: ['No. REST APIs are stateless: each request carries everything it needs', 'Yes. It keeps a session for each page', 'Only if the page uses POST', 'Only with Basic authentication'], a: 0,
           yes: 'Jason: "No. Each GET stands on its own."', no: 'Jason: "No. REST is stateless. Every request is complete in itself."',
           why: 'Jason: REST APIs must be stateless: the server keeps no memory of earlier requests, so every request includes all the information needed to handle it, including its authentication.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 62 · software-defined networking
+    { id: 'n62-whose-controller', title: 'Whose controller', sub: 'software-defined networking', npc: 'ansible', day: [62], src: [PS('Software_Defined_Networking.md')], unlocks: ['sdn'],
+      beats: [
+        { k: 'SCENE', where: 'The Lab · the blade chassis · near one in the morning',
+          lines: [
+            { who: 'narr', text: 'The blade chassis roars as it always does, but one new light has joined the row on the front panel, a steady green. Prof. Hypervisor sits on her packing crate with the laptop, and Ansible stands behind her with his arms folded and the drone perched on his shoulder. Both of them are watching a single line of text scroll past: CONTROLLER READY.' },
+            { who: 'hypervisor', text: 'There it is. The street\'s own controller, one little instance on blade four. Ansible\'s plays underneath it, Jason\'s API on top of it, and not a single Halvorsen logo anywhere.' },
+            { who: 'ansible', text: 'An SDN network has three layers. The application layer holds the scripts and programs that tell the controller what they want, like Jason\'s dashboard. The control layer is the controller itself. The infrastructure layer is the boxes that forward the traffic.' },
+            { who: 'ansible', text: 'Cisco sells three controllers, one for each kind of network, under the name Cisco [[DNA]], Digital Network Architecture. [[SD-Access]] runs campus LANs, [[ACI]], Application-Centric Infrastructure, runs data centres, and SD-WAN runs wide area networks. Halvorsen\'s bid proposes SD-Access for the Exchange.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What happens if the controller goes down?', reply: 'Ansible: "The boxes keep forwarding, because the data plane still lives in each of them. What stops is change: no new policies, no new devices, until it comes back. That is why the council should care who holds it."' },
+            { tone: 'press', say: 'Why not just let Halvorsen run it?', reply: 'Prof. Hypervisor: "Because the controller is where the decisions are. Whoever holds it decides which building talks to which, and what it costs. Ours runs on a blade the clinic paid for, in a basement the street can walk into."' },
+            { tone: 'joke', say: 'Does the drone report to the controller now?', reply: 'Ansible: "It reports to me. I report to nobody. In SDN terms the drone is infrastructure, I am the application, and the controller is Prof. Hypervisor\'s blade. The drone disagrees."' }
+          ] } },
+        { k: 'SCENE', where: 'The Lab · the whiteboard', real: ['cisco'],
+          lines: [
+            { who: 'narr', text: 'Prof. Hypervisor wheels over a whiteboard and draws two layers of boxes, one above the other, then a dotted line joining two boxes in the top layer straight through the one beneath.' },
+            { who: 'hypervisor', text: 'The bottom layer is the [[underlay]], the real network: cables, switches, routes. The top layer is the [[overlay]], virtual networks built on top of it with tunnels, so two boxes can be neighbours even when the cables say they aren\'t. The two together are the [[fabric]].' },
+            { who: 'ansible', text: 'In SD-Access the overlay\'s data plane is [[VXLAN]], Virtual Extensible LAN, which tunnels frames between switches. Its control plane is [[LISP]], the Locator ID Separation Protocol, which keeps track of where every endpoint is. Policy is Cisco TrustSec, CTS, which tags traffic by who sent it.' },
+            { who: 'ansible', text: 'The fabric has three kinds of switch. An edge node is where the end hosts plug in. A border node joins the fabric to outside networks. A control node runs LISP and answers the question of where each endpoint is.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What does the underlay need to be?', reply: 'Ansible: "Plain, routed and solid. Every switch reachable by its loopback, usually with OSPF, because every VXLAN tunnel runs from one loopback to another. An overlay is only as good as the underlay under it."' },
+            { tone: 'press', say: 'Where does intent-based networking come in?', reply: 'Prof. Hypervisor: "[[Intent-Based Networking]], IBN, is the idea that you tell the controller what you want, such as the clinic\'s phones never share a network with the guests, and it works out the configuration of every box to make it so. Halvorsen\'s brochure calls it magic. It is Ansible\'s plays with a nicer front door."' },
+            { tone: 'quiet', say: '(Look at the dotted line on the whiteboard.)', reply: 'The dotted line runs from a box labelled WING to a box labelled KABUKI, straight through the Exchange. Prof. Hypervisor taps it with the marker. "That\'s the clinic, one network, two buildings. The underlay doesn\'t have to know."' }
+          ] } },
+        { k: 'LORE', title: 'A SWITCH TAKES ORDERS', year: 2008, vibe: 'Legit. A campus switch taking its orders from a laptop.',
+          text: 'Prof. Hypervisor, capping the marker: "In April 2008 Nick McKeown and his colleagues at Stanford published a paper called OpenFlow: Enabling Innovation in Campus Networks. They proposed an open protocol that let a controller write the forwarding tables of ordinary switches, so researchers could try new ideas on a real campus without asking the vendors first. I keep it because it was written by people who wanted the campus network to belong to the people using it."' },
+        { k: 'KIT', text: 'Ansible photographs the whiteboard and prints it; the drone carries it over.', real: ['cisco'], kit: [
+          { cmd: 'application · control · infrastructure', what: 'the SDN layers: scripts and apps · the controller · the devices' },
+          { cmd: 'SD-Access (campus) · ACI (data centre) · SD-WAN (WAN)', what: 'Cisco\'s SDN solutions. DNA = Digital Network Architecture' },
+          { cmd: 'underlay · overlay · fabric', what: 'the physical network · the virtual network on top · both together' },
+          { cmd: 'LISP control plane · VXLAN data plane · Cisco TrustSec (CTS) policy', what: 'SD-Access' },
+          { cmd: 'edge node · border node · control node', what: 'SD-Access switches: hosts connect · outside networks · LISP' },
+          { cmd: 'IBN', what: 'intent-based networking: say what you want, the controller configures it' } ] },
+        { k: 'SYNC', q: { prompt: 'Clerk Adebayo, reading the whiteboard photo: "In Halvorsen\'s SD-Access plan, which protocol carries the actual traffic between the switches?"', opts: ['VXLAN', 'LISP', 'Cisco TrustSec', 'OpenFlow'], a: 0,
+          yes: 'Ansible: "VXLAN. The data plane."', no: 'Ansible: "VXLAN is the data plane. LISP is the control plane, TrustSec the policy."',
+          why: 'Ansible: In SD-Access, VXLAN provides the data plane, tunnelling traffic across the underlay. LISP provides the control plane, tracking where endpoints are, and Cisco TrustSec provides policy control.' } }
       ] }
   ] });
 })();

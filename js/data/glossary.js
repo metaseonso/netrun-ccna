@@ -239,5 +239,15 @@ window.GLOSSARY = {
   'uri': 'Uniform Resource Identifier. In https://sandboxdnac.cisco.com/dna/intent/api/v1/network-device the scheme is https, the authority is sandboxdnac.cisco.com and the path is /dna/intent/api/v1/network-device.',
   'basic authentication': 'REST authentication with a username and password, encoded in Base64 in the HTTP Authorization header. Base64 is encoding, not encryption, so it is not secure on its own.',
   'bearer authentication': 'REST authentication with a token (a bearer token) in the HTTP Authorization header. Tokens expire after a set period.',
-  'oauth 2.0': 'REST authentication that provides access delegation. Four entities: resource owner, client app, authorisation server, resource server. A refresh token renews access tokens without the user logging in again.'
+  'oauth 2.0': 'REST authentication that provides access delegation. Four entities: resource owner, client app, authorisation server, resource server. A refresh token renews access tokens without the user logging in again.',
+  // ---- night 62 · software-defined networking
+  'dna': 'Cisco Digital Network Architecture, Cisco\'s umbrella for its SDN solutions.',
+  'sd-access': 'Cisco\'s SDN solution for automating campus LANs. LISP control plane, VXLAN data plane, Cisco TrustSec policy. Switch roles: edge node, border node, control node.',
+  'aci': 'Cisco Application-Centric Infrastructure. Cisco\'s SDN solution for automating data centre networks. (SD-WAN automates WANs.)',
+  'underlay': 'In SDN, the physical network of devices and connections that the overlay is built on.',
+  'overlay': 'In SDN, the virtual network built on top of the physical underlay, usually with tunnels.',
+  'fabric': 'In SDN, the combination of the overlay and the underlay.',
+  'vxlan': 'Virtual Extensible LAN. Tunnels Layer 2 frames across a Layer 3 underlay; the data plane of Cisco SD-Access.',
+  'lisp': 'Locator ID Separation Protocol. Tracks where each endpoint is; the control plane of Cisco SD-Access.',
+  'intent-based networking': 'IBN. You state the desired outcome and the controller works out and applies the device configuration to achieve it.'
 };
