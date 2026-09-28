@@ -183,3 +183,10 @@
 .lg{display:flex;gap:10px;padding:10px 0;border-top:1px solid #1a2233;font-size:12px;line-height:1.5} .lg:first-of-type{border-top:0} .lg>.ic{margin-top:2px;color:var(--grn)}
 .lg .lq{color:var(--ink)} .lg .lt{color:var(--ink2);font-style:italic} .lg.letter{flex-direction:column;gap:4px;border-left:2px solid var(--cyan);padding-left:10px}
 @media (prefers-reduced-motion:reduce){.callbar,.callbar>.ic,.ron{animation:none}}
+
+/* choice stances */
+.tone{font-size:10px;letter-spacing:.14em;margin-right:6px;color:var(--cyan)} .tone.press{color:var(--yel)} .tone.quiet{color:var(--ink2)} .tone.joke{color:var(--grn)} .tone.care{color:var(--mag)}
+
+/* the door */
+.intro p.lede{font-size:15px;line-height:1.7;color:var(--ink)}
+.doorwhat{list-style:none;padding:0;margin:14px auto;max-width:640px;display:flex;flex-direction:column;gap:6px;text-align:left;font-size:13px;color:var(--ink2)} .doorwhat b{display:inline-block;width:110px;font-family:var(--disp);font-size:11px;letter-spacing:.14em;color:var(--cyan)}

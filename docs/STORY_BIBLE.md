@@ -92,23 +92,25 @@ Levels are written as scenes, not paragraphs. Use the `SCENE` beat type:
 ```js
 { k: 'SCENE', where: 'Clinic annex, switch closet, 22:40',
   lines: [
-    { who: 'narr', text: 'The closet smells like warm dust. Three switches, one with a hand-written label: DO NOT UNPLUG.' },
+    { who: 'narr', text: 'The closet door sticks, then gives. Warm air rolls out over you, thick with dust and the smell of a fan that has been dying for years. Three switches blink on the rack, and one cable wears a paper tag in shaky capitals: DO NOT UNPLUG.' },
     { who: 'root', text: 'You see that second cable to SW2? It has been plugged in for six years and it has never carried a frame.' },
     { who: 'you',  text: 'Then why is it there?' },
     { who: 'root', text: 'Because the night we did not have it, a nurse carried charts up three floors.' }
   ],
   choice: { opts: [
-    { say: 'What went wrong that night?', reply: 'A broadcast went around the two cables and never stopped. Nothing in a frame counts down. The switches flooded until the CPUs fell over.' },
-    { say: 'So why not unplug it now?', reply: 'Because then the next cut fibre takes the building down again. The cable stays. Something has to keep it quiet. That is my whole job.' }
+    { tone: 'ask', say: 'What went wrong that night?', reply: 'A broadcast went round the two cables and never stopped, because nothing in a frame counts down. The switches flooded until their CPUs gave out.' },
+    { tone: 'press', say: 'So why not unplug it now?', reply: 'Because the next cut fibre would take the building down again, so the cable stays and something has to keep it quiet.' },
+    { tone: 'quiet', say: '(Say nothing. Let him get there.)', reply: 'He winds the last of the cable round his fist. "Spanning tree. That\'s what keeps it quiet. Sit down, this part matters."' }
   ] } }
 ```
 
-- `narr` lines are short and physical: what the player sees, hears, smells.
+- `narr` lines are the dungeon master at the table: second person, present tense, senses first (heat, smell, sound, then sight). Let a long sentence roll, then land it. Never tell the player what to feel or what they learned.
 - NPC lines are one thought each. People interrupt, deflect, tell a memory, ask the player a
   question. Facts arrive as answers to what the player asked.
 - `you` lines are the player's spoken words. Keep them short and human.
-- A `choice` is not a quiz. Both options are reasonable things to say. Each reply teaches
-  something different; the player can go back and hear the other one.
+- A `choice` is not a quiz. Every option is a reasonable thing to say, and each reply teaches something different;
+  the player can go back and hear the others. Give each option a `tone` so the player picks a stance, not an answer:
+  `ask`, `press`, `quiet`, `joke` or `care` (shown as [ASK], [PRESS] and so on).
 - Keep `KIT` beats: the deck is the tangible thing the player carries out of the scene.
   Frame it in the scene: Old Root writes the commands on the back of a work order.
 - Keep one `SYNC` beat per level, but write the question as something an NPC would actually ask:
@@ -123,14 +125,43 @@ prompts are the NPC on the phone with the player, in the building, in the moment
 lines are reactions, not confirmations. The outro is what changed for someone: the nurse got
 her workstation back, the temp got a lecture, Old Root got to leave.
 
-## Language
+## Voice (owner's rule, 2026-09-28: this replaces the old Language rules)
 
-- Full sentences. One idea each. Short is fine; fragments used as drama are not.
-- No aphorisms. No "That is not X. That is Y." No stacked one-word sentences.
-- Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, and
-  never in the sentence that carries the fact.
+The owner reads every line. Lines that sound like an AI explaining the game break the world and get thrown out.
+
+**Who is talking.** Every line in a scene, a gig, a call or on a shelf belongs to someone: the narrator, an NPC,
+Dispatch, a client, a runner, Marrow. Write it the way that person talks. Cover the name: if you cannot tell who said
+it, rewrite it.
+
+**The narrator is a dungeon master.** Second person, present tense, senses first. Sentences of different lengths,
+the way a person tells a story out loud. No morals, no summaries, no "you realise".
+
+**Never write these:**
+- A statement followed by a short second sentence that twists, echoes or caps it. "Dispatch pins it. You pick."
+  "Eight districts under one sky of cable. Four of them know your name." Say the thing once and stop.
+- "That is not X. That is Y." Aphorisms. Stacked one-word sentences for drama. Tidy lists of three.
+- Taglines and subtitles that add no information. If a header needs no subtitle, it gets none.
+- The game explaining itself inside a scene ("this counts as help", "you are at 100/100").
+
+**Interface text is plain.** Labels, tooltips, warnings and popups say what the thing does in one plain sentence,
+with the real numbers: "A dive at your class costs 15 hunger. At zero you flatline. Eat at Marrow's stall."
+Rules and numbers live there, never in a character's mouth.
+
+**Voices of the cast** (keep adding one line per new NPC):
+
+| Who | Sounds like |
+|---|---|
+| Narrator | the DM: you, now, heat and smell before sight |
+| Old Root | slow and gruff, drops words he does not need, asks what you saw before he tells you anything |
+| Enable | formal, few words, talks in doors, respects anyone who saves their work |
+| Marrow | dry and fond, talks through food, never asks where the creds came from |
+| Dispatch | clipped like a radio with a bad battery, no pleasantries, sends a better gig instead of praise |
+| The Kid (crew) | types in bursts, caps when scared, lowercase when relieved, apologises twice |
+
+**Still true:**
+- Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that
+  carries the fact.
 - Every exam number and command stays exact. The story bends around the fact, never the reverse.
-- Read every line aloud as the character. If it sounds like a narrator, rewrite it.
 
 ---
 
