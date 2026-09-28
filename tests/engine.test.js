@@ -145,5 +145,23 @@ module.exports.run = function({ out }){
     ok(nb('SW2', 'SW1').lldp && !nb('SW1', 'SW2').lldp, 'lldp: no lldp receive on SW1 g0/2 stops SW1 learning SW2, not the other way round');
     ok(/every 30 seconds/.test(Show.render(d.R1, 'show cdp', A.state)) && /holdtime value of 120/.test(Show.render(d.R1, 'show cdp', A.state)) && /every 10 seconds/.test(Show.render(d.SW1, 'show lldp', A.state)) && /not enabled/.test(Show.render(d.R1, 'show lldp', A.state)), 'show cdp and show lldp print the timers');
   }
+  // 12. NTP: a server must answer and be synchronised itself; stratum counts down from the reference clock; authentication; show clock
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, CLK: { kind: 'server', ip: '10.9.9.9', mask: '255.255.255.0', gw: '10.9.9.1', ntpStratum: 1 } },
+      links: [ { a: 'CLK', b: 'R1', bp: 'gigabitethernet0/2' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/2', 'ip add 10.9.9.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.12.1 255.255.255.252', 'no shut', 'int lo0', 'ip add 10.255.0.1 255.255.255.255'],
+      R2: ['en', 'conf t', 'int g0/1', 'ip add 10.0.12.2 255.255.255.252', 'no shut', 'exit', 'ip route 0.0.0.0 0.0.0.0 10.0.12.1', 'ntp server 10.255.0.1'] });
+    let A = Net.api(Net.build(net, d)); ok(!A.ntp('R2').synced && /not synchronised/.test(A.ntp('R2').reason), 'ntp: a server that is not synchronised itself gives no time (' + A.ntp('R2').reason + ')');
+    ok(/^\*00:14:52\.211 UTC Mon Mar 1 1993$/.test(Show.render(d.R2, 'show clock', A.state)), 'show clock: unsynchronised clock is the 1993 default, marked * (' + Show.render(d.R2, 'show clock', A.state) + ')');
+    d.R1.exec('ntp server 10.9.9.9'); A = Net.api(Net.build(net, d)); ok(A.ntp('R1').synced && A.ntp('R1').stratum === 2 && A.ntp('R2').synced && A.ntp('R2').stratum === 3, 'ntp: stratum 1 clock → R1 at 2 → R2 at 3');
+    ok(/synchronized, stratum 3, reference is 10\.255\.0\.1/.test(Show.render(d.R2, 'show ntp status', A.state)) && /^\*~10\.255\.0\.1/m.test(Show.render(d.R2, 'show ntp associations', A.state)), 'show ntp status and associations follow the sync');
+    d.R2.exec('clock timezone PST -8'); A = Net.api(Net.build(net, d)); ok(Show.render(d.R2, 'show clock', A.state) === '15:47:12.345 PST Mon Sep 28 2026', 'show clock: synchronised, no star, in the configured time zone (' + Show.render(d.R2, 'show clock', A.state) + ')');
+    ok(/1993/.test(Show.render(d.R2, 'show calendar', A.state)), 'show calendar: the hardware clock is not updated without ntp update-calendar'); d.R2.exec('ntp update-calendar'); A = Net.api(Net.build(net, d)); ok(/2026/.test(Show.render(d.R2, 'show calendar', A.state)), 'show calendar: ntp update-calendar writes NTP time to the hardware clock');
+    d.R2.exec('ntp authenticate'); A = Net.api(Net.build(net, d)); ok(!A.ntp('R2').synced, 'ntp: authenticate with no key for the server refuses it');
+    ['ntp authentication-key 1 md5 tide', 'ntp trusted-key 1', 'ntp server 10.255.0.1 key 1'].forEach(l => d.R2.exec(l)); d.R1.exec('ntp authentication-key 1 md5 wrong'); A = Net.api(Net.build(net, d)); ok(!A.ntp('R2').synced && /authentication failed/.test(A.ntp('R2').reason), 'ntp: mismatched keys fail');
+    d.R1.exec('ntp authentication-key 1 md5 tide'); A = Net.api(Net.build(net, d)); ok(A.ntp('R2').synced, 'ntp: matching trusted key → synchronised');
+    const m = devs({ R3: ['en', 'conf t', 'ntp master'] }); const B = Net.api(Net.build({ devices: { R3: { kind: 'router' } }, links: [] }, m)); ok(B.ntp('R3').synced && B.ntp('R3').stratum === 8, 'ntp: ntp master alone is stratum 8');
+    d.R2.exec('end'); d.R2.exec('clock set 10:00:00 28 sep 2026'); ok(d.R2.lines.some(r => r.mode === 'priv' && r.line === 'clock set 10:00:00 28 sep 2026') && !/Invalid/.test(d.R2.out[d.R2.out.length - 1].s), 'shell: clock set is accepted in privileged EXEC');
+  }
   return { pass, fails };
 };

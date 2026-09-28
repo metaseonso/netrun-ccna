@@ -147,6 +147,15 @@ Definition of done for a day:
   `lldp timer|holdtime|reinit N`, `[no] cdp advertise-v2` are parsed; `show cdp` and `show lldp` print the global timers.
   Tested (section 11).
 
+- 2026-09-28 · NTP has state (`Net.ntpSync`, `ctx.net().ntp('R2')` → `{ synced, stratum, server, reason, tried }`): an `ntp server`
+  must answer a ping and be synchronised itself (a router) or be a server/cloud with `ntpStratum` in the gig's `net`; stratum is the
+  server's plus one, above 15 is unsynchronised; `ntp master [n]` is its own clock (default 8); `ntp authenticate` needs
+  `ntp server X key N`, `ntp trusted-key N` and a matching `ntp authentication-key N md5 K` on the server. Parsed too: `ntp peer`,
+  `ntp source`, `ntp update-calendar`, `clock timezone NAME H [M]`, `clock summer-time NAME recurring`. `show ntp status` and
+  `show ntp associations` follow the real sync; new `show clock [detail]` (the 1993 IOS default with `*` until NTP syncs, then
+  the time in the configured zone) and `show calendar`. `clock set`, `calendar set`, `clock read-calendar`, `clock update-calendar`
+  are accepted in privileged EXEC. Tested (section 12).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a

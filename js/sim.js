@@ -218,6 +218,7 @@
           else dev.out.push({ t:'out', s: 'Type escape sequence to abort.\nTracing the route to ' + ip + '\n' + Net.traceLines(r, 'ios').join('\n') + (r.ok ? '' : '\n  [why: ' + r.reason + ']') }); return; }
         dev.out.push({ t:'out', s:'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos:\n!!!!!\nSuccess rate is 100 percent (5/5)' }); return; }
       if (q.startsWith('reload')) { dev.out.push({ t:'sys', s:'(nice try. no reloads in the sim.)' }); return; }
+      if (/^(clock set|calendar set|clock read-calendar|clock update-calendar)/.test(q) && (dev.mode === 'priv' || doCmd)) { dev.lines.push(rec); return; } // exec commands for the clocks: accepted, NTP decides what show clock says
       if (!doCmd && dev.mode !== 'config' && !s.startsWith('show')) { if (dev.mode === 'user' || dev.mode === 'priv') { dev.out.push({ t:'err', s:'% Invalid input detected at \'^\' marker. (Config commands need "configure terminal" first.)' }); return; } }
       if (doCmd) { dev.lines.push(rec); return; }
     }

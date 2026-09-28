@@ -238,6 +238,25 @@
   function discoveryPorts(S){ for (const n in S.neighbors) for (const x of S.neighbors[n]) { const me = S.ifaces[n][x.local].cfg, them = S.ifaces[x.dev][x.remote].cfg;
       if (me.cdpOff || them.cdpOff) x.cdp = false; if (me.lldpRxOff || them.lldpTxOff) x.lldp = false; x.cdpHold = S.cfg[x.dev].cdpHoldtime || 180; x.lldpHold = S.cfg[x.dev].lldpHoldtime || 120; } }
 
+  // ---------------------------------------------------------------- NTP
+  // who a box gets its time from: an "ntp master" is its own clock; an "ntp server" must answer a ping and be synchronised itself
+  // (a router) or be a server/cloud with ntpStratum set in the gig's net. Stratum is the server's plus one; above 15 is unsynchronised.
+  // With "ntp authenticate" the server needs a trusted key whose md5 string matches the server's key of the same number.
+  function ntpSync(S, dev, depth){ depth = depth || 0; const c = S.cfg[dev]; const none = reason => ({ synced: false, stratum: 16, server: null, reason });
+    if (!c) return none('no such device'); if (depth > 6) return none('NTP loop');
+    let best = c.ntpMaster ? { synced: true, stratum: c.ntpMaster, server: '127.127.1.1', master: true, reason: 'ntp master' } : null; const tried = [];
+    for (const ip of [...new Set(c.ntp)]) { const r = ntpAsk(S, dev, ip, depth); tried.push(Object.assign({ ip }, r)); if (r.ok && (!best || r.stratum < best.stratum)) best = { synced: true, stratum: r.stratum, server: ip, reason: 'synchronised to ' + ip }; }
+    return best ? Object.assign(best, { tried }) : Object.assign(none(tried.length ? tried.map(t => t.ip + ': ' + t.reason).join('; ') : 'no NTP server configured'), { tried }); }
+  function ntpAsk(S, dev, ip, depth){ const D = S.net.devices; const c = S.cfg[dev];
+    const p = ping(S, dev, ip); if (!p.ok) return { ok: false, reason: 'unreachable (' + p.reason + ')' };
+    const own = S.l3.find(o => o.ip === ip && o.kind === 'iface'); let stratum, key = null;
+    if (own) { const sub = ntpSync(S, own.dev, depth + 1); if (!sub.synced) return { ok: false, reason: own.dev + ' is not synchronised' }; stratum = sub.stratum + 1; key = (S.cfg[own.dev].ntpKeys || {}); }
+    else { const n = Object.keys(D).find(k => (D[k].ip === ip || (S.hosts[k] && S.hosts[k].ip === ip)) && D[k].ntpStratum != null); if (!n) return { ok: false, reason: 'no NTP server answers at ' + ip }; stratum = D[n].ntpStratum + 1; key = D[n].ntpKeys || {}; }
+    if (c.ntpAuth) { const k = (c.ntpServerKeys || {})[ip]; if (k == null) return { ok: false, reason: 'ntp authenticate is on and no key is set for ' + ip };
+      if (!(c.ntpTrusted || []).includes(k)) return { ok: false, reason: 'key ' + k + ' is not trusted' }; if (!(c.ntpKeys || {})[k] || key[k] !== c.ntpKeys[k]) return { ok: false, reason: 'authentication failed with key ' + k }; }
+    if (stratum > 15) return { ok: false, reason: 'stratum ' + stratum + ' is too far from a reference clock' };
+    return { ok: true, stratum }; }
+
   // ---------------------------------------------------------------- ACL / NAT
   function aclEval(S, dev, aclId, pkt){ const a = S.cfg[dev].acls[aclId]; if (!a) return { action: 'permit', reason: 'ACL ' + aclId + ' not defined (permits all)' };
     for (const e of a.entries) { if (a.type === 'standard') { if (wildMatch(pkt.src, e.src, e.swild)) return { action: e.action, line: e, seq: e.seq }; continue; }
@@ -317,7 +336,8 @@
       sshReady: d => { const c = S.cfg[d]; const vty = c.vty; const ok = !!(c.hostname && c.hostname !== d.replace(/\d+$/, '') || true) && !!c.domain && c.sshKeyBits > 0 && !!(vty.transport && vty.transport.includes('ssh')) && vty.login === 'local' && c.users.length > 0; return { ok, hostname: !!c.hostname, domain: !!c.domain, key: c.sshKeyBits, transport: vty.transport, login: vty.login, users: c.users.length }; },
       acl: (d, id) => S.cfg[d].acls[id] || null, aclTest: (d, id, pkt) => aclEval(S, d, id, pkt),
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),
-      neighbors: d => S.neighbors[d] || [], macTable: d => S.macTable[d] || [], bundles: S.bundles
+      neighbors: d => S.neighbors[d] || [], macTable: d => S.macTable[d] || [], bundles: S.bundles,
+      ntp: d => ntpSync(S, d)
     };
   }
 
@@ -325,4 +345,5 @@
   function traceLines(r, style){ const t = r.trail || []; const row = (i, ip) => style === 'pc' ? '  ' + String(i).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + i + ' ' + ip + ' 0 msec 0 msec 0 msec';
     const out = t.map((ip, i) => row(i + 1, ip)); if (!r.ok) out.push(style === 'pc' ? '  ' + String(t.length + 1).padStart(2) + '     *        *        *     Request timed out.' : '  ' + (t.length + 1) + '  *  *  * '); return out; }
   window.Net = { build, api, ping, traceLines, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
+  Net.ntpSync = ntpSync;
 })();

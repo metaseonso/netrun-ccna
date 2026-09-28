@@ -66,6 +66,7 @@
         else if (s === 'ip dhcp snooping') cfg.dhcp.snooping = true;
         else if ((m = s.match(/^ip dhcp snooping vlan ([\d,\-]+)$/))) m[1].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let i = a; i <= (b || a); i++) cfg.dhcp.snoopVlans.add(i); });
         else if ((m = s.match(/^ip arp inspection vlan ([\d,\-]+)$/))) m[1].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let i = a; i <= (b || a); i++) cfg.dhcp.daiVlans.add(i); });
+        else if ((m = s.match(/^ntp server (\S+) .*\bkey (\d+)/))) { cfg.ntp.push(m[1]); (cfg.ntpServerKeys = cfg.ntpServerKeys || {})[m[1]] = +m[2]; }
         else if ((m = s.match(/^ntp server (\S+)/))) cfg.ntp.push(m[1]);
         else if ((m = s.match(/^logging (?:host )?(\S+)$/)) && !/^(console|monitor|buffered|trap|on)$/.test(m[1])) cfg.logging.push(m[1]);
         else if ((m = s.match(/^snmp-server community (\S+)(?: (ro|rw))?/))) cfg.snmp.push({ community: m[1], mode: m[2] || 'ro' });
@@ -78,6 +79,14 @@
         else if ((m = s.match(/^cdp (timer|holdtime) (\d+)$/))) cfg[m[1] === 'timer' ? 'cdpTimer' : 'cdpHoldtime'] = +m[2];
         else if ((m = s.match(/^lldp (timer|holdtime|reinit) (\d+)$/))) cfg['lldp' + m[1][0].toUpperCase() + m[1].slice(1)] = +m[2];
         else if (s === 'no cdp advertise-v2') cfg.cdpV1 = true; else if (s === 'cdp advertise-v2') cfg.cdpV1 = false;
+        else if (s === 'ntp authenticate') cfg.ntpAuth = true; else if (s === 'no ntp authenticate') cfg.ntpAuth = false;
+        else if ((m = s.match(/^ntp authentication-key (\d+) md5 (\S+)/))) (cfg.ntpKeys = cfg.ntpKeys || {})[+m[1]] = m[2];
+        else if ((m = s.match(/^ntp trusted-key (\d+)$/))) (cfg.ntpTrusted = cfg.ntpTrusted || []).push(+m[1]);
+        else if ((m = s.match(/^ntp peer (\S+)/))) (cfg.ntpPeers = cfg.ntpPeers || []).push(m[1]);
+        else if ((m = s.match(/^ntp source (\S+)$/))) cfg.ntpSource = Sim.canonIf(m[1]) || m[1];
+        else if (s === 'ntp update-calendar') cfg.ntpUpdateCalendar = true;
+        else if ((m = s.match(/^clock timezone (\S+) (-?\d+)(?: (\d+))?$/))) cfg.clockTz = { name: m[1].toUpperCase(), h: +m[2], m: m[3] ? +m[3] : 0 };
+        else if ((m = s.match(/^clock summer-time (\S+) recurring/))) cfg.summerTime = m[1].toUpperCase();
         else if (/^errdisable recovery cause/.test(s)) cfg.errdisableRecovery = true;
         else if ((m = s.match(/^no ip route (\S+) (\S+) (\S+)/))) cfg.routes = cfg.routes.filter(x => !(x.prefix === m[1] && x.mask === m[2] && x.via === m[3]));
         else if ((m = s.match(/^no access-list (\d+)$/))) delete cfg.acls[m[1]];
