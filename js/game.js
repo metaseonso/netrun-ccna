@@ -203,10 +203,10 @@
   function ownRecord(h){ const u = gUser(), r = Storage.local.loadSync(h); return !!(u && r && r.owner === u.id); }
   function myHandles(){ return gUser() ? Storage.local.listSync().filter(ownRecord) : []; }
   function deckHandles(){ return Storage.local.listSync().filter(h => { const r = Storage.local.loadSync(h); return !(r && r.owner); }); }
-  function claimHandle(h, pass){ const u = gUser(); if (!u) return setHandle(h, pass); h = (h || '').trim().slice(0, 18); pass = (pass || '').trim(); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' };
+  // a signed-in player never types a passcode: an unbound handle on this deck binds to the account as it is opened.
+  function claimHandle(h, pass){ const u = gUser(); if (!u) return setHandle(h, pass); h = (h || '').trim().slice(0, 18); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' };
     const isNew = !Storage.local.listSync().includes(h); const s = load(h);
     if (s.owner && s.owner !== u.id) return { ok: false, why: h + ' belongs to another account on this deck. pick another handle.', field: 'handle' };
-    if (!s.owner && s.pass) { if (!pass) return { ok: false, why: h + ' has a passcode. type it once and the handle binds to your account.', field: 'pass' }; if (s.pass !== hashPass(pass)) return { ok: false, why: 'that is not the passcode for ' + h, field: 'pass' }; }
     const bind = !s.owner; state = s; state.handle = h; state.owner = u.id; save(); Storage.pushIfRemote(h, state, true);
     if (isNew) log('Handle registered: ' + h); else if (bind) log('Handle bound to ' + (u.email || u.name)); return { ok: true, isNew }; }
   function logout(){ save(); if (state.handle) Storage.pushIfRemote(state.handle, state, true); run = null; state = fresh(); Storage.local.setCurrent(null); }
@@ -222,7 +222,7 @@
     linking = true; draw();
     try { if (state.handle && !state.owner) { state.owner = user.id; save(); log('Handle bound to ' + (user.email || user.name)); }
       for (const h of Storage.local.listSync()) { const local = Storage.local.loadSync(h); if (!local || local.owner !== user.id) continue; const remote = await Storage.remote.load(h); if (!remote || (local.updated || 0) > (remote.updated || 0)) await Storage.remote.save(h, local); }
-      for (const h of await Storage.remote.list()) { const remote = await Storage.remote.load(h); if (!usable(remote)) continue; const local = Storage.local.loadSync(h); if (local && local.owner !== user.id) continue; remote.owner = user.id; if (!local || (remote.updated || 0) > (local.updated || 0)) { Storage.local.saveSync(h, remote); if (state.handle === h) state = migrate(remote); } }
+      for (const h of await Storage.remote.list()) { const remote = await Storage.remote.load(h); if (!usable(remote)) continue; let local = Storage.local.loadSync(h); if (local && local.owner && local.owner !== user.id) continue; if (local && !local.owner) { local.owner = user.id; Storage.local.saveSync(h, local); if (state.handle === h) state.owner = user.id; } remote.owner = user.id; if (!local || (remote.updated || 0) > (local.updated || 0)) { Storage.local.saveSync(h, remote); if (state.handle === h) state = migrate(remote); } }
       save(); } catch (e) { console.warn('auth sync', e); } finally { linking = false; } draw(); }
   if (window.Auth) Auth.onChange(onAuth);
   window.addEventListener('beforeunload', () => { Telemetry.touch(state); save(); });

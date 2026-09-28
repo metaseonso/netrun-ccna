@@ -34,10 +34,12 @@
   // ---- views ------------------------------------------------------------------------
   // the door, signed in: the Google account is the key. pick a handle you own, or name a new one. no passcode.
   function doorSignedIn(){ const u = Auth.user(), mine = Game.myHandles();
+    const loose = Game.deckHandles();
     return '<div class="door-id">' + (u.avatar ? '<img src="' + esc(u.avatar) + '" alt="">' : '') + '<span>signed in as <b>' + esc(u.name) + '</b>' + (u.email && u.email !== u.name ? ' <span class="muted">' + esc(u.email) + '</span>' : '') + '</span><button class="btn ghost" id="signout">SIGN OUT</button></div>' +
       (Game.linking ? '<p class="muted">reading your record from Drive…</p>' : Auth.needsToken() ? '<p class="muted">your Drive is not answering. <button class="btn ghost" id="reconnect">RECONNECT</button></p>' : '') +
       (mine.length ? '<p class="door-mine">' + mine.map(h => '<button class="btn mag" data-mine="' + esc(h) + '">JACK IN AS ' + esc(h) + '</button>').join('') + '</p><p class="muted" style="font-size:12px">or start a new handle on this account:</p>' : '<p class="muted" style="font-size:12px">' + (Game.linking ? '' : 'no handle on this account yet. name yourself.') + '</p>') +
-      '<p><input id="handle" placeholder="' + (mine.length ? 'new handle' : 'your handle') + '" maxlength="18" autocomplete="off"> <input id="pass" type="password" placeholder="its passcode" maxlength="32" autocomplete="off" style="display:none"> <button class="btn ' + (mine.length ? 'ghost' : 'mag') + '" id="go">JACK IN</button></p>' +
+      '<p><input id="handle" placeholder="' + (mine.length ? 'new handle' : 'your handle') + '" maxlength="18" autocomplete="off"> <button class="btn ' + (mine.length ? 'ghost' : 'mag') + '" id="go">JACK IN</button></p>' +
+      (loose.length ? '<p class="muted" style="font-size:12px">handles on this deck not yet on your account: ' + loose.map(h => '<button class="btn ghost" data-mine="' + esc(h) + '" style="margin:2px 4px">' + esc(h) + '</button>').join('') + '</p>' : '') +
       '<p class="muted" style="font-size:11px">your Google account is the key: no passcode. the deck remembers you until you SIGN OUT. your record syncs after every talk and every gig, here and on any deck you sign in on.</p>'; }
   // the door, no account: a handle and a passcode on this deck only. Google is offered first because it follows the player.
   function doorLocal(){ const deck = Game.deckHandles();
@@ -195,8 +197,8 @@
   // ---- render ---------------------------------------------------------------------------------
   function render(){ const s = Game.state; const a = app(); document.body.classList.toggle('devon', !!(P().dev && cur.devOpen)); document.body.className = document.body.className.replace(/\btheme-\w+/g, '').trim() + (s.perks && s.perks.theme ? ' theme-' + s.perks.theme : '');
     if (s.handle && s.dead) { a.innerHTML = deadView(); return; }
-    if (!s.handle) { a.innerHTML = intro(); const go = h => { const r = Game.claimHandle(h, $('#pass').value); if (r.ok) { view = 'home'; render(); } else { toast(r.why, 'mag'); if (r.field === 'pass') $('#pass').style.display = ''; (r.field === 'pass' ? $('#pass') : $('#handle')).focus(); } };
-      $('#go').onclick = () => go($('#handle').value); $('#handle').onkeydown = e => { if (e.key === 'Enter') { if ($('#pass').style.display === 'none') $('#go').click(); else $('#pass').focus(); } }; $('#pass').onkeydown = e => { if (e.key === 'Enter') $('#go').click(); };
+    if (!s.handle) { a.innerHTML = intro(); const pass = $('#pass'); const go = h => { const r = Game.claimHandle(h, pass ? pass.value : ''); if (r.ok) { view = 'home'; render(); } else { toast(r.why, 'mag'); (r.field === 'pass' && pass ? pass : $('#handle')).focus(); } };
+      $('#go').onclick = () => go($('#handle').value); $('#handle').onkeydown = e => { if (e.key === 'Enter') { if (pass) pass.focus(); else $('#go').click(); } }; if (pass) pass.onkeydown = e => { if (e.key === 'Enter') $('#go').click(); };
       a.querySelectorAll('[data-mine]').forEach(b => b.onclick = () => go(b.dataset.mine)); a.querySelectorAll('[data-resume]').forEach(b => b.onclick = () => { $('#handle').value = b.dataset.resume; $('#pass').focus(); }); $('#handle').focus(); return; }
     if (view !== 'run') Game.dm.maybeCreate();
     let body = ''; if (view === 'home') body = home(); else if (view === 'grid') body = grid(); else if (view === 'level') body = level(); else if (view === 'jobs') body = jobs(); else if (view === 'run') body = runView(); else if (view === 'deck') body = deck(); else if (view === 'shop') body = shopView(); else if (view === 'key') body = keyView(); else if (view === 'stats') body = statsView(); else if (view === 'crew') body = crewView(); else body = logView();

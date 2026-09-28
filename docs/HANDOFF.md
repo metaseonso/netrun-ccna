@@ -139,7 +139,7 @@ Definition of done for a day:
 - 2026-09-28 · Sign-in live (client ID in `config/platform.js`, consent screen published, brand review pending). The door
   now treats the Google account as the key: `Game.claimHandle`, `Game.myHandles`, `Game.deckHandles`, `Game.linking`,
   `state.owner`. `onAuth` in `js/game.js` binds and syncs only the signed-in account's records. `privacy.html` and
-  `terms.html` at the site root, linked from the door and the no-script home page. Cache version `?v=13`.
+  `terms.html` at the site root, linked from the door and the no-script home page. Cache version `?v=14`.
 
 - 2026-09-27 · Renamed to NETRUNNER://CCNA (storage keys `netrunner-ccna-*`). Added the body (`Game.body`: food and
   chrome meters, gig costs, wear per bad call, `eat`), the stall kinds `food` and `service`, Marrow's tab, syncs as the

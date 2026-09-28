@@ -12,8 +12,9 @@ when one value is filled in: `googleClientId` in `config/platform.js`.
   any time at myaccount.google.com → Security → Third-party access.
 - **The Google account is the key.** After sign-in the door shows "signed in as …", a JACK IN button for every
   handle on that account, and one field for a new handle. No passcode. A handle is bound to the account
-  (`state.owner` = the Google user id) the first time it is used. A local handle with a passcode binds once the
-  passcode is typed; the handle in use when the player presses SIGN IN in the HUD binds at once.
+  (`state.owner` = the Google user id) the first time it is used. A signed-in player never types a passcode: an
+  unbound local handle binds as it is opened, a handle already in the account's Drive binds on sign-in, and the
+  handle in use when the player presses SIGN IN in the HUD binds at once.
 - A bound handle cannot be opened with a passcode. SIGN OUT sends a bound handle back to the door.
 - On sign-in, only this account's newer local records are pushed up, and newer Drive records are pulled down, so
   the same handles show on the door on any device. Other handles on a shared deck stay on the deck. Saves go up at most every 15 seconds, and at once on LOG OUT
