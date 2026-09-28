@@ -154,7 +154,8 @@ Definition of done for a day:
   `ntp source`, `ntp update-calendar`, `clock timezone NAME H [M]`, `clock summer-time NAME recurring`. `show ntp status` and
   `show ntp associations` follow the real sync; new `show clock [detail]` (the 1993 IOS default with `*` until NTP syncs, then
   the time in the configured zone) and `show calendar`. `clock set`, `calendar set`, `clock read-calendar`, `clock update-calendar`
-  are accepted in privileged EXEC. Tested (section 12).
+  are accepted in privileged EXEC; `clock summer-time NAME recurring` follows the US rule (second Sunday in March to the first
+  Sunday in November). Tested (section 12).
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service

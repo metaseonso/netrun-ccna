@@ -46,8 +46,10 @@
     return '  address         ref clock       st   when   poll reach  delay  offset   disp\n' + (rows.join('\n') || '(no associations)') + '\n * sys.peer, # selected, + candidate, - outlyer, x falseticker, ~ configured'; };
   // the software clock: set by NTP it is authoritative; left alone it starts at the IOS default, 1 March 1993, marked * (not authoritative)
   const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const clockOf = (d, S, ms) => { const c = S.cfg[d.name]; const t = Net.ntpSync(S, d.name); const tz = c.clockTz || { name: 'UTC', h: 0, m: 0 }; const off = (tz.h * 60 + (tz.h < 0 ? -tz.m : tz.m)) * 60000;
-    const base = t.synced ? Date.UTC(2026, 8, 28, 23, 47, 12, 345) : Date.UTC(1993, 2, 1, 0, 14, 52, 211); const x = new Date(base + off); const two = n => String(n).padStart(2, '0');
+  const clockOf = (d, S, ms) => { const c = S.cfg[d.name]; const t = Net.ntpSync(S, d.name); let tz = c.clockTz || { name: 'UTC', h: 0, m: 0 }; const off = (tz.h * 60 + (tz.h < 0 ? -tz.m : tz.m)) * 60000;
+    const base = t.synced ? Date.UTC(2026, 8, 28, 23, 47, 12, 345) : Date.UTC(1993, 2, 1, 0, 14, 52, 211); let x = new Date(base + off); const two = n => String(n).padStart(2, '0');
+    if (c.summerTime) { const y = x.getUTCFullYear(); const sun = (mo, nth) => { const f = new Date(Date.UTC(y, mo, 1)); return 1 + (7 - f.getUTCDay()) % 7 + 7 * (nth - 1); }; // US rule: second Sunday in March to first Sunday in November, 02:00
+      const t0 = Date.UTC(y, 2, sun(2, 2), 2), t1 = Date.UTC(y, 10, sun(10, 1), 2); if (x.getTime() >= t0 && x.getTime() < t1) { x = new Date(x.getTime() + 3600000); tz = Object.assign({}, tz, { name: c.summerTime }); } }
     return { synced: t.synced, text: two(x.getUTCHours()) + ':' + two(x.getUTCMinutes()) + ':' + two(x.getUTCSeconds()) + (ms ? '.' + String(x.getUTCMilliseconds()).padStart(3, '0') : '') + ' ' + tz.name + ' ' + DAYS[x.getUTCDay()] + ' ' + MONS[x.getUTCMonth()] + ' ' + x.getUTCDate() + ' ' + x.getUTCFullYear() }; };
   R['show clock'] = (d, S) => { const k = clockOf(d, S, true); return (k.synced ? '' : '*') + k.text; };
   R['show clock detail'] = (d, S) => { const k = clockOf(d, S, true); return (k.synced ? '' : '*') + k.text + '\nTime source is ' + (k.synced ? 'NTP' : 'hardware calendar'); };
