@@ -136,6 +136,12 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · GRE tunnels. `interface tunnelN` with `ip address`, `tunnel source <iface|ip>`, `tunnel destination <ip>`
+  (`tunnel mode gre ip` is accepted). A tunnel is not shut by default; it comes up when both ends name each other and the
+  underlay carries a ping between the two addresses (judged on the network without tunnels). The two ends then form a
+  point-to-point link: connected routes, static routes and OSPF (cost 1000, bandwidth 100 kbps) run over it, and
+  traceroute shows the far end's tunnel address. `show interfaces tunnel0` and `Tunnel0` in the tables. Tested (11).
+
 - 2026-09-28 · `interface range` works on three-part port names (`int range g1/0/4 - 5` on a Catalyst 3650), so the
   Mega Lab's switches can be configured the way the course does it (`Stp.expandRange`, tested).
 

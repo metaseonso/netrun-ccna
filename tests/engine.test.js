@@ -122,5 +122,24 @@ module.exports.run = function({ out }){
     const c = NetConfig.parse(dev('DSW1', 'ios', ['en', 'conf t', 'int range g1/0/4 - 5', 'channel-group 1 mode active', 'int range f0/1 - 2', 'switchport mode access']));
     ok(c.interfaces['gigabitethernet1/0/5'] && c.interfaces['gigabitethernet1/0/5'].channel && c.interfaces['fastethernet0/2'].mode === 'access', 'range: config lands on every port of a 1/0/x range and a 0/x range');
   }
+  // 11. GRE: two sites joined across a public router that knows nothing of their private networks
+  {
+    const net = { devices: { R1: { kind: 'router' }, INET: { kind: 'router' }, R3: { kind: 'router' }, PC1: { kind: 'host', ip: '10.1.1.10', mask: '255.255.255.0', gw: '10.1.1.1' }, PC3: { kind: 'host', ip: '10.3.3.10', mask: '255.255.255.0', gw: '10.3.3.1' } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'INET', bp: 'gigabitethernet0/0' }, { a: 'INET', ap: 'gigabitethernet0/1', b: 'R3', bp: 'gigabitethernet0/1' }, { a: 'R3', ap: 'gigabitethernet0/0', b: 'PC3' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.1.1.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 203.0.113.1 255.255.255.252', 'no shut', 'ip route 0.0.0.0 0.0.0.0 203.0.113.2'],
+      INET: ['en', 'conf t', 'int g0/0', 'ip add 203.0.113.2 255.255.255.252', 'no shut', 'int g0/1', 'ip add 198.51.100.2 255.255.255.252', 'no shut'],
+      R3: ['en', 'conf t', 'int g0/0', 'ip add 10.3.3.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 198.51.100.1 255.255.255.252', 'no shut', 'ip route 0.0.0.0 0.0.0.0 198.51.100.2'] });
+    let A = Net.api(Net.build(net, d)); ok(!A.ping('PC1', '10.3.3.10').ok, 'gre: private sites cannot reach each other across the public router');
+    d.R1.exec('int tunnel0'); d.R1.exec('ip add 172.16.0.1 255.255.255.252'); d.R1.exec('tunnel source g0/1'); d.R1.exec('tunnel destination 198.51.100.1'); d.R1.exec('exit'); d.R1.exec('ip route 10.3.3.0 255.255.255.0 172.16.0.2');
+    A = Net.api(Net.build(net, d)); ok(!A.up('R1', 'tunnel0'), 'gre: one end alone stays down');
+    d.R3.exec('int tunnel0'); d.R3.exec('ip add 172.16.0.2 255.255.255.252'); d.R3.exec('tunnel source g0/1'); d.R3.exec('tunnel destination 203.0.113.9'); d.R3.exec('exit'); d.R3.exec('ip route 10.1.1.0 255.255.255.0 172.16.0.1');
+    A = Net.api(Net.build(net, d)); ok(!A.up('R3', 'tunnel0') && !A.ping('PC1', '10.3.3.10').ok, 'gre: a wrong tunnel destination keeps both ends down');
+    d.R3.exec('int tunnel0'); d.R3.exec('tunnel destination 203.0.113.1'); A = Net.api(Net.build(net, d));
+    ok(A.up('R1', 'tunnel0') && A.up('R3', 'tunnel0'), 'gre: matching ends come up'); const p = A.ping('PC1', '10.3.3.10'); ok(p.ok && p.trail.includes('172.16.0.2'), 'gre: PC1 reaches PC3 through the tunnel (' + p.reason + ' ' + JSON.stringify(p.trail) + ')');
+    ok(/Tunnel0\s+172\.16\.0\.1\s.*up\s+up/i.test(Show.render(d.R1, 'show ip interface brief', A.state)), 'gre: show ip interface brief lists Tunnel0 up/up');
+    ok(/Tunnel source 203\.0\.113\.1 \(GigabitEthernet0\/1\), destination 198\.51\.100\.1/.test(Show.render(d.R1, 'show interfaces tunnel0', A.state)), 'gre: show interfaces tunnel0 names both ends');
+    d.R1.exec('router ospf 1'); d.R1.exec('network 172.16.0.0 0.0.0.3 area 0'); d.R1.exec('network 10.1.1.0 0.0.0.255 area 0'); d.R3.exec('exit'); d.R3.exec('router ospf 1'); d.R3.exec('network 172.16.0.0 0.0.0.3 area 0'); d.R3.exec('network 10.3.3.0 0.0.0.255 area 0');
+    A = Net.api(Net.build(net, d)); ok(A.ospfNeighbors('R1').some(x => x.dev === 'R3' && x.iface === 'tunnel0'), 'gre: OSPF forms an adjacency over the tunnel'); const o = A.state.ospf.routers.R1.ifaces.find(x => x.iface === 'tunnel0'); ok(o && o.cost === 1000, 'gre: OSPF costs a tunnel 1000 (' + (o && o.cost) + ')');
+  }
   return { pass, fails };
 };

@@ -21,6 +21,7 @@
   const netOf = (ip, mask) => IP.n2ip((IP.ip2n(ip) & IP.mask(mlen(mask))) >>> 0);
   const kindOf = p => p.startsWith('gigabitethernet') ? 'gi' : p.startsWith('fastethernet') ? 'fa' : p.startsWith('serial') ? 'se' : p.startsWith('tengigabitethernet') ? 'te' : p.startsWith('loopback') ? 'lo' : p.startsWith('vlan') ? 'vlan' : p.startsWith('port-channel') ? 'po' : 'e';
   const BW = { gi: 1000000, fa: 100000, se: 1544, te: 10000000, lo: 8000000, vlan: 1000000, po: 1000000, e: 10000 }; // kbps
+  BW.tu = 100; // a GRE tunnel's default bandwidth is 100 kbps, so OSPF costs it 1000
   const parentOf = p => p.includes('.') ? p.split('.')[0] : null;
   const short = p => p.replace('gigabitethernet', 'Gi').replace('tengigabitethernet', 'Te').replace('fastethernet', 'Fa').replace('serial', 'Se').replace('loopback', 'Lo').replace('port-channel', 'Po').replace(/^vlan/, 'Vl');
 
@@ -51,6 +52,14 @@
       // subinterfaces need the parent up
       for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.parent) { const par = S.ifaces[n][i.parent]; i.up = i.admin && !!(par && par.up); i.cabled = !!(par && par.cabled); i.peer = par && par.peer; i.peerPort = par && par.peerPort; } }
     }
+    // GRE tunnels: a tunnel interface is not shut by default. It comes up when the two ends name each other (tunnel source and
+    // tunnel destination) and the underlay carries a packet from one end's address to the other's, judged on the network without tunnels
+    const tunnels = []; for (const n in D) for (const p in S.ifaces[n]) if (p.startsWith('tunnel')) { const i = S.ifaces[n][p]; i.kind = 'tu'; i.admin = i.cfg.shutdown !== true; i.up = false; tunnels.push({ dev: n, iface: p, i }); }
+    S.tunnelPairs = [];
+    if (tunnels.length && !opts.noTunnels) { const S0 = build(net0, devices, Object.assign({}, opts, { noTunnels: true }));
+      const srcIp = t => { const s = t.i.cfg.tunnelSource; if (!s) return null; if (IP.validIp(s)) return s; const own = S0.ifaces[t.dev] && S0.ifaces[t.dev][Sim.canonIf(s) || s]; return own && own.up && own.cfg.ip ? own.cfg.ip : null; };
+      tunnels.forEach(t => { t.src = srcIp(t); t.dst = t.i.cfg.tunnelDest || null; t.ok = !!(t.i.admin && t.src && t.dst && S0.routers.includes(t.dev) && ping(S0, t.dev, t.dst, { src: t.src }).ok); });
+      tunnels.forEach(t => { const peer = tunnels.find(u => u !== t && t.ok && u.ok && u.src === t.dst && u.dst === t.src); if (!peer) return; t.i.up = true; t.i.peer = peer.dev; t.i.peerPort = peer.iface; if (t.dev + '|' + t.iface < peer.dev + '|' + peer.iface) S.tunnelPairs.push([t, peer]); }); }
     // duplex/speed mismatch issues
     S.links.forEach(L => { const a = S.ifaces[L.a] && S.ifaces[L.a][L.ap], b = S.ifaces[L.b] && S.ifaces[L.b][L.bp]; if (a && b && a.cfg.duplex && b.cfg.duplex && a.cfg.duplex !== b.cfg.duplex && a.cfg.duplex !== 'auto' && b.cfg.duplex !== 'auto') S.issues.push({ kind: 'duplex-mismatch', where: L.a + ' ' + short(L.ap) + ' / ' + L.b + ' ' + short(L.bp) }); });
 
@@ -116,6 +125,8 @@
         const na = (ka === 'router' || ka === 'l3switch') ? ifNode(L.a, L.ap) : hostNode(L.a), nb = (kb === 'router' || kb === 'l3switch') ? ifNode(L.b, L.bp) : hostNode(L.b); uf.union(na, nb); } });
     // SVIs join their VLAN node
     for (const n of switches) for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' && i.up && i.cfg.ip) { const v = +p.replace('vlan', ''); uf.union(node(n, v), ifNode(n, p)); } }
+    // a GRE tunnel whose two ends match is a point-to-point link between them
+    S.tunnelPairs.forEach(([a, b]) => uf.union(ifNode(a.dev, a.iface), ifNode(b.dev, b.iface)));
     S.uf = uf; S.node = node; S.hostNode = hostNode; S.ifNode = ifNode;
     const segId = x => uf.find(x);
 

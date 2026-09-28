@@ -114,6 +114,9 @@
           else if (s === 'ip dhcp snooping trust') i.snoopTrust = true; else if (s === 'ip arp inspection trust') i.daiTrust = true;
           else if ((m = s.match(/^speed (\S+)$/))) i.speed = m[1]; else if ((m = s.match(/^duplex (\S+)$/))) i.duplex = m[1];
           else if ((m = s.match(/^ip ospf network (\S+)$/))) i.ospfNetwork = m[1];
+          else if ((m = s.match(/^tunnel source (\S+)$/))) i.tunnelSource = m[1];
+          else if ((m = s.match(/^tunnel destination (\S+)$/))) i.tunnelDest = m[1];
+          else if ((m = s.match(/^tunnel mode (.+)$/))) i.tunnelMode = m[1];
         }
       }
       // ---------------- line config
