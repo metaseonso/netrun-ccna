@@ -56,7 +56,7 @@
       state.inventory[id]--; const before = state.body.food; state.body.food = Math.min(body.max, state.body.food + (it.effect.food || 0)); ev('eat', { item: id, food: state.body.food }); log('Ate ' + it.name + ' (food ' + before + ' → ' + state.body.food + ')'); save(); return { ok: true, item: it, food: state.body.food }; },
     wear(n, why){ if (!state.handle) return false; state.body.chrome = Math.max(0, state.body.chrome - n); if (state.body.chrome <= 0) { flatline(why || 'the chrome gave out.'); return true; } return false; }
   };
-  function flatline(why){ state.dead = { at: Date.now(), why, food: state.body.food, chrome: state.body.chrome, job: run ? run.job.id : null }; state.meta.deaths++; ev('flatline', { why, job: state.dead.job }); log('FLATLINED. ' + why); run = null; save(); }
+  function flatline(why){ state.dead = { at: Date.now(), why, food: state.body.food, chrome: state.body.chrome, job: run ? run.job.id : null }; state.meta.deaths++; const fn = run && run.job.day ? run.job.day[0] : null; if (fn) { state.meta.flatNights = state.meta.flatNights || {}; state.meta.flatNights[fn] = (state.meta.flatNights[fn] || 0) + 1; } ev('flatline', { why, job: state.dead.job }); log('FLATLINED. ' + why); run = null; save(); }
   // a sync is the only save the player gets: after a talk, after a gig. no chips, no manual saves. pacing stays ours.
   // telemetry, the journal and the passcode ride outside the snapshot so a reload never erases the record of what happened.
   const KEEP = ['events', 'log', 'dmLog', 'meta', 'checkpoint', 'pass', 'owner', 'codex', 'completedAt', 'license'];

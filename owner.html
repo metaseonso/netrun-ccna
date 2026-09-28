@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>NETRUNNER://CCNA · Owner</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2307080d'/%3E%3Cpath d='M3 12V4l10 8V4' stroke='%233ff6ff' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#07080d; --bg2:#0d1019; --line:#233049; --ink:#e6f1ff; --ink2:#9fb3d1; --cyan:#3ff6ff; --mag:#ff3fa4; --yel:#ffd23f; --grn:#5dff9c; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 "JetBrains Mono", Consolas, monospace; }
+  main { max-width:1180px; margin:0 auto; padding:32px 16px 60px; }
+  h1 { margin:0; font-family:Orbitron, sans-serif; font-size:clamp(22px,4vw,34px); letter-spacing:.14em; color:var(--cyan); }
+  h1 span { color:var(--mag); }
+  h2 { font-family:Orbitron, sans-serif; font-size:13px; letter-spacing:.18em; color:var(--yel); margin:0 0 10px; font-weight:600; }
+  .sub { color:var(--ink2); margin:6px 0 20px; }
+  .lock { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:22px; }
+  input[type=password] { flex:1 1 260px; min-width:0; background:var(--bg2); color:var(--ink); border:1px solid var(--line); padding:9px 10px; font:inherit; }
+  button { background:transparent; color:var(--cyan); border:1px solid var(--cyan); padding:9px 14px; font:inherit; letter-spacing:.1em; cursor:pointer; }
+  button:hover { background:rgba(63,246,255,.08); }
+  label { color:var(--ink2); font-size:12px; }
+  .msg { color:var(--mag); min-height:1.6em; }
+  .nums { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px; margin-bottom:24px; }
+  .ps { padding:10px 12px; border:1px solid var(--line); background:var(--bg2); }
+  .ps b { display:block; font-family:Orbitron, sans-serif; font-size:22px; color:var(--cyan); font-weight:600; }
+  .ps span { font-size:10px; letter-spacing:.14em; color:var(--ink2); text-transform:uppercase; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap:18px; }
+  section { border:1px solid var(--line); background:var(--bg2); padding:14px; min-width:0; }
+  .note { color:var(--ink2); font-size:12px; margin:-4px 0 10px; }
+  .bars { display:flex; align-items:flex-end; gap:2px; height:140px; border-bottom:1px solid var(--line); }
+  .bars div { flex:1 1 0; min-width:2px; background:var(--cyan); position:relative; }
+  .bars div.rite { background:var(--mag); }
+  .axis { display:flex; justify-content:space-between; color:var(--ink2); font-size:11px; margin-top:4px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--ink2); font-weight:400; letter-spacing:.08em; }
+  td.n { text-align:right; white-space:nowrap; }
+  .hbar { height:8px; background:var(--cyan); min-width:2px; }
+  .scroll { overflow-x:auto; }
+  .tag { display:inline-block; padding:0 6px; border:1px solid var(--line); font-size:11px; color:var(--ink2); }
+  .tag.new { color:var(--yel); border-color:var(--yel); }
+  .empty { color:var(--ink2); }
+  a { color:var(--cyan); }
+  footer { margin-top:30px; color:var(--ink2); font-size:12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>OWNER <span>DESK</span></h1>
+  <div class="sub">Every player's traffic from the Watson DB. Players are counted by a random id, never by handle.</div>
+  <form class="lock" id="lock">
+    <input type="password" id="key" placeholder="Watson DB key" autocomplete="current-password" aria-label="Watson DB key">
+    <button type="submit">OPEN</button>
+    <label><input type="checkbox" id="remember"> Remember the key on this device</label>
+  </form>
+  <div class="msg" id="msg"></div>
+  <div id="out"></div>
+  <footer>The key is the lock: without it the DB answers nothing. Setup and redeploy steps: docs/WATSON_DB.md. <a href="./">Back to the game</a></footer>
+</main>
+<script src="config/platform.js"></script>
+<script src="js/data/syllabus.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const store = { get(){ try { return localStorage.getItem('watson-owner-key') || ''; } catch (e) { return ''; } }, set(v){ try { v ? localStorage.setItem('watson-owner-key', v) : localStorage.removeItem('watson-owner-key'); } catch (e) {} } };
+  const RITES = { 19: 'Class D rite', 33: 'Class C rite', 51: 'Class B rite', 63: 'last night before the finale' };
+  const topic = n => { const s = (window.SYLLABUS || []).find(x => x.night === n); return s ? s.topic : (n === 64 ? 'The Watson Exchange' : ''); };
+  const DAY = 86400000;
+  const median = a => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const weekOf = d => { const t = new Date(d + 'T00:00:00Z'); const wd = (t.getUTCDay() + 6) % 7; return new Date(t - wd * DAY).toISOString().slice(0, 10); };
+
+  function num(v, l){ return '<div class="ps"><b>' + esc(v) + '</b><span>' + esc(l) + '</span></div>'; }
+  function bars(values, labels, mark){ const max = Math.max(1, ...values);
+    return '<div class="bars">' + values.map((v, i) => '<div' + (mark && mark(i) ? ' class="rite"' : '') + ' style="height:' + (v ? Math.max(2, Math.round(v / max * 100)) : 0) + '%" title="' + esc(labels[i] + ': ' + v) + '"></div>').join('') + '</div>' +
+      '<div class="axis"><span>' + esc(labels[0]) + '</span><span>most: ' + max + '</span><span>' + esc(labels[labels.length - 1]) + '</span></div>'; }
+  function table(head, rows){ return rows.length ? '<div class="scroll"><table><tr>' + head.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr>' + rows.join('') + '</table></div>' : '<div class="empty">Nothing yet.</div>'; }
+
+  function render(d){
+    const P = d.pulse || [], S = d.suggestions || [], L = d.licenses || [], now = Date.parse(d.at) || Date.now();
+    const active = P.filter(p => now - Date.parse(p.updated) < 7 * DAY).length;
+    const idle = P.filter(p => now - Date.parse(p.updated) >= 7 * DAY && !p.licensed);
+    const sum = k => P.reduce((a, p) => a + (Number(p[k]) || 0), 0);
+    let h = '<div class="nums">' + num(P.length, 'netrunners') + num(active, 'active, last 7 days') + num(L.length, 'licensed') + num(sum('nights'), 'nights finished') +
+      num(sum('flatlines'), 'flatlines') + num(sum('fixers'), 'fixers bought') + num(S.filter(s => s.status === 'new').length, 'new suggestions') + '</div><div class="grid">';
+
+    // registrations by week
+    const weeks = {}; let undated = 0; P.forEach(p => { if (p.first) { const w = weekOf(p.first); weeks[w] = (weeks[w] || 0) + 1; } else undated++; });
+    const wk = Object.keys(weeks).sort(); const wl = []; if (wk.length) { for (let t = Date.parse(wk[0] + 'T00:00:00Z'); t <= Date.parse(wk[wk.length - 1] + 'T00:00:00Z'); t += 7 * DAY) wl.push(new Date(t).toISOString().slice(0, 10)); }
+    h += '<section><h2>NEW PLAYERS BY WEEK</h2><div class="note">By the week of their first night. ' + (undated ? undated + ' records from older builds have no date.' : '') + '</div>' +
+      (wl.length ? bars(wl.map(w => weeks[w] || 0), wl.map(w => 'week of ' + w)) : '<div class="empty">No dated records yet.</div>') + '</section>';
+
+    // furthest night reached
+    const reach = Array.from({ length: 65 }, () => 0); P.forEach(p => { reach[Math.min(64, p.reached || 0)]++; });
+    h += '<section><h2>FURTHEST NIGHT REACHED</h2><div class="note">One bar per night, 0 to 64. Magenta bars are the rites and the finale. Older builds report 0.</div>' +
+      bars(reach, reach.map((_, i) => 'night ' + i + (topic(i) ? ' · ' + topic(i) : '')), i => i === 19 || i === 33 || i === 51 || i === 64) + '</section>';
+
+    // where players stall
+    const stall = {}; idle.forEach(p => { const n = (p.reached || 0) + 1; stall[n] = (stall[n] || 0) + 1; });
+    const stallRows = Object.entries(stall).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([n, c]) => '<tr><td class="n">' + n + '</td><td>' + esc(topic(+n)) + (RITES[n - 1] ? ' <span class="tag">after the ' + esc(RITES[n - 1]) + '</span>' : '') + '</td><td class="n">' + c + '</td><td style="width:30%"><div class="hbar" style="width:' + Math.round(c / idle.length * 100) + '%"></div></td></tr>');
+    h += '<section><h2>WHERE PLAYERS STALL</h2><div class="note">Players quiet for 7 days or more and not licensed (' + idle.length + '), by the night they did not finish.</div>' + table(['night', 'topic', 'players', ''], stallRows) + '</section>';
+
+    // flatlines by night
+    const fl = {}; P.forEach(p => Object.entries(p.flats || {}).forEach(([n, c]) => { fl[n] = (fl[n] || 0) + Number(c); }));
+    const flRows = Object.entries(fl).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([n, c]) => '<tr><td class="n">' + n + '</td><td>' + esc(topic(+n)) + '</td><td class="n">' + c + '</td></tr>');
+    h += '<section><h2>FLATLINES BY NIGHT</h2><div class="note">From builds that report them. All flatlines, any build: ' + sum('flatlines') + '.</div>' + table(['night', 'topic', 'flatlines'], flRows) + '</section>';
+
+    // days to each rite
+    const riteRows = [19, 33, 51, 63].map(n => { const days = P.filter(p => p.first && p.trail && p.trail[n]).map(p => Math.round((Date.parse(p.trail[n]) - Date.parse(p.first)) / DAY)); const m = median(days);
+      return '<tr><td class="n">' + n + '</td><td>' + esc(RITES[n]) + '</td><td class="n">' + days.length + '</td><td class="n">' + (m == null ? '—' : m + ' days') + '</td></tr>'; });
+    h += '<section><h2>DAYS TO EACH GATE</h2><div class="note">Median days from a player\'s first night to the day they finished the night of each rite.</div>' + table(['night', 'gate', 'players', 'median'], riteRows) + '</section>';
+
+    // builds and classes
+    const ver = {}, cls = {}; P.forEach(p => { const v = p.version || 'older'; ver[v] = (ver[v] || 0) + 1; cls[p.cls || 'D'] = (cls[p.cls || 'D'] || 0) + 1; });
+    h += '<section><h2>CLASSES AND BUILDS</h2>' + table(['class', 'players'], ['D', 'C', 'B', 'A'].map(c => '<tr><td>Class ' + c + '</td><td class="n">' + (cls[c] || 0) + '</td></tr>')) +
+      '<div style="height:10px"></div>' + table(['build (?v=)', 'players'], Object.entries(ver).sort((a, b) => b[1] - a[1]).map(([v, c]) => '<tr><td>' + esc(v) + '</td><td class="n">' + c + '</td></tr>')) + '</section>';
+
+    // suggestions
+    const st = {}; S.forEach(s => { st[s.status] = (st[s.status] || 0) + 1; });
+    const open = S.filter(s => s.status === 'new' || s.status === 'ticketed' || s.status === 'scoped' || s.status === 'in progress').slice(-40).reverse();
+    h += '<section style="grid-column:1/-1"><h2>SUGGESTIONS</h2><div class="note">' + ['new', 'ticketed', 'scoped', 'in progress', 'done', 'declined'].map(k => k + ' ' + (st[k] || 0)).join(' · ') + '. Open ones, newest first. Change a status with node tools/watson-db.js set.</div>' +
+      table(['id', 'received', 'status', 'night', 'screen', 'text'], open.map(s => '<tr><td>' + esc(s.id) + '</td><td>' + esc(String(s.received).slice(0, 10)) + '</td><td><span class="tag' + (s.status === 'new' ? ' new' : '') + '">' + esc(s.status) + '</span></td><td>' + esc(s.night) + '</td><td>' + esc(s.screen) + '</td><td>' + esc(s.text) + '</td></tr>')) + '</section>';
+
+    // licenses
+    h += '<section style="grid-column:1/-1"><h2>LICENSES ISSUED</h2>' + table(['number', 'issued', 'handle', 'class', 'hall of fame'], L.slice().reverse().map(l => '<tr><td>' + esc(l.number) + '</td><td>' + esc(String(l.issued).slice(0, 10)) + '</td><td>' + esc(l.handle) + '</td><td>' + esc(l.cls) + '</td><td>' + (l.hall ? 'yes' : 'no') + '</td></tr>')) + '</section>';
+    $('out').innerHTML = h + '</div>';
+  }
+
+  async function open(key){
+    const url = (window.PLATFORM || {}).dbUrl; if (!url) { $('msg').textContent = 'No Watson DB in config/platform.js (dbUrl).'; return; }
+    $('msg').textContent = 'Reading the Watson DB…';
+    try { const r = await fetch(url + '?action=dashboard&key=' + encodeURIComponent(key), { redirect: 'follow', cache: 'no-store' }); const d = await r.json();
+      if (!d.ok) { $('msg').textContent = d.why === 'key' ? 'The DB refused that key.' : 'The DB answered without a dashboard. Redeploy tools/watson-db.gs (docs/WATSON_DB.md).'; return; }
+      $('msg').textContent = 'Read at ' + new Date(d.at).toLocaleString() + '.'; render(d);
+    } catch (e) { $('msg').textContent = 'No answer from the Watson DB. Check the connection, or redeploy tools/watson-db.gs.'; }
+  }
+
+  // ?demo=1 draws made-up numbers, to check the layout without the key
+  function demo(){ const at = new Date().toISOString(); const P = []; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 120; i++) { const first = new Date(Date.now() - Math.floor(rnd() * 70) * DAY).toISOString().slice(0, 10); const reached = Math.min(64, Math.floor(Math.pow(rnd(), 1.8) * 65)); const trail = {};
+      for (let n = 1; n <= Math.min(63, reached); n++) trail[n] = new Date(Date.parse(first) + n * 0.8 * DAY).toISOString().slice(0, 10);
+      P.push({ id: 'demo' + i, updated: new Date(Date.now() - Math.floor(rnd() * 20) * DAY).toISOString(), cls: reached > 51 ? 'A' : reached > 33 ? 'B' : reached > 19 ? 'C' : 'D', nights: reached, flatlines: Math.floor(rnd() * 4), first, reached, fixers: Math.floor(rnd() * 3), version: rnd() > .3 ? '62' : '61', trail, flats: rnd() > .5 ? { [1 + Math.floor(rnd() * 63)]: 1 } : {}, licensed: reached === 64 }); }
+    render({ ok: true, at, pulse: P, suggestions: [{ id: 'S0001', received: at, handle: 'x', screen: 'shop', night: 12, version: '62', text: 'A sound slider, please.', status: 'new' }, { id: 'S0002', received: at, screen: 'gig', night: 21, text: 'The BPDU Guard floor needs one more hint.', status: 'ticketed' }],
+      licenses: P.filter(p => p.licensed).map((p, i) => ({ number: 'NR-' + String(i + 1).padStart(6, '0'), issued: at, handle: 'runner' + i, cls: 'A', hall: i % 2 === 0 })) });
+    $('msg').textContent = 'Demo numbers, made up.'; }
+
+  $('lock').addEventListener('submit', e => { e.preventDefault(); const k = $('key').value.trim(); if (!k) return; store.set($('remember').checked ? k : ''); open(k); });
+  if (/[?&]demo=1/.test(location.search)) demo();
+  else { const k = store.get(); if (k) { $('key').value = k; $('remember').checked = true; open(k); } }
+})();
+</script>
+</body>
+</html>

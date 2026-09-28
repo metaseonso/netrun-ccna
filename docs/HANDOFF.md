@@ -138,6 +138,10 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Pulse and dashboard: `flatline()` counts flatlines by night in `state.meta.flatNights`; the pulse adds the
+  first day, the furthest night, fixers bought, the build (?v=), the day each night was first finished
+  (`state.meta.nightAt`), flatlines by night and licensed. tools/watson-db.gs stores them (old sheets grow the columns)
+  and answers `?action=dashboard` with the key; `owner.html` draws it. Checked against a fake sheet.
 - 2026-09-28 · Marrow's tab is a real tab: a broke runner at hunger 30 or under (food) or chrome 30 or under (the patch)
   gets the item on credit, up to 2 + classRank items at once (`Game.shop.onTab`). `state.body.owed` holds the creds; the
   next gig's pay settles it (`result.settled`, shown on the result screen) and the tab opens again. Tested in

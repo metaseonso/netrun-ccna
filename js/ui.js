@@ -482,7 +482,11 @@
   function float(sel, text, cls){ const el = $(sel); if (!el) return; const f = document.createElement('span'); f.className = 'fdelta ' + (cls || ''); f.textContent = text; el.appendChild(f); el.classList.add('bump'); setTimeout(() => { f.remove(); el.classList.remove('bump'); }, 1400); }
   // anonymous progress for the public numbers on the door: a random id kept in the record, never the handle
   function pulse(){ if (!window.WatsonDB || !WatsonDB.on) return; const s = Game.state; if (!s.meta.pulseId) { s.meta.pulseId = Math.random().toString(36).slice(2, 10) + '-' + Date.now().toString(36); Game.save(); }
-    WatsonDB.pulse({ id: s.meta.pulseId, cls: Game.classFor(s.rep).id, nights: (window.SYLLABUS || []).filter(x => Game.nightDone(x.night)).length, flatlines: s.meta.deaths || 0 }); }
+    // the owner's dashboard also gets the day each night was first finished, flatlines by night and fixers bought (still no handle)
+    const done = (window.SYLLABUS || []).filter(x => Game.nightDone(x.night)).map(x => x.night); const today = new Date().toISOString().slice(0, 10); const at = s.meta.nightAt = s.meta.nightAt || {}; let fresh = false;
+    done.forEach(n => { if (!at[n]) { at[n] = today; fresh = true; } }); if (fresh) Game.save();
+    WatsonDB.pulse({ id: s.meta.pulseId, cls: Game.classFor(s.rep).id, nights: done.length, flatlines: s.meta.deaths || 0, first: new Date(s.created || Date.now()).toISOString().slice(0, 10), reached: done.length ? Math.max(...done) : 0,
+      fixers: Object.values(s.codex || {}).filter(v => v === 'paid').length, version: (((document.querySelector('script[src*="js/ui.js"]') || {}).src || '').split('v=')[1] || ''), trail: at, flats: s.meta.flatNights || {}, licensed: !!s.license }); }
   function react(){ const s = Game.state; if (!s.handle) { last = null; return; } const dm = Game.dm.pending(); const now = { h: s.handle, f: s.body.food, c: s.body.chrome, cr: s.creds || 0, rep: s.rep, cp: s.checkpoint ? s.checkpoint.at : 0, dead: !!s.dead, dm: dm ? dm.id : null, cls: Game.classFor(s.rep).id };
     const p = last; last = now; if (!p || p.h !== now.h) return;
     if (now.dead && !p.dead) return sfx('flatline');

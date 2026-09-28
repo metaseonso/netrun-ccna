@@ -88,7 +88,7 @@ Days with a ✅ are built. Everything else: write the level(s), import the deck,
 
 ## Beyond content
 
-- **After the campaign: the owner's dashboard.** A page only the owner can open (their Google account and the DB key), with every player's traffic and stats in one overview: registrations over time, nights reached, where players stall, flatlines, fixer use, suggestions by status, licenses issued. Data comes from the Watson DB (`pulse`, `suggestions`, `licenses`); the DB will need a richer anonymous `pulse` (per-night timestamps) for it.
+- **Done 2026-09-28: the owner's dashboard** (`owner.html`, docs/WATSON_DB.md; the owner must redeploy the script once). A page only the owner can open (their Google account and the DB key), with every player's traffic and stats in one overview: registrations over time, nights reached, where players stall, flatlines, fixer use, suggestions by status, licenses issued. Data comes from the Watson DB (`pulse`, `suggestions`, `licenses`); the DB will need a richer anonymous `pulse` (per-night timestamps) for it.
 
 - Extend protégé lines and add a few recurring named protégés with arcs (optional, after the campaign).
 - Sign-in: code complete. **Your first message to the owner walks them through `docs/AUTH_PLAN.md` live** until SIGN IN WITH GOOGLE works on the live site.
