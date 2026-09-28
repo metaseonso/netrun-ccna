@@ -136,6 +136,21 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Switch security, for nights 49–51: a port err-disabled by port security stays err-disabled after the offender is
+  unplugged, until `shutdown` then `no shutdown` on it or `errdisable recovery cause psecure-violation` (no clock: recovery counts
+  as the interval passed); while the offender is still plugged in the port follows the config as before. `errdisable recovery
+  cause|interval`, `[no] ip dhcp snooping information option`, `ip dhcp snooping limit rate N`, `ip arp inspection validate
+  src-mac|dst-mac|ip`, `ip arp inspection limit rate N`, `ip arp inspection filter NAME vlan V`, ARP ACL entries (`permit ip host
+  A mac host M`) are parsed (`cfg.sec`, `i.snoopRate`, `i.daiRate`). Option 82, opt-in with `net.option82: true`: the first
+  snooping switch adds it, a snooping switch further up drops it on an untrusted port, and an IOS DHCP server or relay drops a
+  request carrying it with giaddr 0. DAI now inspects everything, not only the rogue: the ARP of any host or router behind an
+  untrusted port on a switch running DAI for its VLAN is dropped unless an ARP ACL permits it or the snooping binding table holds
+  it (a leased host); a dropped box cannot be reached and cannot reach anyone (`api.daiDrops`, issue `dai-dropped-arp`). New
+  shows: `show ip arp inspection interfaces`, `show errdisable recovery`, `show mac address-table secure`; `show ip dhcp snooping`
+  prints option 82 and rate limits, the binding table prints the VLAN and port, `show ip arp inspection` the validation, the ACL and a log line for each
+  drop (a rogue `arpspoof` may carry `claims: IP` and `mac`, printed as the spoofed sender).
+  Tested in `tests/engine.test.js` (section 18).
+
 - 2026-09-28 · Static routes three ways: `ip route P M NEXTHOP`, `ip route P M EXIT` (the router ARPs for the destination and
   the neighbour answers by proxy ARP) and `ip route P M EXIT NEXTHOP`, each with an optional AD; a route whose exit
   interface is down leaves the table. `show ip route` prints like IOS: full codes, local /32 routes, entries grouped under

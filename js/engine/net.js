@@ -33,7 +33,7 @@
     // devices flagged removed (e.g. a rogue that facilities pulled) vanish with their links
     const net = { devices: {}, links: [], preconfig: net0.preconfig, stpMode: net0.stpMode }; for (const n in net0.devices) if (!net0.devices[n].removed) net.devices[n] = net0.devices[n]; net.links = (net0.links || []).filter(l => net.devices[l.a] && net.devices[l.b]);
     const S = { learn: net0.learn ? (net0._learn = net0._learn || { mac: {}, arp: {} }) : null, net, devices, cfg: {}, ifaces: {}, links: [], segs: {}, segOf: {}, owners: {}, l3: [], routers: [], tables: {}, tables6: {}, hosts: {}, dhcp: {}, portsec: {}, hsrp: {}, threats: {}, issues: [], adj: {}, stp: {}, trunks: {}, bundles: {}, macTable: {}, natTables: {}, ospf: { neighbors: {}, routers: {} } };
-    const D = net.devices;
+    const D = net.devices; S.option82 = !!net0.option82; // opt-in: IOS DHCP servers and relays drop requests carrying option 82 with giaddr 0
     for (const n in D) { const d = D[n]; S.cfg[n] = devices[n] ? NetConfig.parse(devices[n]) : NetConfig.blank(); }
     // interfaces from links
     const portsOf = {}; for (const n in D) portsOf[n] = {};
@@ -104,6 +104,18 @@
       const st = { enabled: true, max: ps.max, violation: ps.violation, sticky: ps.sticky, allowed, learned, violations, status: 'Secure-up' };
       if (violations > 0) { if (ps.violation === 'shutdown') { i.errdisabled = true; i.up = false; st.status = 'Secure-shutdown'; } else st.status = 'Secure-up'; }
       S.portsec[n + '|' + p] = st; }
+    // an err-disabled port stays down after the offender is unplugged, until someone types shutdown then no shutdown on it, or
+    // errdisable recovery cause psecure-violation is set (there is no clock, so recovery counts as the interval having passed).
+    // While the offender is still plugged in, the port follows the current config as before (restrict or protect bring it up).
+    const hold = net0._errdis = net0._errdis || {}; const secOf = n => S.cfg[n].sec || NetConfig.secBlank();
+    const onPort = (r, p) => r.ctx === 'interface ' + p || (/^interface range /.test(r.ctx || '') && Stp.expandRange(r.ctx.replace('interface range ', '')).includes(p));
+    for (const n of switches) for (const p in S.ifaces[n]) { const key = n + '|' + p; const st = S.portsec[key]; const i = S.ifaces[n][p]; const lines = (devices[n] && devices[n].lines) || [];
+      if (st && st.status === 'Secure-shutdown') { if (!hold[key]) hold[key] = { at: lines.length, peer: i.peer }; continue; }
+      if (!hold[key]) continue; if (i.peer && i.peer === hold[key].peer) { delete hold[key]; continue; }
+      if (secOf(n).recoveryCauses.has('psecure-violation')) { delete hold[key]; continue; }
+      const after = lines.slice(hold[key].at); const sh = after.findIndex(r => onPort(r, p) && r.line === 'shutdown');
+      if (sh >= 0 && after.slice(sh + 1).some(r => onPort(r, p) && r.line === 'no shutdown')) { delete hold[key]; continue; }
+      i.errdisabled = true; i.up = false; if (st && st.enabled) st.status = 'Secure-shutdown'; }
 
     // ---- L2 segments (union-find over (switch,vlan) nodes, host ports, router ifaces, clouds)
     const uf = UF(); const node = (n, v) => n + '@' + v; const hostNode = n => 'H:' + n; const ifNode = (n, p) => 'I:' + n + '|' + p;
@@ -148,12 +160,15 @@
       S.hosts[n] = h; if (h.ip && linkUp) addOwner(seg, { dev: n, iface: 'eth0', ip: h.ip, mask: h.mask, seg, kind: 'host', mac: h.mac }); }
     // DAI / arp spoof
     for (const n in D) { const d = D[n]; if (d.kind === 'rogue' && d.role === 'arpspoof' || (d.kind === 'host' && d.arpspoof)) { const seg = segId(hostNode(n)); const port = Object.values(portsOf[n])[0]; const sw = port && port.peer, swp = port && port.peerPort; const vlan = sw && isSw(sw) ? (S.ifaces[sw][swp].trunk ? S.ifaces[sw][swp].native : S.ifaces[sw][swp].vlan) : null;
-      const dai = sw && isSw(sw) && S.cfg[sw].dhcp.daiVlans.has(vlan) && S.cfg[sw].dhcp.snooping; const trusted = sw && isSw(sw) && S.ifaces[sw][swp].cfg.daiTrust; S.threats.arpspoof = { attacker: n, seg, blocked: !!(dai && !trusted), reason: dai ? (trusted ? 'port trusted' : 'DAI dropped spoofed ARP') : 'no DAI on VLAN ' + vlan }; } }
+      const dai = sw && isSw(sw) && S.cfg[sw].dhcp.daiVlans.has(vlan) && S.cfg[sw].dhcp.snooping; const trusted = sw && isSw(sw) && S.ifaces[sw][swp].cfg.daiTrust; S.threats.arpspoof = { attacker: n, sw, port: swp, vlan, claims: d.claims || null, mac: d.mac || synthMac(n), seg, blocked: !!(dai && !trusted), reason: dai ? (trusted ? 'port trusted' : 'DAI dropped spoofed ARP') : 'no DAI on VLAN ' + vlan }; } }
 
     // ---- routing tables
     buildRouting(S);
     // ---- MAC tables & neighbors
     buildMacTables(S); buildNeighbors(S);
+    // ---- DAI drops the ARP of anything behind an untrusted port that is not in the snooping binding table or permitted by an ARP ACL
+    // (after the MAC tables: the switch still learns those faces from their other frames)
+    daiFilter(S);
     return S;
   }
   function synthMac(seed){ let h = 0; for (const c of seed) h = (h * 33 + c.charCodeAt(0)) >>> 0; const hex = h.toString(16).padStart(8, '0'); return '0200.' + hex.slice(0, 4) + '.' + hex.slice(4, 8); }
@@ -171,6 +186,8 @@
     const pass = cands.filter(c => snoopAllows(S, c, host));
     const rogue = pass.find(c => c.rogue); const legit = pass.find(c => !c.rogue);
     const dropped = cands.filter(c => !pass.includes(c)).map(c => c.dev);
+    let o82 = null; if (S.option82) for (const c of pass.slice()) { const why = option82Drop(S, c, host); if (why) { pass.splice(pass.indexOf(c), 1); o82 = o82 || why; } }
+    if (o82 && !pass.length) return { ok: false, reason: o82, dropped };
     if (rogue) return { ok: true, rogue: true, server: rogue.dev, ip: rogue.offer.ip || nextFree(S, seg, '0.0.0.0', null, host), mask: rogue.offer.mask || '255.255.255.0', gw: rogue.offer.gw || null, dns: rogue.offer.dns || null, dropped };
     if (legit) { const p = legit.pool; const ip = nextFree(S, seg, p.network, p.mask, host, legit.dev); return { ok: !!ip, rogue: false, server: legit.dev, ip, mask: p.mask, gw: p.router, dns: p.dns, dropped, reason: ip ? null : 'pool exhausted' }; }
     return { ok: false, reason: cands.length ? 'offers dropped by DHCP snooping: ' + dropped.join(', ') : 'no DHCP server reachable', dropped };
@@ -188,6 +205,34 @@
     let cur = host; while (prev[cur]) { const [from, fromPort, inPort] = prev[cur]; if (isSw(cur)) { const cfg = S.cfg[cur]; const inIf = S.ifaces[cur][inPort]; const vlan = inIf.trunk ? inIf.native : inIf.vlan; const hostVlan = vlan; if (cfg.dhcp.snooping && cfg.dhcp.snoopVlans.has(hostVlan) && !inIf.cfg.snoopTrust) return false; } cur = from; }
     return true;
   }
+
+  // option 82: the first snooping switch on the way from the client adds it; a snooping switch further up drops a request that
+  // carries it on an untrusted port; an IOS DHCP server or relay drops a request that carries it with giaddr 0
+  function option82Drop(S, cand, host){ const D = S.net.devices; const isSw = n => D[n].kind === 'switch' || D[n].kind === 'l3switch'; const start = cand.kind === 'router' || cand.kind === 'relay' ? cand.via.dev : cand.dev;
+    const q = [start]; const seen = new Set([start]); const prev = {};
+    while (q.length) { const n = q.shift(); if (n === host) break; for (const p in S.ports[n]) { const pr = S.ports[n][p]; const i = S.ifaces[n] && S.ifaces[n][p]; if (i && !i.up) continue; const m = pr.peer; if (seen.has(m)) continue; seen.add(m); prev[m] = [n, p]; q.push(m); } }
+    if (!seen.has(host)) return null; let cur = host, vlan = null, added = null;
+    while (prev[cur]) { const [from, fromPort] = prev[cur]; if (isSw(from)) { const i = S.ifaces[from][fromPort]; if (vlan == null) vlan = i.trunk ? i.native : i.vlan; const c = S.cfg[from];
+        if (c.dhcp.snooping && c.dhcp.snoopVlans.has(vlan)) { if (added && !i.cfg.snoopTrust) return from + ' dropped the DHCP request from ' + host + ': it carries option 82 from ' + added + ' and came in on untrusted ' + short(fromPort); if (!added && (c.sec || NetConfig.secBlank()).option82) added = from; } }
+      cur = from; }
+    if (added && (cand.kind === 'router' || cand.kind === 'relay')) return cand.via.dev + ' dropped the DHCP request from ' + host + ': ' + added + ' added option 82 and the relay address (giaddr) is 0';
+    return null; }
+
+  // DAI: on every switch running it for a VLAN (with DHCP snooping on), an ARP message that comes in on an untrusted port passes
+  // only if an ARP ACL applied to that VLAN permits its sender IP and MAC, or the DHCP snooping binding table holds them.
+  // Whatever fails loses its ARP: nobody on the segment can resolve it, and it cannot resolve anyone (S.hosts[x].daiDropped).
+  function daiFilter(S){ const D = S.net.devices; S.daiDrops = [];
+    for (const seg in S.owners) { const drop = new Set();
+      for (const { sw, vlan } of switchesIn(S, seg)) { const c = S.cfg[sw]; if (!(c.dhcp.snooping && c.dhcp.daiVlans.has(vlan))) continue; const X = c.sec || NetConfig.secBlank(); const acl = X.daiFilters[vlan] ? (X.arpAcls[X.daiFilters[vlan]] || []) : null;
+        for (const o of S.owners[seg]) { if (o.dev === sw || o.kind === 'cloud' || drop.has(o.dev)) continue; const port = portToward(S, sw, o.dev); if (!port) continue; const pi = S.ifaces[sw][port]; if (pi.cfg.daiTrust) continue;
+          const mac = o.mac || (S.hosts[o.dev] && S.hosts[o.dev].mac); let verdict = null;
+          if (acl) { const e = acl.find(x => (!x.ip || x.ip === o.ip) && (!x.mac || x.mac === mac)); if (e) verdict = e.action; }
+          if (verdict === 'permit') continue;
+          const h = S.hosts[o.dev]; const bound = o.kind === 'host' && h && h.lease && h.lease.ok && !h.rogue;
+          if (verdict !== 'deny' && bound) continue;
+          drop.add(o.dev); const why = sw + ' DAI dropped ARP from ' + o.dev + ' (' + o.ip + ') on untrusted ' + short(port) + (verdict === 'deny' ? ': denied by ARP ACL ' + X.daiFilters[vlan] : ': not in the DHCP snooping binding table' + (acl ? ' or ARP ACL ' + X.daiFilters[vlan] : ''));
+          S.daiDrops.push({ sw, port, dev: o.dev, ip: o.ip, vlan, why }); S.issues.push({ kind: 'dai-dropped-arp', where: sw + ' ' + short(port), dev: o.dev }); if (h) h.daiDropped = why; } }
+      if (drop.size) S.owners[seg] = S.owners[seg].filter(o => !drop.has(o.dev)); } }
 
   // ---------------------------------------------------------------- routing
   function buildRouting(S){
@@ -279,6 +324,7 @@
     if (S.hosts[from]) { const h = S.hosts[from]; if (!h.up) return fail(from + ' has no link'); if (!h.ip) return fail(from + ' has no IP address' + (h.lease && h.lease.reason ? ' (' + h.lease.reason + ')' : '')); pkt.src = h.ip; cur = { kind: 'host', dev: from, seg: h.seg, ip: h.ip, mask: h.mask, gw: h.gw }; }
     else if (S.routers.includes(from)) { const rt = lookup(S, from, dstIp); if (!rt) return fail(from + ' has no route to ' + dstIp); const o = S.l3.find(x => x.dev === from && x.iface === rt.iface); pkt.src = opts.src || (o ? o.ip : null); if (!pkt.src) return fail('no source address'); cur = { kind: 'router', dev: from, inIf: null }; }
     else return fail(from + ' cannot originate traffic');
+    if (S.hosts[from] && S.hosts[from].daiDropped) return fail(S.hosts[from].daiDropped);
     if (S.hosts[from] && S.hosts[from].kind === 'cloud') cur = { kind: 'cloud', dev: from, seg: S.hosts[from].seg }; // the internet sends like the internet, not like a PC with no gateway
     const res = forward(S, cur, pkt, path, natTbl, 'request'); const trail = (path.trail || []).slice(); const fwdLen = path.length; if (res.ok && trail[trail.length - 1] !== dstIp) trail.push(dstIp); if (!res.ok) return fail(res.reason, { hops: res.hops, trail, fwdLen });
     // reply
@@ -336,7 +382,7 @@
       sameSegment: (a, b) => { const na = S.hosts[a] ? S.hostNode(a) : null, nb = S.hosts[b] ? S.hostNode(b) : null; return !!(na && nb && S.uf.find(na) === S.uf.find(nb)); },
       ospfNeighbors: r => S.ospf.neighbors[r] || [], hsrpActive: vip => { const g = Object.values(S.hsrp).find(x => x.vip === vip); return g ? g.active.dev : null; },
       lease: h => S.hosts[h] && S.hosts[h].lease, portsec: (d, p) => S.portsec[d + '|' + (Sim.canonIf(p) || p)], errdisabled: (d, p) => { const i = S.ifaces[d] && S.ifaces[d][Sim.canonIf(p) || p]; return !!(i && i.errdisabled); },
-      threats: S.threats, stp: v => S.stp[v || 1],
+      threats: S.threats, stp: v => S.stp[v || 1], daiDrops: S.daiDrops || [],
       sshReady: d => { const c = S.cfg[d]; const vty = c.vty; const ok = !!(c.hostname && c.hostname !== d.replace(/\d+$/, '') || true) && !!c.domain && c.sshKeyBits > 0 && !!(vty.transport && vty.transport.includes('ssh')) && vty.login === 'local' && c.users.length > 0; return { ok, hostname: !!c.hostname, domain: !!c.domain, key: c.sshKeyBits, transport: vty.transport, login: vty.login, users: c.users.length }; },
       acl: (d, id) => S.cfg[d].acls[id] || null, aclTest: (d, id, pkt) => aclEval(S, d, id, pkt),
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),
