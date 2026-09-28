@@ -27,11 +27,11 @@ window.GLOSSARY = {
   'utp': 'Unshielded twisted pair. Copper cable with pairs twisted to fight interference. RJ45 on the end.',
   'fiber': 'Glass or plastic strands carrying light. Single-mode goes far; multimode is cheaper and shorter.',
   'auto mdi-x': 'Ports that detect crossover vs straight-through and swap pins themselves. Why cable type rarely matters now.',
-  'user exec mode': 'The first CLI door. Prompt ends in >. You can look, not touch.',
-  'privileged exec mode': 'Second door. Prompt ends in #. Full show access, ability to save and enter config. Get here with "enable".',
-  'global configuration mode': 'Third door. Prompt shows (config)#. Where the device is actually changed. "configure terminal".',
-  'running-config': 'What the device is doing right now, living in RAM. Lost on reboot unless saved.',
-  'startup-config': 'The saved config in NVRAM. Loaded at boot. "copy running-config startup-config" or "write memory".',
+  'user exec mode': 'The lowest Cisco IOS mode. The prompt ends in > (Router>). You can run a few show commands and change nothing. Type enable to leave it.',
+  'privileged exec mode': 'The Cisco IOS mode with full access to view the configuration, save it and reach configuration mode. The prompt ends in # (Router#). Reached with enable.',
+  'global configuration mode': 'The Cisco IOS mode where the device\'s settings are changed. The prompt shows (config)#. Reached with configure terminal from privileged EXEC mode.',
+  'running-config': 'The configuration the device is using right now, kept in RAM. Lost at a reboot unless it is saved. View it with show running-config.',
+  'startup-config': 'The saved configuration in NVRAM, loaded when the device boots. Save to it with write, write memory or copy running-config startup-config.',
   'enable secret': 'Password for privileged mode, stored hashed. Always beats "enable password", which is plaintext.',
   'service password-encryption': 'Weakly scrambles plaintext passwords in the config (type 7). Better than nothing, not real security.',
   'ipv4 address': '32-bit address written as four octets, e.g. 192.168.1.10. Network part + host part, split by the mask.',
@@ -173,5 +173,7 @@ window.GLOSSARY = {
   'ietf': 'Internet Engineering Task Force. Writes the standards used on the internet (IP, TCP, UDP, OSPF, DHCP) and publishes them as RFCs.',
   'rfc': 'Request for Comments: a numbered document in which the IETF publishes an internet standard. IPv4 is RFC 791.',
   'adjacent-layer interaction': 'A layer working with the layers directly above and below it on the same host: it serves the layer above and uses the layer below.',
-  'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.'
+  'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.',
+  'rollover cable': 'The cable from a PC\'s serial or USB port to the RJ45 console port of a Cisco device. Its pins are reversed end to end, pin 1 to pin 8.',
+  'console port': 'The management port on a router or switch, RJ45 or USB, used to configure it directly. Default settings: 9600 bps, 8 data bits, no parity, 1 stop bit, no flow control.'
 };
