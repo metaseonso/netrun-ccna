@@ -136,7 +136,7 @@
   const norm = s => String(s == null ? '' : s).trim().toLowerCase().replace(/\s+/g, ' ');
   function evaluate(){ const st = currentStep(); if (!st) return { ok: false, why: 'no step' };
     try {
-      if (st.type === 'find') { const tg = st.targets || [st.target]; return { ok: tg.includes(run.selected), why: run.selected ? 'That is ' + run.selected + '. Look again.' : 'Click a node on the map first.' }; }
+      if (st.type === 'find') { const tg = st.targets || [st.target]; return { ok: tg.includes(run.selected), why: run.selected ? 'Not that one. Look again.' : 'Click a box on the map first.' }; }
       if (st.type === 'choice') return { ok: run.choice === st.a, why: run.choice == null ? 'Pick an answer.' : 'Not that one.' };
       if (st.type === 'multi') { const want = new Set(st.answers); const have = run.multi; const ok = want.size === have.size && [...want].every(x => have.has(x)); return { ok, why: have.size ? 'Not that set.' : 'Select every answer that applies.' }; }
       if (st.type === 'calc') { const bad = st.fields.filter(f => !f.check(run.calc[f.key] || '')); return { ok: bad.length === 0, why: bad.length ? 'Check: ' + bad.map(f => f.label).join(' · ') : '', bad: bad.map(f => f.key) }; }

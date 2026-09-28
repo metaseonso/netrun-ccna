@@ -1,6 +1,51 @@
 /* jobs/01-wires.js — District 01 · The Wires (nights 1–4): devices, cables, the OSI model, the CLI. */
 (function(){
   JOBS.push(
+    // ------------------------------------------------------------------ night 1 · from Lab 01 (Packet Tracer introduction)
+    { id: 'd-n01-back-room-map', cls: 'D', rep: 10, from: 'osi', title: 'A Map of the Back Room', day: [1], requires: ['n01-back-room'], devices: ['PC1', 'PC2'],
+      brief: 'DISPATCH » Osi needs a map of the guild\'s back room before a new driver starts tomorrow. Mark every box, then check the laptops can reach the parcel server.\n\nCLIENT (Osi Sevenfold) » "The last map was drawn before I started here, and half the boxes on it are gone. Mark what is actually on the rack."',
+      net: {
+        devices: {
+          ISP: { kind: 'cloud', ip: '203.0.113.1', mask: '255.255.255.252', internet: true },
+          FW1: { kind: 'router' }, R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0011.2201.0001' },
+          PC1: { kind: 'host', ip: '192.168.1.10', mask: '255.255.255.0', gw: '192.168.1.1' },
+          PC2: { kind: 'host', ip: '192.168.1.11', mask: '255.255.255.0', gw: '192.168.1.1' },
+          SRV1: { kind: 'server', ip: '192.168.1.100', mask: '255.255.255.0', gw: '192.168.1.1' }
+        },
+        links: [ { a: 'ISP', b: 'FW1', bp: 'gigabitethernet0/1' }, { a: 'FW1', ap: 'gigabitethernet0/0', b: 'R1', bp: 'gigabitethernet0/1' },
+          { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' },
+          { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'SW1', ap: 'fastethernet0/2', b: 'PC2' }, { a: 'SW1', ap: 'fastethernet0/24', b: 'SRV1' } ],
+        preconfig: { R1: ['interface gigabitethernet0/0', 'ip address 192.168.1.1 255.255.255.0', 'no shutdown'] }
+      },
+      map: { w: 520, h: 380, nodes: [
+          { id: 'ISP', label: 'the depot and the internet', type: 'cloud', x: 260, y: 32 },
+          { id: 'FW1', label: 'A', type: 'firewall', x: 260, y: 100 }, { id: 'R1', label: 'B', type: 'router', x: 260, y: 170 },
+          { id: 'SW1', label: 'C', type: 'switch', x: 260, y: 240 },
+          { id: 'PC1', label: 'dispatch laptop', type: 'pc', x: 90, y: 320 }, { id: 'PC2', label: 'driver tablet', type: 'pc', x: 260, y: 320 }, { id: 'SRV1', label: 'D', type: 'server', x: 430, y: 316 } ],
+        links: [ { a: 'ISP', b: 'FW1' }, { a: 'FW1', b: 'R1' }, { a: 'R1', b: 'SW1' }, { a: 'SW1', b: 'PC1' }, { a: 'SW1', b: 'PC2' }, { a: 'SW1', b: 'SRV1' } ] },
+      steps: [
+        { type: 'find', skill: 'net-devices', target: 'SW1', text: 'Osi, pen ready: "Start with the box every desk plugs into. Click it on the map."', hint: 'The long flat box with arrows both ways. Every laptop hangs off it.', ok: 'Osi: "The switch. C."',
+          why: 'Osi: The switch is the box every desk, the printer and the server plug into. On a map it is drawn as a long flat box with arrows pointing both ways, because it passes traffic back and forth inside one LAN.' },
+        { type: 'find', skill: 'net-devices', target: 'R1', text: 'Osi: "Now the one that joins us to the depot and the internet."', hint: 'The round one, between the switch and the outside.', ok: 'Osi: "The router. B."',
+          why: 'Osi: The router joins our network to other networks, so it sits between the switch and the outside. On a map it is a circle with arrows, because it sends traffic out in different directions.' },
+        { type: 'find', skill: 'net-devices', target: 'FW1', text: 'Osi: "And the one that checks every connection against the rules before it gets in."', hint: 'The brick wall, right on the edge.', ok: 'Osi: "The firewall. A."',
+          why: 'Osi: The firewall sits on the edge, between the router and the outside, and checks every connection against its rules. On a map it is drawn as a brick wall.' },
+        { type: 'find', skill: 'net-devices', target: 'SRV1', text: 'Osi: "Last box. The one that holds the parcel list."', hint: 'The tall one at the end of a switch port.', ok: 'Osi: "The grey box. D. That\'s every box on the rack."',
+          why: 'Osi: The server holds the parcel list and hands it to anyone who asks. On a map it is drawn as a tall box, like a tower PC with no screen.' },
+        { type: 'multi', skill: 'net-devices', text: 'Osi: "The new driver will ask which of these are end hosts. Mark all of them."', opts: ['The dispatch laptop', 'The driver tablet', 'The parcel server', 'The switch', 'The router', 'The firewall'], answers: [0, 1, 2],
+          hint: 'End hosts are where people work or where services live. The rest carry traffic between them.', ok: 'Osi: "Those three. Everything else only carries their traffic."',
+          why: 'Osi: End hosts sit at the edges of the network: the laptop and the tablet are clients, and the parcel server is a server. The switch, the router and the firewall are network devices that carry and check traffic between the end hosts.' },
+        { type: 'cmd', skill: 'net-devices', text: 'Osi: "Now prove the room works. Open the dispatch laptop\'s console and ping the parcel server at 192.168.1.100."',
+          need: [ { dev: 'PC1', line: /^ping 192\.168\.1\.100$/ } ], check: (d, ctx) => ctx.net().ping('PC1', '192.168.1.100').ok,
+          hint: 'PC1 console:\nC:\\> ping 192.168.1.100', ok: 'Osi: "Four replies. The laptop, the switch and the server are all doing their jobs."',
+          why: 'Osi: ping sends a small test message to an address and waits for an answer. From the dispatch laptop, type ping 192.168.1.100. Four replies mean the laptop, the switch between them and the server all work. Timeouts mean one of them does not.' },
+        { type: 'choice', skill: 'net-devices', text: 'Osi, tapping the rack: "One morning nothing in the building can reach anything else in the building, but the router\'s lights are all green. Which box do you check first?"', opts: ['The switch', 'The router', 'The firewall', 'The parcel server'], a: 0,
+          hint: 'Which box does every desk go through to reach every other desk?', ok: 'Osi: "The switch. Write that on the map too."',
+          why: 'Osi: Inside the building, every device reaches every other device through the switch. If nothing inside can talk to anything else, the switch is the first suspect. The router and the firewall only matter when traffic leaves the building, and one dead server would not stop the laptops reaching each other.' }
+      ],
+      solution: [ { select: 'SW1' }, 'commit', { select: 'R1' }, 'commit', { select: 'FW1' }, 'commit', { select: 'SRV1' }, 'commit', { multi: [0, 1, 2] }, 'commit', { dev: 'PC1', type: ['ping 192.168.1.100'] }, 'commit', { choose: 0 }, 'commit' ],
+      outro: 'Osi pins the new map above the rack, next to a faded photo of her first van. When the new driver comes in tomorrow, every box on the rack will have a name.' },
+
     // ------------------------------------------------------------------ D · First Jack-In
     { id: 'd-first-jack', cls: 'D', rep: 30, from: 'enable', title: 'First Jack-In', requires: ['cli-intro'], devices: ['R1'],
       brief: 'DISPATCH » Enable has a pop-up router in Kabuki with nothing on it yet. Name it, put a password on the second door, save. That is the whole gig. Do not overthink it.\n\nCLIENT (a noodle bar owner) » "The man said it needs a name and a password. I do not know what that means. Please do not break the card reader."',

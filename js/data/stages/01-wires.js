@@ -1,8 +1,50 @@
-/* Stage 1 · The Wires — devices, cables, the OSI model, the CLI. Framework stub: two intro levels. */
+/* District 01 · The Wires — nights 1–4: network devices, interfaces and cables, the OSI model and TCP/IP, the CLI.
+   Osi Sevenfold's courier guild and Enable's console. Written to docs/STORY_BIBLE.md (Voice) and docs/CAMPAIGN_MAP.md. */
 (function(){
   const { PS } = SRC;
-  STAGES.push({ id: 'wires', arc: 'grid', title: 'STAGE 1 · THE WIRES', sub: 'devices, cables, the OSI model, the console', npc: 'osi', status: 'stub', levels: [
-    { id: 'osi-intro', title: 'Seven floors, four in practice', sub: 'OSI model, TCP/IP, devices, cables', npc: 'osi', day: [1,2,3], src: [PS('OSI_Model_TCPSuite.md'), PS('Network_Devices.md'), PS('Interfaces_and_Cables.md')], unlocks: ['osi-layers'],
+  STAGES.push({ id: 'wires', arc: 'grid', title: 'STAGE 1 · THE WIRES', sub: 'devices, cables, the OSI model, the console', npc: 'osi', status: 'live', levels: [
+    // ------------------------------------------------------------ night 1 · network devices
+    { id: 'n01-back-room', title: 'The back room', sub: 'network devices', npc: 'osi', day: [1], src: [PS('Network_Devices.md')], unlocks: ['net-devices'],
+      beats: [
+        { k: 'SCENE', where: 'Kabuki · the courier guild · your first night',
+          lines: [
+            { who: 'narr', text: 'Dispatch\'s message was an address in Kabuki and a name, Osi Sevenfold. The address is a courier guild. Past the loading bay, a curtain of hanging cable hides a back room that hums and smells of warm plastic. A woman with a purple bob and a clipboard looks up as you come through, writes down the time, and waves you over to a rack of blinking boxes.' },
+            { who: 'osi', text: 'You\'re Dispatch\'s new runner, and you\'re on time, which is a good start. Nobody here lets you touch a live network until you know what every box in this room is for, so we\'ll go through them in order.' },
+            { who: 'osi', text: 'Everything with a cable in it is a [[node]]. The ones at the edges, where people actually work, are [[end hosts]]. An end host that asks for something is a [[client]], and one that answers is a [[server]].' },
+            { who: 'narr', text: 'She taps the laptop on the dispatch desk, then a squat grey box on the bottom shelf with no screen at all.' },
+            { who: 'osi', text: 'The dispatch laptop is a client. Every morning it asks that grey box for the parcel list, and the grey box is the server. One machine can do both jobs, too. My own laptop shares the route maps with the drivers and still asks the grey box for the list.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'So what makes something a server?', reply: 'Osi: "What it does. A server provides a service to clients: files, the parcel list, a web page. The grey box is built for it, with big disks and no screen, but a laptop running the right software is a server just the same."' },
+            { tone: 'press', say: 'Does it matter what we call them?', reply: 'Osi: "It matters the first time something breaks. When a driver tells me the tablet can\'t reach the server, I know exactly where to start looking. When someone tells me the internet is down, I know nothing."' },
+            { tone: 'quiet', say: '(Say nothing, and let her go on.)', reply: 'She ticks something on the clipboard and moves along the rack without waiting to be asked.' }
+          ] } },
+        { k: 'SCENE', where: 'The back room · the rack', real: ['cisco'],
+          lines: [
+            { who: 'osi', text: 'This one with twenty-four ports is the [[switch]]. Every desk, the printer and the grey box plug into it, and it passes their traffic to each other inside the building. All of that together is our [[LAN]], the local area network. Ours is a Cisco Catalyst.' },
+            { who: 'osi', text: 'The small one above it, with only four ports, is the [[router]]. It joins our LAN to other networks, the depot across town and the internet, so nothing leaves this building without passing through it. It has fewer ports than the switch because it sits between networks, and there are only a few of those. Ours is a Cisco ISR.' },
+            { who: 'you', text: 'And the one with the warning sticker?' },
+            { who: 'osi', text: 'The [[firewall]]. It sits between the router and the outside and checks every connection against a list of rules, and it drops whatever the rules don\'t allow. Ours is an old Cisco ASA. The newer kind, like Cisco Firepower, is a [[next-generation firewall]], which can look inside the traffic and tell one application from another. Every laptop here also runs a [[host-based firewall]], a program doing the same job for that one machine.' },
+            { who: 'osi', text: 'The corp towers downtown run on the same four kinds of box you\'re looking at, only more of them, in cleaner cupboards.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'If the switch dies, what stops working?', reply: 'Osi: "Everything inside the building, because every desk goes through it. The laptops couldn\'t reach the grey box or each other, even though the router would be perfectly fine."' },
+            { tone: 'press', say: 'Why not plug everything into the router?', reply: 'Osi: "It has four ports and we have forty devices. A switch gives you lots of ports cheaply and moves traffic fast inside one network, and the router is built to choose paths between networks. We need both."' },
+            { tone: 'care', say: 'How long have you been keeping this room running?', reply: 'She glances at the clipboard as if the answer is written there. "Eleven years. I started as a driver. Someone had to learn what the boxes did, and nobody else wanted to."' }
+          ] } },
+        { k: 'LORE', title: 'THE FIRST ROUTER', year: 1969, real: ['bbn'], vibe: 'Far out. A box the size of a fridge whose only friends were other boxes.',
+          text: 'Osi, on the way back to the loading bay: "The first router arrived at UCLA at the end of August 1969. It was called an IMP, an Interface Message Processor, built by a company called BBN on a Honeywell minicomputer the size of a refrigerator. Its only job was passing messages between the big computers on the ARPANET, which is still exactly what the router in there does all day."' },
+        { k: 'KIT', text: 'She tears a page off the clipboard: the guild\'s device card.', real: ['cisco'], kit: [
+          { cmd: 'client', what: 'asks for a service' }, { cmd: 'server', what: 'provides a service. One device can be both' },
+          { cmd: 'switch (Cisco Catalyst)', what: 'many ports. Connects the hosts inside one LAN' },
+          { cmd: 'router (Cisco ISR)', what: 'fewer ports. Connects networks, and sends traffic over the internet' },
+          { cmd: 'firewall (Cisco ASA, Firepower)', what: 'filters traffic by rules. Next-generation adds deeper inspection. Host-based runs on one PC' } ] },
+        { k: 'SYNC', q: { prompt: 'A driver leans in the doorway, tablet in hand: "The parcel list lives on that grey box, and my tablet asks it for my route. Which one\'s the server?"', opts: ['The grey box on the shelf', 'My tablet', 'The switch they both plug into', 'The router'], a: 0,
+          yes: 'Osi: "The grey box. It serves the list."', no: 'Osi: "The grey box. It provides the list, and the tablet asks for it."',
+          why: 'Osi: A server is whatever provides the service, and here the service is the parcel list, so the grey box is the server. The tablet asks for the list, so it is the client. The switch only carries their traffic, and the router only matters once the request leaves the building.' } }
+      ] },
+
+    { id: 'osi-intro', title: 'Seven floors, four in practice', sub: 'OSI model, TCP/IP, devices, cables', npc: 'osi', day: [2,3], src: [PS('OSI_Model_TCPSuite.md'), PS('Network_Devices.md'), PS('Interfaces_and_Cables.md')], unlocks: ['osi-layers'],
       beats: [
         { k: 'SCENE', where: 'Courier guild · sorting floor · your first morning',
           lines: [

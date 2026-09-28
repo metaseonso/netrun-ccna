@@ -18,7 +18,7 @@
   };
 
   window.SKILLS = {
-    'osi-layers': 'OSI / TCP-IP layers', 'cli-modes': 'IOS CLI modes & saving', 'subnetting': 'Subnetting', 'mac-table': 'MAC table & ARP', 'vlan-config': 'VLAN config', 'trunk-config': 'Trunk config',
+    'net-devices': 'Network devices', 'osi-layers': 'OSI / TCP-IP layers', 'cli-modes': 'IOS CLI modes & saving', 'subnetting': 'Subnetting', 'mac-table': 'MAC table & ARP', 'vlan-config': 'VLAN config', 'trunk-config': 'Trunk config',
     'stp-loops': 'Loop awareness', 'stp-election': 'STP election & cost', 'stp-states': 'STP states & timers', 'stp-bpdu': 'BPDU reading', 'stp-toolkit': 'PortFast / BPDU Guard', 'stp-config': 'Shaping the tree',
     'static-route': 'Static routing', 'dhcp': 'DHCP', 'acl-standard': 'Standard ACLs', 'port-security': 'Port security', 'virtualization': 'Virtualization vocabulary'
   };

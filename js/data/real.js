@@ -1,5 +1,5 @@
 /* real.js — real companies, standards bodies and products that appear in the game. Anything real in a braindance,
-   a character or a scene gets a tag with its official mark in one colour (Simple Icons, loaded from the CDN), so the
+   a character or a scene gets a tag with its official mark in one colour (Simple Icons, CC0, kept in assets/brands), so the
    player learns who actually made the thing. `icon` is the Simple Icons slug; leave it out when the set has no mark and
    the tag shows the name in text. Marks belong to their owners (see terms.html). Add an entry the first time a night
    names something real, then set `real: ['id']` on the LORE beat, the gig, the shop item or the NPC. */
@@ -7,6 +7,7 @@
   window.REAL = {
     cisco: { name: 'Cisco', owner: 'Cisco Systems, Inc.', icon: 'cisco', what: 'Makes the routers and switches the whole course runs on.' },
     xerox: { name: 'Xerox PARC', owner: 'Xerox Corporation', what: 'The lab where Ethernet was invented in 1973.' },
+    bbn: { name: 'BBN', owner: 'Raytheon BBN', what: 'Built the IMP, the first router, for the ARPANET in 1969.' },
     ieee: { name: 'IEEE', owner: 'IEEE', icon: 'ieee', what: 'Writes the 802 standards: Ethernet, Wi-Fi, VLAN tags, spanning tree.' },
     ietf: { name: 'IETF', owner: 'Internet Engineering Task Force', what: 'Writes the RFCs: IP, TCP, OSPF, DHCP and the rest.' },
     redhat: { name: 'Red Hat', owner: 'Red Hat, Inc.', icon: 'redhat', what: 'Owns Ansible.' },
