@@ -227,7 +227,7 @@
       ] },
 
     // ------------------------------------------------------------ night 42 · SSH
-    { id: 'n42-new-locks', title: 'New locks', sub: 'console and VTY security, Telnet and SSH', npc: 'shell', day: [42], src: [PS('SSH.md')], unlocks: ['ssh'],
+    { id: 'n42-new-locks', title: 'New locks', sub: 'console port and VTY security, Telnet and SSH', npc: 'shell', day: [42], src: [PS('SSH.md')], unlocks: ['ssh'],
       beats: [
         { k: 'SCENE', where: 'The exchange hall · a workbench by the back stairs · ten at night',
           lines: [
@@ -246,7 +246,7 @@
           lines: [
             { who: 'shell', text: 'Only some software can do it. The IOS images with K9 in their name carry the cryptography; the NPE ones, no payload encryption, can\'t do SSH at all. show version tells you which you have. show ip ssh tells you whether SSH is on and which version: 1.99 means the box speaks both 1 and 2, and I want 2 only.' },
             { who: 'shell', text: 'On the VTY lines: login local checks the username and password you made. transport input ssh refuses anything else; it can also say telnet, all or none. exec-timeout throws out a session that sits idle, and access-class with a standard list decides who may knock at all.' },
-            { who: 'enable', text: 'And the console. By default it asks for nothing. line console 0, then password and login for one word, or login local for a name. Do not leave the first door open because the other sixteen are locked.' },
+            { who: 'enable', text: 'And the console port. By default it asks for nothing. line console 0, then password and login for one word, or login local for a name. Do not leave the first door open because the other sixteen are locked.' },
             { who: 'shell', text: 'A switch gets the same locks on its management SVI, interface vlan1 with an address. It isn\'t a router, so it needs ip default-gateway, or it can hear you from another subnet and never answer.' },
             { who: 'enable', text: 'Then you save. Root always saved first, and twice. A lock you did not save falls off at the next power cut.' }
           ],
@@ -263,7 +263,7 @@
           { cmd: 'username shell secret PASSWORD', what: 'a name for every person' },
           { cmd: 'line vty 0 15 · login local · transport input ssh · exec-timeout 5 0', what: 'sixteen doors: users, SSH only, out after five idle minutes' },
           { cmd: 'access-list 5 permit 10.37.9.0 0.0.0.255 · line vty 0 15 · access-class 5 in', what: 'only the admin subnet may knock' },
-          { cmd: 'line console 0 · password WORD · login (or login local)', what: 'the console asks for nothing until you tell it to' },
+          { cmd: 'line console 0 · password WORD · login (or login local)', what: 'the console port asks for nothing until you tell it to' },
           { cmd: 'interface vlan1 · ip address 10.37.2.2 255.255.255.0 · ip default-gateway 10.37.2.1', what: 'a switch you can reach from another subnet' },
           { cmd: 'Telnet TCP 23, clear text · SSH TCP 22, encrypted · ssh -l shell 10.37.12.2', what: 'from a PC: connect as a user' } ] },
         { k: 'SYNC', q: { prompt: 'Enable, reading show ip ssh over your shoulder: "SSH Enabled, version 1.99. What does the box mean by that?"', opts: ['It is running a version between 1 and 2', 'It speaks both SSH version 1 and version 2', 'It speaks version 2 only', 'SSH is off until a key is made'], a: 1,
