@@ -20,7 +20,7 @@
         { type: 'order', skill: 'tcp-udp', text: 'Syn, knocking on the desk: "The laptop opens a connection to the tracker. Put the three knocks in order."',
           items: ['tracker → laptop: SYN-ACK', 'laptop → tracker: ACK', 'laptop → tracker: SYN'],
           accept: arr => arr.join('|') === ['laptop → tracker: SYN', 'tracker → laptop: SYN-ACK', 'laptop → tracker: ACK'].join('|'),
-          hint: 'The one who starts it knocks first.', ok: 'Ack: "Knock, knock-back, answer. Connected."',
+          hint: 'The one who starts it knocks first.', ok: 'Ack: "Knock, knock back, answer, and they\'re connected."',
           why: 'Syn: TCP opens a connection with a three-way handshake. The client sends a SYN, the server answers with a SYN-ACK, which acknowledges the SYN and sends its own, and the client acknowledges that with an ACK. Only then does data flow.' },
         { type: 'order', skill: 'tcp-udp', text: 'Ack: "And when the laptop\'s done. Four this time."',
           items: ['tracker → laptop: FIN', 'laptop → tracker: FIN', 'laptop → tracker: ACK', 'tracker → laptop: ACK'],
@@ -31,7 +31,7 @@
           fields: [ { key: 'rel', label: 'reliable delivery, resends what is lost', options: ['TCP', 'UDP'], answer: 'TCP' }, { key: 'cl', label: 'connectionless, no handshake', options: ['TCP', 'UDP'], answer: 'UDP' },
             { key: 'seq', label: 'sequence numbers, so everything arrives in order', options: ['TCP', 'UDP'], answer: 'TCP' }, { key: 'oh', label: 'less overhead', options: ['TCP', 'UDP'], answer: 'UDP' },
             { key: 'fc', label: 'flow control with a window size', options: ['TCP', 'UDP'], answer: 'TCP' }, { key: 'rt', label: 'real-time voice and video', options: ['TCP', 'UDP'], answer: 'UDP' } ],
-          hint: 'Everything careful is TCP. Everything quick is UDP.', ok: 'Ack: "Six for six. She counted twice."',
+          hint: 'Everything careful is TCP. Everything quick is UDP.', ok: 'Ack: "Six for six, and she counted them twice."',
           why: 'Syn: TCP is connection-oriented and reliable: it numbers every segment, acknowledges them, resends what is lost, delivers in order and controls the flow with the window size. UDP is connectionless, with no handshake and no acknowledgements, so it has less overhead, which is why real-time voice and video use it.' },
         { type: 'calc', skill: 'tcp-udp', text: 'Ack, running her finger along the pigeonholes: "Which hole does each one go in?"',
           fields: [ { key: 'ssh', label: 'SSH', check: v => String(v).trim() === '22' }, { key: 'https', label: 'HTTPS', check: v => String(v).trim() === '443' }, { key: 'dns', label: 'DNS', check: v => String(v).trim() === '53' },
@@ -50,7 +50,7 @@
           why: 'Syn: show access-lists prints every filter on the router, line by line. List 130 denies TCP traffic to the tracker at 10.30.2.80 with destination port 443, HTTPS, and permits everything else, so plain HTTP on port 80 gets through and HTTPS does not.' },
         { type: 'cmd', skill: 'tcp-udp', text: 'Ack: "The last tech hung that list on the desk\'s port because the tracker\'s certificate kept complaining. Take it off the port so HTTPS gets through again."',
           check: (d, ctx) => ctx.net().tcp('PC1', '10.30.2.80', 443).ok && ctx.net().tcp('PC1', '10.30.2.80', 80).ok,
-          hint: 'R1# configure terminal\nR1(config)# interface g0/0\nR1(config-if)# no ip access-group 130 in', ok: 'Syn: "HTTPS answers on 443. Signed for, twice."',
+          hint: 'R1# configure terminal\nR1(config)# interface g0/0\nR1(config-if)# no ip access-group 130 in', ok: 'Syn: "HTTPS answers on 443, and the tracker shows its padlock again."',
           why: 'Ack: ip access-group 130 in applied the list to every packet arriving on g0/0 from the courier desk. no ip access-group 130 in takes it off the interface, so TCP to port 443 reaches the tracker again. The list itself still exists on the router, doing nothing until it is applied somewhere.' },
         { type: 'form', skill: 'tcp-udp', text: 'Syn: "Last. Which courier carries each of these?"',
           fields: [ { key: 'dhcp', label: 'DHCP', options: ['TCP', 'UDP', 'both'], answer: 'UDP' }, { key: 'ssh', label: 'SSH', options: ['TCP', 'UDP', 'both'], answer: 'TCP' },
@@ -77,7 +77,7 @@
         links: [ { a: 'R1', ap: gi(0), b: 'SW1', bp: gi(1) }, { a: 'R1', ap: gi(1), b: 'SW2', bp: gi(1) }, { a: 'SW1', ap: fa(1), b: 'PC1' }, { a: 'SW2', ap: fa(1), b: 'PC2' } ],
         preconfig: { R1: ['interface g0/0', 'no shutdown', 'interface g0/1', 'no shutdown'] }
       },
-      map: { w: 520, h: 280, nodes: [ { id: 'PC1', label: 'gallery terminal', type: 'pc', x: 50, y: 70 }, { id: 'SW1', label: 'gallery switch', type: 'switch', x: 160, y: 70 },
+      map: { w: 520, h: 280, nodes: [ { id: 'PC1', label: 'gallery desk', type: 'pc', x: 50, y: 70 }, { id: 'SW1', label: 'gallery switch', type: 'switch', x: 160, y: 70 },
           { id: 'R1', label: 'exchange hall router', type: 'router', x: 300, y: 140 }, { id: 'SW2', label: 'courier desk switch', type: 'switch', x: 160, y: 220 }, { id: 'PC2', label: 'courier desk', type: 'pc', x: 50, y: 220 } ],
         links: [ { a: 'PC1', b: 'SW1' }, { a: 'SW1', b: 'R1', ap: gi(1), bp: gi(0), tag: '2001:db8:31:1::/64' }, { a: 'SW2', b: 'R1', ap: gi(1), bp: gi(1), tag: '2001:db8:31:2::/64' }, { a: 'PC2', b: 'SW2' } ] },
       steps: [
@@ -114,16 +114,16 @@
           opts: ['ipv6 unicast-routing: the router answers on its own addresses but forwards no IPv6 until it is on', 'A route to each /64', 'A default route on each PC', 'The /64s are too small'], a: 0,
           hint: 'Both networks are directly connected, so the router already knows both.', ok: 'Sixx: "Off by default. The one line everybody forgets."',
           why: 'Sixx: Both /64s are directly connected, so the router has a connected route to each. But a Cisco router does not forward IPv6 packets until ipv6 unicast-routing is configured in global config. Without it, it only answers packets addressed to itself.' },
-        { type: 'cmd', skill: 'ipv6-addr', text: 'Sixx: "Switch it on, then ping the courier desk, 2001:db8:31:2::10, from the gallery terminal."',
+        { type: 'cmd', skill: 'ipv6-addr', text: 'Sixx: "Switch it on, then ping the courier desk, 2001:db8:31:2::10, from the gallery desk."',
           need: [ { dev: 'PC1', line: /^ping 2001:db8:31:2::10$/ } ], check: (d, ctx) => ctx.net().ping6('PC1', '2001:db8:31:2::10').ok,
-          hint: 'R1(config)# ipv6 unicast-routing\n\nPC1:\nC:\\> ping 2001:db8:31:2::10', ok: 'Sixx: "Replies across the gallery. The first two tenants."',
-          why: 'Sixx: ipv6 unicast-routing, in global config, lets the router forward IPv6 between its interfaces. The gallery terminal sends to its gateway, 2001:db8:31:1::1, the router looks up 2001:db8:31:2::/64 in its IPv6 table, finds it connected on g0/1, and delivers to the courier desk.' }
+          hint: 'R1(config)# ipv6 unicast-routing\n\nPC1:\nC:\\> ping 2001:db8:31:2::10', ok: 'Sixx: "Replies across the gallery. Two more flags for the wall."',
+          why: 'Sixx: ipv6 unicast-routing, in global config, lets the router forward IPv6 between its interfaces. The gallery desk sends to its gateway, 2001:db8:31:1::1, the router looks up 2001:db8:31:2::/64 in its IPv6 table, finds it connected on g0/1, and delivers to the courier desk.' }
       ],
       solution: [ { calc: { bits: '128', q: '8', qb: '16' } }, 'commit', { text: '2001:db8:0:31::1' }, 'commit', { text: '2001:0db8:0031:0002:0000:0000:0000:000a' }, 'commit',
         { form: { af: 'AFRINIC', ap: 'APNIC', na: 'ARIN', la: 'LACNIC', eu: 'RIPE NCC' } }, 'commit', { calc: { ent: '48', sub: '64', n: '65536' } }, 'commit',
         { dev: 'R1', type: ['enable', 'configure terminal', 'interface g0/0', 'ipv6 address 2001:db8:31:1::1/64', 'interface g0/1', 'ipv6 address 2001:db8:31:2::1/64'] }, 'commit', { choose: 0 }, 'commit',
         { dev: 'R1', type: ['exit', 'ipv6 unicast-routing'] }, { dev: 'PC1', type: ['ping 2001:db8:31:2::10'] }, 'commit' ],
-      outro: 'Sixx walks the length of the gallery and puts a small brass flag on two mailboxes, one for the gallery and one for the courier desk. Syn brings tea up on a Tuesday for once, and they drink it standing between the only two occupied boxes on the floor.' },
+      outro: 'Sixx walks the length of the gallery and puts a small brass flag on two mailboxes, one for the gallery and one for the courier desk. Syn brings tea up on a Tuesday for once, and they drink it standing between the two new flags.' },
 
     // ------------------------------------------------------------------ night 32 · from Lab 32 (IPv6 configuration, part 2)
     { id: 'c-n32-card-readers', cls: 'C', rep: 15, from: 'sixx', title: 'Forty Card Readers', day: [32], requires: ['n32-names-from-serials'], devices: ['R1', 'PC1', 'PC2'],
@@ -137,7 +137,7 @@
         links: [ { a: 'R1', ap: gi(0), b: 'SW1', bp: gi(1) }, { a: 'R1', ap: gi(1), b: 'SW2', bp: gi(1) }, { a: 'SW1', ap: fa(1), b: 'PC1' }, { a: 'SW2', ap: fa(1), b: 'PC2' }, { a: 'R1', ap: gi(2), b: 'R2', bp: gi(0) } ],
         preconfig: { R1: ['ipv6 unicast-routing', 'interface g0/0', 'no shutdown', 'interface g0/1', 'no shutdown', 'interface g0/2', 'no shutdown'], R2: ['interface g0/0', 'no shutdown'] }
       },
-      map: { w: 540, h: 300, nodes: [ { id: 'PC1', label: 'gallery terminal', type: 'pc', x: 40, y: 70 }, { id: 'SW1', label: 'gallery switch', type: 'switch', x: 150, y: 70 },
+      map: { w: 540, h: 300, nodes: [ { id: 'PC1', label: 'gallery desk', type: 'pc', x: 40, y: 70 }, { id: 'SW1', label: 'gallery switch', type: 'switch', x: 150, y: 70 },
           { id: 'R1', label: 'exchange hall router', type: 'router', x: 290, y: 150 }, { id: 'SW2', label: 'new wing switch', type: 'switch', x: 150, y: 230 }, { id: 'PC2', label: 'card reader, door 1', type: 'pc', x: 40, y: 230 },
           { id: 'R2', label: 'the old signal box', type: 'router', x: 460, y: 150 } ],
         links: [ { a: 'PC1', b: 'SW1' }, { a: 'SW1', b: 'R1', ap: gi(1), bp: gi(0), tag: '2001:db8:32:1::/64' }, { a: 'SW2', b: 'R1', ap: gi(1), bp: gi(1), tag: '2001:db8:32:2::/64' }, { a: 'PC2', b: 'SW2' }, { a: 'R1', b: 'R2', ap: gi(2), bp: gi(0) } ] },
@@ -186,7 +186,7 @@
             { key: 'd', label: 'FF02::A', options: ['all nodes', 'all routers', 'all OSPF routers', 'all EIGRP routers'], answer: 'all EIGRP routers' },
             { key: 'e', label: 'the scope of FF05::', options: ['interface-local', 'link-local', 'site-local', 'organization-local', 'global'], answer: 'site-local' },
             { key: 'f', label: 'the scope of FF0E::', options: ['interface-local', 'link-local', 'site-local', 'organization-local', 'global'], answer: 'global' } ],
-          hint: 'The IPv4 equivalents are 224.0.0.1, .2, .5 and .10. The digit after FF0 is the scope.', ok: 'Sixx: "No broadcast anywhere on the board. Just groups."',
+          hint: 'The IPv4 equivalents are 224.0.0.1, .2, .5 and .10. The digit after FF0 is the scope.', ok: 'Sixx: "There\'s no broadcast anywhere on the board, only groups."',
           why: 'Sixx: FF02::1 is all nodes (224.0.0.1 in IPv4), FF02::2 all routers (224.0.0.2), FF02::5 all OSPF routers (224.0.0.5), FF02::6 OSPF DRs and BDRs, FF02::9 RIP routers and FF02::A EIGRP routers (224.0.0.10). The fourth hex digit is the scope: FF01 interface-local, FF02 link-local, FF05 site-local, FF08 organization-local, FF0E global.' }
       ],
       solution: [ { order: [1, 2, 0] }, 'commit', { calc: { id: '0219:e8ff:fea1:1c20', addr: '2001:db8:32:2:219:e8ff:fea1:1c20' } }, 'commit',
@@ -214,7 +214,7 @@
           R3: ['ipv6 unicast-routing', 'interface g0/0', 'ipv6 address 2001:db8:33:3::1/64', 'ipv6 address fe80::1 link-local', 'no shutdown', 'interface g0/1', 'ipv6 address 2001:db8:33:23::3/64', 'no shutdown']
         }
       },
-      map: { w: 580, h: 220, nodes: [ { id: 'PC1', label: 'gallery terminal', type: 'pc', x: 40, y: 110 }, { id: 'R1', label: 'R1 · the exchange hall', type: 'router', x: 160, y: 110 },
+      map: { w: 580, h: 220, nodes: [ { id: 'PC1', label: 'gallery desk', type: 'pc', x: 40, y: 110 }, { id: 'R1', label: 'R1 · the exchange hall', type: 'router', x: 160, y: 110 },
           { id: 'R2', label: 'R2 · the cab rank', type: 'router', x: 310, y: 110 }, { id: 'R3', label: 'R3 · the clinic\'s new wing', type: 'router', x: 450, y: 110 }, { id: 'PC3', label: 'new wing desk', type: 'pc', x: 550, y: 110 } ],
         links: [ { a: 'PC1', b: 'R1', tag: '33:1::/64' }, { a: 'R1', b: 'R2', ap: gi(1), bp: gi(0), tag: '33:12::/64' }, { a: 'R2', b: 'R3', ap: gi(1), bp: gi(1), tag: '33:23::/64' }, { a: 'R3', b: 'PC3', tag: '33:3::/64' } ] },
       steps: [

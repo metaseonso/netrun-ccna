@@ -39,7 +39,7 @@
             { who: 'narr', text: 'The rank is a strip of wet tarmac under one flickering lamp, with a coffee van and a dozen cabs idling nose to tail. Across the water, the bridge lights are going out one section at a time. Nexthop pulls in, leaves the engine running and turns round in his seat.' },
             { who: 'nexthop', text: 'The rank\'s router lives in that grey cabinet behind the coffee van, and it learns the bridge road from the depot\'s routers the way I learn it from the radio. The corp towers downtown run the same protocols between their floors, on a thousand routers instead of four.' },
             { who: 'nexthop', text: 'Two kinds of protocol. Interior gateway protocols, IGPs, share routes inside one organisation\'s network, one [[autonomous system]]. Exterior gateway protocols share routes between different ones, and there\'s only one of those left, BGP, the one the internet runs on.' },
-            { who: 'nexthop', text: 'The IGPs come in two families. [[Distance vector]] protocols, RIP and EIGRP, only know what the neighbours tell them: that network, this far. Routing by rumour. [[Link state]] protocols, OSPF and IS-IS, hand every router the whole map, so each one works out the roads for itself. They cost more brain and react faster. BGP is its own thing, path vector.' },
+            { who: 'nexthop', text: 'The IGPs come in two families. [[Distance vector]] protocols, RIP and EIGRP, only know what the neighbours tell them, that network, this far, which is why people call it routing by rumour. [[Link state]] protocols, OSPF and IS-IS, hand every router the whole map, so each one works out the roads for itself. They cost more brain and react faster. BGP is its own thing, path vector.' },
             { who: 'nexthop', text: 'Now the bit I want. The depot\'s routers learn the bridge road from OSPF. I want the canal road written on a card as well, but only for when the bridge is gone. Give that static route an AD higher than OSPF\'s 110, say 111, and it floats: it sits out of the table until the OSPF route disappears, then it drops in. A [[floating static route]].' }
           ],
           choice: { opts: [
@@ -65,7 +65,7 @@
         { k: 'SCENE', where: 'The cab co-op garage · Monday, 23:30',
           lines: [
             { who: 'narr', text: 'The garage smells of engine oil and the cigarettes nobody is supposed to smoke in here. A radio on the workbench plays songs older than you, and four drivers in their sixties play cards on an upturned crate under a strip light. Along the back wall, above a rack of three dusty routers, hang hundreds of laminated route cards.' },
-            { who: 'nexthop', text: 'The co-op. My dad\'s crowd. Their routers have spoken RIP since before I could drive, and Hollis over there wants them moved to something newer before he retires.' },
+            { who: 'nexthop', text: 'The co-op, my dad\'s crowd. Their routers have spoken RIP since before I could drive, and Hollis over there wants them moved to something newer before he retires.' },
             { who: 'Hollis', text: 'Forty years on the radio, and every one of those boxes still thinks the only thing that matters is how many stops away you are.' },
             { who: 'nexthop', text: 'That\'s [[RIP]]. Hop count is the whole metric, and fifteen hops is the most it will count. Sixteen means you can\'t get there. It doesn\'t care whether a hop is a gigabit fibre or a wet piece of string.' },
             { who: 'nexthop', text: 'RIPv1 shouts its updates to everyone by broadcast and only knows the old classful networks, so no VLSM. RIPv2 carries the masks, works with VLSM and CIDR, and multicasts to 224.0.0.9. There\'s RIPng for IPv6. It only has two messages: a request, and a response full of routes.' }
@@ -110,7 +110,7 @@
             { who: 'ospef', text: 'You\'re the runner Nexthop brought. He steers by what the next cab tells him, which is his business. I don\'t move a single fare until I\'ve seen the whole map myself.' },
             { who: 'ospef', text: '[[OSPF]] works that way. Every router describes its own links, which network, which neighbour, what each costs, in a [[LSA]], a link state advertisement, and floods it to every router in the [[OSPF area]]. Each router files every LSA it receives in its [[LSDB]], the link state database, and once they all hold the same database, each one works out its own shortest paths from it.' },
             { who: 'narr', text: 'He taps a framed photograph by the door: a thin man in heavy glasses at a café table.' },
-            { who: 'ospef', text: 'With Dijkstra\'s algorithm. Shortest path first. Every router in the area runs it on the same map, so they all come to the same answer about the roads.' }
+            { who: 'ospef', text: 'With Dijkstra\'s algorithm, shortest path first. Every router in the area runs it on the same map, so they all come to the same answer about the roads.' }
           ],
           choice: { opts: [
             { tone: 'ask', say: 'How long does an LSA stay on the map?', reply: 'Ospef: "Every LSA has an age, and the router that made it floods a fresh copy every thirty minutes, so the map never goes stale. OSPFv2 carries the IPv4 map. OSPFv3 carries IPv6."' },
@@ -208,7 +208,7 @@
           lines: [
             { who: 'narr', text: 'At the east edge of the map the strings stop at a line of masking tape. Beyond it, in a different hand and a different colour of ink, someone has drawn the next district\'s routers. One string crosses the tape to a pin labelled EDGE.' },
             { who: 'ospef', text: 'The edge router links us to the next district. Their side keeps its own area, area 1, and the rank will be the ABR between us. Tonight it has no neighbour at all, and the yard dropped off the round table as well.' },
-            { who: 'ospef', text: 'Two routers only become neighbours when they agree on a list of things. The same area on the link. The same subnet and mask. The same hello and dead timers. The same authentication, if there is any. Different router IDs. Neither end passive. The process ID doesn\'t matter.' },
+            { who: 'ospef', text: 'Two routers only become neighbours when they agree on a list of things. The same area on the link. The same subnet and mask. The same hello and dead timers. The same authentication, if there is any. Different router IDs, and neither end passive. The process ID doesn\'t matter.' },
             { who: 'ospef', text: 'Some mismatches are quieter. Different MTUs on the two ends and they become neighbours but stick before Full. Different network types, one broadcast and one point-to-point, and they go Full but never learn each other\'s routes.' }
           ],
           choice: { opts: [

@@ -66,7 +66,7 @@
           ],
           choice: { opts: [
             { tone: 'ask', say: 'What are the other timers?', reply: 'Old Root: "The root sends a BPDU every two seconds, which is the [[hello]]. A switch that hears nothing on its root port for twenty seconds, ten hellos, gives up on that path, and that\'s [[max age]]. Every switch runs on the timers the root bridge sends, whatever it has set itself."' },
-            { tone: 'press', say: 'So when a cable dies, the backup is up in thirty seconds?', reply: 'Old Root: "Worse. If the switch can\'t see the cable die, it waits out max age first, twenty seconds, then the blocked port climbs through listening and learning, fifteen and fifteen. Fifty seconds. The other way round is instant: a forwarding port can drop straight to blocking, but a blocking port has to climb."' },
+            { tone: 'press', say: 'So when a cable dies, the backup is up in thirty seconds?', reply: 'Old Root: "Worse. If the switch can\'t see the cable die, it waits out max age first, twenty seconds, then the blocked port climbs through listening and learning, fifteen and fifteen, fifty seconds in all. The other way round is instant: a forwarding port can drop straight to blocking, but a blocking port has to climb."' },
             { tone: 'care', say: 'Half a minute with a patient waiting must feel long.', reply: 'Imani: "On a quiet morning it\'s half a minute. On the morning of a bus crash it\'s thirty people at this counter." Old Root: "You\'ll have it back by lunch."' }
           ] } },
         { k: 'SCENE', where: 'The switch closet · Wednesday, 09:20',
@@ -129,7 +129,7 @@
           choice: { opts: [
             { tone: 'ask', say: 'What would Halvorsen do with the Exchange?', reply: 'Vesper: "Run one network for the whole district, closed and watched, and bill it per head. Nobody in a Halvorsen tower has ever carried a chart up a stairwell."' },
             { tone: 'press', say: 'Did you come to buy the closet too?', reply: 'Vesper: "I came to watch him leave it in good hands. Whether they are good hands is the one thing I haven\'t decided yet."' },
-            { tone: 'care', say: 'You worked with him. Why did you leave?', reply: 'She looks at the tag and not at you. "After that night I couldn\'t trust a network that was only as good as the tired people holding it together. He could." Old Root turns back to the rack and doesn\'t answer.' }
+            { tone: 'care', say: 'You worked with him. Why did you leave?', reply: 'She looks at the tag and not at you. "After that night I couldn\'t trust a network that was only as good as the tired people holding it together, and he always could." Old Root turns back to the rack and doesn\'t answer.' }
           ] } },
         { k: 'LORE', title: 'THE HANDSHAKE', year: 2001, real: ['ieee', 'cisco'], vibe: 'Sweet: the tree finally stopped waiting fifty seconds for permission.',
           text: 'Old Root, after she has gone to wait by the reception doors: "The IEEE published 802.1w, the rapid tree, in 2001. It took what Cisco had been selling as extras, UplinkFast, BackboneFast and PortFast, and built them into the standard, and a dead link started coming back in about a second. In 2004 the rapid tree was folded into 802.1D itself. I read the draft on a night shift at this desk, and I remember thinking that fifty seconds had finally gone."' },

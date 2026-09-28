@@ -57,7 +57,7 @@
           why: 'Vee Lan: The switch picks a member for each frame by hashing its addresses, source and destination MAC or IP, so every frame of one flow takes the same cable and arrives in order. One big transfer uses one member; many flows from many machines spread across all of them. port-channel load-balance src-dst-ip sets the method, and show etherchannel load-balance shows it.' },
         { type: 'cmd', skill: 'cli-modes', text: 'Vee Lan: "Save all three. I\'m not coming back at four in the morning for anybody."',
           check: (d) => ['SW1', 'SW2', 'SW3'].every(n => d[n].startup && /channel-group/.test(d[n].startup)) && /channel-group 1/.test(d.SW1.startup) && /channel-group 1/.test(d.SW2.startup),
-          hint: 'SW1# write memory\nSW2# write memory\nSW3# write memory', ok: 'Vee Lan: "[OK], three times. Now I\'m even."',
+          hint: 'SW1# write memory\nSW2# write memory\nSW3# write memory', ok: 'Vee Lan: "[OK], three times, and that makes Root and me even."',
           why: 'Vee Lan: The bundles live in the running-config until they are saved. write memory, or copy running-config startup-config, on SW1, SW2 and SW3 puts them in the startup-config, so the port-channels come back after a power cut.' }
       ],
       solution: [ { choose: 0 }, 'commit',
