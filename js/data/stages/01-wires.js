@@ -72,7 +72,7 @@
             { tone: 'press', say: 'Why not just run fiber everywhere?', reply: 'Osi: "Price. Every fiber link needs a pair of SFPs and the glass itself, and copper to a desk is almost free. We use fiber where copper can\'t reach or where the noise is bad, like out here."' },
             { tone: 'care', say: 'Is the copper safe to leave in the walls?', reply: 'Osi: "Safe enough, but it leaks. UTP gives off a faint signal outside the cable, and someone with the right kit can pick it up. Glass doesn\'t leak. That\'s one more reason the corp towers wire their floors in fiber."' }
           ] } },
-        { k: 'LORE', title: 'THE ETHER MEMO', year: 1973, real: ['xerox'], vibe: 'A far-out memo that ended up wiring every office on the planet.',
+        { k: 'LORE', title: 'THE ETHER MEMO', year: 1973, real: ['xerox', 'ieee'], vibe: 'A far-out memo that ended up wiring every office on the planet.',
           text: 'Osi, coiling the old cable: "On the twenty-second of May 1973, an engineer at Xerox PARC called Bob Metcalfe wrote a memo about linking the lab\'s computers with one shared cable. He called it Ethernet, after the ether that old physicists thought carried light. The IEEE made it the 802.3 standard ten years later, in 1983, and that\'s why every building on this street has an RJ45 socket in the wall."' },
         { k: 'KIT', text: 'Osi writes the dock job on the back of a delivery note.', real: ['ieee'], kit: [
           { cmd: 'RJ45 · 8 pins · UTP · 100 m max', what: 'copper Ethernet. The twists cancel EMI' },

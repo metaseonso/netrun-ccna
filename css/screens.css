@@ -247,7 +247,7 @@
 /* real companies and standards: official mark, one colour */
 .reals{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .real{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border:1px solid var(--line);background:rgba(7,8,13,.6);font-size:11px;letter-spacing:.06em;color:var(--ink);font-style:normal;white-space:nowrap}
-.rmark{display:inline-block;width:14px;height:14px;background:currentColor;-webkit-mask:var(--src) center / contain no-repeat;mask:var(--src) center / contain no-repeat}
+.rmark{display:inline-block;flex:none;width:18px;height:18px;background:currentColor;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat} /* the image is set inline, so its path resolves from the page, not from css/ */
 
 /* the hall of fame strip under the title */
 .modal.hall{width:min(980px,100%);padding:0;border-color:var(--line);background:linear-gradient(180deg,#101522,#0d1019);overflow:hidden}
@@ -295,3 +295,13 @@
 @media (max-width:520px){.diffchip .dicon .ic{width:16px;height:16px}}
 .door-id .ava{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--cyan);display:inline-flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:12px;letter-spacing:.06em;color:var(--cyan)}
 @media (max-width:760px){.map{padding-bottom:0} .mlegend{position:static;height:auto;flex-wrap:wrap;gap:6px 14px;padding:10px 12px;margin:12px -12px 0} .mlegend span{white-space:nowrap}}
+/* the door's look inside: four captures and what each teaches */
+.dpreview{margin:clamp(28px,5vh,48px) 0 8px;display:flex;flex-direction:column;gap:14px}
+.dpreview h2{margin:0;font-family:var(--disp);font-size:13px;letter-spacing:.2em;color:var(--ink)}
+.pstats{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)} .pstats b{font-family:var(--disp);font-size:18px;color:var(--cyan);margin-right:6px;letter-spacing:.04em}
+.pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.pgrid figure{margin:0;display:flex;flex-direction:column;gap:10px}
+.pgrid img{display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:top;border:1px solid var(--line);transition:border-color .15s}
+.pgrid a:hover img,.pgrid a:focus-visible img{border-color:var(--cyan)}
+.pgrid figcaption{display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:1.55;color:var(--ink2)} .pgrid figcaption b{font-family:var(--disp);font-size:11px;letter-spacing:.16em;color:var(--cyan);font-weight:600}
+@media (max-width:760px){.pgrid{grid-template-columns:1fr}}

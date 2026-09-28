@@ -603,7 +603,7 @@
           ] } },
         { k: 'LORE', title: 'A VOICE IN PACKETS', year: 1995, real: ['vocaltec'], vibe: 'Phat. Talk to anybody on the planet for the price of a modem call.',
           text: 'Dispatch, turning a radio down another notch: "February 1995. Small company in Israel, VocalTec. Sold a program called InternetPhone. One PC to another, voice cut into packets, across the internet. Needed a sound card, a microphone and patience. Sounded worse than this radio. Kept it because now it carries every call in the clinic."' },
-        { k: 'KIT', text: 'Dispatch writes it on a job slip, the only one with no job on it.', kit: [
+        { k: 'KIT', real: ['cisco'], text: 'Dispatch writes it on a job slip, the only one with no job on it.', kit: [
           { cmd: 'PSTN · POTS · VoIP', what: 'the old phone network, plain old telephone service, voice over IP' },
           { cmd: 'switchport mode access · switchport access vlan 10 · switchport voice vlan 11', what: 'PC untagged in VLAN 10, the phone tags its voice with VLAN 11. CDP tells the phone' },
           { cmd: 'show interfaces f0/1 switchport', what: 'Access Mode VLAN and Voice VLAN' },

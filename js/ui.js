@@ -65,7 +65,7 @@
   const icon = (n, cls) => '<svg class="ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[n] || '') + '</svg>';
   const tipAttr = t => t ? ' data-tip="' + esc(t) + '"' : '';
   // a real company or standard, shown with its official mark in one colour and named in the tip
-  const realTag = id => { const r = (window.REAL || {})[id]; if (!r) return ''; return '<span class="real"' + tipAttr('Real: ' + r.owner + '. ' + (r.what || '') + ' The mark belongs to its owner.') + '>' + (r.icon ? '<i class="rmark" style="--src:url(assets/brands/' + r.icon + '.svg)"></i>' : '') + esc(r.name) + '</span>'; };
+  const realTag = id => { const r = (window.REAL || {})[id]; if (!r) return ''; return '<span class="real"' + tipAttr('Real: ' + r.owner + '. ' + (r.what || '') + ' The mark belongs to its owner.') + '>' + (r.icon ? '<i class="rmark" style="-webkit-mask-image:url(assets/brands/' + r.icon + '.svg);mask-image:url(assets/brands/' + r.icon + '.svg)"></i>' : '') + esc(r.name) + '</span>'; };
   const realTags = ids => (ids && ids.length) ? '<span class="reals">' + [].concat(ids).map(realTag).join('') + '</span>' : '';
 
   // ---- the body, in words you can read at a glance -------------------------------------
@@ -162,6 +162,13 @@
       '<div class="dgrid"><section class="dstory"><p class="lede">Rain drips off the overpass and down the back of your collar while you wait at Dispatch\'s booth in Watson. The district runs on switches older than you are, patched together by people who remember every outage by what it cost them. Somebody on this street vouched for you, and Dispatch has work if you can learn the old gear fast enough to keep it running.</p>' +
       '<ul class="doorwhat"><li>' + icon('grid') + '<b>THE GRID</b><span>People who teach you the gear, one part of the net each.</span></li><li>' + icon('board') + '<b>THE BOARD</b><span>Gigs where you fix a real network from the shell.</span></li><li>' + icon('crew') + '<b>THE CREW</b><span>Runners who call you for help. Answer right and in time.</span></li></ul></section>' +
       '<section class="dcard" aria-label="Jack in"><h2>JACK IN</h2>' + (window.Auth && Auth.user() ? doorSignedIn() : doorLocal()) + '</section></div>' +
+      // what a night holds, for someone deciding whether to jack in: real captures from the game (assets/preview, tools: scratchpad capture script)
+      '<section class="dpreview" aria-label="Inside a night"><h2>INSIDE A NIGHT</h2><div class="pstats"><span><b>63</b> nights</span><span><b>68</b> gigs</span><span><b>2,251</b> crew calls</span><span><b>9</b> districts</span></div><div class="pgrid">' +
+        [['gig', 'THE DIVE', 'A real router and switch shell on a live network. The check reads what the network does, so any working config clears the floor.'],
+         ['talk', 'THE TALK', 'One topic a night, in course order, taught in a scene. Each talk ends with a kit of the commands and numbers you need.'],
+         ['call', 'THE CALL', 'Your crew calls with questions from the course decks, on a 60-second clock. The ones you miss come back sooner.'],
+         ['board', 'THE BOARD', '68 gigs rebuilt from the course labs, from cabling and subnetting to OSPF, ACLs, NAT and automation.']]
+          .map(([f, t, d]) => '<figure><a href="assets/preview/' + f + '.jpg" target="_blank" rel="noopener"><img src="assets/preview/' + f + '.jpg" alt="' + t.toLowerCase() + ' screen" loading="lazy" width="1280" height="800"></a><figcaption><b>' + t + '</b><span>' + d + '</span></figcaption></figure>').join('') + '</div></section>' +
       '<footer class="footer"><div>Course: <a href="https://www.youtube.com/@JeremysITLab" target="_blank" rel="noopener">Jeremy\'s IT Lab</a> · Notes: <a href="https://github.com/psaumur/CCNA_Course_Notes" target="_blank" rel="noopener">psaumur</a>, <a href="https://github.com/sparrowjumpy/CCNA-Notes" target="_blank" rel="noopener">sparrowjumpy</a> · MIT License · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></div>' +
       '</footer></div>'; }
   // ---- the map: one line through the districts, a dot per night, a panel for the district you pick -----

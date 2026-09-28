@@ -114,7 +114,7 @@
           ] } },
         { k: 'LORE', title: 'THE TTL TRICK', year: 1987, vibe: 'Bodacious. Send a packet out to die one hop further each time and write down who reports it.',
           text: 'Cider, rolling up the tab: "In 1987 Van Jacobson, at the Lawrence Berkeley lab, wrote a little program called traceroute. He had worked out that if you send a packet with a TTL of 1, the first router kills it and tells you its name, and with a TTL of 2 the second one does. Nobody built a way to map the path; he borrowed the field that was there to kill loops. I still use it every week."' },
-        { k: 'KIT', text: 'Cider writes the tab\'s layout on the back of a menu.', kit: [
+        { k: 'KIT', real: ['cisco'], text: 'Cider writes the tab\'s layout on the back of a menu.', kit: [
           { cmd: 'Version 4 · IHL 4 · DSCP 6 · ECN 2 · Total Length 16 (bits)', what: 'IHL counts 4-byte words: 5 = 20 B minimum, 15 = 60 B maximum' },
           { cmd: 'Identification 16 · Flags 3 (0, DF, MF) · Fragment Offset 13', what: 'fragments of one packet share an ID. MTU usually 1500 B' },
           { cmd: 'TTL 8 · Protocol 8 (1 ICMP · 6 TCP · 17 UDP · 89 OSPF) · Header Checksum 16', what: 'TTL: start 64, minus 1 per router, dropped at 0' },

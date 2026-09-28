@@ -75,9 +75,9 @@
             { tone: 'press', say: 'What stops someone faking an ARP reply?', reply: 'Mac frowns at the ledger. "Nothing in ARP itself. Whoever answers gets believed. Ace Elle at the gate has a lot to say about that, and I\'d let her say it."' },
             { tone: 'quiet', say: '(Watch him write the printer\'s MAC in the ledger.)', reply: 'He writes 0060.b0c1.2e12 next to slot 12, then, in the margin, Hanna\'s name and a tiny drawing of a receipt.' }
           ] } },
-        { k: 'LORE', title: 'WHO HAS', year: 1982, real: ['ietf'], vibe: 'Like, totally. One box shouts a question at the room and the right one answers.',
+        { k: 'LORE', title: 'WHO HAS', year: 1982, real: ['ietf', 'mit'], vibe: 'Like, totally. One box shouts a question at the room and the right one answers.',
           text: 'Mac, putting the ledger away: "ARP is RFC 826. David Plummer wrote it in November 1982, when he was a student at MIT, so machines on an Ethernet could find each other\'s hardware addresses from an internet address. Every till and printer in this market still asks his question the way he wrote it."' },
-        { k: 'KIT', text: 'Mac writes it on the back of one of Hanna\'s blank receipts.', kit: [
+        { k: 'KIT', real: ['cisco'], text: 'Mac writes it on the back of one of Hanna\'s blank receipts.', kit: [
           { cmd: 'ARP request: broadcast to FFFF.FFFF.FFFF · ARP reply: unicast · type 0x0806', what: 'who has this IP, tell me your MAC' },
           { cmd: 'arp -a (PC)  ·  show arp (Cisco)', what: 'the ARP table: IP to MAC' },
           { cmd: 'ping: ICMP echo request · echo reply', what: 'the first ping often loses one while ARP runs' },
@@ -321,7 +321,7 @@
             { tone: 'joke', say: 'Why not mode on everywhere? Fewer words.', reply: 'Vee Lan: "Because on never checks. Cable one member to the wrong switch and on keeps sending frames down it anyway. LACP would have refused to bundle it."' },
             { tone: 'press', say: 'Can a bundle carry routed traffic?', reply: 'Vee Lan: "On a multilayer switch, yes. no switchport on the members, then the channel-group, and the IP address goes on the port-channel interface. That\'s a Layer 3 EtherChannel, and the building\'s core switches run one."' }
           ] } },
-        { k: 'LORE', title: 'MANY CABLES, ONE NAME', year: 2000, real: ['ieee', 'cisco'], vibe: 'Whassup? Four cables, answering to one name.',
+        { k: 'LORE', title: 'MANY CABLES, ONE NAME', year: 2000, real: ['ieee', 'cisco', 'kalpana'], vibe: 'Whassup? Four cables, answering to one name.',
           text: 'Vee Lan: "The IEEE published LACP as 802.3ad in 2000, and in 2008 it moved to its own standard, 802.1AX. Before that every vendor bundled its own way. Cisco\'s EtherChannel came from a small company called Kalpana that it bought in 1994, and PAgP came with it. Root taught me bundling on a switch from those years, which is the only reason I kept any of this."' },
         { k: 'KIT', text: 'She writes it on a strip of gaffer tape and sticks it to your sleeve.', real: ['ieee', 'cisco'], kit: [
           { cmd: 'interface range g0/2 - 3 → channel-group 1 mode active', what: 'LACP, 802.3ad: active + active or active + passive' },
@@ -363,9 +363,9 @@
             { tone: 'press', say: 'Why not pull it out right now?', reply: 'Mac: "Because Ace wants its name and its address first, and once it\'s unplugged SW2 forgets it in 180 seconds. Read it, write it down, then pull it."' },
             { tone: 'care', say: 'Did anyone come down here to plug it in?', reply: 'Mac spits a shell into his hand and looks at the stairs. "Nobody I remember. And I remember everybody. Whoever it was came up the old cable from the other end, not down my stairs."' }
           ] } },
-        { k: 'LORE', title: 'EVERYONE SAYS HELLO', year: 2005, real: ['ieee'], vibe: 'That\'s hot. Every box on the block handing out business cards to strangers.',
+        { k: 'LORE', title: 'EVERYONE SAYS HELLO', year: 2005, real: ['ieee', 'cisco'], vibe: 'That\'s hot. Every box on the block handing out business cards to strangers.',
           text: 'Mac, cracking another seed: "Cisco boxes had been introducing themselves with CDP for years, but only to other Cisco boxes. In 2005 the IEEE approved 802.1AB, LLDP, so a phone or a camera from any maker could say hello the same way. The first non-Cisco phone that showed up on this floor with its name and its port, I printed the page and pinned it by the door. It\'s still there, under the grease."' },
-        { k: 'KIT', text: 'Mac writes the floor\'s rules on the inside of a sunflower-seed packet.', kit: [
+        { k: 'KIT', real: ['cisco', 'ieee'], text: 'Mac writes the floor\'s rules on the inside of a sunflower-seed packet.', kit: [
           { cmd: 'show cdp neighbors · show cdp neighbors detail · show cdp entry NAME', what: 'who is on each port. Detail adds the IP address and the software version' },
           { cmd: 'cdp run · no cdp run · interface: cdp enable · no cdp enable', what: 'CDP is Cisco only and on by default. Turn it off where you don\'t trust the far end' },
           { cmd: 'CDP: every 60 s · holdtime 180 s · CDPv2 · 0100.0CCC.CCCC', what: 'cdp timer · cdp holdtime · cdp advertise-v2' },

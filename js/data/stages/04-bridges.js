@@ -133,7 +133,7 @@
           ] } },
         { k: 'LORE', title: 'THE HANDSHAKE', year: 2001, real: ['ieee', 'cisco'], vibe: 'Sweet: the tree finally stopped waiting fifty seconds for permission.',
           text: 'Old Root, after she has gone to wait by the reception doors: "The IEEE published 802.1w, the rapid tree, in 2001. It took what Cisco had been selling as extras, UplinkFast, BackboneFast and PortFast, and built them into the standard, and a dead link started coming back in about a second. In 2004 the rapid tree was folded into 802.1D itself. I read the draft on a night shift at this desk, and I remember thinking that fifty seconds had finally gone."' },
-        { k: 'KIT', text: 'His last work order, in pencil, with the corner torn where the tape was.', real: ['ieee'], kit: [
+        { k: 'KIT', text: 'His last work order, in pencil, with the corner torn where the tape was.', real: ['ieee', 'cisco'], kit: [
           { cmd: 'spanning-tree mode rapid-pvst', what: 'Rapid PVST+: 802.1w, one tree per VLAN. 802.1s is MST' },
           { cmd: 'states: discarding · learning · forwarding', what: 'discarding replaces blocking, listening and disabled' },
           { cmd: 'roles: root · designated · alternate · backup', what: 'alternate: better BPDU from another switch, stands in for the root port. Backup: better BPDU from the same switch, stands in for a designated port' },
