@@ -162,6 +162,7 @@ Rules and numbers live there, never in a character's mouth.
 | Stan (Nexthop's cousin) | easy and unbothered, Nexthop's shorter sentences, takes over without making a fuss about it |
 | Syn | quick and exact, counts everything twice, says what she's doing as she does it |
 | Ack (Syn's twin) | dry, finishes Syn's sentences, answers the question you didn't ask yet |
+| Sixx | unhurried and tall in the voice, amused by anyone still counting in dotted decimal, says long numbers slowly and exactly |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that

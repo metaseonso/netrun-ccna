@@ -63,6 +63,66 @@
         { form: { dst: '443', src: 'a random number from 49152 to 65535', wk: '0 to 1023', reg: '1024 to 49151' } }, 'commit',
         { dev: 'R1', type: ['enable', 'show access-lists'] }, 'commit', { dev: 'R1', type: ['configure terminal', 'interface g0/0', 'no ip access-group 130 in'] }, 'commit',
         { form: { dhcp: 'UDP', ssh: 'TCP', dns: 'both', snmp: 'UDP', ftp: 'TCP' } }, 'commit' ],
-      outro: 'The tracker opens over HTTPS on the courier desk\'s laptop, padlock and all. Syn stamps the docket, Ack stamps it again, and Osi files it under the guild\'s name, not the exchange\'s.' }
+      outro: 'The tracker opens over HTTPS on the courier desk\'s laptop, padlock and all. Syn stamps the docket, Ack stamps it again, and Osi files it under the guild\'s name, not the exchange\'s.' },
+
+    // ------------------------------------------------------------------ night 31 · from Lab 31 (IPv6 configuration, part 1)
+    { id: 'c-n31-numbers-on-boxes', cls: 'C', rep: 15, from: 'sixx', title: 'Numbers on the Boxes', day: [31], requires: ['n31-empty-gallery'], devices: ['R1', 'PC1', 'PC2'],
+      brief: 'DISPATCH » Sixx wants the exchange hall\'s router speaking IPv6 on the gallery and the courier desk, and the two talking to each other. Read the numbers first.\n\nCLIENT (Sixx) » "Two rooms, two /64s, one router. I\'ve waited long enough for someone to type it."',
+      net: {
+        devices: {
+          R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0011.2231.0001' }, SW2: { kind: 'switch', mac: '0011.2231.0002' },
+          PC1: { kind: 'host', ip: '10.31.1.10', mask: '255.255.255.0', ip6: '2001:db8:31:1::10', gw6: '2001:db8:31:1::1' },
+          PC2: { kind: 'host', ip: '10.31.2.10', mask: '255.255.255.0', ip6: '2001:db8:31:2::10', gw6: '2001:db8:31:2::1' }
+        },
+        links: [ { a: 'R1', ap: gi(0), b: 'SW1', bp: gi(1) }, { a: 'R1', ap: gi(1), b: 'SW2', bp: gi(1) }, { a: 'SW1', ap: fa(1), b: 'PC1' }, { a: 'SW2', ap: fa(1), b: 'PC2' } ],
+        preconfig: { R1: ['interface g0/0', 'no shutdown', 'interface g0/1', 'no shutdown'] }
+      },
+      map: { w: 520, h: 280, nodes: [ { id: 'PC1', label: 'gallery terminal', type: 'pc', x: 50, y: 70 }, { id: 'SW1', label: 'gallery switch', type: 'switch', x: 160, y: 70 },
+          { id: 'R1', label: 'exchange hall router', type: 'router', x: 300, y: 140 }, { id: 'SW2', label: 'courier desk switch', type: 'switch', x: 160, y: 220 }, { id: 'PC2', label: 'courier desk', type: 'pc', x: 50, y: 220 } ],
+        links: [ { a: 'PC1', b: 'SW1' }, { a: 'SW1', b: 'R1', ap: gi(1), bp: gi(0), tag: '2001:db8:31:1::/64' }, { a: 'SW2', b: 'R1', ap: gi(1), bp: gi(1), tag: '2001:db8:31:2::/64' }, { a: 'PC2', b: 'SW2' } ] },
+      steps: [
+        { type: 'calc', skill: 'ipv6-addr', text: 'Sixx: "Start with the shape of the thing."',
+          fields: [ { key: 'bits', label: 'bits in an IPv6 address', check: v => String(v).trim() === '128' }, { key: 'q', label: 'quartets in a full address', check: v => String(v).trim() === '8' },
+            { key: 'qb', label: 'bits in one quartet', check: v => String(v).trim() === '16' } ],
+          answer: '128 bits, 8 quartets of 16 bits.', hint: 'Four hex digits per quartet, four bits per hex digit.', ok: 'Sixx: "A hundred and twenty-eight. Four times the old floors."',
+          why: 'Sixx: An IPv6 address is 128 bits long, written as eight quartets of four hexadecimal digits separated by colons. Each hex digit is 4 bits, so each quartet is 16 bits, and 8 × 16 = 128. IPv4 addresses are 32 bits.' },
+        { type: 'text', skill: 'ipv6-addr', text: 'Sixx, tapping the brass plate: "2001:0DB8:0000:0031:0000:0000:0000:0001. Write it as short as it can legally go."',
+          check: v => String(v).trim().toLowerCase() === '2001:db8:0:31::1', answer: '2001:db8:0:31::1', placeholder: 'the shortest form',
+          hint: 'Drop leading zeros in every quartet. Replace the longest run of all-zero quartets with ::, once.', ok: 'Sixx: "2001:DB8:0:31::1. That\'s what I painted, eventually."',
+          why: 'Sixx: First drop the leading zeros in each quartet: 2001:DB8:0:31:0:0:0:1. Then replace one run of consecutive all-zero quartets with a double colon. The run of four at the end is the longest, so it becomes ::, and the single 0 in the third quartet stays: 2001:DB8:0:31::1.' },
+        { type: 'text', skill: 'ipv6-addr', text: 'Sixx: "Now the other way. 2001:db8:31:2::a, written out in full, all eight quartets."',
+          check: v => String(v).trim().toLowerCase().replace(/\s/g, '') === '2001:0db8:0031:0002:0000:0000:0000:000a', answer: '2001:0db8:0031:0002:0000:0000:0000:000a', placeholder: 'eight quartets of four digits',
+          hint: 'Count the quartets you have. The :: fills in however many zero quartets it takes to make eight.', ok: 'Sixx: "Eight quartets, thirty-two digits. Nobody writes it that way twice."',
+          why: 'Sixx: 2001:db8:31:2::a has five quartets written, so the :: stands for three all-zero quartets. Pad every quartet to four digits with leading zeros: 2001:0db8:0031:0002:0000:0000:0000:000a.' },
+        { type: 'form', skill: 'ipv6-addr', text: 'Sixx, opening the five ledgers: "Which registry hands out addresses where?"',
+          fields: [ { key: 'af', label: 'Africa', options: ['AFRINIC', 'APNIC', 'ARIN', 'LACNIC', 'RIPE NCC'], answer: 'AFRINIC' }, { key: 'ap', label: 'Asia-Pacific', options: ['AFRINIC', 'APNIC', 'ARIN', 'LACNIC', 'RIPE NCC'], answer: 'APNIC' },
+            { key: 'na', label: 'Canada, the US, many Caribbean and North Atlantic islands', options: ['AFRINIC', 'APNIC', 'ARIN', 'LACNIC', 'RIPE NCC'], answer: 'ARIN' },
+            { key: 'la', label: 'Latin America and the Caribbean', options: ['AFRINIC', 'APNIC', 'ARIN', 'LACNIC', 'RIPE NCC'], answer: 'LACNIC' },
+            { key: 'eu', label: 'Europe, the Middle East, parts of Central Asia', options: ['AFRINIC', 'APNIC', 'ARIN', 'LACNIC', 'RIPE NCC'], answer: 'RIPE NCC' } ],
+          hint: 'The names give most of them away.', ok: 'Sixx: "Five ledgers, five regions. IANA above them all."',
+          why: 'Sixx: IANA hands blocks to five regional internet registries: AFRINIC for Africa, APNIC for Asia-Pacific, ARIN for Canada, the United States and many Caribbean and North Atlantic islands, LACNIC for Latin America and the Caribbean, and RIPE NCC for Europe, the Middle East and parts of Central Asia.' },
+        { type: 'calc', skill: 'ipv6-addr', text: 'Sixx: "The exchange hall has its own block now. How is it cut?"',
+          fields: [ { key: 'ent', label: 'prefix length an enterprise usually receives (/n)', check: v => String(v).replace(/[\/\s]/g, '') === '48' }, { key: 'sub', label: 'prefix length of a normal subnet (/n)', check: v => String(v).replace(/[\/\s]/g, '') === '64' },
+            { key: 'n', label: 'how many /64 subnets fit in a /48', check: v => String(v).replace(/[,\s]/g, '') === '65536' } ],
+          answer: '/48 for the site, /64 per subnet, 2^16 = 65,536 subnets.', hint: 'From 48 to 64 is 16 bits of subnet ID.', ok: 'Sixx: "Sixty-five thousand rooms. The hall uses two."',
+          why: 'Sixx: An enterprise is usually given a /48. Subnets are normally /64, which leaves 64 bits for the interface ID. The bits between 48 and 64, sixteen of them, are the subnet ID, so a /48 holds 2^16 = 65,536 /64 subnets.' },
+        { type: 'cmd', skill: 'ipv6-addr', text: 'Sixx: "The gallery is 2001:db8:31:1::/64 and the courier desk is 2001:db8:31:2::/64. Give the router ::1 in each, and make sure each room can reach its gateway."',
+          check: (d, ctx) => { const n = ctx.net(); return n.ping6('PC1', '2001:db8:31:1::1').ok && n.ping6('PC2', '2001:db8:31:2::1').ok; },
+          hint: 'R1(config)# interface g0/0\nR1(config-if)# ipv6 address 2001:db8:31:1::1/64\nR1(config-if)# interface g0/1\nR1(config-if)# ipv6 address 2001:db8:31:2::1/64', ok: 'Sixx: "Both rooms answer their gateway. show ipv6 interface brief will show you a second address on each, starting FE80. That one\'s for another night."',
+          why: 'Sixx: ipv6 address followed by the address, a slash and the prefix length puts an IPv6 address on an interface. There is no subnet mask in IPv6. 2001:db8:31:1::1/64 on g0/0 and 2001:db8:31:2::1/64 on g0/1 give each room its gateway, and each PC can now reach the router\'s address on its own link.' },
+        { type: 'choice', skill: 'ipv6-addr', text: 'Ack, from the courier desk on the phone: "Our desk can reach the router, and the gallery can reach the router, but not each other. What\'s missing?"',
+          opts: ['ipv6 unicast-routing: the router answers on its own addresses but forwards no IPv6 until it is on', 'A route to each /64', 'A default route on each PC', 'The /64s are too small'], a: 0,
+          hint: 'Both networks are directly connected, so the router already knows both.', ok: 'Sixx: "Off by default. The one line everybody forgets."',
+          why: 'Sixx: Both /64s are directly connected, so the router has a connected route to each. But a Cisco router does not forward IPv6 packets until ipv6 unicast-routing is configured in global config. Without it, it only answers packets addressed to itself.' },
+        { type: 'cmd', skill: 'ipv6-addr', text: 'Sixx: "Switch it on, then ping the courier desk, 2001:db8:31:2::10, from the gallery terminal."',
+          need: [ { dev: 'PC1', line: /^ping 2001:db8:31:2::10$/ } ], check: (d, ctx) => ctx.net().ping6('PC1', '2001:db8:31:2::10').ok,
+          hint: 'R1(config)# ipv6 unicast-routing\n\nPC1:\nC:\\> ping 2001:db8:31:2::10', ok: 'Sixx: "Replies across the gallery. The first two tenants."',
+          why: 'Sixx: ipv6 unicast-routing, in global config, lets the router forward IPv6 between its interfaces. The gallery terminal sends to its gateway, 2001:db8:31:1::1, the router looks up 2001:db8:31:2::/64 in its IPv6 table, finds it connected on g0/1, and delivers to the courier desk.' }
+      ],
+      solution: [ { calc: { bits: '128', q: '8', qb: '16' } }, 'commit', { text: '2001:db8:0:31::1' }, 'commit', { text: '2001:0db8:0031:0002:0000:0000:0000:000a' }, 'commit',
+        { form: { af: 'AFRINIC', ap: 'APNIC', na: 'ARIN', la: 'LACNIC', eu: 'RIPE NCC' } }, 'commit', { calc: { ent: '48', sub: '64', n: '65536' } }, 'commit',
+        { dev: 'R1', type: ['enable', 'configure terminal', 'interface g0/0', 'ipv6 address 2001:db8:31:1::1/64', 'interface g0/1', 'ipv6 address 2001:db8:31:2::1/64'] }, 'commit', { choose: 0 }, 'commit',
+        { dev: 'R1', type: ['exit', 'ipv6 unicast-routing'] }, { dev: 'PC1', type: ['ping 2001:db8:31:2::10'] }, 'commit' ],
+      outro: 'Sixx walks the length of the gallery and puts a small brass flag on two mailboxes, one for the gallery and one for the courier desk. Syn brings tea up on a Tuesday for once, and they drink it standing between the only two occupied boxes on the floor.' }
   );
 })();

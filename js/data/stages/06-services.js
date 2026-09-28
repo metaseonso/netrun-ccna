@@ -59,6 +59,47 @@
         { k: 'SYNC', q: { prompt: 'Osi, tucking the clipboard under her arm: "The dispatch radio sends voice across the district. TCP or UDP, and why?"', opts: ['UDP. A late word is useless, so it is better to skip it than wait for a resend', 'TCP. Every word must arrive', 'TCP. It is faster', 'UDP. It retransmits lost words'], a: 0,
           yes: 'Syn: "The bike courier. Nobody waits for a lost word."', no: 'Syn: "UDP. Real-time voice can\'t wait for a resend, so it uses the courier who doesn\'t wait."',
           why: 'Syn: TCP guarantees delivery by resending anything lost, which adds delay. For real-time voice and video a late piece is worthless, so they use UDP: no handshake, no acknowledgements, less overhead, and a lost piece is simply skipped.' } }
+      ] },
+    // ------------------------------------------------------------ night 31 · IPv6, part 1
+    { id: 'n31-empty-gallery', title: 'The gallery nobody moved into', sub: 'IPv6 addresses: 128 bits, hex, shortening, who hands them out', npc: 'sixx', day: [31], src: [PS('IPv6_Part1.md')], unlocks: ['ipv6-addr'],
+      beats: [
+        { k: 'SCENE', where: 'The exchange hall · the top gallery · Tuesday, 22:00',
+          lines: [
+            { who: 'narr', text: 'The noise of the hall fades as you climb, until there is only the hum of the lights and the smell of paint that never quite dried. The top gallery runs the whole length of the building: row after row of brass mailboxes, every one numbered, almost every one empty. At the far end a very tall figure with pale chrome skin sits reading on a bench, as if the gallery were a waiting room.' },
+            { who: 'sixx', text: 'You\'re the one who came up the stairs. Most people stop at the second floor, where it\'s crowded and warm and there are never enough boxes.' },
+            { who: 'sixx', text: 'The floors below run on IPv4: every [[IPv4 address]] is thirty-two bits, about four billion of them, and the world ran out years ago. Up here every address is an [[IPv6 address]], a hundred and twenty-eight bits. Enough to give every grain of sand on every beach more addresses than the whole of IPv4. I opened this gallery in 1998 and I\'ve been waiting for everyone to move in ever since.' },
+            { who: 'narr', text: 'Sixx taps a brass plate on the nearest box. The number on it is long enough to wrap onto a second line: 2001:0DB8:0000:0031:0000:0000:0000:0001.' },
+            { who: 'sixx', text: 'Eight groups of four hexadecimal digits, colons between them. Each digit is four bits, so each group, each quartet, is sixteen bits, and eight of them make a hundred and twenty-eight. Nobody writes them in full. You drop the leading zeros in every group, and one run of groups that are all zero becomes two colons. Once per address, or nobody could tell how many groups the double colon swallowed.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'So how short does that one get?', reply: 'Sixx: "2001:DB8:0:31::1. The 0DB8 loses its zero, the 0000 in the third group becomes 0, 0031 becomes 31, and the four zero groups at the end become ::. The third group stays, because the double colon is already spent on the longer run."' },
+            { tone: 'press', say: 'If IPv4 ran out, why is this gallery still empty?', reply: 'Sixx: "Because people are clever about being lazy. NAT let a whole building hide behind one address, and it made the old floors last twenty years longer than they should have. They\'ll come up here eventually. I\'m good at waiting."' },
+            { tone: 'joke', say: 'Do you ever get lonely up here?', reply: 'Sixx: "I have three hundred and forty undecillion mailboxes for company." A pause. "Also Syn brings me tea on Thursdays."' }
+          ] } },
+        { k: 'SCENE', where: 'The top gallery · the registry desk · 22:30',
+          lines: [
+            { who: 'narr', text: 'At the end of the gallery stands a heavy desk with five ledgers on it, each bound in a different colour. Sixx lays a long hand flat on them.' },
+            { who: 'sixx', text: 'IANA hands out the big blocks to five regional internet registries, and they hand them to the ISPs in their part of the world. AFRINIC for Africa. APNIC for Asia-Pacific. ARIN for Canada, the United States and many Caribbean and North Atlantic islands. LACNIC for Latin America and the Caribbean. RIPE NCC for Europe, the Middle East and parts of Central Asia.' },
+            { who: 'sixx', text: 'An enterprise usually gets a /48. It splits that into /64 subnets: sixteen bits of subnet ID, sixty-five thousand five hundred and thirty-six of them, and every one has sixty-four bits of host address, as many as the whole IPv4 internet, squared. The 2001:DB8 block you keep seeing is reserved for examples and documentation, so it never collides with anything real.' },
+            { who: 'sixx', text: 'On a Cisco router, IPv6 routing is off until you say ipv6 unicast-routing. Without it the router answers on its own addresses and forwards nothing. The address goes on the interface as ipv6 address, then the address, a slash and the prefix length. No mask.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why /64 for every subnet?', reply: 'Sixx: "Because the last sixty-four bits are the interface ID, and the ways a host builds its own address expect exactly sixty-four of them. Ask me about that another night. Tonight, just believe the /64."' },
+            { tone: 'press', say: 'Isn\'t a /64 for a room with four PCs a waste?', reply: 'Sixx: "Up here there\'s no such thing. You\'re still counting like someone who grew up on the second floor, where every address was rationed."' },
+            { tone: 'care', say: 'Why did you wait so long for everyone?', reply: 'Sixx looks down the gallery at the rows of empty boxes. "Because when the old floors are full, somebody has to have kept the lights on up here."' }
+          ] } },
+        { k: 'LORE', title: 'THE ROOM WITH ENOUGH BOXES', year: 1998, real: ['ietf'], vibe: 'All that and more: an address for everyone who would ever be born, and their toaster.',
+          text: 'Sixx: "In December 1998 the IETF published RFC 2460, Steve Deering and Bob Hinden\'s specification for IPv6, with its hundred-and-twenty-eight-bit addresses. I was there the week it came out, and I painted the numbers on these boxes by hand that winter. It was replaced by RFC 8200 in 2017, but the boxes didn\'t change, and neither did I."' },
+        { k: 'KIT', text: 'Sixx writes it on a brass-coloured luggage label and ties it to your wrist.', real: ['ietf'], kit: [
+          { cmd: '128 bits · 8 quartets of 4 hex digits · 16 bits each', what: 'IPv4 is 32 bits' },
+          { cmd: '2001:0DB8:0000:0031:0000:0000:0000:0001 → 2001:DB8:0:31::1', what: 'drop leading zeros in each quartet; :: replaces one run of all-zero quartets, once' },
+          { cmd: 'IANA → AFRINIC · APNIC · ARIN · LACNIC · RIPE NCC → ISPs', what: 'Africa · Asia-Pacific · North America and islands · Latin America · Europe, Middle East, Central Asia' },
+          { cmd: 'enterprise /48 · subnet /64 · 16-bit subnet ID = 65,536 subnets', what: 'the last 64 bits are the interface ID. 2001:DB8::/32 is for documentation' },
+          { cmd: 'ipv6 unicast-routing', what: 'global config: without it the router forwards no IPv6' },
+          { cmd: 'ipv6 address 2001:db8:31:1::1/64 · show ipv6 interface brief · show ipv6 route', what: 'address an interface, and check it' } ] },
+        { k: 'SYNC', q: { prompt: 'Syn, arriving at the top of the stairs with a tray: "Sixx says an address can only have one double colon. Why not two?"', opts: ['With two, nobody could tell how many zero quartets each one replaced', 'Two would make the address longer', 'The second one would mean a different prefix length', 'Routers only read the first colon'], a: 0,
+          yes: 'Sixx: "Exactly. One gap, you can count it. Two gaps, you\'re guessing."', no: 'Sixx: "Because :: means as many zero quartets as it takes to make eight. With two of them, the split between them would be a guess."',
+          why: 'Sixx: A double colon stands for however many all-zero quartets are needed to bring the address back to eight. If an address had two, there would be no way to know how many zeros each one replaced, so :: may be used only once.' } }
       ] }
   ] });
 })();
