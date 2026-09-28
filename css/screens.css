@@ -218,7 +218,7 @@
 
 /* the door: story left, sign-in card right, live numbers, footer */
 .intro.door2{max-width:1100px;margin:0 auto;padding:clamp(28px,6vh,64px) 16px 28px;text-align:left}
-.dhero{text-align:center;margin-bottom:clamp(24px,5vh,44px)}
+.dhero{text-align:center;margin-bottom:clamp(28px,6vh,56px)} .door2 .dhero h1{font-size:clamp(34px,7vw,72px)}
 .dgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(20px,4vw,48px);align-items:center}
 .door2 .lede{margin:0 0 22px;max-width:none;font-size:15px;line-height:1.8;color:var(--ink)}
 .doorwhat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
@@ -256,7 +256,9 @@
 .rmark{display:inline-block;width:14px;height:14px;background:currentColor;-webkit-mask:var(--src) center / contain no-repeat;mask:var(--src) center / contain no-repeat}
 
 /* the hall of fame strip under the title */
-.hall{margin:0 auto clamp(24px,5vh,40px);max-width:980px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(16,21,34,.9),rgba(13,16,25,.9));overflow:hidden}
+.modal.hall{width:min(980px,100%);padding:0;border-color:var(--line);background:linear-gradient(180deg,#101522,#0d1019);overflow:hidden}
+.hallbtn{display:inline-flex;align-items:center;gap:10px;margin-top:16px;height:34px;padding:0 14px;background:rgba(13,16,25,.7);border:1px solid var(--line);color:var(--ink2);font:600 10px var(--disp);letter-spacing:.2em;cursor:pointer;transition:border-color .15s,color .15s}
+.hallbtn:hover{border-color:var(--mag);color:var(--ink)} .hallbtn b{font-family:var(--mono);font-weight:700;color:var(--yel);letter-spacing:0}
 .hhead{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line)}
 .hlive{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.2em;color:var(--mag)} .hlive i{width:7px;height:7px;border-radius:50%;background:var(--mag);box-shadow:0 0 8px var(--mag);animation:hpulse 1.4s infinite}
 .htitle{flex:1;font-family:var(--disp);font-size:12px;letter-spacing:.24em;color:var(--ink)}
