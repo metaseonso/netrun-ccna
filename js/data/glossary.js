@@ -196,5 +196,6 @@ window.GLOSSARY = {
   'lsdb': 'Link State Database: where an OSPF router keeps every LSA. All routers in one area hold the same LSDB and run Dijkstra\'s SPF algorithm on it.',
   'ospf area': 'A set of OSPF routers and links that share one LSDB. Every area must connect to the backbone, area 0.',
   'abr': 'Area Border Router: an OSPF router with interfaces in more than one area (recommended: two at most).',
-  'asbr': 'Autonomous System Boundary Router: an OSPF router that connects the OSPF network to an outside network, such as the internet.'
+  'asbr': 'Autonomous System Boundary Router: an OSPF router that connects the OSPF network to an outside network, such as the internet.',
+  'designated router': 'The DR: on an OSPF broadcast segment, the router every other router sends its updates to and forms a full adjacency with. Highest interface priority wins (default 1, 0 never stands), then highest router ID. The BDR is its backup.'
 };

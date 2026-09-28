@@ -286,6 +286,82 @@
         { dev: 'R3', type: ['passive-interface default', 'no passive-interface g0/0', 'no passive-interface g0/1'] }, 'commit', { order: [3, 1, 5, 6, 0, 4, 2] }, 'commit',
         { form: { t1: 'Hello', t2: 'DBD', t3: 'LSR', t4: 'LSU', t5: 'LSAck', mc: '224.0.0.5' } }, 'commit',
         { dev: 'R4', type: ['interface loopback0', 'ip ospf 1 area 0'] }, 'commit' ],
-      outro: 'Tobiah unplugs the router from the back of the timetable board and mails it back to the supplier with a note. The board keeps showing the right times, and the south depot\'s traffic rides the gigabit through the yard all night.' }
+      outro: 'Tobiah unplugs the router from the back of the timetable board and mails it back to the supplier with a note. The board keeps showing the right times, and the south depot\'s traffic rides the gigabit through the yard all night.' },
+
+    // ------------------------------------------------------------------ night 28 · from Lab 28 (OSPF part 3)
+    { id: 'c-n28-edge-of-map', cls: 'C', rep: 15, from: 'ospef', title: 'The Edge of the Map', day: [28], requires: ['n28-round-table'], devices: ['R1', 'R2', 'R3', 'R4', 'PC2'],
+      brief: 'DISPATCH » Ospef\'s round table has lost the tram yard, the rank should chair it and doesn\'t, and the edge router to the next district has no neighbour. Fix all three, then bring the edge\'s internet line onto the map.\n\nCLIENT (Ospef) » "Every neighbour requirement, checked one by one. I want the rank in the chair and the edge in area 1."',
+      net: {
+        devices: {
+          SW1: { kind: 'switch', mac: '0011.2228.0001' }, R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' }, R4: { kind: 'router' },
+          ISP: { kind: 'cloud', ip: '203.0.113.1', mask: '255.255.255.252', internet: true },
+          PC2: { kind: 'host', ip: '10.28.2.10', mask: '255.255.255.0', gw: '10.28.2.1' }, PC3: { kind: 'host', ip: '10.28.3.10', mask: '255.255.255.0', gw: '10.28.3.1' }, PC4: { kind: 'host', ip: '10.28.4.10', mask: '255.255.255.0', gw: '10.28.4.1' }
+        },
+        links: [ { a: 'R1', ap: gi(0), b: 'SW1', bp: gi(1) }, { a: 'R2', ap: gi(0), b: 'SW1', bp: gi(2) }, { a: 'R3', ap: gi(0), b: 'SW1', bp: gi(3) },
+          { a: 'R2', ap: gi(1), b: 'PC2' }, { a: 'R3', ap: gi(1), b: 'PC3' }, { a: 'R1', ap: gi(1), b: 'R4', bp: gi(1) }, { a: 'R4', ap: gi(0), b: 'ISP' }, { a: 'R4', ap: gi(2), b: 'PC4' } ],
+        preconfig: {
+          R1: ['interface g0/0', 'ip address 10.28.0.1 255.255.255.0', 'no shutdown', 'interface g0/1', 'ip address 10.28.14.1 255.255.255.252', 'no shutdown',
+            'router ospf 1', 'router-id 1.1.1.1', 'network 10.28.0.0 0.0.0.255 area 0', 'network 10.28.14.0 0.0.0.3 area 0'],
+          R2: ['interface g0/0', 'ip address 10.28.0.2 255.255.255.0', 'no shutdown', 'interface g0/1', 'ip address 10.28.2.1 255.255.255.0', 'no shutdown', 'router ospf 1', 'router-id 2.2.2.2', 'network 10.28.0.0 0.0.255.255 area 0', 'passive-interface g0/1'],
+          R3: ['interface g0/0', 'ip address 10.28.0.3 255.255.255.0', 'ip ospf hello-interval 5', 'no shutdown', 'interface g0/1', 'ip address 10.28.3.1 255.255.255.0', 'no shutdown', 'router ospf 1', 'router-id 3.3.3.3', 'network 10.28.0.0 0.0.255.255 area 0', 'passive-interface g0/1'],
+          R4: ['interface g0/0', 'ip address 203.0.113.2 255.255.255.252', 'no shutdown', 'interface g0/1', 'ip address 10.28.14.2 255.255.255.252', 'no shutdown', 'interface g0/2', 'ip address 10.28.4.1 255.255.255.0', 'no shutdown', 'ip route 0.0.0.0 0.0.0.0 203.0.113.1',
+            'router ospf 1', 'router-id 4.4.4.4', 'network 10.28.14.0 0.0.0.3 area 1', 'network 10.28.4.0 0.0.0.255 area 1', 'passive-interface g0/2']
+        }
+      },
+      map: { w: 580, h: 360, nodes: [
+          { id: 'SW1', label: 'the round table', type: 'switch', x: 200, y: 180 }, { id: 'R1', label: 'R1 · the cab rank', type: 'router', x: 330, y: 180 },
+          { id: 'R2', label: 'R2 · the garage', type: 'router', x: 120, y: 70 }, { id: 'R3', label: 'R3 · the tram yard', type: 'router', x: 120, y: 290 },
+          { id: 'PC2', label: 'garage office', type: 'pc', x: 30, y: 30 }, { id: 'PC3', label: 'yard office', type: 'pc', x: 30, y: 330 },
+          { id: 'R4', label: 'R4 · the edge (area 1)', type: 'router', x: 470, y: 180 }, { id: 'ISP', label: 'the next district\'s internet line', type: 'cloud', x: 520, y: 60 }, { id: 'PC4', label: 'edge office', type: 'pc', x: 540, y: 300 } ],
+        links: [ { a: 'R1', b: 'SW1', ap: gi(0), bp: gi(1) }, { a: 'R2', b: 'SW1', ap: gi(0), bp: gi(2) }, { a: 'R3', b: 'SW1', ap: gi(0), bp: gi(3) }, { a: 'R2', b: 'PC2' }, { a: 'R3', b: 'PC3' },
+          { a: 'R1', b: 'R4', ap: gi(1), bp: gi(1), tag: 'across the tape' }, { a: 'R4', b: 'ISP' }, { a: 'R4', b: 'PC4' } ] },
+      steps: [
+        { type: 'form', skill: 'ospf-areas', text: 'Ospef: "First the network types, because they decide who elects a chair."',
+          fields: [ { key: 'eth', label: 'an Ethernet link, by default', options: ['broadcast', 'point-to-point', 'non-broadcast'], answer: 'broadcast' },
+            { key: 'ser', label: 'a serial link with HDLC or PPP', options: ['broadcast', 'point-to-point', 'non-broadcast'], answer: 'point-to-point' },
+            { key: 'fr', label: 'Frame Relay or X.25', options: ['broadcast', 'point-to-point', 'non-broadcast'], answer: 'non-broadcast' },
+            { key: 'nodr', label: 'the type that never elects a DR', options: ['broadcast', 'point-to-point', 'non-broadcast'], answer: 'point-to-point' } ],
+          hint: 'Ethernet shouts, serial has two ends, Frame Relay needs its neighbours listed.', ok: 'Ospef: "Right. The round table is broadcast, so it has a chair."',
+          why: 'Ospef: Ethernet and FDDI default to the broadcast type, which discovers neighbours and elects a DR and BDR. Serial links with HDLC or PPP are point-to-point: neighbours are discovered, but with only two routers there is no DR. Frame Relay and X.25 are non-broadcast: a DR is elected, but neighbours must be configured by hand, and the timers are 30 and 120 seconds.' },
+        { type: 'cmd', skill: 'ospf-areas', text: 'Ospef: "The tram yard fell off the round table last week. Somebody set its hello to 5. Put it back so the yard has its neighbours again."',
+          check: (d, ctx) => { const n = ctx.net(); return n.ospfNeighbors('R3').filter(x => x.iface === gi(0)).length === 2 && !n.issues.some(i => i.kind === 'ospf-timer-mismatch'); },
+          hint: 'R3(config)# interface g0/0\nR3(config-if)# no ip ospf hello-interval\n   or: ip ospf hello-interval 10', ok: 'Ospef: "Hello 10, dead 40, like everyone else. The yard is back at the table."',
+          why: 'Ospef: Hello and dead timers are a neighbour requirement: two routers only form an adjacency if both match. The yard sent hellos every 5 seconds with a dead time of 20, while the rank and the garage used 10 and 40. no ip ospf hello-interval, or ip ospf hello-interval 10, on R3 g0/0 puts it back to 10, and IOS sets the dead timer to four times the hello again.' },
+        { type: 'form', skill: 'ospf-areas', text: 'Ospef: "Now read the round table from the garage. Who\'s in the chair, and why?"',
+          fields: [ { key: 'dr', label: 'the DR on the round table', options: ['1.1.1.1', '2.2.2.2', '3.3.3.3'], answer: '3.3.3.3' },
+            { key: 'bdr', label: 'the BDR', options: ['1.1.1.1', '2.2.2.2', '3.3.3.3'], answer: '2.2.2.2' },
+            { key: 'why', label: 'why', options: ['every priority is 1, so the highest router ID wins', 'it came up first', 'it has the lowest cost', 'it has the most neighbours'], answer: 'every priority is 1, so the highest router ID wins' },
+            { key: 'lsa', label: 'the LSA the DR writes for the segment', options: ['type 1, router', 'type 2, network', 'type 5, AS-external'], answer: 'type 2, network' } ],
+          hint: 'R2# show ip ospf neighbor\nFULL/DR and FULL/BDR mark the chair and the backup.', ok: 'Ospef: "The yard chairs it because its number is biggest. That isn\'t a reason I like."',
+          why: 'Ospef: show ip ospf neighbor on the garage shows 3.3.3.3 as FULL/DR and 1.1.1.1 as FULL/DROTHER, and the garage itself is the BDR. With every interface at the default priority of 1, the highest router ID becomes DR and the next highest BDR. The DR describes the segment in a type 2 network LSA; every router describes itself in a type 1 router LSA.' },
+        { type: 'cmd', skill: 'ospf-areas', text: 'Ospef: "The rank chairs the round table. Make it so, without touching the router IDs."',
+          check: (d, ctx) => { const n = ctx.net(); return n.state.ospf.roleOf('R1', gi(0)) === 'DR' && n.ospfNeighbors('R1').filter(x => x.iface === gi(0)).length === 2; },
+          hint: 'R1(config)# interface g0/0\nR1(config-if)# ip ospf priority 255\n   (or priority 0 on the others\' round-table ports)', ok: 'Ospef: "FULL/DR next to 1.1.1.1. The rank has the chair."',
+          why: 'Ospef: The DR election looks at the interface priority first. ip ospf priority 255 on R1\'s round-table interface beats the default of 1 on the others, so R1 becomes DR whatever its router ID. Setting ip ospf priority 0 on the other two would also work, because priority 0 never stands. In a live network the election does not pre-empt a sitting DR, so the change takes effect when the process is reset with clear ip ospf process.' },
+        { type: 'multi', skill: 'ospf-areas', text: 'Ospef: "Before you cross the tape, tell me what two routers must agree on to become neighbours."',
+          opts: ['the area on the link', 'the subnet and mask', 'the hello and dead timers', 'the authentication settings', 'the OSPF process ID', 'the router ID'], answers: [0, 1, 2, 3],
+          hint: 'The process ID is local, and router IDs have to be different.', ok: 'Ospef: "Area, subnet, timers, authentication. And router IDs that differ."',
+          why: 'Ospef: OSPF neighbours must match on the area of the link, the subnet and mask, the hello and dead timers, and any authentication. The process ID is local and does not have to match. Router IDs must be unique, so two routers with the same router ID never become neighbours. Neither interface can be passive, and a mismatched MTU leaves them stuck before Full.' },
+        { type: 'cmd', skill: 'ospf-areas', text: 'Ospef: "The edge router is in area 1 on its link to us, and the rank says area 0. Put the rank\'s side of that link in area 1, from the interface, and make it our ABR."',
+          check: (d, ctx) => { const n = ctx.net(); const r = n.route('R2', '10.28.4.0/24'); const o = n.state.ospf.routers.R1; return n.ospfNeighbors('R1').some(x => x.dev === 'R4') && !n.issues.some(i => i.kind === 'ospf-area-mismatch') && r && r.proto === 'O IA' && o && new Set(o.ifaces.map(i => i.area)).size === 2; },
+          hint: 'R1(config)# interface g0/1\nR1(config-if)# ip ospf 1 area 1', ok: 'Ospef: "A neighbour across the tape, and the garage sees the edge office as O IA, an interarea route. The rank has a foot in each area."',
+          why: 'Ospef: The area on a link is a neighbour requirement, and R4 has its end of the link in area 1 while R1 had area 0. ip ospf 1 area 1 on R1 g0/1 overrides the network statement for that interface and puts it in area 1. Now R1 has interfaces in area 0 and area 1, which makes it an ABR, and routes from area 1 reach the round table as interarea routes, marked O IA in show ip route.' },
+        { type: 'cmd', skill: 'ospf-areas', text: 'Ospef: "Two routers on that link. No point electing a chair for two. Set both ends to point-to-point."',
+          check: (d, ctx) => { const n = ctx.net(); return n.state.ospf.roleOf('R1', gi(1)) === 'P2P' && n.state.ospf.roleOf('R4', gi(1)) === 'P2P' && n.ospfNeighbors('R1').some(x => x.dev === 'R4'); },
+          hint: 'R1(config)# interface g0/1\nR1(config-if)# ip ospf network point-to-point\nR4(config)# interface g0/1\nR4(config-if)# ip ospf network point-to-point', ok: 'Ospef: "FULL/ - on that line. No chair, no election, no waiting."',
+          why: 'Ospef: A link between exactly two routers gains nothing from a DR election. ip ospf network point-to-point on both ends makes it a point-to-point link: the neighbours still go Full, but there is no DR or BDR, and show ip ospf neighbor shows FULL/ - . Both ends must use the same type, or they go Full without learning each other\'s routes.' },
+        { type: 'cmd', skill: 'ospf-areas', text: 'Ospef: "The edge has the next district\'s internet line and a default route to it. Share it with the whole map, and prove it from the garage office: ping the edge\'s internet side, 203.0.113.2."',
+          need: [ { dev: 'PC2', line: /^ping 203\.0\.113\.2$/ } ], check: (d, ctx) => { const n = ctx.net(); const r = n.route('R2', '0.0.0.0/0'); return r && r.proto === 'O*E2' && n.ping('PC2', '203.0.113.2').ok; },
+          hint: 'R4(config)# router ospf 1\nR4(config-router)# default-information originate\n\nPC2:\nC:\\> ping 203.0.113.2', ok: 'Ospef: "O*E2 at the garage, a type 5 LSA from the edge, and replies. That\'s the edge of the map done."',
+          why: 'Ospef: default-information originate on R4 advertises its default route into OSPF as an external route, a type 5 AS-external LSA, and R4 becomes an ASBR. It crosses the ABR into area 0, and the garage installs it as O*E2 0.0.0.0/0, so traffic for anywhere it does not know heads for the edge.' }
+      ],
+      solution: [ { form: { eth: 'broadcast', ser: 'point-to-point', fr: 'non-broadcast', nodr: 'point-to-point' } }, 'commit',
+        { dev: 'R3', type: ['enable', 'configure terminal', 'interface g0/0', 'no ip ospf hello-interval'] }, 'commit',
+        { dev: 'R2', type: ['enable', 'show ip ospf neighbor'] }, { form: { dr: '3.3.3.3', bdr: '2.2.2.2', why: 'every priority is 1, so the highest router ID wins', lsa: 'type 2, network' } }, 'commit',
+        { dev: 'R1', type: ['enable', 'configure terminal', 'interface g0/0', 'ip ospf priority 255'] }, 'commit', { multi: [0, 1, 2, 3] }, 'commit',
+        { dev: 'R1', type: ['interface g0/1', 'ip ospf 1 area 1'] }, 'commit',
+        { dev: 'R1', type: ['ip ospf network point-to-point'] }, { dev: 'R4', type: ['enable', 'configure terminal', 'interface g0/1', 'ip ospf network point-to-point'] }, 'commit',
+        { dev: 'R4', type: ['router ospf 1', 'default-information originate'] }, { dev: 'PC2', type: ['ping 203.0.113.2'] }, 'commit' ],
+      outro: 'Ospef runs a new string across the masking tape and pins it to EDGE, then photographs the whole wall twice. In the morning a note arrives from the next district in the other colour of ink: their side of the map shows Watson for the first time in a year.' }
   );
 })();

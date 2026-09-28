@@ -186,6 +186,49 @@
         { k: 'SYNC', q: { prompt: 'Tobiah, still on the speaker: "The board\'s router and ours heard each other\'s hellos, and each one has the other\'s ID in its hello now. What state are they in?"', opts: ['2-way', 'Init', 'Full', 'Exstart'], a: 0,
           yes: 'Ospef: "2-way. And from there they went all the way to Full, which is the problem."', no: 'Ospef: "2-way. Init is when only one side has seen the other in a hello."',
           why: 'Ospef: A router that receives a hello without its own router ID in it is in Init. Once each router sees its own ID in the other\'s hello, they are 2-way. From there they go on through Exstart, Exchange and Loading to Full.' } }
+      ] },
+    // ------------------------------------------------------------ night 28 · OSPF, part 3
+    { id: 'n28-round-table', title: 'The round table and the edge of the map', sub: 'OSPF network types, DR and BDR, neighbour requirements, LSA types', npc: 'ospef', day: [28], src: [PS('OSPF_Part3.md')], unlocks: ['ospf-areas'],
+      beats: [
+        { k: 'SCENE', where: 'The map room · Friday, 21:00',
+          lines: [
+            { who: 'narr', text: 'The skylight is open tonight, and cold air carries the smell of frying onions up from the coffee van. In the middle of the map, three pins stand in a ring around one small switch, joined to it by three short strings. Ospef has drawn a circle round them in chalk.' },
+            { who: 'ospef', text: 'The round table. The rank, the garage and the tram yard all meet on this one switch, one Ethernet segment. If every router there made a full adjacency with every other, they\'d each flood every change to all the rest. So they elect a chair.' },
+            { who: 'ospef', text: 'On Ethernet OSPF uses the broadcast network type, and a broadcast segment elects a [[designated router]], the DR, and a backup, the BDR. The highest interface priority wins, and it\'s 1 on every interface until you change it. On a tie, the highest router ID. Priority 0 means never stand. Everyone else is a DROther, and a DROther only goes Full with the DR and BDR. With each other they stay at 2-way. Updates for the DR and BDR go to 224.0.0.6.' },
+            { who: 'you', text: 'So whoever has the highest router ID chairs the table.' },
+            { who: 'ospef', text: 'Unless you choose. ip ospf priority on the interface. And the election happens once, in 2-way, and nobody takes the chair from a sitting DR just by arriving with a better number. It only changes when the DR goes away, or you reset the process.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What about a link with only two routers on it?', reply: 'Ospef: "Then electing a chair is a waste of time. Serial links with HDLC or PPP run the point-to-point type, no DR, no BDR. On Ethernet between two routers you can set it yourself: ip ospf network point-to-point on both ends. Old Frame Relay and X.25 are non-broadcast: no DR discovery on their own, you list the neighbours by hand, and the timers are 30 and 120."' },
+            { tone: 'press', say: 'What does the DR actually do?', reply: 'Ospef: "Every router on the segment sends its updates to the DR and BDR, and the DR floods them back out to everyone. It also writes the segment into the map as a type 2 LSA, a network LSA. Every router writes itself as a type 1, a router LSA. The rank\'s internet default arrives as a type 5, AS-external."' },
+            { tone: 'joke', say: 'Serial cables? Still?', reply: 'Ospef: "Two, to the old signal box. HDLC is the default on a serial interface, Cisco\'s own version. encapsulation ppp changes it. The DCE end, the one with the clock cable, sets the speed with clock rate, and show controllers tells you which end you\'re on."' }
+          ] } },
+        { k: 'SCENE', where: 'The map room · the east wall · 21:40',
+          lines: [
+            { who: 'narr', text: 'At the east edge of the map the strings stop at a line of masking tape. Beyond it, in a different hand and a different colour of ink, someone has drawn the next district\'s routers. One string crosses the tape to a pin labelled EDGE.' },
+            { who: 'ospef', text: 'The edge router links us to the next district. Their side keeps its own area, area 1, and the rank will be the ABR between us. Tonight it has no neighbour at all, and the yard dropped off the round table as well.' },
+            { who: 'ospef', text: 'Two routers only become neighbours when they agree on a list of things. The same area on the link. The same subnet and mask. The same hello and dead timers. The same authentication, if there is any. Different router IDs. Neither end passive. The process ID doesn\'t matter.' },
+            { who: 'ospef', text: 'Some mismatches are quieter. Different MTUs on the two ends and they become neighbours but stick before Full. Different network types, one broadcast and one point-to-point, and they go Full but never learn each other\'s routes.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do I check the timers?', reply: 'Ospef: "Under the interface in the running-config: ip ospf hello-interval and ip ospf dead-interval. Change the hello and IOS moves the dead to four times it for you. Someone set the yard\'s hello to 5 last week to be clever."' },
+            { tone: 'press', say: 'Why keep the next district in a separate area at all?', reply: 'Ospef: "Because I don\'t want their every flapping link rerunning Dijkstra on my routers. Inside an area everyone carries the whole map. Between areas the ABR hands over a summary instead of every detail."' },
+            { tone: 'care', say: 'Do you know the people on the other side of the tape?', reply: 'Ospef: "One of them. She taught me to draw strings instead of arrows." He touches the other colour of ink without smudging it.' }
+          ] } },
+        { k: 'LORE', title: 'THE VERSION THAT STAYED', year: 1998, real: ['ietf'], vibe: 'All that: one RFC every router in the world agreed to stop arguing about.',
+          text: 'Ospef: "John Moy wrote OSPF version 2 in 1991, and in April 1998 he published the version of it that everyone still runs, RFC 2328. The DR, the BDR, the LSA types and the neighbour states you just learned are all in it, word for word. The yard\'s router, the rank\'s router and the edge router all follow a document older than the building they sit in."' },
+        { k: 'KIT', text: 'He writes it on the back of the chalk box, in small careful capitals.', real: ['ietf'], kit: [
+          { cmd: 'broadcast (Ethernet, FDDI) · point-to-point (PPP, HDLC) · non-broadcast (Frame Relay, X.25)', what: 'broadcast and point-to-point find neighbours themselves. Only broadcast and non-broadcast elect a DR' },
+          { cmd: 'ip ospf priority 255 · ip ospf priority 0', what: 'DR: highest priority (default 1), then highest router ID. 0 never stands. The election is not pre-emptive' },
+          { cmd: 'DROther: Full with DR and BDR, 2-way with other DROthers', what: 'updates to the DR and BDR go to 224.0.0.6' },
+          { cmd: 'ip ospf network point-to-point', what: 'on both ends of a two-router Ethernet link: no DR election' },
+          { cmd: 'neighbours need: same area, subnet and mask, hello and dead, authentication · different router IDs · not passive', what: 'MTU mismatch: stuck before Full. Network type mismatch: Full, but no routes' },
+          { cmd: 'ip ospf hello-interval 10 · ip ospf dead-interval 40 · ip ospf authentication · ip ospf authentication-key PASSWORD', what: 'per interface' },
+          { cmd: 'LSA type 1 router · type 2 network (from the DR) · type 5 AS-external', what: 'shutdown under router ospf stops the process' },
+          { cmd: 'serial: HDLC by default · encapsulation ppp · clock rate 64000 on the DCE · show controllers s0/0/0', what: 'DCE sets the clock, DTE follows it' } ] },
+        { k: 'SYNC', q: { prompt: 'Nexthop, leaning in the doorway with two coffees: "Three routers on the round table, all priority 1, IDs 1.1.1.1, 2.2.2.2 and 3.3.3.3. Who chairs it?"', opts: ['3.3.3.3, the highest router ID, and 2.2.2.2 is the BDR', '1.1.1.1, the lowest router ID', 'Whichever came up first, always', 'Nobody. Ethernet has no DR'], a: 0,
+          yes: 'Ospef: "3.3.3.3, with 2.2.2.2 as the backup. Unless somebody changes a priority."', no: 'Ospef: "3.3.3.3. Equal priorities, so the highest router ID is DR and the next is BDR."',
+          why: 'Ospef: On a broadcast segment the DR is the router with the highest OSPF interface priority, and every interface starts at 1. With the priorities tied, the highest router ID wins, so 3.3.3.3 is DR and 2.2.2.2, the next highest, is BDR.' } }
       ] }
   ] });
 })();
