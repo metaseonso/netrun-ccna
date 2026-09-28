@@ -61,5 +61,8 @@ window.NPCS = {
     look: { seed:'marrow', skin:'#b8865a', hair:'#3a3a44', hairStyle:'beanie', outfit:'#2a2f3a', accent:'#ff9f43', eyes:'#ffd23f', hat:'beanie', mood:'grin', scar:true } },
   ansible: { real: 'ansible', name: 'Ansible', sys: 'Automation · SDN · configuration management', role: 'talks to a thousand boxes at once and needs no agent on any of them.',
     voice: 'calm, thinks in plays and tasks. Named after a device that talks across space instantly.',
-    look: { seed:'ansible', skin:'#b58a6a', hair:'#0f0f14', hairStyle:'bald', outfit:'#0d2b2b', accent:'#4dff88', eyes:'#4dff88', hat:'visor', visorColor:'#4dff88', mood:'flat', pet:'drone' } }
+    look: { seed:'ansible', skin:'#b58a6a', hair:'#0f0f14', hairStyle:'bald', outfit:'#0d2b2b', accent:'#4dff88', eyes:'#4dff88', hat:'visor', visorColor:'#4dff88', mood:'flat', pet:'drone' } },
+  vesper: { name: 'Vesper Kade', sys: 'Halvorsen Consolidated · Watson liaison', role: 'speaks for Halvorsen Consolidated in Watson. Twenty years ago she was Old Root\'s apprentice at the clinic.',
+    voice: 'polished and patient, never raises her voice, talks about the street like a building she used to live in.',
+    look: { seed:'vesper', skin:'#e8c4a8', hair:'#d9d4cc', hairStyle:'bob', outfit:'#1b1b24', accent:'#c9ced8', eyes:'#9fb3d1', hat:'none', mood:'flat', chrome:true } }
 };
