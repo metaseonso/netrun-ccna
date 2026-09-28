@@ -3,7 +3,7 @@
    LicenseCard.svg({ number, issued, handle, cls, difficulty, theme, stats: { nights, gigs, clean, hours, saved, lost, flatlines, fixers } })
    theme: the deck skin the card is printed in (default, ember, ghost, noir), one the runner used during the run.
    difficulty: easy is a plain card; normal adds a holographic sheen and a stamp; cyberpsycho adds a glowing double
-   frame, a glitching title, a hazard stripe, circuit traces from the chip and its own last line. */
+   frame, a glitching title, a hazard stripe and circuit traces from the chip. */
 (function(root){
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const day = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toISOString().slice(0, 10); };
@@ -21,7 +21,8 @@
     const handle = String(r.handle || 'unknown').slice(0, 18);
     const size = handle.length > 12 ? 52 : 68;
     const title = (x, y, c1, c2, c3) => '<text x="' + x + '" y="' + y + '" class="d" font-size="36" font-weight="800" fill="' + c1 + '" letter-spacing="6">NETRUNNER<tspan fill="' + c2 + '">://</tspan><tspan fill="' + (c3 || c1) + '">CCNA</tspan></text>';
-    const line = tier === 2 ? 'Cleared the Watson Exchange on Cyberpsycho, with every miss burning double chrome.' : 'Cleared the Watson Exchange on Opening Night. The lights stayed on.';
+    const name = String(r.difficulty || '').toUpperCase();
+    const line = 'Cleared the Watson Exchange on Opening Night' + (name ? ' at ' + name.charAt(0) + name.slice(1).toLowerCase() + ' difficulty.' : '.');
 
     let defs = '<style>@import url(https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap);' +
       '.d{font-family:Orbitron,sans-serif}.m{font-family:"JetBrains Mono",Consolas,monospace}.k{font-family:"JetBrains Mono",monospace;font-size:15px;letter-spacing:3px;fill:' + T.ink2 + '}.v{font-family:Orbitron,sans-serif;font-size:26px;fill:' + T.ink + '}</style>' +
@@ -52,7 +53,6 @@
     const traces = tier === 2 ? '<g fill="none" stroke="' + T.frame + '" stroke-width="2" opacity=".35"><path d="M100 244V300H152L170 318"/><path d="M48 204H24V470"/><path d="M152 186H172L180 178"/>' +
       '<circle cx="170" cy="318" r="4" fill="' + T.frame + '"/><circle cx="24" cy="470" r="4" fill="' + T.frame + '"/></g>' : '';
     // the setting under the class: a plain word, a stamp, or a tilted glowing stamp
-    const name = String(r.difficulty || '').toUpperCase();
     const stamp = tier === 0 || tier === -1 ? (name ? '<text x="' + (W - 48) + '" y="294" class="k" text-anchor="end">' + esc(name) + '</text>' : '')
       : '<g transform="translate(' + (W - 48) + ' ' + (tier === 2 ? 284 : 292) + ') rotate(' + (tier === 2 ? -5 : -3) + ')"' + (tier === 2 ? ' filter="url(#glow)"' : '') + '>' +
         '<rect x="' + (tier === 2 ? -214 : -128) + '" y="-24" width="' + (tier === 2 ? 214 : 128) + '" height="34" rx="4" fill="none" stroke="' + (tier === 2 ? T.accent : T.gold) + '" stroke-width="2.5"/>' +

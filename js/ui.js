@@ -170,11 +170,11 @@
   // how hard the street is: asked once, on the map, before the first gig; changed later from the DECK
   function diffCards(pick){ const s = Game.state, D = window.DIFFICULTY || {}, done = Object.keys(s.jobsDone).length, order = window.DIFFICULTY_ORDER || [];
     return '<div class="diffs">' + order.map(k => { const d = D[k], on = s.difficulty === k && !pick, locked = !pick && done && order.indexOf(k) > order.indexOf(s.difficulty);
-      return '<button class="diff ' + k + (on ? ' on' : '') + '" data-diff="' + k + '"' + (locked ? ' disabled' + tipAttr('Harder is only open before your first gig.') : '') + '><b>' + d.name + ' <i class="stars" aria-label="' + (order.indexOf(k) + 1) + ' of 3 stars">' + '★'.repeat(order.indexOf(k) + 1) + '<s>' + '★'.repeat(order.length - order.indexOf(k) - 1) + '</s></i></b><span>' + esc(d.blurb) + '</span>' +
-        '<em>Gigs pay C ' + d.pay[1] + ' · B ' + d.pay[2] + ' · A ' + d.pay[3] + '</em><em>A wrong commit burns ' + d.wear + ' chrome</em></button>'; }).join('') + '</div>'; }
+      return '<button class="diff ' + k + (on ? ' on' : '') + '" data-diff="' + k + '"' + (locked ? ' disabled' + tipAttr('Locked after the first gig.') : '') + '><b>' + d.name + ' <i class="stars" aria-label="' + (order.indexOf(k) + 1) + ' of 3 stars">' + '★'.repeat(order.indexOf(k) + 1) + '<s>' + '★'.repeat(order.length - order.indexOf(k) - 1) + '</s></i></b>' +
+        '<em>Pay: C ' + d.pay[1] + ' · B ' + d.pay[2] + ' · A ' + d.pay[3] + '</em><em>Wrong commit: −' + d.wear + ' chrome</em></button>'; }).join('') + '</div>'; }
   function diffPicker(){ const s = Game.state; if (s.diffPicked || Object.keys(s.jobsDone).length) return '';
     return '<div class="panel diffpick"><h3>DIFFICULTY</h3>' + diffCards(true) +
-      '<p class="muted">Change it later on the DECK: easier at any time, harder only before your first gig. Your license shows it.</p></div>'; }
+      '<p class="muted">Lower it any time on the DECK. Raise it only before the first gig. The license shows it.</p></div>'; }
   function home(){ const s = Game.state, dm = Game.dm.pending(), here = hereStage(); if (!cur.stage) cur.stage = here.id; const sel = STAGES.find(x => x.id === cur.stage) || here;
     const pos = STAGES.map((stg, i) => mapPos(i, STAGES.length)); const st = STAGES.map(stageState); const lit = STAGES.reduce((a, stg) => a + stg.levels.filter(l => s.read[l.id]).length, 0), all = STAGES.reduce((a, stg) => a + stg.levels.length, 0);
     const alerts = (dm ? '<div class="alert m">' + icon('call') + '<span>A call is waiting from <b>' + esc(dm.open.split(':')[0]) + '</b>.</span><button class="btn mag" data-v="crew">PICK UP</button></div>' : '') +
