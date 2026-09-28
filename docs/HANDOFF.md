@@ -136,6 +136,11 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · The shell's abbreviation expander no longer eats keywords: `cdp run` / `lldp run` (they were read as `running-config`,
+  so CDP could not be turned off and LLDP never on), `sh ip int br` and `sh ip int g0/1` (they became `show ip interfaces`, which
+  had no output), `logging trap N` and `snmp-server community X ro`. The parser honours `no ntp server X`, `no logging X`,
+  `no snmp-server community X`, and reads `ntp master [stratum]` (`cfg.ntpMaster`, default 8). Tested (section 10).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a

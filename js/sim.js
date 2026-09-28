@@ -58,6 +58,8 @@
     s = s.replace(/^no shut$/, 'no shutdown');
     s = s.replace(/^transport in(p|pu)? /, 'transport input ').replace(/^ip nat ins(i|id|ide)?$/, 'ip nat inside').replace(/^ip nat out(s|si|sid|side)?$/, 'ip nat outside').replace(/^ip nat ins(i|id|ide)? so(u|ur|urc|urce)? /, 'ip nat inside source ').replace(/^ip arp ins(p|pe|pec|pect|pecti|pectio|pection)? /, 'ip arp inspection ');
     s = s.replace(/ dot1q$/, ' dot1q');
+    // keywords the second-word expansion must leave alone: "cdp run" / "lldp run", "sh ip int" is interface, "logging trap", "snmp-server community X ro"
+    s = s.replace(/^(no )?(cdp|lldp) running-config$/, '$1$2 run').replace(/^(do )?show ip interfaces /, '$1show ip interface ').replace(/^(no )?logging traps /, '$1logging trap ').replace(/^(no )?snmp-server community (\S+) route( |$)/, '$1snmp-server community $2 ro$3');
     return s;
   }
 

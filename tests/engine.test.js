@@ -116,5 +116,21 @@ module.exports.run = function({ out }){
     ok(!d.lines.some(r => r.line === 'broth' || r.line === 'noodles'), 'shell: typed passwords are not recorded');
     d.exec('copy running-config startup-config'); d.exec('show startup-config'); ok(/hostname KB-R1/.test(last()) && /Using \d+ out of/.test(last()), 'shell: write saves the running-config to startup');
   }
+  // 10. keywords the abbreviation expander must leave alone; "no" removes NTP servers, syslog hosts and SNMP communities
+  {
+    ok(Sim.normalize('cdp run') === 'cdp run' && Sim.normalize('no cdp run') === 'no cdp run' && Sim.normalize('lldp run') === 'lldp run', 'shell: cdp run and lldp run stay themselves (' + Sim.normalize('lldp run') + ')');
+    ok(Sim.normalize('sh ip int br') === 'show ip interface brief' && Sim.normalize('sh ip int g0/1') === 'show ip interface gigabitethernet0/1' && Sim.normalize('do sh ip int br') === 'do show ip interface brief', 'shell: sh ip int is show ip interface (' + Sim.normalize('sh ip int br') + ')');
+    ok(Sim.normalize('logging trap 6') === 'logging trap 6' && Sim.normalize('snmp-server community watson ro') === 'snmp-server community watson ro', 'shell: logging trap and snmp ro keep their words');
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.0000.0001' }, SW2: { kind: 'switch', mac: '0001.0000.0002' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'gigabitethernet0/2', b: 'SW2', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'no shut', 'exit', 'no cdp run', 'ntp server 10.0.0.9', 'ntp server 10.0.0.8', 'no ntp server 10.0.0.9', 'ntp master 4', 'logging host 10.0.9.50', 'logging 10.0.9.51', 'no logging 10.0.9.50', 'snmp-server community public rw', 'snmp-server community watson ro', 'no snmp-server community public'],
+      SW1: ['en', 'conf t', 'lldp run'], SW2: ['en', 'conf t', 'lldp run'] });
+    const A = Net.api(Net.build(net, d)); const c = A.cfg('R1');
+    ok(c.cdp === false && !A.neighbors('SW1').find(n => n.dev === 'R1').cdp && A.neighbors('SW1').find(n => n.dev === 'SW2').cdp, 'cdp: no cdp run turns CDP off on R1 only');
+    ok(A.neighbors('SW1').find(n => n.dev === 'SW2').lldp && /SW2/.test(Show.render(d.SW1, 'show lldp neighbors', A.state)), 'lldp: lldp run on both switches makes them LLDP neighbours');
+    ok(c.ntp.join() === '10.0.0.8' && c.ntpMaster === 4, 'ntp: no ntp server removes one server; ntp master stratum parsed');
+    ok(c.logging.join() === '10.0.9.51', 'syslog: no logging removes a host');
+    ok(c.snmp.length === 1 && c.snmp[0].community === 'watson' && c.snmp[0].mode === 'ro', 'snmp: no snmp-server community removes it; ro stays read-only');
+  }
   return { pass, fails };
 };
