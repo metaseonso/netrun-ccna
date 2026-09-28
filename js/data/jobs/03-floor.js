@@ -56,6 +56,58 @@
       solution: [ { order: [2, 5, 4, 0, 3, 1] }, 'commit', { calc: { pre: '7', sfd: '1', mac: '6', type: '2', fcs: '4' } }, 'commit',
         { dev: 'PC1', type: ['ping 10.20.0.57'] }, { dev: 'SW1', type: ['enable', 'show mac address-table'] }, 'commit', { form: { port: 'Gi0/1' } }, 'commit',
         { dev: 'SW2', type: ['enable', 'show mac address-table'] }, 'commit', { form: { port: 'Fa0/14' } }, 'commit', { text: '0014.22' }, 'commit', { choose: 0 }, 'commit' ],
-      outro: 'The market office knocks on stall 14 before the morning rush. The cable seller\'s nephew had brought his own laptop in to watch football on the market\'s network, and he carries it home under his arm. Mac writes the stall number in the margin of his ledger with a small drawing of a football.' }
+      outro: 'The market office knocks on stall 14 before the morning rush. The cable seller\'s nephew had brought his own laptop in to watch football on the market\'s network, and he carries it home under his arm. Mac writes the stall number in the margin of his ledger with a small drawing of a football.' },
+
+    // ------------------------------------------------------------------ night 6 · from Lab 06 (Ethernet LAN switching)
+    { id: 'd-n06-first-receipt', cls: 'D', rep: 10, from: 'mac', title: 'The First Receipt', day: [6], requires: ['n06-who-has'], devices: ['TILL', 'SW1'],
+      brief: 'DISPATCH » Hanna\'s print stall loses the first receipt every morning. Mac wants you to watch the till wake up, find out why, and explain it to her.\n\nCLIENT (Hanna) » "The first sale of the day never prints. Every sale after it prints fine."',
+      net: {
+        learn: true,
+        devices: { SW1: { kind: 'switch', mac: '0011.2206.0001' }, SW2: { kind: 'switch', mac: '0011.2206.0002' },
+          TILL: { kind: 'host', ip: '10.20.0.25', mask: '255.255.255.0', mac: '00e0.b0a4.1125' }, PRN: { kind: 'host', ip: '10.20.0.112', mask: '255.255.255.0', mac: '0060.b0c1.2e12' },
+          TEA: { kind: 'host', ip: '10.20.0.39', mask: '255.255.255.0', mac: '00e0.4c68.0909' } },
+        links: [ { a: 'SW1', ap: 'fastethernet0/5', b: 'TILL' }, { a: 'SW1', ap: 'gigabitethernet0/1', b: 'SW2', bp: 'gigabitethernet0/1' }, { a: 'SW2', ap: 'fastethernet0/12', b: 'PRN' }, { a: 'SW2', ap: 'fastethernet0/9', b: 'TEA' } ]
+      },
+      map: { w: 540, h: 280, nodes: [
+          { id: 'TILL', label: 'Hanna\'s till', type: 'pc', x: 80, y: 220 }, { id: 'SW1', label: 'the door switch', type: 'switch', x: 150, y: 100 }, { id: 'SW2', label: 'the stall switch', type: 'switch', x: 390, y: 100 },
+          { id: 'PRN', label: 'receipt printer', type: 'pc', x: 330, y: 220 }, { id: 'TEA', label: 'tea stall', type: 'pc', x: 470, y: 220 } ],
+        links: [ { a: 'TILL', b: 'SW1' }, { a: 'SW1', b: 'SW2', tag: 'uplink' }, { a: 'SW2', b: 'PRN' }, { a: 'SW2', b: 'TEA' } ] },
+      steps: [
+        { type: 'cmd', skill: 'arp', text: 'Mac: "The till has just been switched on for the day. Look at what it knows before it does anything: its ARP table."',
+          need: [ { dev: 'TILL', line: /^arp -a$/ } ], hint: 'TILL shell:\nC:\\> arp -a', ok: 'Mac: "No entries at all. It doesn\'t know a single MAC address yet."',
+          why: 'Mac: arp -a shows a PC\'s ARP table: the IP addresses it has resolved and the MAC address for each. A PC that has just started has an empty table, so before it can send anything to the printer it has to ask for the printer\'s MAC address.' },
+        { type: 'cmd', skill: 'arp', text: 'Mac: "Now do what the first sale does. Ping the printer at 10.20.0.112 from the till and count the replies."',
+          check: (d, ctx) => ctx.net().arp('TILL').some(e => e.ip === '10.20.0.112'),
+          hint: 'TILL shell:\nC:\\> ping 10.20.0.112', ok: 'Mac: "Three replies out of four. That lost one is Hanna\'s first receipt."',
+          why: 'Mac: The till had no ARP entry for 10.20.0.112, so it broadcast an ARP request and waited for the reply before it could send the first echo request. That wait cost the first ping. Once the reply arrived, the MAC address went into the ARP table, and the next three pings went straight through.' },
+        { type: 'form', skill: 'arp', text: 'Hanna: "So what exactly did my till shout, and who shouted back?"',
+          fields: [ { key: 'req', label: 'The ARP request is sent as', options: ['a broadcast', 'a unicast'], answer: 'a broadcast' },
+            { key: 'dst', label: 'Destination MAC of the request', options: ['FFFF.FFFF.FFFF', '0060.b0c1.2e12', '0000.0000.0000', '00e0.b0a4.1125'], answer: 'FFFF.FFFF.FFFF' },
+            { key: 'rep', label: 'The ARP reply is sent as', options: ['a broadcast', 'a unicast'], answer: 'a unicast' },
+            { key: 'type', label: 'EtherType of an ARP frame', options: ['0x0800', '0x0806', '0x86DD'], answer: '0x0806' } ],
+          hint: 'The question goes to everyone. The answer goes to one.', ok: 'Mac: "Everyone heard the question and only the printer answered."',
+          why: 'Mac: The ARP request is a broadcast to FFFF.FFFF.FFFF, because the till does not know the printer\'s MAC address yet. The printer\'s ARP reply is unicast straight back to the till\'s MAC address. ARP frames carry EtherType 0x0806; IPv4 is 0x0800 and IPv6 is 0x86DD.' },
+        { type: 'cmd', skill: 'mac-table', text: 'Mac: "Now my side of it. Read the door switch\'s book and find both faces."',
+          need: [ { dev: 'SW1', line: /^(do )?show mac address-table( dynamic)?$/ } ], check: (d, ctx) => { const t = ctx.net().macTable('SW1'); return t.some(r => r.mac === '00e0.b0a4.1125') && t.some(r => r.mac === '0060.b0c1.2e12'); },
+          hint: 'SW1 shell:\nSW1> enable\nSW1# show mac address-table', ok: 'Mac: "The till on Fa0/5, the printer through the uplink. I learned them both from that ping."',
+          why: 'Mac: The switch learned the till\'s MAC address from the source of its ARP request, on Fa0/5, and the printer\'s from the source of the ARP reply, on the uplink Gi0/1. The MAC address table and the till\'s ARP table are separate: one maps MAC addresses to ports, the other maps IP addresses to MAC addresses.' },
+        { type: 'cmd', skill: 'mac-table', text: 'Mac: "Last night the printer was unplugged for a while, and I want to see what happens when I forget it. Clear just the uplink\'s entries on the door switch, then ping the printer again from the till."',
+          need: [ { dev: 'SW1', line: /^(do )?clear mac address-table dynamic( interface gigabitethernet0\/1)?$/ } ], check: (d, ctx) => ctx.net().macTable('SW1').some(r => r.mac === '0060.b0c1.2e12'),
+          hint: 'SW1# clear mac address-table dynamic interface g0/1\nTILL shell:\nC:\\> ping 10.20.0.112', ok: 'Mac: "Four out of four, and the printer\'s back in my book."',
+          why: 'Mac: clear mac address-table dynamic interface g0/1 removed every MAC address learned on the uplink, including the printer. The next ping still got four replies: the till already had the printer\'s MAC in its ARP table, so it did not need to ask, and the switch flooded the unknown unicast frame and learned the printer again from its reply.' },
+        { type: 'choice', skill: 'arp', text: 'Hanna: "So if I print a test receipt when I open up, the first real sale will print?"',
+          opts: ['Yes. The test receipt makes the till learn the printer\'s MAC, so real sales do not wait for ARP', 'No. The switch forgets the printer after every sale', 'Only if the printer is on the same switch as the till', 'Only if the till is restarted first'], a: 0,
+          hint: 'What did the first ping do that the second one did not need to do?', ok: 'Mac: "One test receipt a morning, and the till has already asked its question before the first customer."',
+          why: 'Mac: The first message to the printer triggers ARP and the wait for the reply. A test receipt at opening makes the till resolve the printer\'s MAC address before the first customer, so the first real receipt is sent at once. The entry stays in the till\'s ARP table while the till keeps using it.' },
+        { type: 'calc', skill: 'arp', text: 'Mac: "An ARP request is tiny. The Board wants to know how Ethernet deals with that."',
+          fields: [ { key: 'min', label: 'Minimum Ethernet frame size (bytes)', check: v => +v === 64 }, { key: 'pay', label: 'Minimum payload (bytes)', check: v => +v === 46 },
+            { key: 'ht', label: 'Header + trailer, without preamble and SFD (bytes)', check: v => +v === 18 } ],
+          answer: '64 · 46 · 18', hint: 'Destination 6 + source 6 + type 2 + FCS 4 = 18. The frame minimum is 64.', ok: 'Mac: "Sixty-four, forty-six, eighteen. The rest gets padded."',
+          why: 'Mac: The smallest Ethernet frame allowed is 64 bytes. The header and trailer take 18 of them (6 + 6 + 2 + 4), so the payload must be at least 46 bytes. When a payload such as an ARP request is shorter than that, the sender adds padding bytes to reach 46.' }
+      ],
+      solution: [ { dev: 'TILL', type: ['arp -a'] }, 'commit', { dev: 'TILL', type: ['ping 10.20.0.112'] }, 'commit',
+        { form: { req: 'a broadcast', dst: 'FFFF.FFFF.FFFF', rep: 'a unicast', type: '0x0806' } }, 'commit', { dev: 'SW1', type: ['enable', 'show mac address-table'] }, 'commit',
+        { dev: 'SW1', type: ['clear mac address-table dynamic interface g0/1'] }, { dev: 'TILL', type: ['ping 10.20.0.112'] }, 'commit', { choose: 0 }, 'commit', { calc: { min: '64', pay: '46', ht: '18' } }, 'commit' ],
+      outro: 'The next morning Hanna prints a test receipt before she lifts the shutter, and the first sale of the day prints on the first try. She pins the test receipt to the side of the till with the date on it, and does it again every morning after that.' }
   );
 })();

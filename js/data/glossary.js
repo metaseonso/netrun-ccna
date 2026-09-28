@@ -48,7 +48,7 @@ window.GLOSSARY = {
   'mac address': '48-bit hardware address burned into a NIC. First half = vendor (OUI). Written like 00:1A:2B:3C:4D:5E.',
   'mac address table': 'A switch\'s list of MAC addresses and the port (and VLAN) each was learned on, built from the SOURCE address of received frames. Entries learned from traffic are dynamic and age out after 5 minutes.',
   'flooding': 'A switch sending a frame out of every port except the one it arrived on: done for broadcasts and for unknown unicast frames.',
-  'arp': 'Address Resolution Protocol (RFC 826, 1982). "Who has 10.0.0.5? Tell 10.0.0.1." Maps IP to MAC in a LAN.',
+  'arp': 'Address Resolution Protocol: finds the MAC address that goes with a known IPv4 address on the local network. Request broadcast, reply unicast. EtherType 0x0806. View with arp -a (PC) or show arp (Cisco).',
   'broadcast': 'A frame to FF:FF:FF:FF:FF:FF. Everyone in the VLAN gets it.',
   'full duplex': 'Send and receive at the same time. Modern switch ports. Half duplex is the old hub world with collisions.',
   'speed/duplex mismatch': 'One side auto, one side hardwired. Classic slow-link cause. Check "show interfaces status".',
@@ -183,5 +183,8 @@ window.GLOSSARY = {
   'bia': 'Burned-in address: the MAC address set on a network card at the factory.',
   'unicast': 'A frame or packet sent to one single destination.',
   'unknown unicast': 'A unicast frame whose destination MAC address is not in the switch\'s MAC address table. The switch floods it.',
-  'aging': 'A switch removing a dynamic MAC address from its table after 5 minutes (300 seconds) without seeing a frame from it.'
+  'aging': 'A switch removing a dynamic MAC address from its table after 5 minutes (300 seconds) without seeing a frame from it.',
+  'arp request': 'The ARP message asking who has a given IP address. Sent as a broadcast to FFFF.FFFF.FFFF, so every device in the LAN receives it.',
+  'arp reply': 'The ARP message from the device that owns the requested IP address, giving its MAC address. Sent unicast to the device that asked.',
+  'ping': 'A tool that tests reachability with ICMP: it sends echo requests and waits for echo replies.'
 };

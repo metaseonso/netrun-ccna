@@ -44,6 +44,48 @@
           yes: 'Mac: "Out every slot but one. When your till answers, I\'ll write it down."', no: 'Mac: "I flood it. Every slot except the one it came in on, and I learn the till when it answers."',
           why: 'Mac: The till has never sent a frame, so its MAC address is not in the table. A frame for an unknown unicast address is flooded out of every port except the one it arrived on. When the till replies, the switch learns its MAC address from the reply\'s source field.' } }
       ] },
+    // ------------------------------------------------------------ night 6 · Ethernet LAN switching, part 2 (ARP)
+    { id: 'n06-who-has', title: 'The first receipt of the morning', sub: 'ARP, ping and the MAC address table', npc: 'mac', day: [6], src: [PS('Ethernet_LAN_Switching_Part2.md')], unlocks: ['arp'],
+      beats: [
+        { k: 'SCENE', where: 'The Kabuki market · Hanna\'s print stall · opening time',
+          lines: [
+            { who: 'narr', text: 'The market shutters rattle up one after another, and the smell of hot toner mixes with frying dough from the stall next door. Hanna\'s print stall is a counter, a till and a receipt printer on a shelf behind her, wedged between a phone repair booth and a tea stall. She is holding up a blank strip of receipt paper as Mac comes up the stairs behind you.' },
+            { who: 'Hanna', text: 'Every morning it\'s the same. The first sale of the day, the till says it sent the receipt and the printer does nothing. The second sale prints fine, and so does every one after it until closing.' },
+            { who: 'mac', text: 'That\'s the till asking a question before it can print. The till knows the printer\'s IP address, but a frame needs a MAC address, and overnight the till forgot which MAC goes with that IP. So before it can send the receipt, it has to ask.' },
+            { who: 'mac', text: 'It asks with [[ARP]], the address resolution protocol. The till sends an [[ARP request]] to the broadcast address, FFFF.FFFF.FFFF, so every device in the building hears it: who has 10.20.0.112, tell 10.20.0.25. Only the printer answers, with an [[ARP reply]] sent straight back to the till, unicast. The till writes the answer in its ARP table and sends the receipt.' },
+            { who: 'Hanna', text: 'So why doesn\'t the first receipt come out once it knows?' },
+            { who: 'mac', text: 'Because the till only waits a moment for each receipt, and asking takes longer than that moment. The first one gives up while the till is still waiting for the printer to answer. By the second sale the answer is already written down.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do I see what the till has written down?', reply: 'Mac: "On the till, arp -a. Windows, Mac and Linux all use the same command. On one of our Cisco boxes it\'s show arp. Each line is an IP address and the MAC that goes with it."' },
+            { tone: 'press', say: 'Isn\'t a broadcast to the whole building wasteful?', reply: 'Mac: "It is, a little. Every device has to open it and check whether it\'s the one being asked for. That\'s why the answer is written down afterwards, so the till only has to shout once, and the reply goes back to one device only."' },
+            { tone: 'care', say: 'Hanna, has this been costing you sales?', reply: 'Hanna: "The customers wait while I print it again. Nobody leaves, but I feel stupid every single morning." Mac tells her it\'s the till\'s fault, not hers, and she looks happier than the problem deserves.' }
+          ] } },
+        { k: 'SCENE', where: 'The switch floor · the door',
+          lines: [
+            { who: 'mac', text: '[[Ping]] works the same way underneath. It sends an ICMP echo request and waits for an ICMP echo reply. The first ping to a device you haven\'t talked to lately usually loses one, because it waits on ARP the same way Hanna\'s first receipt does.' },
+            { who: 'mac', text: 'Some numbers the Board likes. An Ethernet header and trailer come to 18 bytes, not counting the preamble and SFD. The smallest frame allowed is 64 bytes, so the payload has to be at least 46. An ARP request is shorter than that, so the sender pads it out with zeros. An ARP frame carries type 0x0806.' },
+            { who: 'mac', text: 'My book and the till\'s ARP table are two separate things. My book says which slot a MAC is behind. The ARP table says which MAC goes with an IP. If I lose my book, the till still knows the printer\'s MAC; I flood the frame, and I learn the printer again from its answer.' },
+            { who: 'you', text: 'Can you wipe your book on purpose?' },
+            { who: 'mac', text: 'clear mac address-table dynamic wipes every entry I learned. Add address and a MAC to forget one face, or interface and a port to forget everything on one slot. The five-minute aging does the same thing slowly.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why would you ever clear it by hand?', reply: 'Mac: "When something has moved and I\'m still sending its frames to the old slot. A printer that\'s moved stalls stays quiet until someone talks to it, so I could keep the old slot for five whole minutes. Clearing it makes me flood the next frame and learn the new slot from the reply."' },
+            { tone: 'press', say: 'What stops someone faking an ARP reply?', reply: 'Mac frowns at the ledger. "Nothing in ARP itself. Whoever answers gets believed. Ace Elle at the gate has a lot to say about that, and I\'d let her say it."' },
+            { tone: 'quiet', say: '(Watch him write the printer\'s MAC in the ledger.)', reply: 'He writes 0060.b0c1.2e12 next to slot 12, then, in the margin, Hanna\'s name and a tiny drawing of a receipt.' }
+          ] } },
+        { k: 'LORE', title: 'WHO HAS', year: 1982, real: ['ietf'], vibe: 'Like, totally. One box shouts a question at the room and the right one answers.',
+          text: 'Mac, putting the ledger away: "ARP is RFC 826. David Plummer wrote it in November 1982, when he was a student at MIT, so machines on an Ethernet could find each other\'s hardware addresses from an internet address. Every till and printer in this market still asks his question the way he wrote it."' },
+        { k: 'KIT', text: 'Mac writes it on the back of one of Hanna\'s blank receipts.', kit: [
+          { cmd: 'ARP request: broadcast to FFFF.FFFF.FFFF · ARP reply: unicast · type 0x0806', what: 'who has this IP, tell me your MAC' },
+          { cmd: 'arp -a (PC)  ·  show arp (Cisco)', what: 'the ARP table: IP to MAC' },
+          { cmd: 'ping: ICMP echo request · echo reply', what: 'the first ping often loses one while ARP runs' },
+          { cmd: 'header + trailer 18 B · minimum frame 64 B · minimum payload 46 B', what: 'shorter payloads get padded' },
+          { cmd: 'clear mac address-table dynamic [address MAC | interface PORT]', what: 'forget learned faces. Aging does it after 5 minutes' } ] },
+        { k: 'SYNC', q: { prompt: 'Hanna, tearing off a test receipt: "When the till asks who has the printer\'s address, who actually hears the question?"', opts: ['Every device in the building, because the request is a broadcast', 'Only the printer', 'Only the switch', 'Only the router'], a: 0,
+          yes: 'Mac: "Everyone hears it, and only the printer answers."', no: 'Mac: "Everyone. The request goes to FFFF.FFFF.FFFF, and only the printer answers it."',
+          why: 'Mac: An ARP request is sent to the broadcast MAC address FFFF.FFFF.FFFF, so the switch floods it to every device in the LAN. Every device reads it, but only the one with the requested IP address answers, and its ARP reply is unicast back to the asker.' } }
+      ] },
     { id: 'vlan-intro', title: 'Borders inside one building', sub: 'VLANs, trunks, DTP/VTP, EtherChannel', npc: 'veelan', day: [16,17,18,19,23], src: [PS('VLAN_Part1.md'), PS('VLAN_Part2.md'), SJ('04 - Day 16 - VLANs Part 1.md'), SJ('11 - Day 23 - EtherChannel.md')], unlocks: ['vlan-config', 'trunk-config'],
       beats: [
         { k: 'SCENE', where: 'Second floor of the clinic annex · a taped line down the middle of the corridor',
