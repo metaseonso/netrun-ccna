@@ -41,6 +41,10 @@ then `docs/CAMPAIGN_GUIDE.md` (how to write content), `docs/STORY_BIBLE.md` (how
 
 ## How to work
 
+**Going live.** GitHub Pages publishes `main`. Work on the session branch, and after every release (tests green,
+`?v=` bumped) fast-forward `main` to it (`git push origin <branch>:main`). The owner approved this on 2026-09-28; no
+per-release sign-off is needed.
+
 ```bash
 npm test                # lint + every golden solution + engine tests. Must pass before every commit.
 npm run check           # same, with warnings listed
