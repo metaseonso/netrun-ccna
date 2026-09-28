@@ -158,6 +158,8 @@ Rules and numbers live there, never in a character's mouth.
 | Dispatch | clipped like a radio with a bad battery, no pleasantries, sends a better gig instead of praise |
 | The Kid (crew) | types in bursts, caps when scared, lowercase when relieved, apologises twice |
 | Nat | smooth and unhurried, paints while talking, jokes about temporary fixes that outlived everyone, talks about addresses as faces |
+| Ace Elle | direct and fair, gives an order once, names things exactly, keeps what she suspects to herself until she can prove every line |
+| Imani (walk-on) | a charge nurse, practical and short-tempered with machines, measures every outage in what the ward had to do by hand |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that

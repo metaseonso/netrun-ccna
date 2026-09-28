@@ -1,7 +1,7 @@
 /* Stage 7 · The Ice — security fundamentals, ACLs, port security. Framework stub: one intro level. */
 (function(){
   const { PS, SJ } = SRC;
-  STAGES.push({ id: 'ice', arc: 'grid', title: 'STAGE 7 · THE ICE', sub: 'security fundamentals, ACLs, port security, snooping', npc: 'ace', status: 'stub', levels: [
+  STAGES.push({ id: 'ice', arc: 'grid', title: 'STAGE 7 · THE ICE', sub: 'security fundamentals, ACLs, port security, snooping', npc: 'ace', status: 'live', levels: [
     { id: 'ace-intro', title: 'Top to bottom, once', sub: 'ACLs, port security, DHCP snooping, DAI', npc: 'ace', day: [34,35,48,49,50], src: [PS('Standard_Access_Control_Lists.md'), PS('Port_Security.md'), PS('DHCP_Snooping.md'), SJ('23 - Day 34 - Standard ACLs.md')], unlocks: ['acl-standard', 'port-security'],
       beats: [
         { k: 'SCENE', where: 'A gate on the corpo side of Watson · a clipboard · a dog',
@@ -18,6 +18,56 @@
         { k: 'LORE', title: 'THE NIGHT THE NET CAUGHT FIRE', year: 1988, vibe: 'Bogus. One grad student, six thousand boxes, zero chill.', text: 'Ace Elle, not looking up from the clipboard: "On 2 November 1988 a graduate student named Robert Morris released a worm that hit about a tenth of the machines on the internet in a day. First conviction under the computer fraud law. The CERT coordination centre was set up because of it. Every list I read is a descendant of that night."' },
         { k: 'KIT', text: 'A page off the clipboard.', kit: [ { cmd: 'access-list 10 deny 192.168.2.0 0.0.0.255 → access-list 10 permit any', what: 'a standard numbered list with a [[wildcard mask]]' }, { cmd: 'interface g0/2 → ip access-group 10 out', what: 'apply it, close to the destination' }, { cmd: 'switchport port-security → maximum 2 → violation restrict → mac-address sticky', what: 'Sticky\'s instructions' } ] },
         { k: 'SYNC', q: { prompt: 'Ace Elle: "Packet reaches the end of my list. No line matched. What happens?"', opts: ['It is permitted', 'It is dropped by the implicit deny', 'It is logged and permitted', 'It goes back to the top'], a: 1, yes: '"Dropped. Nobody wrote that rule. Nobody has to."', no: '"Implicit deny. If nothing matched, it does not get in."' , why: 'Ace Elle: Every list ends with a rule nobody types: deny everything else. If a packet reaches the bottom without matching a line, that hidden rule drops it. Implicit deny.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 48 · security fundamentals
+    { id: 'n48-pins-and-string', title: 'Pins and string', sub: 'security fundamentals', npc: 'ace', day: [48], src: [PS('Security_Fundamentals.md')], unlocks: ['sec-fundamentals'],
+      beats: [
+        { k: 'SCENE', where: 'The gate · Ace Elle\'s booth · ten past one',
+          lines: [
+            { who: 'narr', text: 'The booth at the gate smells of wet dog and burnt coffee, and a heater under the desk ticks as it glows orange. Rain runs down the window in sheets. Sticky lies across the doorway, so you have to step over her, and she lifts her head to watch your hands while you do. On the back wall hangs a paper map of Watson stuck full of coloured pins, with red string running between them.' },
+            { who: 'ace', text: 'Sit. Dispatch says you have been inside half the buildings on that map since the spring. I want you to see what I see when I look at it.' },
+            { who: 'ace', text: 'Every pin is a night something went wrong on purpose. The switch at the market that wiped Vee Lan\'s VLANs. The box under a desk in the clinic annex that made itself root. The roads going dark halfway through Every Road Home. Shell\'s password, read off the wire.' },
+            { who: 'you', text: 'They don\'t look like the same kind of trouble.' },
+            { who: 'ace', text: 'They came through different doors, and behind every one of them was one of three things, the [[CIA triad]]. Shell\'s password was confidentiality: only the people who should read a thing can read it. The wiped VLANs were integrity: nobody without the right changes what is there. The annex and the roads were availability: the network works when the people in the building need it.' },
+            { who: 'ace', text: 'The annex had switch ports in reception that anyone could plug into. That weakness is a [[vulnerability]]. The box somebody carried in to use it is an [[exploit]]. The chance that somebody does it again next week is the [[threat]]. BPDU Guard, which Old Root put on those ports afterwards, is a [[mitigation]].' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Could it be something on the machines, not a person?', reply: 'Ace: "[[Malware]] does get in, and I check for it every time. A [[virus]] hides inside another program and runs when that program runs. A [[worm]] copies itself from machine to machine with nobody clicking anything. A [[trojan horse]] looks like something you wanted, a free game or a booking app, and opens a door once you install it. None of those needed a person standing in the annex, and this one did."' },
+            { tone: 'press', say: 'So who is doing it?', reply: 'She looks at the map instead of at you. "Somebody who knows these buildings from the inside. I have a name I would like to be wrong about. I do not read a name off my list until I can prove every line of it, so ask me again when I can."' },
+            { tone: 'quiet', say: '(Hold your hand out to Sticky.)', reply: 'Sticky sniffs your knuckles for a long moment, then puts her chin back on her paws. Ace: "She checked your face before she decided anything. Whoever did this checked the buildings first, too: who works nights, which doors stick, which ports are live. That is [[reconnaissance]]. Most of it is public, and all you can do is make it dull."' }
+          ] } },
+        { k: 'SCENE', where: 'The Watson clinic · the front desk · a quarter to eight in the morning',
+          lines: [
+            { who: 'narr', text: 'You walk to the clinic with Ace as the rain stops, the gutters still running and the street smelling of wet concrete and frying dough from the cart on the corner. Sticky trots ahead and stops at every doorway.' },
+            { who: 'ace', text: 'The next ones will be louder. A [[DoS]] attack, denial of service, takes something off the air by drowning it. A TCP [[SYN flood]] sends the first message of the three-way handshake again and again and never finishes one, until the appointment server has no room left for real patients. Send it from ten thousand hijacked cameras at once and it is a [[DDoS]], distributed.' },
+            { who: 'ace', text: 'Some of them lie about who they are. That is [[spoofing]], a fake source MAC or IP address. A box that spoofs new MAC addresses and asks for a lease with every one of them can empty a DHCP pool in a minute, which is [[DHCP exhaustion]]. Put the clinic\'s address on a question to a big public server and the answer lands on the clinic. That is a [[reflection]] attack, and when the answer is far bigger than the question it becomes [[amplification]].' },
+            { who: 'ace', text: 'And the one I lose sleep over is a box that gets between two machines and reads everything that passes, a [[man-in-the-middle]]. On a switch the easy way in is ARP.' },
+            { who: 'narr', text: 'The front desk smells of hand gel and printer toner. Imani is standing behind it with the desk phone still in her hand, looking at it as if it had bitten her.' },
+            { who: 'Imani', text: 'A man just rang saying he was from the provider. He knew my name and the name of the ward. He said the line would drop at eight unless I read him the router password.' },
+            { who: 'ace', text: 'That was [[social engineering]], and on the phone it is called [[vishing]]. He broke nothing: he found out your name and your ward, and then he asked.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Is there a name for every kind?', reply: 'Ace: "[[Phishing]] is the fake email that looks real. [[Spear phishing]] is aimed at one building, with names in it, like the call you just had. [[Whaling]] goes after the people at the top. Vishing is the phone, [[smishing]] is a text message. A [[watering hole]] attack poisons a site the target visits every day. [[Tailgating]] is walking through a locked door behind someone who has a key."' },
+            { tone: 'press', say: 'Then give everyone better passwords.', reply: 'Ace: "A [[dictionary attack]] runs through lists of common words and passwords, and a [[brute force attack]] tries every combination of letters, numbers and symbols. A long password beats both, and it still loses to a phone call like that one. So the login asks for two kinds of proof: something you know, something you have, something you are. That is [[MFA]], multi-factor authentication. The clinic\'s appointment page proves who it is with a [[digital certificate]]."' },
+            { tone: 'care', say: 'Imani, are you all right?', reply: 'Imani: "I am angry. Last month a cleaner let someone follow her into the comms room because he had a toolbox." Ace: "Then the ward gets a user awareness programme, where I send fake emails and phone calls to see who bites, and user training, where everyone sits down for an hour on the rules. The comms room door gets a badge reader. That is physical access control, and it matters as much as any config."' }
+          ] } },
+        { k: 'LORE', title: 'THE NIGHT THE NET CAUGHT FIRE', year: 1988, real: ['mit', 'cert'], vibe: 'Bogus. One grad student, six thousand boxes, zero chill.',
+          text: 'Ace, pulling a pin out of the map and pushing it back in: "On the second of November 1988 a Cornell graduate student named Robert Tappan Morris let a program loose on the internet from a machine at MIT. It was a worm. It got in through holes in sendmail and finger, and it guessed passwords from a list of a few hundred common words. It got onto about six thousand machines, around a tenth of everything connected, in a day. He said he only wanted to measure how big the internet was. That month Carnegie Mellon set up the CERT Coordination Center, the first team whose whole job was answering the phone when this happens, and in 1990 he became the first person convicted under the Computer Fraud and Abuse Act. I keep it for that list of passwords. Half the words on it are still on machines in this district."' },
+        { k: 'KIT', text: 'Ace tears the top sheet off her clipboard and writes on the back of it.', real: ['cisco'], kit: [
+          { cmd: 'CIA: confidentiality · integrity · availability', what: 'only the right people read it · nobody unauthorised changes it · it works when it is needed' },
+          { cmd: 'vulnerability · exploit · threat · mitigation', what: 'the weakness · what can use it · the chance it is used · what protects against it' },
+          { cmd: 'DoS · TCP SYN flood · DDoS · DHCP exhaustion', what: 'drown it · half-open handshakes · from many sources · empty the pool with spoofed MACs' },
+          { cmd: 'spoofing · reflection · amplification · man-in-the-middle (ARP spoofing) · reconnaissance', what: 'a fake source · the reply hits the victim · a bigger reply · read everything between two hosts · gather information first' },
+          { cmd: 'malware: virus · worm · trojan horse', what: 'infects a host program · spreads by itself · disguised as something you wanted' },
+          { cmd: 'phishing · spear phishing · whaling · vishing · smishing · watering hole · tailgating', what: 'social engineering' },
+          { cmd: 'dictionary · brute force · MFA: know, have, are · digital certificates', what: 'password attacks and what stops them' },
+          { cmd: 'AAA: authentication · authorization · accounting · Cisco ISE', what: 'who are you · what may you do · what did you do' },
+          { cmd: 'RADIUS: UDP 1812, 1813, open standard · TACACS+: TCP 49, Cisco', what: 'the two AAA protocols' },
+          { cmd: 'user awareness · user training · physical access control', what: 'fake phishing to see who bites · formal sessions · badges and locks on the closets' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani puts the phone down at last: "So the man on the phone who wanted the router password. What do I write in the incident book?"', opts: ['Vishing', 'Smishing', 'Whaling', 'A watering hole attack'], a: 0,
+          yes: 'Ace: "Vishing. Write the time he called, too."', no: 'Ace: "Vishing. Phishing over the phone."',
+          why: 'Ace: Vishing is phishing by voice, over the phone. Smishing uses SMS text messages, whaling targets the people at the top of an organisation, and a watering hole attack compromises a website the victims visit.' } }
       ] }
   ] });
 })();
