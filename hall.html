@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NETRUNNER://CCNA · Hall of Fame</title>
+<meta name="description" content="Every licensed netrunner of NETRUNNER://CCNA, a meta art piece by Seonso.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2307080d'/%3E%3Cpath d='M3 12V4l10 8V4' stroke='%233ff6ff' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#07080d; --bg2:#0d1019; --line:#233049; --ink:#e6f1ff; --ink2:#9fb3d1; --cyan:#3ff6ff; --mag:#ff3fa4; --yel:#ffd23f; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 "JetBrains Mono", Consolas, monospace; }
+  main { max-width:1180px; margin:0 auto; padding:40px 16px 60px; }
+  header { text-align:center; }
+  h1 { margin:0; font-family:Orbitron, sans-serif; font-size:clamp(26px,5vw,44px); letter-spacing:.16em; color:var(--cyan); text-shadow:0 0 18px rgba(63,246,255,.5); }
+  h1 span { color:var(--mag); }
+  .sub { color:var(--ink2); margin:8px 0 22px; }
+  .stats { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:30px; }
+  .ps { min-width:130px; padding:10px 12px; border:1px solid var(--line); background:var(--bg2); display:flex; flex-direction:column; align-items:center; }
+  .ps b { font-family:Orbitron, sans-serif; font-size:22px; color:var(--cyan); font-weight:600; } .ps span { font-size:9px; letter-spacing:.18em; color:var(--ink2); }
+  .ps:nth-child(2) b { color:var(--yel); } .ps:nth-child(4) b { color:var(--mag); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 440px)); justify-content:center; gap:22px; }
+  .card { display:block; transition:transform .16s; } .card:hover { transform:translateY(-3px); }
+  .card svg { width:100%; height:auto; display:block; filter:drop-shadow(0 14px 30px rgba(0,0,0,.6)); }
+  .empty { text-align:center; color:var(--ink2); }
+  a { color:var(--cyan); } .back { display:inline-block; margin-top:34px; }
+  footer { margin-top:40px; text-align:center; font-size:12px; color:var(--ink2); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>HALL OF <span>FAME</span></h1>
+    <div class="sub">Every netrunner who kept the Watson Exchange lit. Newest first.</div>
+    <div class="stats" id="stats"></div>
+  </header>
+  <div class="grid" id="grid"><div class="empty">Loading…</div></div>
+  <div style="text-align:center"><a class="back" href="./">Back to the game</a></div>
+  <footer>NETRUNNER://CCNA · a meta art piece by Seonso · these are game licenses, not Cisco certifications · <a href="privacy.html">Privacy</a></footer>
+</main>
+<script src="config/platform.js"></script>
+<script src="js/db.js"></script>
+<script src="js/license.js"></script>
+<script>
+(async function () {
+  const grid = document.getElementById('grid'), stats = document.getElementById('stats');
+  try {
+    const r = await fetch('hall/index.json', { cache: 'no-store' }); const d = await r.json();
+    const cards = (d.cards || []).slice().sort((a, b) => a.maker ? -1 : b.maker ? 1 : String(b.issued).localeCompare(String(a.issued)));
+    grid.innerHTML = cards.length ? '' : '<div class="empty">Nobody yet.</div>';
+    cards.forEach(c => { const a = document.createElement('a'); a.className = 'card'; a.href = 'hall/cards/' + encodeURIComponent(c.number) + '.svg'; a.target = '_blank'; a.rel = 'noopener'; a.innerHTML = LicenseCard.svg(c); grid.appendChild(a); });
+  } catch (e) { grid.innerHTML = '<div class="empty">The hall is closed for a moment. Try again soon.</div>'; }
+  const s = window.WatsonDB && WatsonDB.on ? await WatsonDB.stats() : null;
+  if (s) stats.innerHTML = [['netrunners', 'NETRUNNERS'], ['licensed', 'LICENSED'], ['nights', 'NIGHTS CLEARED'], ['flatlines', 'FLATLINES']].map(([k, l]) => '<div class="ps"><b>' + Number(s[k] || 0).toLocaleString() + '</b><span>' + l + '</span></div>').join('');
+})();
+</script>
+</body>
+</html>

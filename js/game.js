@@ -8,7 +8,7 @@
   const LEVEL_AT = [0, 1, 3, 6];
   const P = () => window.PLATFORM || {};
 
-  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null, owner: null, codex: {} });
+  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null, owner: null, codex: {}, completedAt: null, license: null });
   // fill in keys added since a record was written (same VERSION only; older records are dropped in load())
   function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); out.body = Object.assign({ food: 100, chrome: 100, tab: 0 }, out.body || {}); out.meta = Object.assign({ deaths: 0, syncs: 0, lastSync: 0 }, out.meta || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
   const usable = s => !!s && (s.v || 0) >= VERSION;
@@ -55,7 +55,7 @@
   function flatline(why){ state.dead = { at: Date.now(), why, food: state.body.food, chrome: state.body.chrome, job: run ? run.job.id : null }; state.meta.deaths++; ev('flatline', { why, job: state.dead.job }); log('FLATLINED. ' + why); run = null; save(); }
   // a sync is the only save the player gets: after a talk, after a gig. no chips, no manual saves. pacing stays ours.
   // telemetry, the journal and the passcode ride outside the snapshot so a reload never erases the record of what happened.
-  const KEEP = ['events', 'log', 'dmLog', 'meta', 'checkpoint', 'pass', 'owner', 'codex'];
+  const KEEP = ['events', 'log', 'dmLog', 'meta', 'checkpoint', 'pass', 'owner', 'codex', 'completedAt', 'license'];
   function sync(label){ syncInner(label); flush(true); }
   function syncInner(label){ const data = {}; for (const k in state) if (!KEEP.includes(k) && k !== 'dead') data[k] = state[k]; state.checkpoint = { at: Date.now(), label, data: JSON.parse(JSON.stringify(data)) }; state.meta.syncs++; state.meta.lastSync = Date.now(); ev('sync', { label }); save(); }
   function reload(){ const cp = state.checkpoint; const keep = {}; KEEP.forEach(k => { keep[k] = state[k]; }); const h = state.handle; state = cp ? migrate(Object.assign({}, cp.data, keep, { handle: h })) : Object.assign(fresh(), keep, { handle: h }); state.dead = null; run = null; ev('reload', { label: cp ? cp.label : null }); log(cp ? 'Back to the last sync: ' + cp.label : 'No sync on record. Starting over under this handle.'); save(); return !!cp; }
@@ -162,6 +162,7 @@
     let rep = job.rep; if (prev) rep = Math.round(rep * 0.4); rep = Math.max(Math.round(job.rep * 0.2), Math.round(rep * Math.max(0.3, 1 - 0.1 * hintedCount)));
     const creds = Math.round((job.creds || job.rep * 3) * (prev ? 0.4 : 1)); addCreds(creds, 'gig ' + job.id);
     const before = classFor(state.rep).id; state.jobsDone[job.id] = { times: (prev ? prev.times : 0) + 1, last: Date.now(), best: Math.max(prev ? prev.best : 0, run.done.filter(d => d.clean).length), bestMs: Math.min(prev && prev.bestMs || Infinity, ms) };
+    if (job.id === window.FINALE && !state.completedAt) { state.completedAt = Date.now(); log('Opening Night. The Watson Exchange held.'); ev('complete', { job: job.id }); }
     const promoted = addRep(rep, 'gig ' + job.id, before); // a rite clears the gate, so the class is re-read after the gig is on the books
     const leveled = run.done.filter(d => d.leveled).map(d => d.leveled); ev('job_finish', { job: job.id, ms, fails, hints: hintedCount, rep });
     log('Gig done: ' + job.title + ' (+' + rep + ' rep, ' + Math.round(ms / 1000) + 's' + (hintedCount ? ', ' + hintedCount + ' hinted' : ', clean') + (fails ? ', ' + fails + ' failed attempts' : '') + ')');
@@ -181,6 +182,17 @@
   };
   // a gig's codex entry: greenlit once you clear it, paid once a fixer sold it to you, sealed otherwise
   const codexStatus = job => state.jobsDone[job.id] ? 'greenlit' : (state.codex || {})[job.id] === 'paid' ? 'paid' : 'sealed';
+
+  // ---- completion: the nights you finished, the license record ---------------------------------------
+  // a night is done when every talk set on it was heard and every gig set on it was cleared at least once
+  function nightDone(n){ const ls = []; STAGES.forEach(stg => stg.levels.forEach(l => { if ((l.day || []).includes(n)) ls.push(l); })); if (!ls.length) return false;
+    const gs = JOBS.filter(j => (j.day || []).includes(n)); return ls.every(l => state.read[l.id]) && gs.every(j => state.jobsDone[j.id]); }
+  function licenseRecord(){ const st = state.stats || {}, steps = st.steps || {}; const nights = (window.SYLLABUS || []).filter(x => nightDone(x.night)).length;
+    const fp = [state.handle, state.created, state.completedAt].join('|'); let h = 0x811c9dc5; for (const c of fp) { h ^= c.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+    return { fingerprint: h.toString(16) + '-' + (state.completedAt || 0).toString(36), completedAt: state.completedAt ? new Date(state.completedAt).toISOString() : null, cls: classFor(state.rep).id,
+      stats: { nights, gigs: Object.keys(state.jobsDone).length, clean: steps.passes ? Math.round(100 * (steps.firstTry || 0) / steps.passes) : null, hours: Math.round((st.playMs || 0) / 360000) / 10,
+        saved: state.roster.list.reduce((a, p) => a + (p.saved || 0), 0), lost: Protege.lost(state.roster).length, flatlines: state.meta.deaths || 0, fixers: Object.keys(state.codex || {}).length } }; }
+  function setLicense(l){ state.license = l; log('Licensed: ' + l.number); save(); }
 
   // ---- the stall -----------------------------------------------------------------------
   const shop = {
@@ -278,5 +290,5 @@
   // closing the tab with a Google record not yet in Drive: push it, and let the browser ask before it goes.
   window.addEventListener('beforeunload', e => { const unsaved = state.owner && (dirty || inflight); Telemetry.touch(state); if (!state.owner) return save(); if (unsaved) { flush(true); e.preventDefault(); e.returnValue = ''; } });
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get driveOk(){ return driveOk; }, get driveWhy(){ return driveWhy; }, recheckDrive(){ const u = gUser(); return u ? onAuth(u) : Promise.resolve(); }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, shop, fixer, codexStatus, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get driveOk(){ return driveOk; }, get driveWhy(){ return driveWhy; }, recheckDrive(){ const u = gUser(); return u ? onAuth(u) : Promise.resolve(); }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, shop, fixer, codexStatus, nightDone, licenseRecord, setLicense, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
 })();

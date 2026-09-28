@@ -1,15 +1,18 @@
 /* watson-db.gs — the game's only database: a Google Sheet the owner owns, behind an Apps Script web app.
-   Two tabs: `suggestions` (the in-game suggestion box) and `licenses` (the numbered license issued on completion).
+   Three tabs: `suggestions` (the in-game suggestion box), `licenses` (the numbered license issued on completion) and
+   `pulse` (anonymous progress counts, one row per player id: class, nights finished, flatlines). The public `stats`
+   action adds `pulse` and `licenses` up for the sign-in page; it never returns a row.
    Anyone may write (rate limited, sizes capped). Reading and updating need the private key, which only the owner,
    the Hall of Fame robot (.github/workflows/hall.yml) and tools/watson-db.js hold. Setup: docs/WATSON_DB.md. */
 
 const SUG_HEAD = ['id', 'received', 'handle', 'screen', 'night', 'version', 'text', 'status', 'note', 'updated'];
 const LIC_HEAD = ['number', 'issued', 'handle', 'hall', 'record'];
+const PULSE_HEAD = ['id', 'updated', 'cls', 'nights', 'flatlines'];
 const STATUSES = ['new', 'ticketed', 'scoped', 'in progress', 'done', 'declined'];
 
 // Run once from the editor (pick setup, press Run). Makes both tabs and a private key, and logs the key.
 function setup() {
-  tab_('suggestions', SUG_HEAD); tab_('licenses', LIC_HEAD);
+  tab_('suggestions', SUG_HEAD); tab_('licenses', LIC_HEAD); tab_('pulse', PULSE_HEAD);
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('KEY')) props.setProperty('KEY', Utilities.getUuid().replace(/-/g, ''));
   Logger.log('Private key: ' + props.getProperty('KEY'));
@@ -35,6 +38,7 @@ function doPost(e) {
   const lock = LockService.getScriptLock(); lock.waitLock(8000);
   try {
     if (d.kind === 'license') return license_(d, who);
+    if (d.kind === 'pulse') return pulse_(d);
     return suggestion_(d, who);
   } finally { lock.releaseLock(); }
 }
@@ -49,6 +53,18 @@ function suggestion_(d, who) {
   const id = 'S' + String(sh.getLastRow()).padStart(4, '0');
   sh.appendRow([id, new Date().toISOString(), who, clip_(d.screen, 40), clip_(d.night, 10), clip_(d.version, 20), text, 'new', '', '']);
   return json_({ ok: true, id });
+}
+
+// anonymous progress: a random id per record, never the handle
+function pulse_(d) {
+  const id = clip_(d.id, 40); if (!/^[a-z0-9-]{6,40}$/.test(id)) return json_({ ok: false, why: 'bad id' });
+  if (!limit_('p:' + id, 60)) return json_({ ok: true, later: true });
+  const cls = /^[ABCD]$/.test(d.cls) ? d.cls : 'D', nights = Math.max(0, Math.min(63, Number(d.nights) || 0)), flat = Math.max(0, Math.min(9999, Number(d.flatlines) || 0));
+  const sh = tab_('pulse', PULSE_HEAD); const rows = rows_(sh, PULSE_HEAD.length); const i = rows.findIndex(r => r[0] === id);
+  const row = [id, new Date().toISOString(), cls, nights, flat];
+  if (i < 0) sh.appendRow(row); else sh.getRange(i + 2, 1, 1, PULSE_HEAD.length).setValues([row]);
+  CacheService.getScriptCache().remove('stats');
+  return json_({ ok: true });
 }
 
 // one license per handle and record fingerprint; asking again returns the same number
@@ -69,6 +85,7 @@ function license_(d, who) {
 // the owner, the Hall of Fame robot and Claude read and update here, with the key
 function doGet(e) {
   const p = e.parameter || {};
+  if (p.action === 'stats') return json_(stats_());
   if (!keyOk_(p)) return json_({ ok: false, why: 'key' });
   if (p.action === 'licenses') {
     const list = rows_(tab_('licenses', LIC_HEAD), LIC_HEAD.length).map(r => ({ number: r[0], issued: r[1], handle: r[2], hall: r[3] === 'yes', record: JSON.parse(r[4] || '{}') }));
@@ -83,4 +100,12 @@ function doGet(e) {
   }
   const list = rows.map(r => Object.fromEntries(SUG_HEAD.map((h, k) => [h, r[k]]))).filter(r => !p.status || r.status === p.status);
   return json_({ ok: true, count: list.length, suggestions: list });
+}
+
+// public numbers for the sign-in page, cached for five minutes
+function stats_() {
+  const c = CacheService.getScriptCache(); const hit = c.get('stats'); if (hit) return JSON.parse(hit);
+  const pulse = rows_(tab_('pulse', PULSE_HEAD), PULSE_HEAD.length); const lic = rows_(tab_('licenses', LIC_HEAD), LIC_HEAD.length);
+  const out = { ok: true, netrunners: pulse.length, licensed: lic.length, nights: pulse.reduce((a, r) => a + (Number(r[3]) || 0), 0), flatlines: pulse.reduce((a, r) => a + (Number(r[4]) || 0), 0), at: new Date().toISOString() };
+  c.put('stats', JSON.stringify(out), 300); return out;
 }

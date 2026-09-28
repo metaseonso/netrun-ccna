@@ -77,7 +77,7 @@
     { id: 'board', label: 'BOARD', icon: 'board', v: 'jobs', tip: 'Gigs from Dispatch.' },
     { id: 'crew', label: 'CREW', icon: 'crew', v: 'crew', tip: 'Your crew and their calls.' },
     { id: 'gear', label: 'GEAR', icon: 'gear', tip: 'Marrow\'s stall and your deck.', items: [['shop', 'STALL', 'stall', 'Food, repairs, gifts, braindances'], ['deck', 'DECK', 'deck', 'Quickhacks and skins']] },
-    { id: 'archive', label: 'ARCHIVE', icon: 'archive', tip: 'Codex, record and journal.', items: [['key', 'CODEX', 'codex', 'Gigs you cleared or paid a fixer for'], ['stats', 'RECORD', 'record', 'Your rep, dives and calls'], ['log', 'JOURNAL', 'journal', 'What happened, in order']] }
+    { id: 'archive', label: 'ARCHIVE', icon: 'archive', tip: 'Codex, record and journal.', get items(){ return [['key', 'CODEX', 'codex', 'Gigs you cleared or paid a fixer for'], ['stats', 'RECORD', 'record', 'Your rep, dives and calls'], ['log', 'JOURNAL', 'journal', 'What happened, in order']].concat(window.Game && (Game.completed || P().dev) ? [['done', 'LICENSE', 'rite', Game.completed ? 'Your license and the companion' : 'Preview (dev only)']] : []); } }
   ];
   const viewGroup = v => v === 'level' ? 'street' : v === 'run' ? 'board' : (NAV.find(g => g.v === v || (g.items || []).some(it => it[0] === v)) || {}).id;
   function hud(){ const s = Game.state, c = Game.classFor(s.rep), nx = Game.nextClass(s.rep), rb = Game.riteBlocking(), rite = Game.riteFor(c.id); const pct = nx ? Math.min(100, Math.round(((s.rep - c.min) / (nx.min - c.min)) * 100)) : 100;
@@ -136,10 +136,15 @@
     return (window.Auth && Auth.configured ? '<p><button class="btn mag" id="signin">SIGN IN WITH GOOGLE</button></p><p class="muted door-note">' + esc(DRIVE_WHY) + '</p><p class="muted" style="font-size:11px">Or play on this device only:</p>' : '') +
       '<p><input id="handle" placeholder="your handle" maxlength="18" autocomplete="off"> <input id="pass" type="password" placeholder="passcode" maxlength="32" autocomplete="off"> <button class="btn ' + (window.Auth && Auth.configured ? 'ghost' : 'mag') + '" id="go">JACK IN</button></p><p class="muted" style="font-size:11px">New handle? Pick any passcode.</p>' +
       (deck.length ? '<p class="muted" style="font-size:12px">On this device: ' + deck.map(h => '<button class="btn ghost" data-resume="' + esc(h) + '" style="margin:2px 4px">' + esc(h) + '</button>').join('') + '</p>' : ''); }
+  let pubStats = null, pubAsked = false;
+  function doorPulse(){ if (!pubAsked && window.WatsonDB && WatsonDB.on) { pubAsked = true; WatsonDB.stats().then(d => { pubStats = d; if (!Game.state.handle) render(); }); }
+    const n = k => pubStats && pubStats[k] != null ? Number(pubStats[k]).toLocaleString() : '—';
+    return '<div class="pubstats">' + (window.WatsonDB && WatsonDB.on ? [['netrunners', 'NETRUNNERS'], ['licensed', 'LICENSED'], ['nights', 'NIGHTS CLEARED'], ['flatlines', 'FLATLINES']].map(([k, l]) => '<div class="ps"><b>' + n(k) + '</b><span>' + l + '</span></div>').join('') : '') +
+      '<a class="btn ghost halllink" href="hall.html">' + icon('rite') + 'THE HALL OF FAME</a></div>'; }
   function intro(){ return '<div class="intro"><h1 class="glitch">NETRUNNER<span>://</span>CCNA</h1><p class="lede">Rain drips off the overpass and down the back of your collar while you wait at Dispatch\'s booth in Watson. The district runs on switches older than you are, patched together by people who remember every outage by what it cost them. Somebody on this street vouched for you, and Dispatch has work if you can learn the old gear fast enough to keep it running.</p>' +
       '<ul class="doorwhat"><li><b>THE GRID</b> People who teach you the gear, one part of the net each.</li><li><b>THE BOARD</b> Gigs where you fix a real network from the shell.</li><li><b>THE CREW</b> Runners who call you for help. Answer right and in time.</li></ul>' +
       (window.Auth && Auth.user() ? doorSignedIn() : doorLocal()) +
-      '<div class="footer"><div>Course: <a href="https://www.youtube.com/@JeremysITLab" target="_blank" rel="noopener">Jeremy\'s IT Lab</a> · Notes: <a href="https://github.com/psaumur/CCNA_Course_Notes" target="_blank" rel="noopener">psaumur</a>, <a href="https://github.com/sparrowjumpy/CCNA-Notes" target="_blank" rel="noopener">sparrowjumpy</a> · MIT License · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></div>' +
+      doorPulse() + '<div class="footer"><div>Course: <a href="https://www.youtube.com/@JeremysITLab" target="_blank" rel="noopener">Jeremy\'s IT Lab</a> · Notes: <a href="https://github.com/psaumur/CCNA_Course_Notes" target="_blank" rel="noopener">psaumur</a>, <a href="https://github.com/sparrowjumpy/CCNA-Notes" target="_blank" rel="noopener">sparrowjumpy</a> · MIT License · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></div>' +
       '<a class="maker" href="mailto:metaseonso@gmail.com"><img src="assets/seonso/avatar.webp" alt="" width="34" height="46"><span><b>A META ART PIECE BY SEONSO</b><em>by a cyberpunk fan and a caring oppa</em></span><img class="seal" src="assets/seonso/seal.png" alt="Seonso seal" width="22" height="22"></a></div></div>'; }
 
   // ---- the map: one line through the districts, a dot per night, a panel for the district you pick -----
@@ -329,6 +334,27 @@
       '<div class="plist">' + (items.filter(it => inv[it.id] > 0 && it.kind !== 'bd' && it.kind !== 'skin').map(it => '<div><span>' + esc(it.name) + '</span><b>×' + inv[it.id] + '</b></div>').join('') || '<div class="muted">Empty.</div>') + '</div></div>';
     return '<div class="panel"><div class="marrow">' + npcSlot('marrow', 72) + '<div><h2>MARROW\'S</h2><div class="bubble">"' + esc(marrowSays()) + '"</div></div></div>' +
       '<div class="stall2">' + shelves + '<div class="items">' + items.filter(it => it.kind === shelf).map(card).join('') + '</div>' + pockets + '</div></div>'; }
+  // ---- the end: the license, the Hall of Fame, the companion -------------------------------------------
+  const NOTE = ['Hi everyone. I hope you enjoyed the game, and that it helped you get where you needed to go in your life.',
+    'I make meta art pieces because I feel there is a better way to do things, and AI has opened a new branch of my creativity. I hope this piece was helpful or inspiring to you. Making it was a lot of fun.',
+    'The inspiration for this game came from wanting to help my dongsaeng, Sohee, who was studying for the CCNA.',
+    'You probably know more about cybersecurity than I do by now. If that is the case, I think the art piece can be called a success.',
+    'If you are interested in more of my art pieces, or want to reach me for a commission, write to metaseonso@gmail.com.'];
+  function cardRecord(){ const s = Game.state, r = Game.licenseRecord(), l = s.license; return { number: l ? l.number : 'NR-······', issued: l ? l.issued : new Date().toISOString(), handle: s.handle, cls: r.cls, stats: r.stats }; }
+  function doneView(){ const s = Game.state, l = s.license, preview = !Game.completed;
+    const acts = (window.ACTS || []).map(a => '<div class="cact"><h4>ACT ' + a.n + ' · ' + esc(a.title) + ' <span>Class ' + a.cls + '</span></h4><ul>' + SYLLABUS.filter(x => x.act === a.n).map(x => { const ok = Game.nightDone(x.night);
+      return '<li class="' + (ok ? 'ok' : '') + '"><span class="box" aria-hidden="true">' + (ok ? icon('check', 'sm') : '') + '</span><span class="nn">' + String(x.night).padStart(2, '0') + '</span><span>' + esc(x.topic) + '</span><span class="dist">' + esc(((STAGES.find(stg => stg.id === x.stage) || {}).title || '').replace(/^STAGE \d+ · /, '')) + '</span></li>'; }).join('') + '</ul></div>').join('');
+    return '<div class="panel done">' + (preview ? '<div class="alert y">' + icon('warn') + '<span>Dev preview. A player sees this after clearing the Watson Exchange.</span></div>' : '') +
+      '<h2>' + (l ? 'LICENSED' : 'OPENING NIGHT') + '</h2>' +
+      '<div class="lcard">' + LicenseCard.svg(cardRecord()) + '</div>' +
+      (l ? '<div class="lact"><button class="btn mag" id="lsvg">SAVE THE CARD</button><button class="btn" id="lpng">SAVE AS IMAGE</button><a class="btn ghost" href="hall.html" target="_blank" rel="noopener">THE HALL OF FAME</a></div>' + (l.hall ? '<div class="muted">Your card goes up in the Hall of Fame within the hour.</div>' : '')
+        : '<div class="lissue"><label class="chk"><input type="checkbox" id="lhall"' + (cur.lhall !== false ? ' checked' : '') + '><span>Put my handle, card and record in the public Hall of Fame. It stays there for good.</span></label>' +
+          '<button class="btn mag big" id="lissue"' + (preview || cur.lbusy || !window.WatsonDB || !WatsonDB.on ? ' disabled' : '') + '>' + (cur.lbusy ? 'ISSUING…' : 'ISSUE MY LICENSE') + '</button>' + (window.WatsonDB && WatsonDB.on ? '' : '<div class="muted">The license office is not connected yet.</div>') + '</div>') +
+      '<div class="companion" id="companion"><div class="chead2"><h3>THE COMPANION</h3><button class="btn ghost" id="cprint">SAVE AS PDF</button></div>' +
+      '<p class="muted">Every night of the course, in order. A tick means you heard every talk and cleared every gig that night.</p>' + acts +
+      '<div class="note"><img src="assets/seonso/avatar.webp" alt="Seonso" width="90" height="122"><div>' + NOTE.map(t => '<p>' + esc(t) + '</p>').join('') + '<div class="sig">— Seonso · 선소 <img src="assets/seonso/seal.png" alt="seal" width="28" height="28"></div><div class="muted">A meta art piece by Seonso.</div></div></div></div></div>'; }
+  function saveFile(name, blob){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+
   // ---- the codex: gigs you cleared (greenlit) or paid a fixer for (paid); the rest stay sealed --------
   const CTAG = { greenlit: ['GREENLIT', 'check', 'Cleared. The notes are yours.'], paid: ['PAID', 'creds', 'Bought from a fixer. Clear it yourself to greenlight it.'], sealed: ['SEALED', 'lock', 'Clear the gig, or hire a fixer in the dive, to open these notes.'] };
   const ctag = st => '<span class="ctag ' + st + '">' + icon(CTAG[st][1], 'sm') + CTAG[st][0] + '</span>';
@@ -424,7 +450,7 @@
       if ($('#go')) $('#go').onclick = () => go($('#handle').value); if ($('#handle')) $('#handle').onkeydown = e => { if (e.key === 'Enter') { if (pass) pass.focus(); else $('#go').click(); } }; if (pass) pass.onkeydown = e => { if (e.key === 'Enter') $('#go').click(); };
       a.querySelectorAll('[data-mine]').forEach(b => b.onclick = () => go(b.dataset.mine)); a.querySelectorAll('[data-resume]').forEach(b => b.onclick = () => { $('#handle').value = b.dataset.resume; $('#pass').focus(); }); if ($('#handle')) $('#handle').focus(); return; }
     if (view !== 'run') Game.dm.maybeCreate();
-    let body = ''; if (view === 'home') body = home(); else if (view === 'grid') body = grid(); else if (view === 'level') body = level(); else if (view === 'jobs') body = jobs(); else if (view === 'run') body = runView(); else if (view === 'deck') body = deck(); else if (view === 'shop') body = shopView(); else if (view === 'key') body = keyView(); else if (view === 'stats') body = statsView(); else if (view === 'crew') body = crewView(); else body = logView();
+    let body = ''; if (view === 'home') body = home(); else if (view === 'grid') body = grid(); else if (view === 'level') body = level(); else if (view === 'jobs') body = jobs(); else if (view === 'run') body = runView(); else if (view === 'deck') body = deck(); else if (view === 'shop') body = shopView(); else if (view === 'key') body = keyView(); else if (view === 'stats') body = statsView(); else if (view === 'crew') body = crewView(); else if (view === 'done') body = doneView(); else body = logView();
     a.innerHTML = hud() + body + fixerModal() + fixerNotes() + suggestModal() + dmOverlay() + devPanel(); if (cur.suggest && !cur.sugBusy) { const ta = $('#sugtext'); if (ta) { ta.focus(); ta.oninput = () => { cur.sugDraft = ta.value; }; } }
     a.querySelectorAll('.npcslot').forEach(sl => { if (sl.dataset.protege) { const p = Game.state.roster.list.find(x => x.id === sl.dataset.protege) || (cur.dmResult && cur.dmResult.protege); sl.replaceWith(npcEl(null, +sl.dataset.size, p ? p.look : { seed: 'p' })); } else sl.replaceWith(npcEl(sl.dataset.npc, +sl.dataset.size)); });
     if (view === 'run' && Game.run && !Game.run.result) { drawMap(); const o = $('#conout'); if (o) o.scrollTop = o.scrollHeight; const inp = $('#conin'); if (inp && !Game.dm.pending()) inp.focus(); }
@@ -436,6 +462,9 @@
   const sfx = n => { if (window.Sfx) Sfx.play(n); };
   let last = null;
   function float(sel, text, cls){ const el = $(sel); if (!el) return; const f = document.createElement('span'); f.className = 'fdelta ' + (cls || ''); f.textContent = text; el.appendChild(f); el.classList.add('bump'); setTimeout(() => { f.remove(); el.classList.remove('bump'); }, 1400); }
+  // anonymous progress for the public numbers on the door: a random id kept in the record, never the handle
+  function pulse(){ if (!window.WatsonDB || !WatsonDB.on) return; const s = Game.state; if (!s.meta.pulseId) { s.meta.pulseId = Math.random().toString(36).slice(2, 10) + '-' + Date.now().toString(36); Game.save(); }
+    WatsonDB.pulse({ id: s.meta.pulseId, cls: Game.classFor(s.rep).id, nights: (window.SYLLABUS || []).filter(x => Game.nightDone(x.night)).length, flatlines: s.meta.deaths || 0 }); }
   function react(){ const s = Game.state; if (!s.handle) { last = null; return; } const dm = Game.dm.pending(); const now = { h: s.handle, f: s.body.food, c: s.body.chrome, cr: s.creds || 0, rep: s.rep, cp: s.checkpoint ? s.checkpoint.at : 0, dead: !!s.dead, dm: dm ? dm.id : null, cls: Game.classFor(s.rep).id };
     const p = last; last = now; if (!p || p.h !== now.h) return;
     if (now.dead && !p.dead) return sfx('flatline');
@@ -446,7 +475,7 @@
     if (drep) float('.hud2 .repm', (drep > 0 ? '+' : '−') + Math.abs(drep) + ' REP', drep > 0 ? 'up' : 'down');
     if (now.cls !== p.cls && Game.classRank(now.cls) > Game.classRank(p.cls)) sfx('promo');
     else if (dcr > 0) sfx('coin'); else if (dcr < 0) sfx('spend'); else if (df > 0) sfx('eat'); else if (dc > 0) sfx('fix'); else if (df < 0 || dc < 0) sfx('drain');
-    if (now.cp && now.cp !== p.cp) { toast('SYNCED · ' + s.checkpoint.label, 'grn'); if (!dcr) sfx('sync'); }
+    if (now.cp && now.cp !== p.cp) { toast('SYNCED · ' + s.checkpoint.label, 'grn'); if (!dcr) sfx('sync'); pulse(); }
     if (now.dm && now.dm !== p.dm) sfx('ring'); }
 
   // nested menus: one open at a time; a click anywhere else, or Escape, closes it
@@ -454,7 +483,7 @@
     if (cur.menu && !e.target.closest('.dropdown')) { cur.menu = null; render(); } }, true);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && cur.menu) { const was = cur.menu; cur.menu = null; render(); const b = $('[data-menu="' + was + '"]'); if (b) b.focus(); } });
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-multi],[data-up],[data-down],[data-dev],[data-node],[data-dmans],[data-devtab],[data-golden],[data-buy],[data-eat],[data-give],[data-favor],[data-theme],#next,#prev,#finish,#commit,#hint,#walk,#abort,#wipe,#logout,#signin,#signout,#reconnect,#reload,#exitdoor,#devtoggle,#opendm,#dmopen,#dmlater,#dmclose,#forcedm,#devping,#fixer,#fxyes,#fxno,#fxnotes,#fxclose,[data-ctab],[data-cfilter],[data-cjob],[data-bshow],[data-bcls],[data-bstage],[data-bfold],[data-mstage],[data-bjump],[data-shelf],#drivetry,#suggest,#sugsend,#sugno'); if (!t) return; if (t.closest('.dropdown')) cur.menu = null; if (t.id === 'sfxtoggle') { const on = window.Sfx && Sfx.toggle(); toast(on ? 'SOUND ON' : 'SOUND OFF', 'grn'); return render(); }
+    const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-multi],[data-up],[data-down],[data-dev],[data-node],[data-dmans],[data-devtab],[data-golden],[data-buy],[data-eat],[data-give],[data-favor],[data-theme],#next,#prev,#finish,#commit,#hint,#walk,#abort,#wipe,#logout,#signin,#signout,#reconnect,#reload,#exitdoor,#devtoggle,#opendm,#dmopen,#dmlater,#dmclose,#forcedm,#devping,#fixer,#fxyes,#fxno,#fxnotes,#fxclose,[data-ctab],[data-cfilter],[data-cjob],[data-bshow],[data-bcls],[data-bstage],[data-bfold],[data-mstage],[data-bjump],[data-shelf],#drivetry,#suggest,#sugsend,#sugno,#lissue,#lsvg,#lpng,#cprint,#lhall'); if (!t) return; if (t.closest('.dropdown')) cur.menu = null; if (t.id === 'sfxtoggle') { const on = window.Sfx && Sfx.toggle(); toast(on ? 'SOUND ON' : 'SOUND OFF', 'grn'); return render(); }
     if (t.id === 'logout') { if (view === 'run' && Game.run && !Game.run.result && !confirm('Jack out? This dive is lost.')) return; Game.logout(); view = 'home'; cur = Object.assign(cur, { stage: null, level: null, beat: 0, job: null, synced: null }); return render(); }
     if (t.id === 'signin') { Auth.signIn().then(tok => { if (!tok) toast('sign-in did not go through', 'mag'); }).catch(err => toast('sign-in failed: ' + err.message, 'mag')); return; } if (t.id === 'signout') { Game.flushNow().then(() => Auth.signOut()).then(() => { view = 'home'; render(); }); return; }
     if (t.id === 'drivetry') { (Auth.token() ? Game.recheckDrive() : Auth.ensureToken()).then(() => render()); return; }
@@ -483,6 +512,11 @@
     if (t.dataset.bshow) { cur.boardShow = t.dataset.bshow; cur.job = null; return render(); } if (t.dataset.bcls) { cur.boardCls = cur.boardCls === t.dataset.bcls ? null : t.dataset.bcls; cur.job = null; return render(); } if (t.dataset.bstage != null && t.hasAttribute('data-bstage')) { cur.boardStage = t.dataset.bstage || null; cur.job = null; return render(); }
     if (t.dataset.bfold) { const k = t.dataset.bfold, f = cur.boardFold || (cur.boardFold = {}); f[k] = t.getAttribute('aria-expanded') === 'true'; return render(); }
     if (t.dataset.ctab) { cur.codexTab = t.dataset.ctab; cur.codexQ = ''; return render(); } if (t.dataset.cfilter) { cur.codexFilter = t.dataset.cfilter; return render(); } if (t.dataset.cjob) { cur.codexJob = t.dataset.cjob; return render(); }
+    if (t.id === 'lhall') { cur.lhall = t.checked; return; }
+    if (t.id === 'lissue') { cur.lbusy = true; render(); WatsonDB.license({ handle: Game.state.handle, hall: cur.lhall !== false, record: Game.licenseRecord() }).then(r => { cur.lbusy = false; if (r.ok) { Game.setLicense({ number: r.number, issued: r.issued, hall: cur.lhall !== false }); toast('LICENSE ' + r.number, 'yel'); } else toast(r.why || 'The license office did not answer.', 'mag'); render(); }); return; }
+    if (t.id === 'lsvg') { saveFile('netrunner-license-' + Game.state.license.number + '.svg', new Blob([LicenseCard.svg(cardRecord())], { type: 'image/svg+xml' })); return; }
+    if (t.id === 'lpng') { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = 2032; c.height = 1280; c.getContext('2d').drawImage(img, 0, 0, 2032, 1280); c.toBlob(b => saveFile('netrunner-license-' + Game.state.license.number + '.png', b)); }; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(LicenseCard.svg(cardRecord())); return; }
+    if (t.id === 'cprint') { document.body.classList.add('printing'); window.print(); setTimeout(() => document.body.classList.remove('printing'), 500); return; }
     if (t.id === 'suggest') { cur.suggest = true; return render(); } if (t.id === 'sugno') { cur.suggest = false; return render(); }
     if (t.id === 'sugsend') { const text = (cur.sugDraft || '').trim(); if (text.length < 3) { toast('Write a little more first.', 'mag'); return; } cur.sugBusy = true; render();
       WatsonDB.suggest({ handle: Game.state.handle, screen: view, night: lastNight() || '', version: buildVer(), text }).then(r => { cur.sugBusy = false; if (r.ok) { cur.suggest = false; cur.sugDraft = ''; toast('Sent' + (r.id ? ' · ticket ' + r.id : '') + '. Thank you.', 'grn'); } else toast(r.why || 'It did not go through.', 'mag'); render(); }); return; }

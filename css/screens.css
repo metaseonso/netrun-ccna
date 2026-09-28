@@ -200,3 +200,35 @@
 .maker span{display:flex;flex-direction:column;gap:2px;text-align:left}
 .maker b{font-family:var(--disp);font-size:10px;letter-spacing:.18em;color:var(--ink);font-weight:600}
 .maker em{font-style:normal;font-size:11px;color:var(--ink2)}
+
+/* the end: license, companion */
+.done h2{font-size:26px}
+.lcard{max-width:860px;margin:14px auto} .lcard svg{width:100%;height:auto;display:block;filter:drop-shadow(0 20px 40px rgba(0,0,0,.6))}
+.lact{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0} .done .muted{text-align:center}
+.lissue{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:560px;margin:14px auto}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:13px;cursor:pointer} .chk input{margin-top:3px;accent-color:#ff3fa4}
+.companion{margin-top:28px;padding:22px;border:1px solid var(--line);background:var(--bg2)}
+.chead2{display:flex;justify-content:space-between;align-items:center} .chead2 h3{margin:0;font-family:var(--disp);letter-spacing:.14em;color:var(--cyan)}
+.companion .muted{text-align:left}
+.cact h4{margin:18px 0 8px;font-family:var(--disp);font-size:12px;letter-spacing:.16em;color:var(--ink)} .cact h4 span{color:var(--mag);margin-left:8px}
+.cact ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:4px 18px}
+.cact li{display:grid;grid-template-columns:18px 26px 1fr auto;gap:10px;align-items:center;padding:5px 0;font-size:13px;border-bottom:1px solid #1a2233;color:var(--ink2)}
+.cact li.ok{color:var(--ink)} .cact .box{width:16px;height:16px;border:1px solid var(--ink3);display:flex;align-items:center;justify-content:center}
+.cact li.ok .box{border-color:var(--grn);color:var(--grn)} .cact .nn{font-family:var(--disp);font-size:11px;color:var(--cyan)} .cact .dist{font-size:10px;letter-spacing:.1em;color:var(--ink3)}
+.note{display:flex;gap:18px;margin-top:26px;padding:20px;background:#f6eae7;color:#221a16;border-radius:14px}
+.note img{border-radius:10px;object-fit:cover;object-position:top;flex-shrink:0} .note p{margin:0 0 10px;font-size:14px;line-height:1.7}
+.note .sig{display:flex;align-items:center;gap:10px;font-weight:700;margin-top:6px} .note .muted{color:#5a473c !important;text-align:left;font-size:12px}
+@media (max-width:760px){.note{flex-direction:column}}
+@media print{
+  body.printing .hud2,body.printing .lcard,body.printing .lact,body.printing .lissue,body.printing .done>h2,body.printing .done>.alert,body.printing .done>.muted,body.printing #cprint,body.printing .toast,body::before,body::after{display:none !important}
+  body.printing{background:#fff !important;color:#000} body.printing .panel,body.printing .companion{border:0;background:#fff;box-shadow:none;padding:0}
+  body.printing .cact li{color:#000;border-color:#ddd} body.printing .cact .box{border-color:#000} body.printing .cact li.ok .box{color:#000} body.printing .chead2 h3,body.printing .cact .nn{color:#000}
+}
+
+/* public numbers on the door */
+.pubstats{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:22px auto 18px;max-width:760px}
+.pubstats .ps{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:120px;padding:10px 12px;border:1px solid var(--line);background:var(--bg2)}
+.pubstats .ps b{font-family:var(--disp);font-size:20px;color:var(--cyan);font-weight:600} .pubstats .ps span{font-size:9px;letter-spacing:.18em;color:var(--ink2)}
+.pubstats .ps:nth-child(4) b{color:var(--mag)} .pubstats .ps:nth-child(2) b{color:var(--yel)}
+.halllink{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 16px;text-decoration:none}
+.halllink .ic{color:var(--mag)}

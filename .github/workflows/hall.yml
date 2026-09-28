@@ -1,0 +1,33 @@
+# The Hall of Fame robot: every 30 minutes, collect new licenses from the Watson DB and commit their cards.
+name: hall-of-fame
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: hall
+  cancel-in-progress: false
+jobs:
+  hall:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Collect licenses
+        env:
+          WATSON_DB_URL: ${{ secrets.WATSON_DB_URL }}
+          WATSON_DB_KEY: ${{ secrets.WATSON_DB_KEY }}
+        run: node tools/hall.js
+      - name: Commit new cards
+        run: |
+          if [ -n "$(git status --porcelain hall)" ]; then
+            git config user.name "hall-of-fame robot"
+            git config user.email "hall-bot@users.noreply.github.com"
+            git add hall
+            git commit -m "Hall of Fame: new licenses"
+            git push
+          fi

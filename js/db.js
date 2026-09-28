@@ -9,6 +9,9 @@
     async suggest(o){ if (!url()) return { ok: false, why: 'The suggestion box is not connected yet.' };
       try { const r = await post(Object.assign({ kind: 'suggestion' }, o)); try { return await r.json(); } catch (e) { return { ok: true }; } }
       catch (e) { try { await fetch(url(), { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ kind: 'suggestion' }, o)) }); return { ok: true }; } catch (e2) { return { ok: false, why: 'No connection. Try again later.' }; } } },
+    // anonymous progress counts for the public numbers: a random id per record, never the handle
+    pulse(o){ if (!url()) return; try { fetch(url(), { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ kind: 'pulse' }, o)) }).catch(() => {}); } catch (e) {} },
+    async stats(){ if (!url()) return null; try { const r = await fetch(url() + '?action=stats', { redirect: 'follow' }); const d = await r.json(); return d.ok ? d : null; } catch (e) { return null; } },
     async license(o){ if (!url()) return { ok: false, why: 'The license office is not connected yet.' };
       try { const r = await post(Object.assign({ kind: 'license' }, o)); return await r.json(); } catch (e) { return { ok: false, why: 'No connection. Try again later.' }; } }
   };
