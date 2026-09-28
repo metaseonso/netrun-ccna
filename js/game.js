@@ -34,6 +34,10 @@
   // ---- progression -------------------------------------------------------------
   // class = rep threshold AND the rite of the class below (the gig flagged rite:true with that cls). No rite written yet = no gate.
   const classRank = id => CLASSES.findIndex(k => k.id === id);
+  // what a gig pays on a first clear, and the rep it is worth: its own numbers, else its class's
+  const clsOf = id => CLASSES.find(c => c.id === id) || CLASSES[0];
+  const pay = job => job.creds != null ? job.creds : clsOf(job.cls).pay;
+  const repOf = job => job.rep != null ? job.rep : clsOf(job.cls).rep;
   const riteFor = cls => (window.JOBS || []).find(j => j.rite && j.cls === cls) || null;
   const riteCleared = cls => { const r = riteFor(cls); return !r || !!state.jobsDone[r.id]; };
   const classFor = rep => { let c = CLASSES[0]; for (let i = 1; i < CLASSES.length; i++) { if (rep >= CLASSES[i].min && riteCleared(CLASSES[i - 1].id)) c = CLASSES[i]; else break; } return c; };
@@ -159,8 +163,8 @@
     // a fixer's run: the client is served, the fixer keeps the pay. nothing greenlit, no rep, no sync. the gig stays on the Board.
     if (run.outsourced) { ev('job_finish', { job: job.id, ms, fails, hints: hintedCount, rep: 0, outsourced: true }); log('Gig handed off: ' + job.title + ' (the fixer kept the pay)'); save();
       run.result = { rep: 0, creds: 0, hintedCount, fails, ms, leveled: [], promoted: null, repeat: !!prev, recruit: null, outsourced: true }; return { ok: true, finished: true, result: run.result }; }
-    let rep = job.rep; if (prev) rep = Math.round(rep * 0.4); rep = Math.max(Math.round(job.rep * 0.2), Math.round(rep * Math.max(0.3, 1 - 0.1 * hintedCount)));
-    const creds = Math.round((job.creds || job.rep * 3) * (prev ? 0.4 : 1)); addCreds(creds, 'gig ' + job.id);
+    let rep = repOf(job); if (prev) rep = Math.round(rep * 0.4); rep = Math.max(Math.round(repOf(job) * 0.2), Math.round(rep * Math.max(0.3, 1 - 0.1 * hintedCount)));
+    const creds = Math.round(pay(job) * (prev ? 0.4 : 1)); addCreds(creds, 'gig ' + job.id);
     const before = classFor(state.rep).id; state.jobsDone[job.id] = { times: (prev ? prev.times : 0) + 1, last: Date.now(), best: Math.max(prev ? prev.best : 0, run.done.filter(d => d.clean).length), bestMs: Math.min(prev && prev.bestMs || Infinity, ms) };
     if (job.id === window.FINALE && !state.completedAt) { state.completedAt = Date.now(); log('Opening Night. The Watson Exchange held.'); ev('complete', { job: job.id }); }
     const promoted = addRep(rep, 'gig ' + job.id, before); // a rite clears the gate, so the class is re-read after the gig is on the books
@@ -172,7 +176,7 @@
   // the run that hires one pays nothing, greenlights nothing and sharpens nothing. the notes stay in the codex for good,
   // readable in that dive only through the fixer's button, and after it only outside a dive. rites are watched: no fixers.
   const fixer = {
-    price(job){ return job.creds || job.rep * 3; },
+    price(job){ return pay(job); },
     can(){ if (!run || run.result) return { ok: false, why: 'Not in a dive.' }; if (run.outsourced) return { ok: false, why: 'The fixer is already on it.' };
       if (run.job.rite) return { ok: false, why: 'The Board watches rites. No fixer will touch this one.' };
       if (codexStatus(run.job) !== 'sealed') return { ok: false, why: 'You already have the notes for this gig. They are in the CODEX.', have: true }; const price = fixer.price(run.job);
@@ -290,5 +294,5 @@
   // closing the tab with a Google record not yet in Drive: push it, and let the browser ask before it goes.
   window.addEventListener('beforeunload', e => { const unsaved = state.owner && (dirty || inflight); Telemetry.touch(state); if (!state.owner) return save(); if (unsaved) { flush(true); e.preventDefault(); e.returnValue = ''; } });
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get driveOk(){ return driveOk; }, get driveWhy(){ return driveWhy; }, recheckDrive(){ const u = gUser(); return u ? onAuth(u) : Promise.resolve(); }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, shop, fixer, codexStatus, nightDone, licenseRecord, setLicense, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get driveOk(){ return driveOk; }, get driveWhy(){ return driveWhy; }, recheckDrive(){ const u = gUser(); return u ? onAuth(u) : Promise.resolve(); }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, pay, repOf, shop, fixer, codexStatus, nightDone, licenseRecord, setLicense, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
 })();
