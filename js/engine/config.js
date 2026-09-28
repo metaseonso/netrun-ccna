@@ -117,6 +117,7 @@
           else if ((m = s.match(/^tunnel source (\S+)$/))) i.tunnelSource = m[1];
           else if ((m = s.match(/^tunnel destination (\S+)$/))) i.tunnelDest = m[1];
           else if ((m = s.match(/^tunnel mode (.+)$/))) i.tunnelMode = m[1];
+          else if (s === 'no switchport') i.routed = true; else if (s === 'switchport') i.routed = false;
         }
       }
       // ---------------- line config

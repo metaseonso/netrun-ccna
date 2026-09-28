@@ -141,5 +141,16 @@ module.exports.run = function({ out }){
     d.R1.exec('router ospf 1'); d.R1.exec('network 172.16.0.0 0.0.0.3 area 0'); d.R1.exec('network 10.1.1.0 0.0.0.255 area 0'); d.R3.exec('exit'); d.R3.exec('router ospf 1'); d.R3.exec('network 172.16.0.0 0.0.0.3 area 0'); d.R3.exec('network 10.3.3.0 0.0.0.255 area 0');
     A = Net.api(Net.build(net, d)); ok(A.ospfNeighbors('R1').some(x => x.dev === 'R3' && x.iface === 'tunnel0'), 'gre: OSPF forms an adjacency over the tunnel'); const o = A.state.ospf.routers.R1.ifaces.find(x => x.iface === 'tunnel0'); ok(o && o.cost === 1000, 'gre: OSPF costs a tunnel 1000 (' + (o && o.cost) + ')');
   }
+  // 12. routed ports on multilayer switches: no switchport, an address, OSPF across, and spanning tree leaves the link alone
+  {
+    const net = { devices: { CSW1: { kind: 'l3switch', mac: '0012.0000.0001' }, CSW2: { kind: 'l3switch', mac: '0012.0000.0002' }, PC1: { kind: 'host', ip: '10.1.0.10', mask: '255.255.255.0', gw: '10.1.0.1' }, PC2: { kind: 'host', ip: '10.2.0.10', mask: '255.255.255.0', gw: '10.2.0.1' } },
+      links: [ { a: 'CSW1', ap: 'gigabitethernet1/0/1', b: 'CSW2', bp: 'gigabitethernet1/0/1' }, { a: 'CSW1', ap: 'gigabitethernet1/0/2', b: 'PC1' }, { a: 'CSW2', ap: 'gigabitethernet1/0/2', b: 'PC2' } ] };
+    const base = (me, v, lan, p2p) => ['en', 'conf t', 'ip routing', 'vlan ' + v, 'int g1/0/2', 'switchport mode access', 'switchport access vlan ' + v, 'int vlan ' + v, 'ip add ' + lan + ' 255.255.255.0', 'int g1/0/1', 'ip add ' + p2p + ' 255.255.255.252', 'router ospf 1', 'network 10.0.0.0 0.255.255.255 area 0'];
+    const d = devs({ CSW1: base('CSW1', 10, '10.1.0.1', '10.0.0.41'), CSW2: base('CSW2', 20, '10.2.0.1', '10.0.0.42') });
+    let A = Net.api(Net.build(net, d)); ok(!A.ping('PC1', '10.2.0.10').ok && !A.ospfNeighbors('CSW1').length, 'routed: an address on a switchport does not route');
+    ['CSW1', 'CSW2'].forEach(n => { d[n].exec('int g1/0/1'); d[n].exec('no switchport'); }); A = Net.api(Net.build(net, d));
+    ok(A.ospfNeighbors('CSW1').length === 1 && A.route('CSW1', '10.2.0.0/24') && A.route('CSW1', '10.2.0.0/24').proto === 'O', 'routed: OSPF neighbours across the routed link and learns the far VLAN');
+    ok(A.ping('PC1', '10.2.0.10').ok, 'routed: PC1 reaches PC2 across two multilayer switches'); ok(!A.trunk('CSW1', 'g1/0/1') && !A.stp(10).switches.CSW1.ports['gigabitethernet1/0/1'], 'routed: no trunk and no spanning tree on a routed port');
+  }
   return { pass, fails };
 };

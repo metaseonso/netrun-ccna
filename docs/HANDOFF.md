@@ -136,6 +136,10 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Routed ports on multilayer switches: `no switchport` on an `l3switch` port makes it a Layer 3 port (no VLAN,
+  no trunk, no spanning tree, no EtherChannel); with an `ip address` it is a point-to-point link like a router's, so a
+  core of multilayer switches can run OSPF over /30s (the Mega Lab). `switchport` turns it back. Tested (12).
+
 - 2026-09-28 · GRE tunnels. `interface tunnelN` with `ip address`, `tunnel source <iface|ip>`, `tunnel destination <ip>`
   (`tunnel mode gre ip` is accepted). A tunnel is not shut by default; it comes up when both ends name each other and the
   underlay carries a ping between the two addresses (judged on the network without tunnels). The two ends then form a
