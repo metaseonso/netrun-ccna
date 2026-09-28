@@ -136,6 +136,10 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · The shell keeps the case you typed for VLAN names and interface descriptions (`show vlan brief`, `show interfaces
+  description`, `show interfaces`, running-config), while the parsed config keeps them lower case for checks (`name`, `desc`;
+  the typed form is `shown`, `descShown`). `show vlan brief` lists the legacy VLANs 1002–1005. Tested (section 18).
+
 - 2026-09-28 · Static routes three ways: `ip route P M NEXTHOP`, `ip route P M EXIT` (the router ARPs for the destination and
   the neighbour answers by proxy ARP) and `ip route P M EXIT NEXTHOP`, each with an optional AD; a route whose exit
   interface is down leaves the table. `show ip route` prints like IOS: full codes, local /32 routes, entries grouped under

@@ -130,6 +130,7 @@
       if (line === 'no shutdown') { const i = b.findIndex(x => x.line === 'shutdown'); if (i >= 0) b.splice(i, 1); b.noShut = true; continue; }
       if (line === 'shutdown') b.noShut = false;
       if (line.startsWith('no ')) { const what = line.slice(3); const i = b.findIndex(x => x.line === what || x.line.startsWith(what + ' ') || keyOf(x.line) && keyOf(x.line) === keyOf(what)); if (i >= 0) b.splice(i, 1); else if (what === 'ip address') { const j = b.findIndex(x => /^ip address /.test(x.line)); if (j >= 0) b.splice(j, 1); } continue; }
+      if (r.raw && /^(name|description) /.test(line)) line = line.split(' ')[0] + ' ' + r.raw.replace(/^\s*\S+\s+/, ''); // names and descriptions keep the case they were typed in
       const e = put(b, line); if (/^enable password |^password |^username \S+ password /.test(line)) { e.enc = enc; secrets.push(e); } }
     const show = x => { let m; const l = x.line;
       if ((m = l.match(/^enable secret (?:\d+ )?(\S+)$/))) return 'enable secret 5 ' + type5(m[1]);
@@ -237,7 +238,7 @@
     if (s === '?' || s === 'do ?') { const rows = HELP[s === 'do ?' ? 'priv' : dev.mode] || HELP[dev.mode.startsWith('config-') ? 'config-if' : 'config']; dev.out.push({ t:'out', s: 'Exec commands:'.replace('Exec', dev.mode.startsWith('config') && s !== 'do ?' ? 'Configure' : 'Exec') + '\n' + helpText(rows) }); return; }
     if (/^(do )?show \?$/.test(s)) { dev.out.push({ t:'out', s: helpText(HELP.show) }); return; }
     if (s.endsWith(' ?')) { dev.out.push({ t:'sys', s: '  (this shell lists the commands for each mode with a bare ?. Abbreviations work: sh run, conf t, int g0/0.)' }); return; }
-    const rec = { mode: dev.mode, ctx: dev.ctx, line: s };
+    const rec = { mode: dev.mode, ctx: dev.ctx, line: s, raw: raw.trim() };
     const doCmd = s.startsWith('do ') ? s.slice(3) : null;
     const showish = doCmd || (dev.mode === 'user' || dev.mode === 'priv' ? s : null);
 

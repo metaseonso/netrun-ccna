@@ -85,14 +85,14 @@
         else if ((m = s.match(/^no vlan (\d+)$/))) delete cfg.vlans[+m[1]];
       }
       // ---------------- vlan config
-      if (r.mode === 'config-vlan') { const ids = r.ctx.replace('vlan ', '').split(',').map(x => +x.split('-')[0]); if ((m = s.match(/^name (\S+)$/))) ids.forEach(id => { cfg.vlans[id] = cfg.vlans[id] || { id }; cfg.vlans[id].name = m[1]; }); }
+      if (r.mode === 'config-vlan') { const ids = r.ctx.replace('vlan ', '').split(',').map(x => +x.split('-')[0]); if ((m = s.match(/^name (\S+)$/))) { const shown = r.raw ? r.raw.replace(/^\s*\S+\s+/, '') : m[1]; ids.forEach(id => { cfg.vlans[id] = cfg.vlans[id] || { id }; cfg.vlans[id].name = m[1]; cfg.vlans[id].shown = shown; }); } }
       // ---------------- interface config
       if (r.mode === 'config-if' || r.mode === 'config-subif' || r.mode === 'config-if-range') {
         for (const n of ifacesOf(r.ctx)) { const i = iface(cfg, n);
           if ((m = s.match(/^ip address (\S+) (\S+)( secondary)?$/))) { if (m[3]) i.secondary.push({ ip: m[1], mask: m[2] }); else { i.ip = m[1]; i.mask = m[2]; } }
           else if (s === 'no ip address') { i.ip = null; i.mask = null; }
           else if (s === 'shutdown') i.shutdown = true; else if (s === 'no shutdown') i.shutdown = false;
-          else if ((m = s.match(/^description (.*)$/))) i.desc = m[1];
+          else if ((m = s.match(/^description (.*)$/))) { i.desc = m[1]; i.descShown = r.raw ? r.raw.replace(/^\s*\S+\s+/, '') : m[1]; } // checks compare lower case; the shell shows it as typed
           else if ((m = s.match(/^switchport mode (access|trunk|dynamic (?:auto|desirable))$/))) i.mode = m[1];
           else if ((m = s.match(/^switchport access vlan (\d+)$/))) i.accessVlan = +m[1];
           else if ((m = s.match(/^switchport trunk allowed vlan (?:add )?([\d,\-]+|all|none)$/))) { if (m[1] === 'all') i.allowed = null; else if (m[1] === 'none') i.allowed = new Set(); else { i.allowed = i.allowed || (s.includes(' add ') ? new Set() : new Set()); m[1].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let v = a; v <= (b || a); v++) i.allowed.add(v); }); } }

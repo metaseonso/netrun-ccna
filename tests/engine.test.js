@@ -16,7 +16,7 @@ module.exports.run = function({ out }){
     d.R2.exec('ip route 10.0.1.0 255.255.255.0 10.0.12.1'); A = Net.api(Net.build(net, d)); const p2 = A.ping('PC1', '10.0.2.10'); ok(p2.ok, 'static: both routes → ping works (' + p2.reason + ')'); ok(A.route('R1', '10.0.2.0/24') && A.route('R1', '10.0.2.0/24').proto === 'S', 'static: route appears as S');
     ok(/S\s+10\.0\.2\.0\/24/.test(Show.render(d.R1, 'show ip route', A.state)), 'show ip route lists the static route');
     d.R1.exec('int g0/0'); d.R1.exec('description ## to PC1 ##'); A = Net.api(Net.build(net, d)); const idesc = Show.render(d.R1, 'show interfaces description', A.state);
-    ok(/Gi0\/0\s+up\s+up\s+## to pc1 ##/.test(idesc) && /Gi0\/1\s+up\s+up/.test(idesc), 'show interfaces description lists status, protocol and the description (' + idesc + ')');
+    ok(/Gi0\/0\s+up\s+up\s+## to PC1 ##/.test(idesc) && /Gi0\/1\s+up\s+up/.test(idesc), 'show interfaces description lists status, protocol and the description (' + idesc + ')');
     // shutdown breaks it
     // traceroute shows the forward path only: each router's ingress address, then the target
     const tr = A.ping('PC1', '10.0.2.10'); ok(JSON.stringify(tr.trail) === JSON.stringify(['10.0.1.1', '10.0.12.2', '10.0.2.10']), 'trace: hops are the ingress addresses, forward only (' + JSON.stringify(tr.trail) + ')');
@@ -246,6 +246,14 @@ module.exports.run = function({ out }){
     ok(/policy-map wan-out\n class voice\n  priority percent 20\n class class-default\n  fair-queue/.test(run) && /class-map match-any voice\n match dscp ef/.test(run), 'running-config nests classes under their policy-map (' + run.slice(run.indexOf('class-map'), run.indexOf('class-map') + 200) + ')');
     ok(/Match dscp ef \(46\)/.test(Show.render(d.R1, 'show class-map', S)) && /Strict Priority, 20% of the link/.test(Show.render(d.R1, 'show policy-map', S)), 'show class-map and show policy-map render');
     const pi = Show.render(d.R1, 'show policy-map interface g0/0', S); ok(/Service-policy output: wan-out/.test(pi) && /Service-policy input: mark/.test(pi) && /set dscp af31 \(26\)/.test(pi), 'show policy-map interface lists both directions and the AF31 value (' + pi + ')');
+  }
+  // 18. names and descriptions: the shell shows them as typed, the parsed config keeps them lower case for checks; legacy VLANs listed
+  {
+    const net = { devices: { SW1: { kind: 'switch' }, PC1: { kind: 'host', ip: '10.0.0.1', mask: '255.255.255.0' } }, links: [ { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' } ] };
+    const d = devs({ SW1: ['en', 'conf t', 'vlan 10', 'name OFFICE', 'int f0/1', 'switchport mode access', 'switchport access vlan 10', 'description Accounts PC'] }); const A = Net.api(Net.build(net, d));
+    const vb = Show.render(d.SW1, 'show vlan brief', A.state); ok(/10\s+OFFICE\s+active\s+Fa0\/1/.test(vb) && /1002\s+fddi-default\s+act\/unsup/.test(vb), 'show vlan brief: the name as typed, the legacy VLANs (' + vb + ')');
+    ok(A.cfg('SW1').vlans[10].name === 'office' && A.cfg('SW1').interfaces['fastethernet0/1'].desc === 'accounts pc', 'config: names and descriptions stay lower case for checks');
+    d.SW1.exec('do show running-config'); ok(/ name OFFICE/.test(d.SW1.out.map(o => o.s).join('\n')) && / description Accounts PC/.test(d.SW1.out.map(o => o.s).join('\n')), 'running-config: names and descriptions as typed');
   }
   return { pass, fails };
 };
