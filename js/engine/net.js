@@ -32,7 +32,7 @@
     opts = opts || {};
     // devices flagged removed (e.g. a rogue that facilities pulled) vanish with their links
     const net = { devices: {}, links: [], preconfig: net0.preconfig, stpMode: net0.stpMode }; for (const n in net0.devices) if (!net0.devices[n].removed) net.devices[n] = net0.devices[n]; net.links = (net0.links || []).filter(l => net.devices[l.a] && net.devices[l.b]);
-    const S = { net, devices, cfg: {}, ifaces: {}, links: [], segs: {}, segOf: {}, owners: {}, l3: [], routers: [], tables: {}, tables6: {}, hosts: {}, dhcp: {}, portsec: {}, hsrp: {}, threats: {}, issues: [], adj: {}, stp: {}, trunks: {}, bundles: {}, macTable: {}, natTables: {}, ospf: { neighbors: {}, routers: {} } };
+    const S = { learn: net0.learn ? (net0._learn = net0._learn || { mac: {}, arp: {} }) : null, net, devices, cfg: {}, ifaces: {}, links: [], segs: {}, segOf: {}, owners: {}, l3: [], routers: [], tables: {}, tables6: {}, hosts: {}, dhcp: {}, portsec: {}, hsrp: {}, threats: {}, issues: [], adj: {}, stp: {}, trunks: {}, bundles: {}, macTable: {}, natTables: {}, ospf: { neighbors: {}, routers: {} } };
     const D = net.devices;
     for (const n in D) { const d = D[n]; S.cfg[n] = devices[n] ? NetConfig.parse(devices[n]) : NetConfig.blank(); }
     // interfaces from links
@@ -223,7 +223,7 @@
   function v6net(addr, len){ const full = expand6(addr); const bits = BigInt('0x' + full.replace(/:/g, '')); const mask = len === 0 ? 0n : ((1n << 128n) - 1n) << BigInt(128 - len); const net = bits & mask; const hex = net.toString(16).padStart(32, '0'); return IP.ipv6compress(hex.match(/.{4}/g).join(':')); }
   function expand6(a){ let h = a.toLowerCase().split('::'); let parts; if (h.length === 2) { const l = h[0] ? h[0].split(':') : [], r = h[1] ? h[1].split(':') : []; parts = l.concat(new Array(8 - l.length - r.length).fill('0'), r); } else parts = h[0].split(':'); return parts.map(x => x.padStart(4, '0')).join(':'); }
 
-  function buildMacTables(S){ const D = S.net.devices; const isSw = n => D[n].kind === 'switch' || D[n].kind === 'l3switch';
+  function buildMacTables(S){ const D = S.net.devices; const isSw = n => D[n].kind === 'switch' || D[n].kind === 'l3switch'; if (S.learn) { for (const sw in D) if (isSw(sw)) S.macTable[sw] = learnedRows(S, sw); return; }
     for (const sw in D) { if (!isSw(sw)) continue; const rows = [];
       for (const o of Object.values(S.owners).flat()) { if (!o.mac) continue; if (o.dev === sw) continue; const port = portToward(S, sw, o.dev); if (!port) continue; const i = S.ifaces[sw][port]; const vlan = i.trunk ? (o.kind === 'iface' && S.ifaces[o.dev][o.iface].cfg.dot1q) || i.native : i.vlan; rows.push({ vlan, mac: o.mac, port, who: o.dev }); }
       S.macTable[sw] = rows.sort((a, b) => a.vlan - b.vlan || a.mac.localeCompare(b.mac)); } }
@@ -257,11 +257,11 @@
     if (S.hosts[from]) { const h = S.hosts[from]; if (!h.up) return fail(from + ' has no link'); if (!h.ip) return fail(from + ' has no IP address' + (h.lease && h.lease.reason ? ' (' + h.lease.reason + ')' : '')); pkt.src = h.ip; cur = { kind: 'host', dev: from, seg: h.seg, ip: h.ip, mask: h.mask, gw: h.gw }; }
     else if (S.routers.includes(from)) { const rt = lookup(S, from, dstIp); if (!rt) return fail(from + ' has no route to ' + dstIp); const o = S.l3.find(x => x.dev === from && x.iface === rt.iface); pkt.src = opts.src || (o ? o.ip : null); if (!pkt.src) return fail('no source address'); cur = { kind: 'router', dev: from, inIf: null }; }
     else return fail(from + ' cannot originate traffic');
-    const res = forward(S, cur, pkt, path, natTbl, 'request'); const trail = (path.trail || []).slice(); if (res.ok && trail[trail.length - 1] !== dstIp) trail.push(dstIp); if (!res.ok) return fail(res.reason, { hops: res.hops, trail });
+    const res = forward(S, cur, pkt, path, natTbl, 'request'); const trail = (path.trail || []).slice(); const fwdLen = path.length; if (res.ok && trail[trail.length - 1] !== dstIp) trail.push(dstIp); if (!res.ok) return fail(res.reason, { hops: res.hops, trail, fwdLen });
     // reply
     const rpkt = { src: res.dstIp, dst: pkt.src === res.srcSeen ? pkt.src : res.srcSeen, proto, sport: pkt.dport, dport: pkt.sport, reply: true };
-    const back = forward(S, res.at, rpkt, path, natTbl, 'reply'); if (!back.ok) return fail('reply failed: ' + back.reason, { hops: res.hops, trail });
-    return { ok: true, reason: 'reply from ' + res.dstDev, path, nat: natTbl, hops: res.hops, dst: res.dstDev, trail };
+    const back = forward(S, res.at, rpkt, path, natTbl, 'reply'); if (!back.ok) return fail('reply failed: ' + back.reason, { hops: res.hops, trail, fwdLen });
+    return { ok: true, reason: 'reply from ' + res.dstDev, path, nat: natTbl, hops: res.hops, dst: res.dstDev, trail, fwdLen, from };
   }
   function forward(S, cur, pkt, path, natTbl, dir){
     const D = S.net.devices; let ttl = 30; const visited = new Set(); let hops = 0; let srcSeen = pkt.src;
@@ -312,12 +312,33 @@
       sshReady: d => { const c = S.cfg[d]; const vty = c.vty; const ok = !!(c.hostname && c.hostname !== d.replace(/\d+$/, '') || true) && !!c.domain && c.sshKeyBits > 0 && !!(vty.transport && vty.transport.includes('ssh')) && vty.login === 'local' && c.users.length > 0; return { ok, hostname: !!c.hostname, domain: !!c.domain, key: c.sshKeyBits, transport: vty.transport, login: vty.login, users: c.users.length }; },
       acl: (d, id) => S.cfg[d].acls[id] || null, aclTest: (d, id, pkt) => aclEval(S, d, id, pkt),
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),
-      neighbors: d => S.neighbors[d] || [], macTable: d => S.macTable[d] || [], bundles: S.bundles
+      neighbors: d => S.neighbors[d] || [], macTable: d => S.learn ? learnedRows(S, d) : (S.macTable[d] || []), arp: d => arpRows(S, d), bundles: S.bundles
     };
   }
+
+  // ---------------------------------------------------------------- learning (opt-in: job.net.learn = true)
+  // Switches learn a source MAC, and hosts and routers learn ARP entries, only from frames that crossed the wire: the pings
+  // and traceroutes typed in the shells (never from a gig's checks). The learned state lives on the gig's net object, so it
+  // survives rebuilds; clear mac address-table dynamic, clear arp-cache and arp -d empty it.
+  const learnedRows = (S, sw) => Object.values((S.learn.mac[sw]) || {}).sort((a, b) => a.vlan - b.vlan || a.mac.localeCompare(b.mac));
+  function l2chain(S, r){ const seq = []; (r.path || []).slice(0, r.fwdLen == null ? (r.path || []).length : r.fwdLen).forEach(p => { if (seq[seq.length - 1] !== p.dev) seq.push(p.dev); }); if (r.from && seq[0] !== r.from) seq.unshift(r.from); if (r.dst && seq[seq.length - 1] !== r.dst) seq.push(r.dst); return seq; }
+  function ownerPair(S, a, b){ for (const seg in S.owners) { const os = S.owners[seg]; const oa = os.find(o => o.dev === a && o.kind !== 'vip'); if (!oa) continue; let ob = null;
+      const h = S.hosts[a]; if (h && h.gw) ob = os.find(o => o.kind === 'vip' && o.ip === h.gw && o.dev === b); ob = ob || os.find(o => o.dev === b && o.kind !== 'vip'); if (ob) return { seg, oa, ob }; } return null; }
+  function switchesIn(S, seg){ const out = []; const D = S.net.devices; for (const sw in D) { if (!(D[sw].kind === 'switch' || D[sw].kind === 'l3switch')) continue; const vl = new Set([1]); Object.keys(S.cfg[sw].vlans).forEach(v => vl.add(+v)); for (const p in S.ifaces[sw]) { const i = S.ifaces[sw][p]; if (i.vlan) vl.add(i.vlan); if (i.native) vl.add(i.native); }
+      for (const v of vl) if (S.uf.has(S.node(sw, v)) && S.uf.find(S.node(sw, v)) === seg) { out.push({ sw, vlan: v }); break; } } return out; }
+  // what a ping taught the network; returns how many first-hop ARP lookups it needed (the packets a real first ping loses)
+  function learnFrom(S, r){ if (!S.learn || !r || !r.path) return 0; const chain = l2chain(S, r); let missing = 0;
+    for (let i = 0; i + 1 < chain.length; i++) { const a = chain[i], b = chain[i + 1]; const pr = ownerPair(S, a, b); if (!pr) continue; const { seg, oa, ob } = pr;
+      const arpA = S.learn.arp[a] = S.learn.arp[a] || {}; const arpB = S.learn.arp[b] = S.learn.arp[b] || {}; if (!arpA[ob.ip]) missing++; if (ob.mac) arpA[ob.ip] = ob.mac; if (oa.mac) arpB[oa.ip] = oa.mac;
+      switchesIn(S, seg).forEach(({ sw, vlan }) => { const t = S.learn.mac[sw] = S.learn.mac[sw] || {}; const pa = portToward(S, sw, a), pb = portToward(S, sw, b);
+        if (pa && oa.mac) t[oa.mac] = { vlan, mac: oa.mac, port: pa, who: a }; if (pb && pb !== pa && ob.mac) t[ob.mac] = { vlan, mac: ob.mac, port: pb, who: b }; }); }
+    for (const sw in S.learn.mac) S.macTable[sw] = learnedRows(S, sw); return missing; }
+  function forget(S, what, dev, arg){ if (!S || !S.learn) return; if (what === 'mac') { const t = S.learn.mac[dev] || {}; for (const m in t) if (!arg || (arg.mac && m === arg.mac) || (arg.port && t[m].port === arg.port)) delete t[m]; S.macTable[dev] = learnedRows(S, dev); } if (what === 'arp') S.learn.arp[dev] = {}; }
+  // the ARP table a box would show: learned entries when learning is on, otherwise every neighbour on its segments
+  function arpRows(S, dev){ if (S.learn) return Object.entries(S.learn.arp[dev] || {}).map(([ip, mac]) => ({ ip, mac })); const out = []; const mine = new Set(); Object.values(S.owners).flat().forEach(o => { if (o.dev === dev) mine.add(o.seg); }); mine.forEach(seg => (S.owners[seg] || []).forEach(o => { if (o.dev !== dev && o.mac && o.ip) out.push({ ip: o.ip, mac: o.mac }); })); return out; }
 
   // traceroute as the consoles print it: the forward path only, one line per hop, the ingress address of each router, then the target
   function traceLines(r, style){ const t = r.trail || []; const row = (i, ip) => style === 'pc' ? '  ' + String(i).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + i + ' ' + ip + ' 0 msec 0 msec 0 msec';
     const out = t.map((ip, i) => row(i + 1, ip)); if (!r.ok) out.push(style === 'pc' ? '  ' + String(t.length + 1).padStart(2) + '     *        *        *     Request timed out.' : '  ' + (t.length + 1) + '  *  *  * '); return out; }
-  window.Net = { build, api, ping, traceLines, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
+  window.Net = { build, api, ping, traceLines, learnFrom, forget, arpRows, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
 })();

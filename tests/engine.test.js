@@ -116,5 +116,24 @@ module.exports.run = function({ out }){
     ok(!d.lines.some(r => r.line === 'broth' || r.line === 'noodles'), 'shell: typed passwords are not recorded');
     d.exec('copy running-config startup-config'); d.exec('show startup-config'); ok(/hostname KB-R1/.test(last()) && /Using \d+ out of/.test(last()), 'shell: write saves the running-config to startup');
   }
+  // 10. learning (net.learn): MAC tables and ARP caches fill only from pings typed in a shell; checks never teach the network
+  {
+    const net = { learn: true, devices: { SW1: { kind: 'switch' }, SW2: { kind: 'switch' }, R1: { kind: 'router' }, PC1: { kind: 'host', ip: '10.0.0.11', mask: '255.255.255.0', gw: '10.0.0.1', mac: '00d0.bc11.1111' }, PC3: { kind: 'host', ip: '10.0.0.13', mask: '255.255.255.0', gw: '10.0.0.1', mac: '0060.2f33.3333' }, SRV: { kind: 'host', ip: '10.9.0.5', mask: '255.255.255.0', gw: '10.9.0.1' } },
+      links: [ { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'SW1', ap: 'gigabitethernet0/1', b: 'SW2', bp: 'gigabitethernet0/1' }, { a: 'SW2', ap: 'fastethernet0/3', b: 'PC3' }, { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/2' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'SRV' } ] };
+    const d = {}; let cache = null, key = null; const st = () => { const k = Object.values(d).map(x => x.lines.length).join(); if (k !== key) { cache = Net.build(net, d); key = k; } return cache; };
+    ['SW1', 'SW2', 'R1'].forEach(n => { d[n] = new Sim.Device(n, { kind: 'ios', netState: st }); }); d.PC1 = new Sim.Device('PC1', { kind: 'host', netState: st }); for (const n in d) d[n]._all = d;
+    d.R1.preload(['int g0/0', 'ip add 10.0.0.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.9.0.1 255.255.255.0', 'no shut']);
+    const last = n => d[n].out[d[n].out.length - 1].s;
+    ok(Net.api(st()).macTable('SW1').length === 0, 'learn: the MAC table starts empty');
+    ok(Net.api(st()).ping('PC1', '10.0.0.13').ok && Net.api(st()).macTable('SW1').length === 0, 'learn: a check\'s ping teaches the network nothing');
+    d.PC1.exec('ping 10.0.0.13', d); ok(/Request timed out[\s\S]*Received = 3, Lost = 1/.test(last('PC1')), 'learn: the first ping loses one packet to ARP');
+    const t1 = Net.api(st()).macTable('SW1'); ok(t1.some(r => r.mac === '00d0.bc11.1111' && r.port === 'fastethernet0/1') && t1.some(r => r.mac === '0060.2f33.3333' && r.port === 'gigabitethernet0/1'), 'learn: SW1 learns both sources on the right ports (' + JSON.stringify(t1) + ')');
+    ok(Net.api(st()).macTable('SW2').some(r => r.mac === '00d0.bc11.1111' && r.port === 'gigabitethernet0/1'), 'learn: SW2 learns PC1 on its uplink');
+    d.PC1.exec('ping 10.0.0.13', d); ok(/Received = 4, Lost = 0/.test(last('PC1')), 'learn: the second ping loses nothing');
+    d.PC1.exec('arp -a', d); ok(/10\.0\.0\.13\s+00-60-2f-33-33-33/.test(last('PC1')), 'learn: arp -a shows the learned neighbour');
+    d.SW1.exec('enable'); d.SW1.exec('clear mac address-table dynamic'); ok(Net.api(st()).macTable('SW1').length === 0 && Net.api(st()).macTable('SW2').length > 0, 'learn: clear mac address-table dynamic empties only that switch');
+    d.PC1.exec('ping 10.9.0.5', d); d.R1.exec('enable'); d.R1.exec('show arp'); ok(/10\.0\.0\.11\s+0\s+00d0\.bc11\.1111/.test(last('R1')) && /10\.9\.0\.5/.test(last('R1')), 'learn: the router learns both sides of a routed ping (' + last('R1') + ')');
+    d.PC1.exec('arp -d', d); d.PC1.exec('arp -a', d); ok(/No ARP Entries/.test(last('PC1')), 'learn: arp -d clears the PC cache');
+  }
   return { pass, fails };
 };

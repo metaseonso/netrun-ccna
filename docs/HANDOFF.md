@@ -136,6 +136,12 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Learning, opt-in per gig with `net.learn: true`: switches learn source MACs and hosts and routers learn ARP
+  entries only from pings and traceroutes typed in a shell (checks never teach the network); the first ping over a hop with no
+  ARP entry loses one packet (`Request timed out.` / `.!!!!`); `clear mac address-table dynamic [address|interface]`,
+  `clear arp-cache`, PC `arp -d`; `show arp` / `show ip arp` on routers; `api.macTable`, `api.arp`. Without `learn` the tables
+  stay all-knowing as before. PC ping prints real Windows statistics. Tested in `tests/engine.test.js` (section 10).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a
