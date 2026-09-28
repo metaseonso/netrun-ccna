@@ -103,7 +103,8 @@ Definition of done for a day:
 - **HUD and menu clarity** (first deliverable, see "Your first hour" step 4): icons for every nav item, three bands,
   meters readable on a phone.
 - **Survival numbers are a first pass.** Costs 15 + 5 × classRank food and 10 + 5 × classRank chrome, 1 chrome per bad
-  call; food at 12 / 30 / 70 creds for 15 / 40 / 100; the ripperdoc at 120 for a full chrome. A Class D gig pays 90.
+  call; food at 12 / 30 / 70 creds for 15 / 40 / 100; Marrow's patch at 50 for 35 chrome; the ripperdoc at 120 for a full
+  chrome; stall prices × (1 + 0.5 × classRank). A Class D gig pays 60.
   Play three classes and tune. Marrow's tab (one free bowl per class rank when the player is broke and under 30 food)
   is the anti-soft-lock; keep something like it.
 
@@ -136,6 +137,10 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · The stall: prices scale by half the base price per class (D 1×, C 1.5×, B 2×, A 2.5×; was a quarter). A
+  `service` item adds its `effect.chrome` (capped at 100) instead of always filling; the tune-up still fills. New item
+  `patch`, Marrow's sealant and tape: 50 creds for 35 chrome, so a runner short of the tune-up can still dive. Tested in
+  tests/game.test.js.
 - 2026-09-28 · VTP: `vtp mode server|client|transparent`, `vtp domain`, `vtp version`, `vtp password`; every VLAN change on a
   server or client raises its revision (a net device may set `vtpRevision` to play a spare switch from someone's lab); servers
   and clients in one domain joined by trunks take the VLAN database with the highest revision, transparent switches keep

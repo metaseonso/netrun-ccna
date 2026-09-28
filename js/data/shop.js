@@ -1,7 +1,7 @@
 /* shop.js — Marrow's stall. Creds buy things that feed the loops, never things that skip them.
-   kinds: food (eat it: +food; some can also be given to a protégé) · service (the ripperdoc: chrome back to full, one price)
+   kinds: food (eat it: +food; some can also be given to a protégé) · service (chrome back: the ripperdoc's tune-up to full, or Marrow's patch for 35)
           gift (given to a protégé from CREW) · favor (Dispatch pulls a runner out; hold one at a time) · bd (a braindance for the CODEX) · skin (deck theme).
-   Prices scale with class: price × (1 + 0.25 × classRank). Every gig costs food and chrome at jack-in (Game.body.cost). */
+   Prices scale with class: price × (1 + 0.5 × classRank), so D 1×, C 1.5×, B 2×, A 2.5×. Every gig costs food and chrome at jack-in (Game.body.cost). */
 window.SHOP = [
   { id: 'protein', kind: 'food', name: 'Synth-protein bar', price: 12, blurb: 'A cheap protein bar. Enough to get you through one more dive.', effect: { food: 15 },
     line: 'Marrow: "Nobody buys these because they like them."' },
@@ -11,6 +11,8 @@ window.SHOP = [
     line: 'Marrow: "Tell Cider I sent you and she\'ll give you the big plate."' },
   { id: 'tuneup', kind: 'service', name: 'Ripperdoc tune-up', price: 120, blurb: 'The ripperdoc two doors down repairs your chrome to full. Same price every time.', effect: { chrome: 100 },
     line: 'Marrow: "He only does full repairs, so don\'t ask him for half."' },
+  { id: 'patch', kind: 'service', name: 'Marrow\'s patch', price: 50, blurb: 'Sealant and tape from under Marrow\'s counter. Puts back 35 chrome. It costs less than the ripperdoc, and more for each point.', effect: { chrome: 35 },
+    line: 'Marrow: "It\'s sealant and tape, and it will hold until you can pay the doc."' },
   { id: 'antenna', kind: 'gift', name: 'Better antenna', price: 140, blurb: 'Gives one runner 15 more seconds on every call to you, for good.', effect: { timerBonus: 15 },
     line: 'Marrow: "I pulled it off a corpo drone that won\'t be needing it."' },
   { id: 'burner', kind: 'gift', name: 'Burner deck', price: 320, blurb: 'The next bad call on one runner hits the burner instead of them. Used up after one call.', effect: { insurance: 1 },

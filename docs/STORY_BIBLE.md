@@ -308,7 +308,8 @@ A netrunner is a body on a street with a deck in it. The body eats and the chrom
 free. Two meters, FOOD and CHROME, sit in the HUD next to the creds. Nothing but work drains them: every gig costs
 both at jack-in, and every bad call inside a dive burns a point of chrome. Getting paid is how you fill them again.
 Marrow sells food (a bar, a bowl, a hot plate at Cider's) and knows a ripperdoc two doors down who does not do
-partials: one price, full service, every time. Prices climb with class, like everything at the stall.
+partials: one price, full service, every time. For a runner who can't pay the doc, Marrow keeps sealant and tape under
+the counter that puts back part of it. Prices climb with class, like everything at the stall.
 
 The cost is never hidden. The board says what a dive costs and what you have. When a dive would kill you, the board
 says so in red and the button says JACK IN ANYWAY. A flatline is therefore a choice the player made with open eyes,
