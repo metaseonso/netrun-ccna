@@ -184,5 +184,15 @@ window.GLOSSARY = {
   'full mesh': 'A topology in which every device connects to every other device.',
   'partial mesh': 'A topology in which some devices connect to each other, but not all of them.',
   'star topology': 'A topology in which several devices all connect to one central device.',
-  'soho': 'Small Office/Home Office. A small network where one home router (a wireless router) does the routing, switching, Wi-Fi and firewall.'
+  'soho': 'Small Office/Home Office. A small network where one home router (a wireless router) does the routing, switching, Wi-Fi and firewall.',
+  // ---- night 53 · WAN architectures
+  'leased line': 'A dedicated private circuit between two sites, rented from a provider. T1 1.544 Mbps, E1 2.048 Mbps, T3 44.736 Mbps, E3 34.368 Mbps.',
+  'mpls': 'Multiprotocol Label Switching. A provider WAN that forwards by labels. CE = customer edge, PE = provider edge, P = provider core. In a Layer 3 MPLS VPN the CE peers with the PE; in a Layer 2 MPLS VPN the CEs peer with each other.',
+  'dsl': 'Digital Subscriber Line. Internet over the telephone line, through a DSL modem.',
+  'modem': 'Modulator-demodulator. Converts data into a signal a phone line (DSL) or TV cable (cable internet) can carry.',
+  'single-homed': 'One connection to one ISP. Dual-homed: two connections to one ISP. Multihomed: one connection to each of two ISPs. Dual multihomed: two connections to each of two ISPs.',
+  'ipsec': 'A suite that encrypts and authenticates IP packets. The usual protocol for site-to-site VPNs. Does not carry broadcast or multicast on its own.',
+  'tls': 'Transport Layer Security, the successor to SSL (Secure Sockets Layer). Encrypts a connection; the usual protocol for remote-access VPNs and HTTPS.',
+  'gre': 'Generic Routing Encapsulation. Wraps a packet in a GRE header and a new IP header to tunnel it between two routers. No encryption, but carries broadcast and multicast; often run inside IPsec.',
+  'dmvpn': 'Dynamic Multipoint VPN. Cisco\'s way to let spoke routers build IPsec tunnels to each other on demand, a full mesh without configuring every tunnel.'
 };

@@ -69,6 +69,66 @@
         { dev: 'DSW1', type: ['configure terminal', 'spanning-tree vlan 10 root primary'] }, { dev: 'DSW2', type: ['enable', 'configure terminal', 'spanning-tree vlan 10 root secondary'] }, 'commit',
         { dev: 'DSW2', type: ['interface vlan 20', 'standby 20 priority 120', 'standby 20 preempt'] }, { dev: 'DSW1', type: ['spanning-tree vlan 20 root secondary'] }, 'commit',
         { choose: 0 }, 'commit', { dev: 'PC2', type: ['tracert 10.10.10.10'] }, 'commit' ],
-      outro: 'At twenty past eleven Imani opens a chart on the second floor and it is simply there. She opens three more to be sure and goes back to her patients. In the Lab, Prof. Hypervisor writes ROOT and ACTIVE beside each switch on the clinic\'s drawing and pins it to the wall next to Halvorsen\'s blueprint.' }
+      outro: 'At twenty past eleven Imani opens a chart on the second floor and it is simply there. She opens three more to be sure and goes back to her patients. In the Lab, Prof. Hypervisor writes ROOT and ACTIVE beside each switch on the clinic\'s drawing and pins it to the wall next to Halvorsen\'s blueprint.' },
+
+    // ------------------------------------------------------------------ night 53 · from Lab 53 (GRE tunnels)
+    { id: 'a-n53-line-to-kabuki', cls: 'A', rep: 25, from: 'hypervisor', title: 'The Line to Kabuki', day: [53], requires: ['n53-the-other-site'], devices: ['R1', 'R2', 'PC2'],
+      brief: 'DISPATCH » The clinic\'s leased line to its outpatient office in Kabuki goes dark at the end of the month. Build the replacement across the internet, a GRE tunnel, before anyone signs Halvorsen\'s contract.\n\nCLIENT (Imani) » "Kabuki sends us every patient it sees. The last time the line dropped they faxed us thirty charts, and two came through unreadable."',
+      net: {
+        devices: { R1: { kind: 'router' }, NET: { kind: 'router' }, R2: { kind: 'router' },
+          SRV1: { kind: 'server', ip: '192.168.1.100', mask: '255.255.255.0', gw: '192.168.1.1' }, PC2: { kind: 'host', ip: '192.168.2.10', mask: '255.255.255.0', gw: '192.168.2.1' } },
+        links: [ { a: 'SRV1', b: 'R1', bp: gi(1) }, { a: 'R1', ap: gi(0), b: 'NET', bp: gi(0) }, { a: 'NET', ap: gi(1), b: 'R2', bp: gi(0) }, { a: 'R2', ap: gi(1), b: 'PC2' } ],
+        preconfig: {
+          R1: ['hostname R1', 'interface g0/0', 'ip address 203.0.113.1 255.255.255.252', 'no shutdown', 'interface g0/1', 'ip address 192.168.1.1 255.255.255.0', 'no shutdown', 'ip route 0.0.0.0 0.0.0.0 203.0.113.2'],
+          NET: ['interface g0/0', 'ip address 203.0.113.2 255.255.255.252', 'no shutdown', 'interface g0/1', 'ip address 198.51.100.2 255.255.255.252', 'no shutdown'],
+          R2: ['hostname R2', 'interface g0/0', 'ip address 198.51.100.1 255.255.255.252', 'no shutdown', 'interface g0/1', 'ip address 192.168.2.1 255.255.255.0', 'no shutdown', 'ip route 0.0.0.0 0.0.0.0 198.51.100.2'] }
+      },
+      map: { w: 560, h: 260, nodes: [
+          { id: 'SRV1', label: 'records server', type: 'server', x: 50, y: 150 }, { id: 'R1', label: 'clinic router', type: 'router', x: 150, y: 80 },
+          { id: 'NET', label: 'the internet', type: 'cloud', x: 280, y: 60 }, { id: 'R2', label: 'Kabuki office router', type: 'router', x: 410, y: 80 }, { id: 'PC2', label: 'front desk PC', type: 'pc', x: 510, y: 170 } ],
+        links: [ { a: 'SRV1', b: 'R1' }, { a: 'R1', b: 'NET', tag: '203.0.113.1' }, { a: 'NET', b: 'R2', tag: '198.51.100.1' }, { a: 'R2', b: 'PC2' } ] },
+      steps: [
+        { type: 'choice', skill: 'wan-arch', text: 'Prof. Hypervisor, on the phone: "Start with what the clinic is losing. The old line is a T1. How fast is it?"', opts: ['1.544 Mbps', '2.048 Mbps', '44.736 Mbps', '6.312 Mbps'], a: 0,
+          hint: 'The American one is a little slower than the European E1.', ok: 'Prof. Hypervisor: "One and a half megabits. The internet link in the back room is forty times that."',
+          why: 'Prof. Hypervisor: A T1 carries 1.544 Mbps and a T3 carries 44.736 Mbps. The European E1 carries 2.048 Mbps and the E3 34.368 Mbps. 6.312 Mbps is a T2.' },
+        { type: 'form', skill: 'wan-arch', text: 'Prof. Hypervisor: "Clerk Adebayo wants the clinic\'s internet connections described for the council\'s file. Give me the right word for each."',
+          fields: [ { key: 'kab', label: 'Kabuki: one link to one ISP', options: ['single-homed', 'dual-homed', 'multihomed', 'dual multihomed'], answer: 'single-homed' },
+            { key: 'main', label: 'The main clinic: two links to the same ISP', options: ['single-homed', 'dual-homed', 'multihomed', 'dual multihomed'], answer: 'dual-homed' },
+            { key: 'two', label: 'One link to each of two ISPs', options: ['single-homed', 'dual-homed', 'multihomed', 'dual multihomed'], answer: 'multihomed' },
+            { key: 'four', label: 'Two links to each of two ISPs', options: ['single-homed', 'dual-homed', 'multihomed', 'dual multihomed'], answer: 'dual multihomed' } ],
+          hint: 'Dual counts the links to one provider. Multi counts the providers.', ok: 'Prof. Hypervisor: "Filed. Kabuki is the weak one, but a tunnel doesn\'t care how many links sit under it."',
+          why: 'Prof. Hypervisor: Single-homed is one connection to one ISP. Dual-homed is two connections to the same ISP. Multihomed is one connection to each of two ISPs, and dual multihomed is two connections to each of two ISPs.' },
+        { type: 'cmd', skill: 'wan-arch', text: 'Prof. Hypervisor: "A tunnel rides on the internet underneath it, so check the underneath first. From the clinic router, ping the Kabuki router\'s public address, 198.51.100.1."',
+          need: [ { dev: 'R1', line: /^(do )?ping 198\.51\.100\.1$/ } ], check: (d, ctx) => ctx.net().ping('R1', '198.51.100.1').ok,
+          hint: 'R1> enable\nR1# ping 198.51.100.1', ok: 'Prof. Hypervisor: "Five replies. The public addresses can reach each other, so the tunnel has a road."',
+          why: 'Prof. Hypervisor: A GRE packet travels between the two routers\' public addresses, so those addresses must reach each other before a tunnel can work. Pinging R2\'s public address from R1 proves the internet between them carries the packets.' },
+        { type: 'cmd', skill: 'wan-arch', text: 'Prof. Hypervisor: "Build the clinic end. Tunnel 0 on R1, address 172.16.1.1/30, from R1\'s public interface g0/0 to Kabuki\'s public address."',
+          check: (d, ctx) => { const t = (ctx.cfg('R1').interfaces || {}).tunnel0; return !!t && t.ip === '172.16.1.1' && t.mask === '255.255.255.252' && t.tunnelDest === '198.51.100.1' && ['gigabitethernet0/0', '203.0.113.1'].includes(t.tunnelSource); },
+          hint: 'R1(config)# interface tunnel 0\nR1(config-if)# ip address 172.16.1.1 255.255.255.252\nR1(config-if)# tunnel source g0/0\nR1(config-if)# tunnel destination 198.51.100.1', ok: 'Prof. Hypervisor: "One end, pointing the right way. It stays down until Kabuki points back."',
+          why: 'Prof. Hypervisor: interface tunnel 0 creates the tunnel. It needs an address like any other interface, from a small subnet both ends share. tunnel source is the router\'s own public interface or address, and tunnel destination is the far router\'s public address. Those two are the outer addresses every GRE packet carries.' },
+        { type: 'cmd', skill: 'wan-arch', text: 'Prof. Hypervisor: "Now Kabuki\'s end, the mirror image. 172.16.1.2/30, from R2\'s g0/0 to the clinic\'s public address. Both ends should come up."',
+          check: (d, ctx) => { const n = ctx.net(); return n.up('R1', 'tunnel0') && n.up('R2', 'tunnel0'); },
+          hint: 'R2(config)# interface tunnel 0\nR2(config-if)# ip address 172.16.1.2 255.255.255.252\nR2(config-if)# tunnel source g0/0\nR2(config-if)# tunnel destination 203.0.113.1\nR2# show ip interface brief', ok: 'Prof. Hypervisor: "Tunnel0, up and up on both. The two buildings share a subnet now, across the river."',
+          why: 'Prof. Hypervisor: Each end\'s tunnel destination is the other end\'s public address, and each end\'s tunnel source is its own. When they mirror each other and the internet carries packets between them, both tunnel interfaces come up and 172.16.1.0/30 behaves like one cable between the routers.' },
+        { type: 'cmd', skill: 'wan-arch', text: 'Prof. Hypervisor: "Now let the two sites learn each other\'s networks. Run OSPF on both routers over the tunnel and their own LANs. Leave the public addresses out of it."',
+          check: (d, ctx) => { const n = ctx.net(); const r1 = n.route('R1', '192.168.2.0/24'), r2 = n.route('R2', '192.168.1.0/24'); return n.ospfNeighbors('R1').some(x => x.dev === 'R2' && x.iface === 'tunnel0') && !!r1 && r1.proto === 'O' && !!r2 && r2.proto === 'O'; },
+          hint: 'R1(config)# router ospf 1\nR1(config-router)# network 172.16.1.0 0.0.0.3 area 0\nR1(config-router)# network 192.168.1.0 0.0.0.255 area 0\n(the same on R2 with 192.168.2.0)', ok: 'Prof. Hypervisor: "Neighbours through the tunnel, and each router has the other\'s LAN with an O beside it. Try doing that over plain IPsec."',
+          why: 'Prof. Hypervisor: OSPF finds its neighbours with multicast hellos. GRE carries multicast, so the two routers become neighbours across the tunnel and learn each other\'s LANs, reached via the other end\'s tunnel address. The public /30s stay out of OSPF, because the routers already reach each other\'s public addresses with their default routes.' },
+        { type: 'cmd', skill: 'wan-arch', text: 'Prof. Hypervisor: "Prove it from Kabuki\'s front desk. Trace the route to the records server at 192.168.1.100."',
+          need: [ { dev: 'PC2', line: /^(tracert|traceroute) 192\.168\.1\.100$/ } ], check: (d, ctx) => { const p = ctx.net().ping('PC2', '192.168.1.100'); return p.ok && (p.trail || []).includes('172.16.1.1'); },
+          hint: 'PC2 shell:\nC:\\> tracert 192.168.1.100', ok: 'Prof. Hypervisor: "Kabuki\'s router, then 172.16.1.1, then the server. The internet\'s routers never show, because they only ever saw the outer packet."',
+          why: 'Prof. Hypervisor: The trace shows R2, then R1\'s tunnel address 172.16.1.1, then the server. The routers in the internet do not appear, because inside the tunnel the packet goes from R2 to R1 in one hop. Only the outer GRE packet crossed the internet.' },
+        { type: 'choice', skill: 'wan-arch', text: 'Imani: "The charts are crossing the public internet now. Can anyone read them on the way?"',
+          opts: ['Yes. GRE wraps the packets but does not encrypt them, so the next job is to run the tunnel over IPsec', 'No. GRE encrypts everything it carries', 'No. Nobody on the internet can see inside a tunnel', 'Only someone who knows the tunnel\'s addresses'], a: 0,
+          hint: 'Is wrapping the same as locking?', ok: 'Prof. Hypervisor: "Yes, and thank you for asking before Halvorsen did. GRE over IPsec is tomorrow\'s job."',
+          why: 'Prof. Hypervisor: GRE only wraps the original packet in a new header. Anyone on the path can open the wrapper and read the packet inside. To keep the charts private, the GRE tunnel runs inside IPsec, which encrypts it, and GRE still lets OSPF\'s multicast through.' }
+      ],
+      solution: [ { choose: 0 }, 'commit', { form: { kab: 'single-homed', main: 'dual-homed', two: 'multihomed', four: 'dual multihomed' } }, 'commit',
+        { dev: 'R1', type: ['enable', 'ping 198.51.100.1'] }, 'commit',
+        { dev: 'R1', type: ['configure terminal', 'interface tunnel 0', 'ip address 172.16.1.1 255.255.255.252', 'tunnel source g0/0', 'tunnel destination 198.51.100.1'] }, 'commit',
+        { dev: 'R2', type: ['enable', 'configure terminal', 'interface tunnel 0', 'ip address 172.16.1.2 255.255.255.252', 'tunnel source g0/0', 'tunnel destination 203.0.113.1'] }, 'commit',
+        { dev: 'R1', type: ['router ospf 1', 'network 172.16.1.0 0.0.0.3 area 0', 'network 192.168.1.0 0.0.0.255 area 0'] }, { dev: 'R2', type: ['router ospf 1', 'network 172.16.1.0 0.0.0.3 area 0', 'network 192.168.2.0 0.0.0.255 area 0'] }, 'commit',
+        { dev: 'PC2', type: ['tracert 192.168.1.100'] }, 'commit', { choose: 0 }, 'commit' ],
+      outro: 'On the last day of the month the phone company switches off the T1, and nobody at either site notices. The fax machine in Kabuki keeps its label. Imani puts Halvorsen\'s letter in the drawer with the other bids.' }
   );
 })();
