@@ -158,6 +158,8 @@ Rules and numbers live there, never in a character's mouth.
 | Dispatch | clipped like a radio with a bad battery, no pleasantries, sends a better gig instead of praise |
 | The Kid (crew) | types in bursts, caps when scared, lowercase when relieved, apologises twice |
 | Ace Elle | plain and exact, reads things out in order, says a rule once; keeps her suspicions on a clipboard, not in her mouth |
+| Denise | an operator on a long shift: warm, quick, practical, thinks in order of events, apologises for the coffee |
+| Dora (walk-on) | Denise's intern: eager, checks her own answers aloud, writes everything on a clipboard, admits what she got wrong |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that

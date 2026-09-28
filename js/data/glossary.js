@@ -175,5 +175,6 @@ window.GLOSSARY = {
   'adjacent-layer interaction': 'A layer working with the layers directly above and below it on the same host: it serves the layer above and uses the layer below.',
   'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.',
   'access control entry': 'ACE. One line of an ACL: permit or deny, and what to match. A router checks the ACEs top to bottom and acts on the first match; the entries below it are ignored.',
-  'icmp': 'Internet Control Message Protocol, IP protocol number 1. Carries ping (echo request and reply) and error messages such as unreachable and TTL exceeded. It has no ports.'
+  'icmp': 'Internet Control Message Protocol, IP protocol number 1. Carries ping (echo request and reply) and error messages such as unreachable and TTL exceeded. It has no ports.',
+  'stratum': 'An NTP server\'s distance from a reference clock. Reference clocks (atomic, GPS) are stratum 0, servers wired to them stratum 1, and each server that learns time from another adds one. Lower is preferred; above 15 is unreliable and 16 means unsynchronised.'
 };
