@@ -191,5 +191,10 @@ window.GLOSSARY = {
   'feasible distance': 'EIGRP: this router\'s own total metric to a destination.',
   'reported distance': 'EIGRP: a neighbour\'s metric to a destination, as it advertises it. Also called the advertised distance.',
   'successor': 'EIGRP: the route with the lowest metric (feasible distance) to a destination. It goes in the routing table.',
-  'feasible successor': 'EIGRP: a backup route whose reported distance is lower than the successor\'s feasible distance (the feasibility condition), so it cannot loop. EIGRP load-balances over unequal costs only across these.'
+  'feasible successor': 'EIGRP: a backup route whose reported distance is lower than the successor\'s feasible distance (the feasibility condition), so it cannot loop. EIGRP load-balances over unequal costs only across these.',
+  'lsa': 'Link State Advertisement: an OSPF router\'s description of its links, flooded to every router in the area and refreshed every 30 minutes.',
+  'lsdb': 'Link State Database: where an OSPF router keeps every LSA. All routers in one area hold the same LSDB and run Dijkstra\'s SPF algorithm on it.',
+  'ospf area': 'A set of OSPF routers and links that share one LSDB. Every area must connect to the backbone, area 0.',
+  'abr': 'Area Border Router: an OSPF router with interfaces in more than one area (recommended: two at most).',
+  'asbr': 'Autonomous System Boundary Router: an OSPF router that connects the OSPF network to an outside network, such as the internet.'
 };

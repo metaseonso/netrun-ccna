@@ -99,6 +99,48 @@
         { k: 'SYNC', q: { prompt: 'Hollis, not looking up from his cards: "So the depot box says router eigrp 10 and ours say router eigrp 100. That\'s just a label, isn\'t it?"', opts: ['No. The AS number must match or they never become neighbours', 'Yes. The number is only for the router\'s own use', 'Only the lower number matters', 'It must match only for RIP'], a: 0,
           yes: 'Nexthop: "Not a label. Change the depot to 100 and they\'ll talk."', no: 'Nexthop: "It has to match. EIGRP routers with different AS numbers ignore each other."',
           why: 'Nexthop: The number after router eigrp is the autonomous system number, and two routers only become EIGRP neighbours when it matches. A router in AS 10 and one in AS 100 never exchange routes, even on the same cable.' } }
+      ] },
+    // ------------------------------------------------------------ night 26 · OSPF, part 1
+    { id: 'n26-map-room', title: 'Nobody moves until the map agrees', sub: 'OSPF: link state, LSAs, areas, router IDs', npc: 'ospef', day: [26], src: [PS('OSPF_Part1.md')], unlocks: ['ospf-basics'],
+      beats: [
+        { k: 'SCENE', where: 'The map room above the cab rank · Wednesday, 20:00',
+          lines: [
+            { who: 'narr', text: 'The stairs up from the rank smell of wet coats and old paper. At the top is a long room with one wall covered in a hand-drawn map of Watson, every router a brass pin and every link a length of coloured string. A small drone hums along the map, photographing it. A tall man in yellow-tinted glasses stands with his back to you, moving one pin a millimetre to the left.' },
+            { who: 'ospef', text: 'You\'re the runner Nexthop brought. He steers by what the next cab tells him, which is his business. I don\'t move a single fare until I\'ve seen the whole map myself.' },
+            { who: 'ospef', text: '[[OSPF]] works that way. Every router describes its own links, which network, which neighbour, what each costs, in a [[LSA]], a link state advertisement, and floods it to every router in the [[OSPF area]]. Each router files every LSA it receives in its [[LSDB]], the link state database, and once they all hold the same database, each one works out its own shortest paths from it.' },
+            { who: 'narr', text: 'He taps a framed photograph by the door: a thin man in heavy glasses at a café table.' },
+            { who: 'ospef', text: 'With Dijkstra\'s algorithm. Shortest path first. Every router in the area runs it on the same map, so they all come to the same answer about the roads.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How long does an LSA stay on the map?', reply: 'Ospef: "Every LSA has an age, and the router that made it floods a fresh copy every thirty minutes, so the map never goes stale. OSPFv2 carries the IPv4 map. OSPFv3 carries IPv6."' },
+            { tone: 'press', say: 'Isn\'t flooding every link to every router a lot of work?', reply: 'Ospef: "More memory and more thinking than Nexthop\'s rumours, yes. In return, when a link breaks, every router knows within seconds and recalculates, instead of waiting for gossip to walk the long way round. And big maps get cut into areas so nobody carries the whole city."' },
+            { tone: 'joke', say: 'Does the drone vote too?', reply: 'Ospef: "The drone photographs. It has no opinions, which makes it better company than most routers." The drone bumps gently into a pin and backs away.' }
+          ] } },
+        { k: 'SCENE', where: 'The map room · the long table · 20:40',
+          lines: [
+            { who: 'narr', text: 'A long table runs under the map, covered in index cards, one per router, in three colours of ink. Ospef lays out four of them for the northern roads.' },
+            { who: 'ospef', text: 'An area is a set of routers and links that share one LSDB. [[Area 0]] is the backbone, and every other area has to connect to it. A router with all its interfaces in one area is an internal router. One with interfaces in two areas is an [[ABR]], an area border router, and I never give one more than two. Anything touching area 0 is a backbone router. The router with a door to the outside, like the one at the rank with the internet line, is an [[ASBR]], an autonomous system boundary router.' },
+            { who: 'ospef', text: 'A route to somewhere in your own area is intra-area. A route to another area is interarea. One area on its own doesn\'t even have to be area 0, though I\'d still call it 0.' },
+            { who: 'ospef', text: 'router ospf 1 starts it, and that number is only for this router, so the neighbours don\'t have to match it. network with a wildcard and an area picks the interfaces. passive-interface keeps hellos off the ports with only desks behind them, and the network is still advertised. The router ID comes from router-id if you set it, then the highest loopback address, then the highest physical one. Change it on a running router and it won\'t take until clear ip ospf process.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How does the rest of the district learn the way out to the internet?', reply: 'Ospef: "The rank\'s router has a default route to the internet line. default-information originate under router ospf tells every other router about it, and it arrives as O*E2, an external default, pointing at the rank."' },
+            { tone: 'press', say: 'Why set router IDs by hand if the router picks one anyway?', reply: 'Ospef: "Because a router that picks its own ID picks it from whatever addresses it has that morning. Add a loopback next month and the ID changes the next time the process restarts. 1.1.1.1 on the rank\'s router means I can read the neighbour tables without a key."' },
+            { tone: 'care', say: 'Why won\'t you move until everyone agrees?', reply: 'He takes his glasses off and cleans them on his shirt. "Because I drove on rumours for nine years before this, and one wrong rumour put a fare in the canal. Nobody was hurt. I still take the stairs up here every night and look at the whole map first."' }
+          ] } },
+        { k: 'LORE', title: 'TWENTY MINUTES IN AMSTERDAM', year: 1956, vibe: 'Real cool, daddy-o: twenty minutes, no pencil, and every shortest road worked out.',
+          text: 'Ospef, straightening the photograph: "In 1956 Edsger Dijkstra was shopping in Amsterdam with his fiancée. They sat down at a café terrace, and in about twenty minutes, with no pencil and no paper, he worked out how to find the shortest route between two cities on a map. He published it in 1959. Every OSPF router in Watson runs his twenty minutes every time a link changes. I keep his picture by the door so I remember to be that careful."' },
+        { k: 'KIT', text: 'He copies four index cards for you in black ink and clips them together.', real: ['ietf'], kit: [
+          { cmd: 'LSA → LSDB → Dijkstra (SPF)', what: 'every router in an area floods its links, holds the same database, and works out its own shortest paths. LSAs refresh every 30 minutes' },
+          { cmd: 'area 0 = backbone · internal · ABR (2 areas max) · backbone router · ASBR', what: 'intra-area route: same area. Interarea route: another area' },
+          { cmd: 'router ospf 1', what: 'the process ID is local. Neighbours do not need the same number' },
+          { cmd: 'network 10.26.12.0 0.0.0.3 area 0 · passive-interface g0/0', what: 'enable OSPF on matching interfaces · no hellos out of a desk port, still advertised' },
+          { cmd: 'router-id 1.1.1.1 · clear ip ospf process', what: 'router ID: manual, else highest loopback, else highest physical address. A change needs a reset' },
+          { cmd: 'default-information originate', what: 'advertise this router\'s default route. It arrives as O*E2' },
+          { cmd: 'distance 110 · maximum-paths 4 · show ip ospf neighbor', what: 'change OSPF\'s AD · ECMP paths · who has a full adjacency' } ] },
+        { k: 'SYNC', q: { prompt: 'Nexthop, calling up the stairs: "My router says router ospf 1 and the garage\'s says router ospf 2. They\'ll never talk, right?"', opts: ['They will. The process ID only matters on the router itself', 'They won\'t. The process IDs must match', 'Only if both use area 2', 'Only if one of them is an ABR'], a: 0,
+          yes: 'Ospef: "They\'ll talk. The number is his business, not the neighbour\'s."', no: 'Ospef: "They\'ll talk. The process ID is local. The area and the subnet have to match, not that."',
+          why: 'Ospef: The number after router ospf is the process ID, and it only identifies the process on that router. Two routers with different process IDs still become neighbours, as long as things like their area and subnet on the shared link match.' } }
       ] }
   ] });
 })();

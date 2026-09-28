@@ -136,6 +136,81 @@
         { dev: 'R3', type: ['enable', 'configure terminal', 'no router eigrp 10', 'router eigrp 100', 'network 10.25.0.0 0.0.255.255', 'no auto-summary'] }, { dev: 'PC1', type: ['ping 10.25.3.10'] }, 'commit',
         { dev: 'R1', type: ['passive-interface g0/0'] }, { dev: 'R2', type: ['passive-interface g0/0'] }, { dev: 'R3', type: ['passive-interface g0/0'] }, 'commit',
         { form: { succ: 'the road through R3', fd: '3072', rd: '3072', fs: 'no' } }, 'commit', { choose: 0 }, 'commit' ],
-      outro: 'Hollis takes the laminated RIP card down from the wall, writes EIGRP 100 on the back in green, and hangs it up again the other way round. The card game goes on until three, and for the first time in a year the depot\'s radio desk hears the office first time.' }
+      outro: 'Hollis takes the laminated RIP card down from the wall, writes EIGRP 100 on the back in green, and hangs it up again the other way round. The card game goes on until three, and for the first time in a year the depot\'s radio desk hears the office first time.' },
+
+    // ------------------------------------------------------------------ night 26 · from Lab 26 (OSPF part 1)
+    { id: 'c-n26-northern-roads', cls: 'C', rep: 15, from: 'ospef', title: 'Every Router Holds the Map', day: [26], requires: ['n26-map-room'], devices: ['R1', 'R2', 'R3', 'R4', 'PC4'],
+      brief: 'DISPATCH » Ospef has OSPF running on two of the northern routers and wants the other two joined: the cab rank, which holds the internet line, and the south depot. Router IDs set, desk ports passive, and the way out shared with everyone.\n\nCLIENT (Ospef) » "I want every router in the north holding the same map before the morning fares. Read the neighbour table before you tell me it\'s done."',
+      net: {
+        devices: {
+          R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' }, R4: { kind: 'router' },
+          ISP: { kind: 'cloud', ip: '203.0.113.1', mask: '255.255.255.252', internet: true },
+          PC2: { kind: 'host', ip: '10.26.2.10', mask: '255.255.255.0', gw: '10.26.2.1' }, PC3: { kind: 'host', ip: '10.26.3.10', mask: '255.255.255.0', gw: '10.26.3.1' }, PC4: { kind: 'host', ip: '10.26.4.10', mask: '255.255.255.0', gw: '10.26.4.1' }
+        },
+        links: [ { a: 'R1', ap: gi(0), b: 'ISP' }, { a: 'R1', ap: gi(1), b: 'R2', bp: gi(0) }, { a: 'R1', ap: gi(2), b: 'R3', bp: gi(0) }, { a: 'R2', ap: gi(1), b: 'R4', bp: gi(1) }, { a: 'R3', ap: gi(1), b: 'R4', bp: gi(2) },
+          { a: 'R2', ap: gi(2), b: 'PC2' }, { a: 'R3', ap: gi(2), b: 'PC3' }, { a: 'R4', ap: gi(0), b: 'PC4' } ],
+        preconfig: {
+          R1: ['interface g0/0', 'ip address 203.0.113.2 255.255.255.252', 'no shutdown', 'interface g0/1', 'ip address 10.26.12.1 255.255.255.252', 'no shutdown', 'interface g0/2', 'ip address 10.26.13.1 255.255.255.252', 'no shutdown', 'ip route 0.0.0.0 0.0.0.0 203.0.113.1'],
+          R2: ['interface loopback0', 'ip address 2.2.2.2 255.255.255.255', 'interface g0/0', 'ip address 10.26.12.2 255.255.255.252', 'no shutdown', 'interface g0/1', 'ip address 10.26.24.1 255.255.255.252', 'no shutdown', 'interface g0/2', 'ip address 10.26.2.1 255.255.255.0', 'no shutdown',
+            'router ospf 2', 'network 10.26.0.0 0.0.255.255 area 0', 'passive-interface g0/2'],
+          R3: ['interface g0/0', 'ip address 10.26.13.2 255.255.255.252', 'no shutdown', 'interface g0/1', 'ip address 10.26.34.1 255.255.255.252', 'no shutdown', 'interface g0/2', 'ip address 10.26.3.1 255.255.255.0', 'no shutdown',
+            'router ospf 1', 'network 10.26.13.0 0.0.0.3 area 0', 'network 10.26.34.0 0.0.0.3 area 0', 'network 10.26.3.0 0.0.0.255 area 0', 'passive-interface g0/2'],
+          R4: ['interface g0/0', 'ip address 10.26.4.1 255.255.255.0', 'no shutdown', 'interface g0/1', 'ip address 10.26.24.2 255.255.255.252', 'no shutdown', 'interface g0/2', 'ip address 10.26.34.2 255.255.255.252', 'no shutdown']
+        }
+      },
+      map: { w: 560, h: 360, nodes: [
+          { id: 'ISP', label: 'the internet line', type: 'cloud', x: 60, y: 60 }, { id: 'R1', label: 'R1 · the cab rank', type: 'router', x: 180, y: 110 },
+          { id: 'R2', label: 'R2 · the garage', type: 'router', x: 370, y: 60 }, { id: 'R3', label: 'R3 · the tram yard', type: 'router', x: 180, y: 270 },
+          { id: 'R4', label: 'R4 · the south depot', type: 'router', x: 380, y: 250 },
+          { id: 'PC2', label: 'garage office', type: 'pc', x: 500, y: 40 }, { id: 'PC3', label: 'yard office', type: 'pc', x: 60, y: 320 }, { id: 'PC4', label: 'depot desk', type: 'pc', x: 510, y: 320 } ],
+        links: [ { a: 'ISP', b: 'R1' }, { a: 'R1', b: 'R2', ap: gi(1), bp: gi(0) }, { a: 'R1', b: 'R3', ap: gi(2), bp: gi(0) }, { a: 'R2', b: 'R4', ap: gi(1), bp: gi(1) }, { a: 'R3', b: 'R4', ap: gi(1), bp: gi(2) },
+          { a: 'R2', b: 'PC2' }, { a: 'R3', b: 'PC3' }, { a: 'R4', b: 'PC4' } ] },
+      steps: [
+        { type: 'form', skill: 'ospf-basics', text: 'Ospef, pointing at the wall with a pencil: "Before you touch a router, name the parts."',
+          fields: [ { key: 'lsa', label: 'what a router floods to describe its own links', options: ['LSA', 'LSDB', 'Dijkstra\'s SPF', 'area 0'], answer: 'LSA' },
+            { key: 'lsdb', label: 'where every router in an area files them', options: ['LSA', 'LSDB', 'Dijkstra\'s SPF', 'area 0'], answer: 'LSDB' },
+            { key: 'spf', label: 'what each router runs on that database', options: ['LSA', 'LSDB', 'Dijkstra\'s SPF', 'area 0'], answer: 'Dijkstra\'s SPF' },
+            { key: 'bb', label: 'the area every other area must connect to', options: ['LSA', 'LSDB', 'Dijkstra\'s SPF', 'area 0'], answer: 'area 0' } ],
+          hint: 'Advertisements go into a database, and the algorithm runs on the database.', ok: 'Ospef: "Good. Now you may touch the rank."',
+          why: 'Ospef: Each router describes its links in link state advertisements, LSAs, and floods them through the area. Every router stores them in its link state database, the LSDB, which is the same on every router in the area. Each router then runs Dijkstra\'s shortest path first algorithm on it. Area 0 is the backbone that every other area must touch.' },
+        { type: 'cmd', skill: 'ospf-basics', text: 'Ospef: "The rank. OSPF process 1, router ID 1.1.1.1, and its two links to the garage and the tram yard in area 0. Not the internet line."',
+          check: (d, ctx) => { const n = ctx.net(); const o = n.state.ospf.routers.R1; return !!o && o.id === '1.1.1.1' && n.ospfNeighbors('R1').length === 2 && !o.ifaces.some(i => i.iface === gi(0)); },
+          hint: 'R1(config)# router ospf 1\nR1(config-router)# router-id 1.1.1.1\nR1(config-router)# network 10.26.12.0 0.0.0.3 area 0\nR1(config-router)# network 10.26.13.0 0.0.0.3 area 0', ok: 'Ospef: "Two neighbours, FULL. The rank is on the map."',
+          why: 'Ospef: router ospf 1 starts OSPF, and router-id 1.1.1.1 names the router. Each network command takes an address and a wildcard mask and enables OSPF, in area 0, on every interface whose address matches: 10.26.12.0 0.0.0.3 matches the link to the garage, 10.26.13.0 0.0.0.3 the link to the tram yard. The internet line is left out, so OSPF never says hello to the ISP.' },
+        { type: 'cmd', skill: 'ospf-basics', text: 'Ospef: "Now the south depot. Router ID 4.4.4.4, all three of its networks in area 0, and its desk port passive."',
+          check: (d, ctx) => { const n = ctx.net(); const o = n.state.ospf.routers.R4; const r = n.route('R1', '10.26.4.0/24'); const lan = o && o.ifaces.find(i => i.iface === gi(0)); return !!o && o.id === '4.4.4.4' && n.ospfNeighbors('R4').length === 2 && !!lan && lan.passive && r && r.proto === 'O'; },
+          hint: 'R4(config)# router ospf 1\nR4(config-router)# router-id 4.4.4.4\nR4(config-router)# network 10.26.4.0 0.0.0.255 area 0\nR4(config-router)# network 10.26.24.0 0.0.0.3 area 0\nR4(config-router)# network 10.26.34.0 0.0.0.3 area 0\nR4(config-router)# passive-interface g0/0', ok: 'Ospef: "The rank can see the depot\'s desk network, and nobody\'s saying hello to the desks."',
+          why: 'Ospef: On R4 the three network commands put the depot LAN and both links in area 0. passive-interface g0/0 stops OSPF sending hellos out of the desk port, so no neighbour can form there, but 10.26.4.0/24 is still advertised, which is why the rank learns it as an O route.' },
+        { type: 'cmd', skill: 'ospf-basics', text: 'Ospef: "Read me the depot\'s neighbour table."',
+          need: [ { dev: 'R4', line: /^(do )?show ip ospf neighbor$/ } ], hint: 'R4# show ip ospf neighbor', ok: 'Ospef: "Two neighbours, both FULL. Now tell me why they have the IDs they have."',
+          why: 'Ospef: show ip ospf neighbor lists every OSPF neighbour: its router ID, its state, the address it uses on the shared link and the local interface. FULL means the two routers have exchanged their whole databases.' },
+        { type: 'form', skill: 'ospf-basics', text: 'Ospef: "Nobody typed a router ID on the garage or the tram yard. Where did theirs come from?"',
+          fields: [ { key: 'r2', label: 'the garage\'s router ID', options: ['2.2.2.2', '10.26.24.1', '10.26.2.1', '1.1.1.1'], answer: '2.2.2.2' },
+            { key: 'r2why', label: 'why', options: ['typed with router-id', 'its highest loopback address', 'its highest physical address'], answer: 'its highest loopback address' },
+            { key: 'r3', label: 'the tram yard\'s router ID', options: ['10.26.34.1', '10.26.13.2', '10.26.3.1', '3.3.3.3'], answer: '10.26.34.1' },
+            { key: 'r3why', label: 'why', options: ['typed with router-id', 'its highest loopback address', 'its highest physical address'], answer: 'its highest physical address' } ],
+          hint: 'Manual first, then the highest loopback, then the highest physical interface address.', ok: 'Ospef: "Right. I\'d rather they were typed, but at least now you know where they came from."',
+          why: 'Ospef: An OSPF router ID is the one set with router-id; without it, the highest IP address on a loopback interface; without a loopback, the highest IP address on a physical interface. The garage has loopback0 at 2.2.2.2, so its ID is 2.2.2.2. The tram yard has no loopback, and its highest physical address is 10.26.34.1.' },
+        { type: 'choice', skill: 'ospf-basics', text: 'Nexthop, reading over your shoulder: "The garage says router ospf 2 and the rest say router ospf 1. How are they neighbours at all?"',
+          opts: ['The process ID is local, so it does not have to match', 'The garage was renumbered to 1 automatically', 'Only area 0 routers ignore the number', 'They are not neighbours, the table is wrong'], a: 0,
+          hint: 'What does the number after router ospf identify?', ok: 'Ospef: "It\'s the garage\'s own business."',
+          why: 'Ospef: The process ID after router ospf only identifies the OSPF process on that router. Neighbours do not compare it, so the garage\'s process 2 and the depot\'s process 1 form an adjacency as long as the area and the subnet on their link match.' },
+        { type: 'cmd', skill: 'ospf-basics', text: 'Ospef: "The rank has a default route to the internet line. Tell the rest of the north about it, then prove it from the depot desk: ping the rank\'s internet side, 203.0.113.2."',
+          need: [ { dev: 'PC4', line: /^ping 203\.0\.113\.2$/ } ], check: (d, ctx) => { const n = ctx.net(); const r = n.route('R4', '0.0.0.0/0'); return !!(ctx.cfg('R1').ospf && ctx.cfg('R1').ospf.defaultOriginate) && r && r.proto === 'O*E2' && n.ping('PC4', '203.0.113.2').ok; },
+          hint: 'R1(config)# router ospf 1\nR1(config-router)# default-information originate\n\nPC4:\nC:\\> ping 203.0.113.2', ok: 'Ospef: "O*E2 on the depot, and replies from the rank. Everyone knows the way out."',
+          why: 'Ospef: default-information originate under router ospf makes R1 advertise its own default route into OSPF. The other routers learn it as O*E2 0.0.0.0/0, an external default pointing towards the rank, and that is the gateway of last resort for anything they have no specific route to.' },
+        { type: 'form', skill: 'ospf-basics', text: 'Ospef, writing the index cards: "What kind of router is each one?"',
+          fields: [ { key: 'r1', label: 'the rank, with the internet line', options: ['internal router', 'ABR', 'ASBR'], answer: 'ASBR' },
+            { key: 'r4', label: 'the south depot, every interface in area 0', options: ['internal router', 'ABR', 'ASBR'], answer: 'internal router' },
+            { key: 'abr', label: 'a router with one link in area 0 and one in area 1', options: ['internal router', 'ABR', 'ASBR'], answer: 'ABR' } ],
+          hint: 'A door to the outside, all in one area, or a foot in two areas.', ok: 'Ospef: "Cards written. The north is on the map."',
+          why: 'Ospef: A router that connects the OSPF network to an outside network, like the rank with its internet line, is an ASBR. A router with every interface in one area is an internal router, and since the depot\'s area is 0, it is also a backbone router. A router with interfaces in two areas is an ABR.' }
+      ],
+      solution: [ { form: { lsa: 'LSA', lsdb: 'LSDB', spf: 'Dijkstra\'s SPF', bb: 'area 0' } }, 'commit',
+        { dev: 'R1', type: ['enable', 'configure terminal', 'router ospf 1', 'router-id 1.1.1.1', 'network 10.26.12.0 0.0.0.3 area 0', 'network 10.26.13.0 0.0.0.3 area 0'] }, 'commit',
+        { dev: 'R4', type: ['enable', 'configure terminal', 'router ospf 1', 'router-id 4.4.4.4', 'network 10.26.4.0 0.0.0.255 area 0', 'network 10.26.24.0 0.0.0.3 area 0', 'network 10.26.34.0 0.0.0.3 area 0', 'passive-interface g0/0'] }, 'commit',
+        { dev: 'R4', type: ['do show ip ospf neighbor'] }, 'commit', { form: { r2: '2.2.2.2', r2why: 'its highest loopback address', r3: '10.26.34.1', r3why: 'its highest physical address' } }, 'commit', { choose: 0 }, 'commit',
+        { dev: 'R1', type: ['default-information originate'] }, { dev: 'PC4', type: ['ping 203.0.113.2'] }, 'commit', { form: { r1: 'ASBR', r4: 'internal router', abr: 'ABR' } }, 'commit' ],
+      outro: 'Ospef pins four fresh index cards under the northern roads and photographs the wall. At six the first fares leave the rank, and the south depot\'s desk answers every one of them without a single call to the radio.' }
   );
 })();
