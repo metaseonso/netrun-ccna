@@ -173,6 +173,49 @@
         { k: 'SYNC', q: { prompt: 'A listener rings the station\'s request line: "My laptop and my phone are both on the clinic\'s Wi-Fi. Do they talk straight to each other?"', opts: ['No. In a BSS every frame goes through the AP', 'Yes, if they are close enough', 'Only on 5 GHz', 'Only if they share a channel with the station'], a: 0,
           yes: 'Beacon, on air: "Through the AP, caller. Always through the AP."', no: 'Beacon, on air: "No, caller. In a BSS it all goes through the AP."',
           why: 'Beacon: In a basic service set the clients, the stations, never send to each other directly. Every frame goes to the AP and the AP passes it on. Only in an IBSS, an ad hoc network with no AP, do devices talk straight to each other.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 56 · wireless architectures
+    { id: 'n56-forty-rooms', title: 'Forty rooms, one controller', sub: 'wireless architectures', npc: 'beacon', day: [56], src: [PS('Wireless_Architectures.md')], unlocks: ['wifi-arch'],
+      beats: [
+        { k: 'SCENE', where: 'The clinic\'s new wing · the second-floor corridor · after midnight',
+          lines: [
+            { who: 'narr', text: 'The new wing smells of wet plaster and fresh paint, and every footstep rings off the bare floor. Half the ceiling tiles are out, and cable hangs down in loops like vines. Beacon stands on a stepladder in the middle of the corridor with a scanner in one hand, headphones round her neck, reading the air.' },
+            { who: 'beacon', text: 'Listen to this. Every AP shouts its name about ten times a second in a [[beacon frame]], and I\'m legally obliged to find that funny. A phone that just waits and listens for those is doing passive scanning. A phone in a hurry sends a probe request, and every AP in earshot sends back a probe response. That\'s active scanning.' },
+            { who: 'beacon', text: 'Then it joins, in three states: not authenticated and not associated, then authenticated but not associated, then authenticated and associated. Only in the last one does it get to send data.' },
+            { who: 'beacon', text: '802.11 has three kinds of message. Management frames run the joining: beacons, probes, authentication, association requests and responses. Control frames keep the air polite: RTS, CTS and ACK. Data frames carry the actual traffic.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What\'s inside one of those frames?', reply: 'Beacon: "A 2-byte Frame Control and a 2-byte Duration/ID first. Then up to four addresses, 6 bytes each, because a wireless frame can name the sender, the receiver, the AP and more. A 2-byte Sequence Control, a 2-byte QoS Control, a 4-byte HT Control, then the data, and a 4-byte FCS at the end to catch errors."' },
+            { tone: 'press', say: 'Why four addresses when Ethernet manages with two?', reply: 'Beacon: "Because the frame crosses the air to the AP and then carries on somewhere else. The AP is neither the sender nor the final destination, but the frame has to name it, and on a wireless bridge the frame names both ends of the radio hop as well as the real sender and receiver."' },
+            { tone: 'joke', say: 'So a beacon frame is basically you.', reply: 'Beacon: "Ten times a second, whether anyone asked or not. Except my beacons carry the SSID, the data rates and the security settings, and I carry opinions."' }
+          ] } },
+        { k: 'SCENE', where: 'The new wing · a nurses\' station with no nurses yet', real: ['cisco', 'wireshark'],
+          lines: [
+            { who: 'narr', text: 'Boxes of new access points are stacked on the counter of an empty nurses\' station, forty of them, still in their plastic. Clipped to the top box is a glossy leaflet from Halvorsen offering to run the whole wing\'s Wi-Fi from their cloud for a monthly fee.' },
+            { who: 'beacon', text: 'There are three ways to run forty APs. [[Autonomous AP]]s each do everything themselves and get configured one by one, and they sit on trunk ports because each one maps its own SSIDs to VLANs. That\'s forty passwords to change, forty times.' },
+            { who: 'beacon', text: 'Lightweight APs hand the thinking to a [[WLC]], a wireless LAN controller. The AP keeps the real-time radio work and the controller does the rest, which is why it\'s called [[split-MAC]]. Each lightweight AP builds two [[CAPWAP]] tunnels to the controller: control on UDP 5246, encrypted, and data on UDP 5247, not encrypted by default. Everything rides the tunnel, so a lightweight AP sits on an access port.' },
+            { who: 'beacon', text: 'The third way is cloud-based, which is Halvorsen\'s leaflet. It sits between the other two: the APs are managed from a dashboard somewhere else, like Cisco Meraki, and the clients\' traffic stays in the building. The clinic would still own the APs and rent the brain for them.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Where does the controller live?', reply: 'Beacon: "Wherever you like. A unified WLC is a box of its own in a central place, good for about 6000 APs. A cloud-based WLC is a VM on a server, usually in a private cloud like the Lab, about 3000. An embedded WLC lives inside a switch, about 200, and Mobility Express runs inside an AP, about 100. The wing\'s forty would fit in any of them."' },
+            { tone: 'press', say: 'What if the link to the controller dies?', reply: 'Beacon: "With FlexConnect the AP keeps switching its clients\' traffic locally when the tunnels to the WLC go down. That\'s one of the AP modes. Local is the default, serving clients. Sniffer captures frames for Wireshark. Monitor listens to the air for rogue devices, and rogue detector listens on the wire instead, with its radio off. SE-Connect analyses the spectrum on every channel, bridge or mesh links sites together, and Flex plus Bridge adds FlexConnect to that."' },
+            { tone: 'care', say: 'Who\'ll look after it once it\'s running?', reply: 'Beacon: "Imani asked me that too. With a controller it\'s one login, one set of SSIDs and one place to change a key, so a night nurse with a laptop can see which AP is sulking. With Halvorsen it\'s a phone number and a queue."' }
+          ] } },
+        { k: 'LORE', title: 'TWO MEGABITS, NO CABLE', year: 1997, real: ['ieee'], vibe: 'Da bomb. A laptop on a network with no cable, at two whole megabits.',
+          text: 'Beacon, sitting on the top step of the ladder: "In June 1997 the IEEE approved the first 802.11 standard, two megabits a second on 2.4 gigahertz. Vic Hayes chaired the committee that wrote it, and people still call him the father of Wi-Fi. My mum had a laptop card for it that stuck out of the side like a cracker. I keep this one because it was the first time the air in a room became part of the network."' },
+        { k: 'KIT', text: 'Beacon writes it on the back of Halvorsen\'s leaflet and hands it to you.', real: ['cisco'], kit: [
+          { cmd: 'Frame Control 2 · Duration/ID 2 · Address 1-4 6 each · Sequence Control 2 · QoS Control 2 · HT Control 4 · FCS 4', what: 'the 802.11 frame, in bytes' },
+          { cmd: 'passive: listen for beacons · active: probe request, probe response', what: 'scanning' },
+          { cmd: 'not auth, not assoc → auth, not assoc → auth and assoc', what: 'the three connection states' },
+          { cmd: 'management (beacon, probe, auth, association) · control (RTS, CTS, ACK) · data', what: 'the three message types' },
+          { cmd: 'autonomous (trunk port) · lightweight + WLC, split-MAC (access port) · cloud-based (Meraki)', what: 'the three AP architectures' },
+          { cmd: 'CAPWAP control UDP 5246 (encrypted) · data UDP 5247 (not encrypted)', what: 'two tunnels from each lightweight AP to the WLC. LWAPP came before CAPWAP' },
+          { cmd: 'local · FlexConnect · sniffer · monitor · rogue detector · SE-Connect · bridge/mesh · Flex plus Bridge', what: 'lightweight AP modes' },
+          { cmd: 'unified ~6000 · cloud-based (VM) ~3000 · embedded (switch) ~200 · Mobility Express (AP) ~100', what: 'WLC deployments, APs supported' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani, holding one of the boxed APs: "If we go with a controller, and the controller is built into the clinic\'s switch, what kind is that?"', opts: ['An embedded WLC', 'A unified WLC', 'A cloud-based WLC', 'Mobility Express'], a: 0,
+          yes: 'Beacon: "Embedded. About two hundred APs, and you\'ve got forty."', no: 'Beacon: "Embedded. A WLC inside a switch is embedded."',
+          why: 'Beacon: An embedded WLC is built into a switch and handles about 200 APs. A unified WLC is a separate hardware appliance (about 6000), a cloud-based WLC is a VM on a server (about 3000), and Mobility Express runs inside an AP (about 100).' } }
       ] }
   ] });
 })();

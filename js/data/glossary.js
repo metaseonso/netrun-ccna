@@ -214,5 +214,9 @@ window.GLOSSARY = {
   'roaming': 'A wireless client moving from one AP to another within the same ESS without losing its connection.',
   'bss': 'Basic Service Set: one AP and its associated clients (stations). Identified by the BSSID, the MAC address of the AP\'s radio. The area it covers is the BSA.',
   'ess': 'Extended Service Set: several BSSes sharing one SSID, joined by the wired distribution system (DS), so clients can roam.',
-  'ibss': 'Independent Basic Service Set: an ad hoc wireless network in which devices talk directly with no AP.'
+  'ibss': 'Independent Basic Service Set: an ad hoc wireless network in which devices talk directly with no AP.',
+  // ---- night 56 · wireless architectures
+  'autonomous ap': 'A self-contained AP that does not rely on a WLC and is configured on its own. Connects to a switch trunk port, because it maps SSIDs to VLANs itself.',
+  'split-mac': 'The lightweight AP architecture: the AP handles real-time radio functions and the WLC handles the rest (security, management, client roaming). Lightweight APs connect to access ports.',
+  'capwap': 'Control and Provisioning of Wireless Access Points. The tunnels between a lightweight AP and its WLC: control on UDP 5246 (encrypted by default) and data on UDP 5247 (not encrypted by default). Replaced LWAPP.'
 };
