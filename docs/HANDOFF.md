@@ -154,6 +154,10 @@ Definition of done for a day:
   handed to that router (`cloudHandoff`), an address on the provider link that nobody holds answers nothing, and a
   server's reply leaves wearing its static mapping. Before this, `ping('ISP', <static global>)` passed without reaching
   the server. Tested.
+- 2026-09-28 · Voice VLANs: `switchport voice vlan N` and `power inline police [action errdisable|log]` are parsed
+  (`cfg.interfaces[p].voiceVlan`, `.powerPolice`); a host with `voice: true` (an IP phone) joins its port's voice VLAN when
+  the port has one, else the access VLAN; `show interfaces X switchport` shows the mode, the access VLAN and the voice VLAN.
+  Tested.
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service

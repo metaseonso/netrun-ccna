@@ -111,7 +111,7 @@
         if (ok === 'router' || ok === 'l3switch') { // router port and its subinterfaces
           const base = S.ifaces[oth][othp]; if (si.trunk) { uf.union(node(sw, si.native), ifNode(oth, othp)); for (const p in S.ifaces[oth]) { const sub = S.ifaces[oth][p]; if (sub.parent === othp && sub.up && sub.cfg.dot1q != null) { if (!blockedIn(sub.cfg.dot1q, sw, swp) && carries(si, sub.cfg.dot1q)) uf.union(node(sw, sub.cfg.dot1q === si.native ? si.native : sub.cfg.dot1q), ifNode(oth, p)); } } }
           else { if (!blockedIn(si.vlan, sw, swp)) uf.union(node(sw, si.vlan), ifNode(oth, othp)); } }
-        else { const v = si.trunk ? si.native : si.vlan; if (!blockedIn(v, sw, swp)) uf.union(node(sw, v), hostNode(oth)); } }
+        else { const v = si.trunk ? si.native : (D[oth].voice && si.cfg.voiceVlan ? si.cfg.voiceVlan : si.vlan); if (!blockedIn(v, sw, swp)) uf.union(node(sw, v), hostNode(oth)); } } // an IP phone (host with voice: true) tags into the port's voice VLAN when it has one
       else { // no switch: point to point
         const na = (ka === 'router' || ka === 'l3switch') ? ifNode(L.a, L.ap) : hostNode(L.a), nb = (kb === 'router' || kb === 'l3switch') ? ifNode(L.b, L.bp) : hostNode(L.b); uf.union(na, nb); } });
     // SVIs join their VLAN node

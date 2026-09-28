@@ -161,5 +161,16 @@ module.exports.run = function({ out }){
     const pat = d.R1._natSeen.filter(t => t.kind === 'pat'); ok(pat.length >= 2 && new Set(pat.map(t => t.global + ':' + t.gport)).size === pat.length, 'nat: PAT gives each host its own port on the shared address');
     const run = d.R1.exec('show running-config') || d.R1.out[d.R1.out.length - 1].s; ok((run.match(/ip nat inside source list 1/g) || []).length === 1, 'running-config shows one statement for list 1');
   }
+  // 12. voice VLANs: a phone (voice: true) joins the port's voice VLAN, the PC stays in the access VLAN; show interfaces X switchport
+  {
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.4600.0001' }, PH1: { kind: 'host', voice: true, ip: '10.46.11.21', mask: '255.255.255.0', gw: '10.46.11.1' }, PC1: { kind: 'host', ip: '10.46.10.21', mask: '255.255.255.0', gw: '10.46.10.1' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'PH1' }, { a: 'SW1', ap: 'fastethernet0/2', b: 'PC1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'no shut', 'int g0/0.10', 'encapsulation dot1q 10', 'ip add 10.46.10.1 255.255.255.0', 'int g0/0.11', 'encapsulation dot1q 11', 'ip add 10.46.11.1 255.255.255.0'],
+      SW1: ['en', 'conf t', 'vlan 10', 'name data', 'vlan 11', 'name voice', 'int g0/1', 'switchport mode trunk', 'int range f0/1 - 2', 'switchport mode access', 'switchport access vlan 10'] });
+    let A = Net.api(Net.build(net, d)); ok(!A.ping('PH1', '10.46.11.1').ok && A.ping('PC1', '10.46.10.1').ok, 'voice: with no voice VLAN the phone sits in the data VLAN and cannot reach its gateway');
+    d.SW1.exec('int f0/1'); d.SW1.exec('switchport voice vlan 11'); d.SW1.exec('power inline police'); A = Net.api(Net.build(net, d)); ok(A.ping('PH1', '10.46.11.1').ok && A.ping('PC1', '10.46.10.1').ok, 'voice: switchport voice vlan puts the phone in VLAN 11');
+    const c = NetConfig.parse(d.SW1).interfaces['fastethernet0/1']; ok(c.voiceVlan === 11 && c.powerPolice === 'errdisable', 'config: voice vlan and power inline police parsed');
+    const t = Show.render(d.SW1, 'show interfaces f0/1 switchport', A.state); ok(/Access Mode VLAN: 10 \(data\)/.test(t) && /Voice VLAN: 11 \(voice\)/.test(t) && /Administrative Mode: static access/.test(t), 'show interfaces switchport shows the access and voice VLANs (' + t + ')');
+  }
   return { pass, fails };
 };

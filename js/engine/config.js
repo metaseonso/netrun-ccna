@@ -119,6 +119,9 @@
           else if (s === 'ip dhcp snooping trust') i.snoopTrust = true; else if (s === 'ip arp inspection trust') i.daiTrust = true;
           else if ((m = s.match(/^speed (\S+)$/))) i.speed = m[1]; else if ((m = s.match(/^duplex (\S+)$/))) i.duplex = m[1];
           else if ((m = s.match(/^ip ospf network (\S+)$/))) i.ospfNetwork = m[1];
+          else if ((m = s.match(/^switchport voice vlan (\d+)$/))) i.voiceVlan = +m[1];
+          else if (s === 'no switchport voice vlan') i.voiceVlan = null;
+          else if ((m = s.match(/^power inline police(?: action (errdisable|log))?$/))) i.powerPolice = m[1] || 'errdisable';
         }
       }
       // ---------------- line config
