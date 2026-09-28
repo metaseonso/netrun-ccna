@@ -41,6 +41,9 @@ then `docs/CAMPAIGN_GUIDE.md` (how to write content), `docs/STORY_BIBLE.md` (how
 
 ## How to work
 
+**Releases.** Alpha 1.0 is GitHub release `v1.0-alpha` (a pre-release, build ?v=80). This environment cannot push tags;
+the owner makes releases on the Releases page.
+
 **Going live.** GitHub Pages publishes `main`. Work on the session branch, and after every release (tests green,
 `?v=` bumped) fast-forward `main` to it (`git push origin <branch>:main`). The owner approved this on 2026-09-28; no
 per-release sign-off is needed.
@@ -105,8 +108,8 @@ Definition of done for a day:
 - **Rites are now a real gate.** `Game.classFor` only promotes when the rep is there **and** the rite gig of the class
   below is done (`rite: true` + `cls`). The rites are `d-n19-clinic-front-door`, `c-n33-every-road-home`,
   `b-n51-nobody-answers-but-us` and the finale `z-watson-exchange`.
-- Every NPC but Vesper Kade has a portrait; she has a `SUBJECTS` line and waits for the owner to run `tools/gen_npcs.py`.
-  New NPCs get the procedural sprite until then (add a `SUBJECTS` line for them). Do not run it yourself; it spends money.
+- Every NPC has a portrait (Vesper Kade's added 2026-09-28). New NPCs get the procedural sprite until the owner runs
+  `tools/gen_npcs.py` on their PC, where the key lives (add a `SUBJECTS` line for them). Do not run it yourself; it spends money.
 - Archetype voice lines are seed content: 3–4 lines per situation. Add depth, keep every situation covered (lint warns).
 - The crew's calls use real-time spacing (10 min, 1 h, 1 d …). In dev, DEV → CALLS → FORCE CALL.
 - All 72 decks are imported. Six decks (days 3, 5, 59, 61) and Terraform use Anki's compressed format; `tools/import_apkg.py` now reads it (needs `pip install zstandard`). Card pictures: `tools/extract_card_images.py` → `js/data/cards/images.js`, shown in crew calls.
