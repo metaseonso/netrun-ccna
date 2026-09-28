@@ -181,5 +181,8 @@ window.GLOSSARY = {
   'non-designated port': 'A switch port that is neither a root port nor a designated port. In classic STP it sits in the blocking state and carries no traffic.',
   'edge port': 'On the rapid tree, a port that faces an end host and goes straight to forwarding. Configured with spanning-tree portfast.',
   'alternate port': 'A rapid spanning tree role: a discarding port that receives a superior BPDU from another switch. It takes over if the root port fails.',
-  'backup port': 'A rapid spanning tree role: a discarding port that receives a superior BPDU from another port on the same switch (only on a shared segment, such as a hub). It backs up a designated port.'
+  'backup port': 'A rapid spanning tree role: a discarding port that receives a superior BPDU from another port on the same switch (only on a shared segment, such as a hub). It backs up a designated port.',
+  'port-channel': 'The logical interface an EtherChannel creates from its member ports. Spanning tree and the switch treat it as one link.',
+  'lacp': 'Link Aggregation Control Protocol, IEEE 802.3ad (now 802.1AX). Negotiates an EtherChannel: active sends, passive only answers. Up to 8 active members and 8 standby.',
+  'pagp': 'Port Aggregation Protocol, Cisco proprietary. Negotiates an EtherChannel: desirable sends, auto only answers.'
 };
