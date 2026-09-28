@@ -113,8 +113,9 @@
     h += '<section><h2>DAYS TO EACH GATE</h2><div class="note">Median days from a player\'s first night to the day they finished the night of each rite.</div>' + table(['night', 'gate', 'players', 'median'], riteRows) + '</section>';
 
     // builds and classes
-    const ver = {}, cls = {}; P.forEach(p => { const v = p.version || 'older'; ver[v] = (ver[v] || 0) + 1; cls[p.cls || 'D'] = (cls[p.cls || 'D'] || 0) + 1; });
-    h += '<section><h2>CLASSES AND BUILDS</h2>' + table(['class', 'players'], ['D', 'C', 'B', 'A'].map(c => '<tr><td>Class ' + c + '</td><td class="n">' + (cls[c] || 0) + '</td></tr>')) +
+    const ver = {}, cls = {}, dif = {}; P.forEach(p => { const v = p.version || 'older'; ver[v] = (ver[v] || 0) + 1; cls[p.cls || 'D'] = (cls[p.cls || 'D'] || 0) + 1; const f = p.difficulty || 'not reported'; dif[f] = (dif[f] || 0) + 1; });
+    h += '<section><h2>CLASSES, SETTINGS AND BUILDS</h2>' + table(['class', 'players'], ['D', 'C', 'B', 'A'].map(c => '<tr><td>Class ' + c + '</td><td class="n">' + (cls[c] || 0) + '</td></tr>')) +
+      '<div style="height:10px"></div>' + table(['setting', 'players', 'licensed'], ['easy', 'normal', 'cyberpsycho', 'not reported'].filter(k => dif[k]).map(k => '<tr><td>' + esc(k) + '</td><td class="n">' + dif[k] + '</td><td class="n">' + L.filter(l => (l.difficulty || 'not reported') === k).length + '</td></tr>')) +
       '<div style="height:10px"></div>' + table(['build (?v=)', 'players'], Object.entries(ver).sort((a, b) => b[1] - a[1]).map(([v, c]) => '<tr><td>' + esc(v) + '</td><td class="n">' + c + '</td></tr>')) + '</section>';
 
     // suggestions
@@ -124,7 +125,7 @@
       table(['id', 'received', 'status', 'night', 'screen', 'text'], open.map(s => '<tr><td>' + esc(s.id) + '</td><td>' + esc(String(s.received).slice(0, 10)) + '</td><td><span class="tag' + (s.status === 'new' ? ' new' : '') + '">' + esc(s.status) + '</span></td><td>' + esc(s.night) + '</td><td>' + esc(s.screen) + '</td><td>' + esc(s.text) + '</td></tr>')) + '</section>';
 
     // licenses
-    h += '<section style="grid-column:1/-1"><h2>LICENSES ISSUED</h2>' + table(['number', 'issued', 'handle', 'class', 'hall of fame'], L.slice().reverse().map(l => '<tr><td>' + esc(l.number) + '</td><td>' + esc(String(l.issued).slice(0, 10)) + '</td><td>' + esc(l.handle) + '</td><td>' + esc(l.cls) + '</td><td>' + (l.hall ? 'yes' : 'no') + '</td></tr>')) + '</section>';
+    h += '<section style="grid-column:1/-1"><h2>LICENSES ISSUED</h2>' + table(['number', 'issued', 'handle', 'class', 'setting', 'hall of fame'], L.slice().reverse().map(l => '<tr><td>' + esc(l.number) + '</td><td>' + esc(String(l.issued).slice(0, 10)) + '</td><td>' + esc(l.handle) + '</td><td>' + esc(l.cls) + '</td><td>' + esc(l.difficulty || '—') + '</td><td>' + (l.hall ? 'yes' : 'no') + '</td></tr>')) + '</section>';
     $('out').innerHTML = h + '</div>';
   }
 
@@ -141,7 +142,7 @@
   function demo(){ const at = new Date().toISOString(); const P = []; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < 120; i++) { const first = new Date(Date.now() - Math.floor(rnd() * 70) * DAY).toISOString().slice(0, 10); const reached = Math.min(64, Math.floor(Math.pow(rnd(), 1.8) * 65)); const trail = {};
       for (let n = 1; n <= Math.min(63, reached); n++) trail[n] = new Date(Date.parse(first) + n * 0.8 * DAY).toISOString().slice(0, 10);
-      P.push({ id: 'demo' + i, updated: new Date(Date.now() - Math.floor(rnd() * 20) * DAY).toISOString(), cls: reached > 51 ? 'A' : reached > 33 ? 'B' : reached > 19 ? 'C' : 'D', nights: reached, flatlines: Math.floor(rnd() * 4), first, reached, fixers: Math.floor(rnd() * 3), version: rnd() > .3 ? '62' : '61', trail, flats: rnd() > .5 ? { [1 + Math.floor(rnd() * 63)]: 1 } : {}, licensed: reached === 64 }); }
+      P.push({ id: 'demo' + i, updated: new Date(Date.now() - Math.floor(rnd() * 20) * DAY).toISOString(), cls: reached > 51 ? 'A' : reached > 33 ? 'B' : reached > 19 ? 'C' : 'D', nights: reached, flatlines: Math.floor(rnd() * 4), first, reached, fixers: Math.floor(rnd() * 3), version: rnd() > .3 ? '62' : '61', difficulty: ['easy', 'normal', 'normal', 'cyberpsycho'][Math.floor(rnd() * 4)], trail, flats: rnd() > .5 ? { [1 + Math.floor(rnd() * 63)]: 1 } : {}, licensed: reached === 64 }); }
     render({ ok: true, at, pulse: P, suggestions: [{ id: 'S0001', received: at, handle: 'x', screen: 'shop', night: 12, version: '62', text: 'A sound slider, please.', status: 'new' }, { id: 'S0002', received: at, screen: 'gig', night: 21, text: 'The BPDU Guard floor needs one more hint.', status: 'ticketed' }],
       licenses: P.filter(p => p.licensed).map((p, i) => ({ number: 'NR-' + String(i + 1).padStart(6, '0'), issued: at, handle: 'runner' + i, cls: 'A', hall: i % 2 === 0 })) });
     $('msg').textContent = 'Demo numbers, made up.'; }

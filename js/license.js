@@ -1,6 +1,6 @@
 /* license.js — the NETRUNNER://CCNA license card, drawn as SVG from a license record.
    Used in the game (the completion screen) and by tools/hall.js (the Hall of Fame robot), so every card is the same.
-   LicenseCard.svg({ number, issued, handle, cls, stats: { nights, gigs, clean, hours, saved, lost, flatlines, fixers } }) */
+   LicenseCard.svg({ number, issued, handle, cls, difficulty, stats: { nights, gigs, clean, hours, saved, lost, flatlines, fixers } }) */
 (function(root){
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const day = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toISOString().slice(0, 10); };
@@ -23,6 +23,7 @@
       '<g transform="translate(48 164)"><rect width="104" height="80" rx="12" fill="#ffd23f" opacity=".92"/><path d="M0 27H104M0 53H104M35 0V80M69 0V80" stroke="#07080d" stroke-width="3" opacity=".55"/></g>' +
       '<text x="190" y="190" class="k">HANDLE</text><text x="190" y="' + (190 + size) + '" class="d" font-size="' + size + '" font-weight="800" fill="#e6f1ff">' + esc(handle) + '</text>' +
       '<text x="' + (W - 48) + '" y="190" class="k" text-anchor="end">CLASS</text><text x="' + (W - 48) + '" y="262" class="d" font-size="72" font-weight="800" fill="#ff3fa4" text-anchor="end">' + esc(r.cls || 'A') + '</text>' +
+      (r.difficulty ? '<text x="' + (W - 48) + '" y="294" class="k" text-anchor="end" style="fill:' + (r.difficulty === 'cyberpsycho' ? '#ff3fa4' : '#ffd23f') + '">' + esc(String(r.difficulty).toUpperCase()) + '</text>' : '') +
       cell(48, 340, 'LICENSE NO.', r.number || 'NR-??????') + cell(330, 340, 'ISSUED', day(r.issued)) + cell(560, 340, 'NIGHTS', typeof st.nights === 'string' ? st.nights : (st.nights || 0) + ' / 63') + cell(780, 340, 'GIGS CLEARED', st.gigs || 0) +
       cell(48, 440, 'CLEAN FLOORS', (st.clean == null ? '—' : typeof st.clean === 'string' ? st.clean : st.clean + '%')) + cell(330, 440, 'HOURS ON THE NET', st.hours || 0) + cell(560, 440, 'CREW SAVED', st.saved || 0) + cell(780, 440, 'FLATLINES', st.flatlines || 0) +
       '<line x1="48" y1="520" x2="' + (W - 48) + '" y2="520" stroke="#233049" stroke-width="2"/>' +

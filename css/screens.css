@@ -284,3 +284,12 @@
 
 /* a card's picture in a crew call */
 .cardimg{display:block;max-width:220px;max-height:140px;margin:8px 0;padding:6px;background:#fff;border-radius:6px}
+
+/* the setting: easy, normal, cyberpsycho */
+.diffpick{margin-bottom:16px} .diffpick h3{margin:0 0 12px;font-family:var(--disp);font-size:14px;letter-spacing:.16em;color:var(--yel)}
+.diffs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin:0 0 10px}
+.diff{display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px 14px;background:var(--panel);border:1px solid var(--line);color:var(--ink);cursor:pointer}
+.diff b{font-family:var(--disp);font-size:15px;letter-spacing:.14em;color:var(--cyan)} .diff.cyberpsycho b{color:var(--mag)}
+.diff span{font-size:13px;color:var(--ink2)} .diff em{font-style:normal;font-size:12px;color:var(--ink)}
+.diff:hover{border-color:var(--cyan)} .diff.on{border-color:var(--cyan);box-shadow:0 0 16px rgba(63,246,255,.18)} .diff.cyberpsycho.on{border-color:var(--mag);box-shadow:0 0 16px rgba(255,63,164,.2)}
+.diff[disabled]{opacity:.45;cursor:default}

@@ -95,6 +95,8 @@ Definition of done for a day:
   Marrow's tab (food or the patch on credit when broke and under 70, repaid from the next pay) is the
   anti-soft-lock; keep it. Tuned by simulation over all 68 gigs (a runner who clears each gig once, in night order):
   3 failed commits per gig ends with about 3,000 creds, 8 with about 2,000, 15 with about 1,000 and a few tabs.
+  That is EASY. NORMAL (C 95, B 135, A 190): 2,360 / 1,340 / 885 with 18 tabs. CYBERPSYCHO (C 90, B 130, A 180, 2
+  chrome a miss): 1,360 at 3 misses a gig; at 8 a gig the runner runs dry at the Class B rite and drops a setting.
 
 - **Rites are now a real gate.** `Game.classFor` only promotes when the rep is there **and** the rite gig of the class
   below is done (`rite: true` + `cls`). The rites are `d-n19-clinic-front-door`, `c-n33-every-road-home`,
@@ -122,6 +124,11 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Settings: `DIFFICULTY` in js/data/jobs/_base.js (easy, normal, cyberpsycho) sets the class pay for every
+  gig without its own `creds` (rites keep theirs) and the chrome a wrong commit burns. `state.difficulty` (default
+  normal), `Game.setDifficulty(id)`: easier at any time, harder only before the first gig. Picked once on the map
+  (`diffPicker`), changed on the DECK; carried on the license record, the card, the Hall of Fame, the pulse and the
+  owner's dashboard. Also: the license's fixer count now counts only paid notes. Tested in tests/game.test.js.
 - 2026-09-28 · Marrow's tab opens under 70, not at 30 or under: at 30 a broke runner at 40 chrome could not afford a
   rite's 38 and could not get credit either, so the flatline reload looped. Tested in tests/game.test.js.
 - 2026-09-28 · Pulse and dashboard: `flatline()` counts flatlines by night in `state.meta.flatNights`; the pulse adds the

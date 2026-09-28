@@ -130,7 +130,7 @@ Commands, hints and `kit.cmd` are exempt (the old tongue is the old tongue). Lev
 
 ## 10. Creds, the stall, rites
 
-`creds` and `rep` on a gig default to its class (CLASSES in jobs/_base.js: D 60/10, C 100/15, B 150/20, A 220/25). `rite: true` marks a class rite of passage (board badge, result framing, big creds), and it **gates the class**: a player with the rep for the next class stays where they are until the rite gig of their current class is done. One rite per class (`rite: true` with that `cls`). The HUD names the rite; locked gigs say Dispatch wants to see it cleared first. Finish the rite and the promotion fires on the result screen.
+`creds` and `rep` on a gig default to its class (CLASSES in jobs/_base.js: rep D 10, C 15, B 20, A 25). The default pay comes from the player's setting (`DIFFICULTY` in jobs/_base.js; Normal pays D 60, C 95, B 135, A 190). A gig that sets `creds` pays that on every setting. `rite: true` marks a class rite of passage (board badge, result framing, big creds), and it **gates the class**: a player with the rep for the next class stays where they are until the rite gig of their current class is done. One rite per class (`rite: true` with that `cls`). The HUD names the rite; locked gigs say Dispatch wants to see it cleared first. Finish the rite and the promotion fires on the result screen.
 Shop items live in `js/data/shop.js` with kinds `food | service | gift | favor | bd | skin`; a `bd` item needs `title`, `year`, `text`; a `food` item needs `effect.food` (and may carry `effect.danger` so it doubles as a crew gift).
 
 ### The body: food and chrome

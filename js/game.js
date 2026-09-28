@@ -8,9 +8,9 @@
   const LEVEL_AT = [0, 1, 3, 6];
   const P = () => window.PLATFORM || {};
 
-  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0, owed: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null, owner: null, codex: {}, completedAt: null, license: null });
+  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0, owed: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null, owner: null, codex: {}, completedAt: null, license: null, difficulty: 'normal', diffPicked: false });
   // fill in keys added since a record was written (same VERSION only; older records are dropped in load())
-  function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); out.body = Object.assign({ food: 100, chrome: 100, tab: 0, owed: 0 }, out.body || {}); out.meta = Object.assign({ deaths: 0, syncs: 0, lastSync: 0 }, out.meta || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
+  function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); out.body = Object.assign({ food: 100, chrome: 100, tab: 0, owed: 0 }, out.body || {}); if (!(window.DIFFICULTY || {})[out.difficulty]) out.difficulty = 'normal'; out.meta = Object.assign({ deaths: 0, syncs: 0, lastSync: 0 }, out.meta || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
   const usable = s => !!s && (s.v || 0) >= VERSION;
   let state = fresh();
   function load(h){ const s = Storage.local.loadSync(h); if (s && !usable(s)) { Storage.local.remove(h); console.info('record from an earlier build dropped:', h); } return usable(s) ? migrate(s) : Object.assign(fresh(), { handle: h }); }
@@ -36,7 +36,8 @@
   const classRank = id => CLASSES.findIndex(k => k.id === id);
   // what a gig pays on a first clear, and the rep it is worth: its own numbers, else its class's
   const clsOf = id => CLASSES.find(c => c.id === id) || CLASSES[0];
-  const pay = job => job.creds != null ? job.creds : clsOf(job.cls).pay;
+  const diff = () => (window.DIFFICULTY || {})[state.difficulty] || { pay: [], wear: 1 };
+  const pay = job => job.creds != null ? job.creds : (diff().pay[classRank(job.cls)] != null ? diff().pay[classRank(job.cls)] : clsOf(job.cls).pay);
   const repOf = job => job.rep != null ? job.rep : clsOf(job.cls).rep;
   const riteFor = cls => (window.JOBS || []).find(j => j.rite && j.cls === cls) || null;
   const riteCleared = cls => { const r = riteFor(cls); return !r || !!state.jobsDone[r.id]; };
@@ -151,7 +152,7 @@
     return { ok: false, why: '?' }; }
 
   function commit(){ const st = currentStep(); if (!st) return { ok: false }; const r = evaluate(); const i = run.step; const ms = Date.now() - run.stepStart;
-    if (!r.ok) { run.fails[i] = (run.fails[i] || 0) + 1; run.feedback = { ok: false, text: r.why, bad: r.bad }; ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: false, ms }); if (body.wear(1, 'the chrome burned out mid-dive, ' + (run.job.steps.length - i) + ' floors from the top.')) return { ok: false, dead: true, why: 'flatlined' }; return r; }
+    if (!r.ok) { run.fails[i] = (run.fails[i] || 0) + 1; run.feedback = { ok: false, text: r.why, bad: r.bad }; ev('step_attempt', { job: run.job.id, step: i, skill: st.skill, stepType: st.type, ok: false, ms }); if (body.wear(diff().wear || 1, 'the chrome burned out mid-dive, ' + (run.job.steps.length - i) + ' floors from the top.')) return { ok: false, dead: true, why: 'flatlined' }; return r; }
     const clean = !run.hinted[i] && !run.outsourced; const k = skill(st.skill); k.uses++;
     // one step of sharpening per quickhack per gig: a skill burns in over several nights, never in one dive
     if (clean && !run.sharpened[st.skill]) { k.clean++; run.sharpened[st.skill] = true; } const before = k.level; k.level = skillLevel(k.clean); k.slotted = true;
@@ -195,11 +196,15 @@
   // a night is done when every talk set on it was heard and every gig set on it was cleared at least once
   function nightDone(n){ const ls = []; STAGES.forEach(stg => stg.levels.forEach(l => { if ((l.day || []).includes(n)) ls.push(l); })); if (!ls.length) return false;
     const gs = JOBS.filter(j => (j.day || []).includes(n)); return ls.every(l => state.read[l.id]) && gs.every(j => state.jobsDone[j.id]); }
+  // the setting: easier at any time; harder only before the first gig is cleared, so a hard record means a hard run
+  function setDifficulty(id){ const D = window.DIFFICULTY || {}, order = window.DIFFICULTY_ORDER || []; if (!D[id]) return { ok: false, why: 'no such setting' };
+    const harder = order.indexOf(id) > order.indexOf(state.difficulty); if (harder && Object.keys(state.jobsDone).length) return { ok: false, why: 'A harder setting is only open before your first gig.' };
+    const was = state.difficulty; state.difficulty = id; state.diffPicked = true; if (was !== id) { ev('difficulty', { from: was, to: id }); log('Setting: ' + D[id].name); } save(); return { ok: true, difficulty: id }; }
   function licenseRecord(){ const st = state.stats || {}, steps = st.steps || {}; const nights = (window.SYLLABUS || []).filter(x => nightDone(x.night)).length;
     const fp = [state.handle, state.created, state.completedAt].join('|'); let h = 0x811c9dc5; for (const c of fp) { h ^= c.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
-    return { fingerprint: h.toString(16) + '-' + (state.completedAt || 0).toString(36), completedAt: state.completedAt ? new Date(state.completedAt).toISOString() : null, cls: classFor(state.rep).id,
+    return { fingerprint: h.toString(16) + '-' + (state.completedAt || 0).toString(36), completedAt: state.completedAt ? new Date(state.completedAt).toISOString() : null, cls: classFor(state.rep).id, difficulty: state.difficulty,
       stats: { nights, gigs: Object.keys(state.jobsDone).length, clean: steps.passes ? Math.round(100 * (steps.firstTry || 0) / steps.passes) : null, hours: Math.round((st.playMs || 0) / 360000) / 10,
-        saved: state.roster.list.reduce((a, p) => a + (p.saved || 0), 0), lost: Protege.lost(state.roster).length, flatlines: state.meta.deaths || 0, fixers: Object.keys(state.codex || {}).length } }; }
+        saved: state.roster.list.reduce((a, p) => a + (p.saved || 0), 0), lost: Protege.lost(state.roster).length, flatlines: state.meta.deaths || 0, fixers: Object.values(state.codex || {}).filter(v => v === 'paid').length } }; }
   function setLicense(l){ state.license = l; log('Licensed: ' + l.number); save(); }
 
   // ---- the stall -----------------------------------------------------------------------
@@ -302,5 +307,5 @@
   // closing the tab with a Google record not yet in Drive: push it, and let the browser ask before it goes.
   window.addEventListener('beforeunload', e => { const unsaved = state.owner && (dirty || inflight); Telemetry.touch(state); if (!state.owner) return save(); if (unsaved) { flush(true); e.preventDefault(); e.returnValue = ''; } });
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get driveOk(){ return driveOk; }, get driveWhy(){ return driveWhy; }, recheckDrive(){ const u = gUser(); return u ? onAuth(u) : Promise.resolve(); }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, pay, repOf, shop, fixer, codexStatus, nightDone, licenseRecord, setLicense, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get driveOk(){ return driveOk; }, get driveWhy(){ return driveWhy; }, recheckDrive(){ const u = gUser(); return u ? onAuth(u) : Promise.resolve(); }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, pay, repOf, shop, fixer, codexStatus, nightDone, licenseRecord, setLicense, setDifficulty, get difficulty(){ return state.difficulty; }, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
 })();

@@ -48,6 +48,22 @@ module.exports.run = function({ out }){
   }
   // nothing leaked out of the probe runs
   ok(!Game.state.codex || !Game.state.codex[first.id], 'runs do not leak into the saved state');
+  // the setting: pay by class follows it (rites keep their own), a wrong commit burns its wear, harder only before the first gig
+  {
+    const keep = JSON.parse(JSON.stringify({ difficulty: Game.state.difficulty, diffPicked: Game.state.diffPicked, jobsDone: Game.state.jobsDone, body: Game.state.body, handle: Game.state.handle }));
+    const gB = JOBS.find(j => j.cls === 'B' && !j.rite && j.creds == null), riteB = JOBS.find(j => j.rite && j.cls === 'B');
+    Game.state.handle = Game.state.handle || 'difftest'; Game.state.jobsDone = {};
+    for (const k of DIFFICULTY_ORDER) { ok(Game.setDifficulty(k).ok && Game.pay(gB) === DIFFICULTY[k].pay[2], 'setting: ' + k + ' pays ' + DIFFICULTY[k].pay[2] + ' for a Class B gig (' + Game.pay(gB) + ')');
+      ok(Game.pay(riteB) === riteB.creds, 'setting: ' + k + ' leaves the rite at ' + riteB.creds); }
+    Game.setDifficulty('cyberpsycho'); Game.state.body.chrome = 100; const g = JOBS.find(j => j.solution && j.steps.some(s => s.type === 'choice') && j.cls === 'D');
+    Game.startJob(g.id, { silent: true }); while (Game.currentStep() && Game.currentStep().type !== 'choice') { Game.run.step++; } const st = Game.currentStep(); Game.run.choice = (st.a + 1) % st.opts.length; Game.commit();
+    ok(Game.state.body.chrome === 100 - DIFFICULTY.cyberpsycho.wear, 'setting: a wrong commit on cyberpsycho burns ' + DIFFICULTY.cyberpsycho.wear + ' chrome (' + Game.state.body.chrome + ')'); Game.abort();
+    Game.state.jobsDone = { [g.id]: { times: 1 } };
+    ok(Game.setDifficulty('easy').ok && Game.state.difficulty === 'easy', 'setting: easier at any time');
+    ok(!Game.setDifficulty('normal').ok && Game.state.difficulty === 'easy', 'setting: harder is refused after the first gig');
+    ok(Game.licenseRecord().difficulty === 'easy', 'setting: the license record carries it');
+    Object.assign(Game.state, keep);
+  }
   // the stall: prices scale by half the base price per class; Marrow's patch adds 35 chrome, the tune-up fills it
   {
     const keep = JSON.parse(JSON.stringify({ rep: Game.state.rep, creds: Game.state.creds, body: Game.state.body, handle: Game.state.handle, jobsDone: Game.state.jobsDone }));
