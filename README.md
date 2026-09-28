@@ -4,7 +4,7 @@ A story-driven browser game for studying the **CCNA 200-301**. Static files, no 
 
 **Play:** https://metaseonso.github.io/netrun-ccna/ · **Dev mode:** add `?dev=1`
 
-> **Status: the campaign is complete.** 63 nights across nine districts, 68 gigs, three rites of passage and the
+> **Alpha 1.0 (2026-09-28, build ?v=78).** The campaign is complete. 63 nights across nine districts, 68 gigs, three rites of passage and the
 > finale, The Watson Exchange. Every gig is played by `npm test`. Start at `docs/HANDOFF.md`.
 
 ## What it is
