@@ -1,78 +1,55 @@
-/* Stage 4 · The Bridges — Spanning Tree, Days 20–21. The demo stage. One week at the Watson clinic annex.
-   Written as scenes. See docs/STORY_BIBLE.md. Facts follow Jeremy's IT Lab Days 20 and 21 exactly. */
+/* District 04 · The Bridges — nights 20–22: spanning tree, its guards, the rapid tree. Old Root's last week at the
+   Watson clinic annex. Written to docs/STORY_BIBLE.md (Voice) and docs/CAMPAIGN_MAP.md. */
 (function(){
   const { PS, SJ } = SRC;
-  const D20 = [PS('Spanning_Tree_Protocol_Part1.md'), SJ('08 - Day 20 - STP Part 1.md')];
   const D21 = [PS('Spanning_Tree_Protocol_Part2.md'), SJ('09 - Day 21 - STP Part 2.md')];
-
-  STAGES.push({ id: 'bridges', arc: 'grid', title: 'STAGE 4 · THE BRIDGES', sub: 'Spanning Tree · the clinic annex · DEMO STAGE', npc: 'root', status: 'live', levels: [
-
-    // ------------------------------------------------------------ 1
-    { id: 'stp-why', title: 'The cable that never carried a frame', sub: 'why loops kill a network', npc: 'root', day: [20], src: D20, unlocks: ['stp-loops'],
+  STAGES.push({ id: 'bridges', arc: 'grid', title: 'STAGE 4 · THE BRIDGES', sub: 'spanning tree at the clinic annex', npc: 'root', status: 'live', levels: [
+    // ------------------------------------------------------------ night 20 · spanning tree, part 1
+    { id: 'n20-tagged-cable', title: 'The cable that never carried a frame', sub: 'loops, the root bridge, port roles and cost', npc: 'root', day: [20], src: [PS('Spanning_Tree_Protocol_Part1.md')], unlocks: ['stp-election', 'stp-loops'],
       beats: [
-        { k: 'SCENE', where: 'Watson clinic annex · switch closet · Monday, 22:40',
+        { k: 'SCENE', where: 'The Watson clinic annex · the switch closet · Monday, 22:40',
           lines: [
-            { who: 'narr', text: 'The closet is warm and smells of dust. Three switches on a rack. A cardboard box on the floor with a coffee mug in it. An old man is winding a cable around his hand.' },
-            { who: 'root', text: 'You are the new one Dispatch sent. Good. Come here and look at this before I go.' },
-            { who: 'narr', text: 'He points at the second switch. Two cables run from it to the first switch. One of them has a paper tag: DO NOT UNPLUG.' },
-            { who: 'root', text: 'That second cable has been plugged in for six years. It has never carried a single frame. Every tech who comes through here wants to pull it.' },
-            { who: 'you', text: 'Why keep a cable that does nothing?' },
-            { who: 'root', text: 'Because I remember the night we did not have it.' }
+            { who: 'narr', text: 'The closet door sticks, then gives. Warm air rolls out over you, thick with dust and the burnt-sugar smell of a fan bearing on its way out, and under the fan\'s whine three switches tick on a rack no taller than your chest. An old man in a grey cardigan sits on an upturned crate beside them, winding a patch cable round his fist. The cardboard box at his feet holds a mug, a torch and a stack of work orders gone soft at the corners.' },
+            { who: 'root', text: 'Dispatch says you\'re Class C now. Before I tell you anything, look at the rack and tell me what you see.' },
+            { who: 'narr', text: 'Cables run between all three switches, and between the top two there are two cables instead of one. The second is thin and grey, and a paper tag hangs off it in shaky capitals: DO NOT UNPLUG. Every port light on the rack flickers green except the one at the far end of that cable, which glows a steady amber.' },
+            { who: 'you', text: 'Two cables between the same two switches, and one of them isn\'t doing anything.' },
+            { who: 'root', text: 'It hasn\'t carried a frame in six years. Every tech who comes through here wants to pull it. I finish on Friday, so by Friday you\'ll know why nobody can.' }
           ],
           choice: { opts: [
-            { say: 'Tell me about that night.', reply: 'A fibre got cut in the street. One path, so the annex went dark. A nurse named Imani carried paper charts up three floors for nine hours. After that I ran a second cable. Then I had a different problem.' },
-            { say: 'So the second cable is a backup.', reply: 'It is. But a backup cable is also a second path, and two paths between two switches make a ring. Rings are the thing that kills a network faster than a cut fibre. Sit down. This part matters.' }
+            { tone: 'ask', say: 'What happens when two switches have two cables between them?', reply: 'Old Root: "A broadcast goes out one cable and comes back on the other, and each switch floods every copy it gets out of every other port. Nothing in a frame counts down the way a packet\'s TTL does, so the copies never die. They pile up until the links are full and the switches spend every cycle on them. That\'s a [[broadcast storm]]."' },
+            { tone: 'press', say: 'Then why run a second cable at all?', reply: 'Old Root: "Because one cable is one fault from nothing. A cut, a dead port, a cleaner with a mop bucket. The building needs the second path, so something has to keep it quiet until the first one goes."' },
+            { tone: 'quiet', say: '(Wait for him to go on.)', reply: 'He finishes the coil and drops it in the box. "Twenty years ago this closet had two switches with two cables between them and nothing keeping them quiet. There were two of us on shift. The building went to paper for nine hours."' }
           ] } },
-        { k: 'SCENE', where: 'Same closet · he draws on the back of a work order',
+        { k: 'SCENE', where: 'The switch closet · 23:05',
           lines: [
-            { who: 'root', text: 'A switch that gets a broadcast sends it out every other port. That is its job. Now put two cables between two switches and send one broadcast.' },
-            { who: 'narr', text: 'He draws two boxes and two lines. Then an arrow going around and around.' },
-            { who: 'root', text: 'Switch one floods it down both cables. Switch two gets it twice and floods each copy back. There is nothing in a frame that counts down. A packet has a [[TTL]] and dies after enough hops. A frame does not. It goes around until something breaks.' },
-            { who: 'you', text: 'How fast does it break?' },
-            { who: 'root', text: 'Seconds. Every trip around adds copies. The links fill up. The switches spend all their CPU on it. And every MAC table goes wrong, because the same address keeps arriving on two different ports. That is a [[broadcast storm]]. Nurses cannot log in, the printers fall over, and your phone starts ringing.' }
-          ] },
-        { k: 'SCENE', where: 'Same closet',
-          lines: [
-            { who: 'root', text: 'So the cable stays, and something has to keep it quiet. That something is [[spanning tree]]. Every switch runs it. Together they look at every extra path and put all but one to sleep.' },
-            { who: 'narr', text: 'He taps the tagged cable.' },
-            { who: 'root', text: 'This one is asleep. Plugged in, light on, no traffic. If the live path dies, the switches wake it up. That is the whole idea. Keep the ring, break the loop.' },
-            { who: 'you', text: 'And you have been doing that by hand for twenty years?' },
-            { who: 'root', text: 'No. The protocol does it. I have been making sure it does it the way I want, which is a different job, and it is the one you are here to learn.' }
-          ] },
-        { k: 'LORE', title: 'ALGORHYME', year: 1985, vibe: 'Radical. She wrote the fix as a poem, and it held.', text: 'Old Root, still winding cable: "The woman who worked this out was Radia Perlman, in 1985, at DEC. She wrote the algorithm in a few days and then wrote it again as a poem, because she said the poem was easier to remember. It became the IEEE standard 802.1D in 1990. In November 2002 a hospital in Boston, Beth Israel Deaconess, lost its whole network for close to four days to a spanning tree failure. The doctors went back to paper. I read about that when I was younger than you. It is why I keep the tag on the cable."' },
-        { k: 'KIT', text: 'He tears off the work order and hands it to you. On the back, in pencil:', kit: [ { cmd: 'two paths between two switches = a loop, unless something blocks one', what: 'the thing to see before anything else' }, { cmd: 'show spanning-tree', what: 'the one command that shows you which port is asleep' } ] },
-        { k: 'SYNC', q: { prompt: 'Imani, the nurse, stops by the closet: "The tech before you said a loop on the switches is like a loop on the internet. Is that right?"', opts: ['Yes, both are stopped by the TTL', 'No. A packet has a TTL and dies. A frame has no TTL, so a switch loop runs until something breaks', 'Yes, both are stopped by the router', 'No. Frames stop after 15 hops'], a: 1, yes: 'Old Root nods once. "That is the answer. Frames do not count down. We have to do it for them."', no: 'Old Root shakes his head. "A packet dies at TTL zero. A frame never dies. That is why I exist."' , why: 'Old Root, slowly: A packet carries a number called TTL. Every router takes one away. At zero the packet is thrown out, so a routing loop ends by itself. A frame has no such number. Switches pass it around forever. That is why switches need spanning tree to break the loop for them.' } }
-      ] },
-
-    // ------------------------------------------------------------ 2
-    { id: 'stp-election', title: 'Who is in charge here', sub: 'root bridge, root ports, designated ports, cost', npc: 'root', day: [20], src: D20, unlocks: ['stp-election'],
-      beats: [
-        { k: 'SCENE', where: 'Clinic annex · switch closet · Tuesday, 07:10',
-          lines: [
-            { who: 'narr', text: 'Old Root is already there, coffee in hand, a laptop open on the box. Three switches: SW1, SW2, SW3.' },
-            { who: 'root', text: 'Three switches. One of them is in charge. The others measure everything from it. Do you know which one?' },
-            { who: 'you', text: 'The one you set up as the main one?' },
-            { who: 'root', text: 'I never set one up. Nobody did. Type "show spanning-tree" on any of them and read the line that says Root ID.' },
-            { who: 'narr', text: 'The screen shows a priority of 32769 and a MAC address. Every switch prints the same address.' },
-            { who: 'root', text: 'That is the [[root bridge]]. The centre of the tree. Every switch sends hello messages called [[BPDU]]s with its own Bridge ID, and the lowest Bridge ID wins. Bridge ID is the priority first, then the MAC address. Every switch here has the default priority, 32768 plus the VLAN number. So they tie on priority and the lowest MAC address wins.' }
+            { who: 'narr', text: 'Footsteps squeak on the lino outside, and a nurse in blue scrubs leans in the doorway with a paper cup of something that smells of cardamom. Her badge says IMANI. She looks at the tag, then at you.' },
+            { who: 'Imani', text: 'He\'s telling you about the charts. I was the one carrying them, up three floors all night, because every screen on the ward froze on the login page.' },
+            { who: 'root', text: 'Every switch saw the same addresses arriving on two ports and kept moving them back and forth in its [[MAC address table]], thousands of times a second, which is what we call flapping. The tables never settled long enough to deliver one real frame.' },
+            { who: 'root', text: 'Since that night every switch here runs [[spanning tree]], and they all do out of the box. They send each other hello messages called [[BPDU]]s, elect one switch as the [[root bridge]], and put every extra path to sleep. These old boxes run the classic version, IEEE 802.1D, and Cisco keeps a separate tree for every VLAN, which they call [[PVST]].' },
+            { who: 'narr', text: 'He tips the laptop on top of the box towards you. A shell is already open on SW1, the top switch.' },
+            { who: 'root', text: 'Type show spanning-tree and read me the Root ID, then the Bridge ID under it.' },
+            { who: 'you', text: 'Root ID, priority 32769. Bridge ID, priority 32769 as well, but a different address.' },
+            { who: 'root', text: 'So SW1 isn\'t in charge. The lowest [[bridge ID]] wins, and the bridge ID is the priority first, then the MAC address if the priorities tie. Nobody here ever set a priority, so all three sit at the default, 32768 plus the VLAN number, and the oldest MAC in the closet won. That\'s the pharmacy\'s hand-me-down on the bottom shelf, the slowest box in the room.' },
+            { who: 'root', text: 'The corp towers downtown hold this same election on every floor, on switches that cost more than this building, and the lowest ID wins there too.' }
           ],
           choice: { opts: [
-            { say: 'So the oldest switch is in charge.', reply: '"Usually, yes. Old MAC addresses tend to be lower. SW3 is a hand-me-down from the pharmacy. It is the slowest box in the room and it runs the tree because nobody told it not to. That is not a design. It is an accident."' },
-            { say: 'Does it matter which one is root?', reply: '"It decides which paths stay awake. If the root is a slow switch in a corner, traffic between the two good switches goes through the corner. Yes, it matters. We will fix it on Friday. Today you learn how it chose."' }
+            { tone: 'ask', say: 'How does each switch find its way to the root?', reply: 'Old Root: "Every port has a cost from its speed: ten megabit is 100, FastEthernet 19, gigabit 4, ten-gig 2. A switch adds up the costs along each path to the root, and the port on the cheapest one is its [[root port]]. If two paths cost the same, it takes the one through the neighbour with the lower bridge ID, and if that ties too, the neighbour\'s lower port ID."' },
+            { tone: 'press', say: 'Why is the tagged cable the one asleep?', reply: 'Old Root: "Every segment gets one [[designated port]], the end with the cheaper way to the root, and it forwards. On the root bridge every port is designated. Whatever port is left over is a [[non-designated port]] and it blocks. SW1\'s end of the tag cable is designated, but SW2 already has a cheaper way to the root, so SW2\'s end blocks, and a cable with one end blocking carries nothing."' },
+            { tone: 'care', say: 'Why are you leaving?', reply: 'He looks at the tag for a while before he answers. "Twenty years is long enough to keep one closet. Somebody younger should know it better than I do, and there\'s a week left to make that true."' }
           ] } },
-        { k: 'SCENE', where: 'Same closet · he draws three boxes in a triangle',
-          lines: [
-            { who: 'root', text: 'Once the root is known, every other switch picks one port that faces the root. Its root port. It picks by cost. Every port has a cost from its speed: 10 megabit is 100, 100 megabit is 19, a gigabit is 4, ten gigabit is 2. Add up the costs along a path to the root. Lowest total wins.' },
-            { who: 'you', text: 'Not the fewest hops?' },
-            { who: 'root', text: 'Hops mean nothing here. Two gigabit links cost 8. One FastEthernet link costs 19. The switch will go two hops to save eleven points. If two paths tie on cost, it takes the one through the neighbour with the lower Bridge ID. If that still ties, the neighbour\'s lower port number.' },
-            { who: 'narr', text: 'He writes the numbers under the triangle: 4, 4, 19.' },
-            { who: 'root', text: 'Then every cable gets one designated port. The end with the lower cost to the root. Tie goes to the lower Bridge ID. On the root, every port is designated, because its cost is zero. Whatever port is left over with no job is non-designated. It blocks. That is your sleeping cable.' }
-          ] },
-        { k: 'LORE', title: 'SIXTEEN BITS, FOUR OF THEM YOURS', year: 2001, vibe: 'Sweet. Y2K came and went. The bits got split anyway.', text: 'Old Root, while you write: "The priority field is sixteen bits. In 2001 the standard, 802.1t, split it: four bits for the priority you set, twelve bits for the VLAN number. That is why every priority you will ever type is a multiple of 4096, and why VLAN 1 shows as 32769 and VLAN 10 shows as 32778. People think the display is wrong. It is telling you the VLAN."' },
-        { k: 'KIT', text: 'On the work order, under the triangle:', kit: [ { cmd: 'Bridge ID = priority (+ VLAN) . MAC address  →  lowest wins root', what: 'the election' }, { cmd: 'cost: 10 Mb 100 · 100 Mb 19 · 1 Gb 4 · 10 Gb 2', what: 'per port, by speed' }, { cmd: 'root port: lowest root cost → lowest neighbour Bridge ID → lowest neighbour port ID', what: 'one per non-root switch' }, { cmd: 'designated port: lowest root cost → lowest Bridge ID', what: 'one per cable' }, { cmd: 'show spanning-tree', what: 'Root ID vs Bridge ID. "This bridge is the root" if it is.' } ] },
-        { k: 'SYNC', q: { prompt: 'Vee Lan calls from the second floor: "SW2 has a FastEthernet cable straight to the root, and two gigabit links through SW3. Which one is it using?"', opts: ['The FastEthernet link, cost 19', 'The gigabit path through SW3, cost 8', 'Both, it balances them', 'The one with the lower MAC'], a: 1, yes: 'Old Root: "Four and four is eight. Eight is less than nineteen. Tell her the long way is the short way."', no: 'Old Root: "Add the costs. Two gigabit links are 8. One FastEthernet is 19. The switch takes the 8."' , why: 'Old Root: Add up the cost of every link on the way to the root. FastEthernet costs 19. Gigabit costs 4. Two gigabit links are 4 + 4 = 8. Eight is less than nineteen, so the switch takes the two-link path. It never counts hops. It only counts cost.' } }
+        { k: 'LORE', title: 'ALGORHYME', year: 1985, real: ['dec', 'ieee'], vibe: 'Totally radical: a poem that kept the office network from eating itself.',
+          text: 'Old Root, turning the tag over in his fingers: "Radia Perlman worked the tree out at Digital Equipment Corporation in 1985. She wrote the algorithm, then a poem about it called Algorhyme, and it starts: I think that I shall never see a graph more lovely than a tree. The IEEE made her tree the 802.1D standard in 1990. I kept a copy of that poem taped inside this door for twenty years."' },
+        { k: 'KIT', text: 'He tears a work order off the pad and writes on the back in pencil.', real: ['ieee'], kit: [
+          { cmd: 'bridge ID = priority (4 bits) + VLAN (12 bits) + MAC (48 bits)', what: 'lowest wins root. Default 32768 + VLAN, so VLAN 1 shows 32769. Priority moves in steps of 4096' },
+          { cmd: 'cost: 10 Mb 100 · 100 Mb 19 · 1 Gb 4 · 10 Gb 2', what: 'added up along the path to the root' },
+          { cmd: 'root port: lowest root cost → lowest neighbour bridge ID → lowest neighbour port ID', what: 'one on every switch except the root' },
+          { cmd: 'designated port: one per segment, forwarding. Every port on the root is designated', what: 'the end with the cheaper way to the root, tie to the lower bridge ID' },
+          { cmd: 'non-designated port: whatever is left', what: 'blocking. That is the sleeping cable' },
+          { cmd: 'show spanning-tree', what: 'Root ID, Bridge ID, and the role and state of every port' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani, on her way out with the empty cup: "So the old box from the pharmacy runs the tree because it\'s the most important one in there?"', opts: ['No. It has the lowest bridge ID, and with every priority the same, the lowest MAC address decided it', 'Yes. The root is always the most important switch', 'No. The root is the switch with the most ports', 'No. The root is whichever switch was turned on first'], a: 0,
+          yes: 'Old Root: "Lowest ID. Importance never came into it."', no: 'Old Root: "The lowest bridge ID. Every priority here is the default, so the oldest MAC won."',
+          why: 'Old Root: The root bridge is the switch with the lowest bridge ID, which is the priority first and then the MAC address. Every switch in the annex has the default priority, 32768 plus the VLAN, so they tie and the lowest MAC address wins. Old switches tend to have low MACs, which is how the pharmacy\'s hand-me-down ended up in charge.' } }
       ] },
-
     // ------------------------------------------------------------ 3
     { id: 'stp-states', title: 'Thirty seconds with a stopwatch', sub: 'port states and timers', npc: 'root', day: [21], src: D21, unlocks: ['stp-states'],
       beats: [

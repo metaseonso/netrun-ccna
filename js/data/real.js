@@ -21,6 +21,7 @@
     aws: { name: 'Amazon Web Services', owner: 'Amazon.com, Inc.', icon: 'amazonwebservices', what: 'Opened the public cloud in 2006.' },
     gcp: { name: 'Google Cloud', owner: 'Google LLC', icon: 'googlecloud', what: 'A public cloud.' },
     wireshark: { name: 'Wireshark', owner: 'the Wireshark Foundation', icon: 'wireshark', what: 'Shows every packet on the wire.' },
+    dec: { name: 'Digital Equipment Corporation', owner: 'Hewlett Packard Enterprise (via Compaq)', what: 'Where Radia Perlman designed the spanning tree algorithm in 1985.' },
     json: { name: 'JSON', owner: 'ECMA International', icon: 'json', what: 'The data format with matching braces.' }
   };
 })();

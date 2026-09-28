@@ -157,6 +157,7 @@ Rules and numbers live there, never in a character's mouth.
 | Marrow | dry and fond, talks through food, never asks where the creds came from |
 | Dispatch | clipped like a radio with a bad battery, no pleasantries, sends a better gig instead of praise |
 | The Kid (crew) | types in bursts, caps when scared, lowercase when relieved, apologises twice |
+| Imani (nurse, the clinic) | warm and dry, counts in shifts and floors, remembers the night of the loop by what she carried |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that

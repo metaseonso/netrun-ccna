@@ -173,5 +173,10 @@ window.GLOSSARY = {
   'ietf': 'Internet Engineering Task Force. Writes the standards used on the internet (IP, TCP, UDP, OSPF, DHCP) and publishes them as RFCs.',
   'rfc': 'Request for Comments: a numbered document in which the IETF publishes an internet standard. IPv4 is RFC 791.',
   'adjacent-layer interaction': 'A layer working with the layers directly above and below it on the same host: it serves the layer above and uses the layer below.',
-  'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.'
+  'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.',
+  'pvst': 'Per-VLAN Spanning Tree: Cisco\'s spanning tree that runs a separate tree, with its own root, in every VLAN. PVST+ is the version that works over 802.1Q trunks.',
+  'bridge id': 'A switch\'s spanning tree identity: a 4-bit priority, a 12-bit extended system ID (the VLAN number) and the 48-bit MAC address. The lowest bridge ID becomes the root bridge.',
+  'root port': 'The one port on each non-root switch with the lowest root cost to the root bridge (ties: lowest neighbour bridge ID, then lowest neighbour port ID). It forwards.',
+  'designated port': 'The one forwarding port on each segment: the end with the lower root cost, ties to the lower bridge ID. Every port on the root bridge is designated.',
+  'non-designated port': 'A switch port that is neither a root port nor a designated port. In classic STP it sits in the blocking state and carries no traffic.'
 };
