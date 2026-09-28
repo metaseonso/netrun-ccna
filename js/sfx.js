@@ -12,12 +12,13 @@
   function tone(o){ const c = ready(); if (!c) return; const t = c.currentTime + (o.at || 0); const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || 0.2, t + (o.a || 0.005)); g.gain.exponentialRampToValueAtTime(0.0001, t + (o.d || 0.12));
     let src; if (o.noise) { const len = Math.ceil(c.sampleRate * (o.d || 0.2)); const buf = c.createBuffer(1, len, c.sampleRate); const ch = buf.getChannelData(0); for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1; src = c.createBufferSource(); src.buffer = buf; }
     else { src = c.createOscillator(); src.type = o.type || 'sine'; src.frequency.setValueAtTime(o.f, t); if (o.f2) src.frequency.exponentialRampToValueAtTime(o.f2, t + (o.d || 0.12)); }
-    let node = src; if (o.lp || o.hp) { const fl = c.createBiquadFilter(); fl.type = o.lp ? 'lowpass' : 'highpass'; fl.frequency.setValueAtTime(o.lp || o.hp, t); if (o.lp2) fl.frequency.exponentialRampToValueAtTime(o.lp2, t + (o.d || 0.2)); node.connect(fl); node = fl; }
+    let node = src; if (o.lp || o.hp || o.bp) { const fl = c.createBiquadFilter(); fl.type = o.bp ? 'bandpass' : o.lp ? 'lowpass' : 'highpass'; fl.frequency.setValueAtTime(o.bp || o.lp || o.hp, t); if (o.q) fl.Q.value = o.q; const to = o.bp2 || o.lp2; if (to) fl.frequency.exponentialRampToValueAtTime(to, t + (o.d || 0.2)); node.connect(fl); node = fl; }
     node.connect(g); g.connect(master); src.start(t); src.stop(t + (o.d || 0.12) + 0.05); }
   const CUES = {
-    tick: () => tone({ f: 1800, type: 'square', vol: 0.025, d: 0.03 }),
-    open: () => { tone({ f: 220, f2: 520, type: 'sawtooth', vol: 0.04, d: 0.12, lp: 1400 }); },
-    close: () => tone({ f: 520, f2: 240, type: 'sawtooth', vol: 0.03, d: 0.1, lp: 1200 }),
+    // menus: a low thump, a band of static sweeping down, and a short detuned chirp. a shutter on a cheap deck, not a bell.
+    tick: () => { tone({ f: 95, f2: 60, type: 'sine', vol: 0.09, d: 0.05 }); tone({ noise: true, vol: 0.05, d: 0.04, bp: 2400, bp2: 900, q: 6 }); },
+    open: () => { tone({ f: 70, f2: 45, type: 'sine', vol: 0.12, d: 0.08 }); tone({ noise: true, vol: 0.07, d: 0.11, bp: 3200, bp2: 600, q: 5 }); tone({ f: 330, f2: 180, type: 'square', vol: 0.025, d: 0.07, at: 0.02, lp: 1600 }); tone({ f: 349, f2: 190, type: 'square', vol: 0.02, d: 0.07, at: 0.02, lp: 1600 }); },
+    close: () => { tone({ noise: true, vol: 0.05, d: 0.08, bp: 700, bp2: 2600, q: 5 }); tone({ f: 60, f2: 40, type: 'sine', vol: 0.08, d: 0.06, at: 0.03 }); },
     ok: () => { tone({ f: 880, type: 'square', vol: 0.06, d: 0.07, lp: 3000 }); tone({ f: 1320, type: 'square', vol: 0.06, d: 0.1, at: 0.07, lp: 3000 }); },
     fail: () => { tone({ f: 110, type: 'sawtooth', vol: 0.09, d: 0.22, lp: 900 }); tone({ noise: true, vol: 0.04, d: 0.12, hp: 2500 }); },
     coin: () => { tone({ f: 1567, type: 'triangle', vol: 0.09, d: 0.08 }); tone({ f: 2093, type: 'triangle', vol: 0.08, d: 0.22, at: 0.06 }); },
