@@ -103,6 +103,49 @@
         { k: 'SYNC', q: { prompt: 'Dora, passing the stall with a stack of lease cards: "The appointment server is 192.168.44.10 inside and 203.0.113.3 on the street. Which one is its inside global?"', opts: ['203.0.113.3', '192.168.44.10', '203.0.113.2', '8.8.8.8'], a: 0,
           yes: 'Nat: "The street address. She has it."', no: 'Nat: "203.0.113.3. Inside global is the inside host as the outside sees it."',
           why: 'Nat: Inside means the clinic\'s own host, and global means how it looks from outside, so the inside global is the public address the street sees, 203.0.113.3. The private 192.168.44.10 is its inside local. 203.0.113.2 is the router\'s own outside interface.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 45 · NAT, part 2
+    { id: 'n45-many-faces', title: 'Eleven things and one address', sub: 'NAT, part 2', npc: 'nat', day: [45], src: [PS('Network_Address_Translation_Part2.md')], unlocks: ['nat-dynamic'],
+      beats: [
+        { k: 'SCENE', where: 'The exchange hall · Nat\'s mask stall · nine at night',
+          lines: [
+            { who: 'narr', text: 'The heat lamp is on again and the masks nod on their hooks. Pinned to the front of the stall, under a strip of tape, is a note from the clinic\'s records clerk in careful handwriting: When is it my turn? Nat has drawn a small mask in the corner of it.' },
+            { who: 'nat', text: 'The clinic has two public addresses left, .5 and .6, and forty machines that want them. So we stop mapping by hand. With dynamic NAT the router keeps a pool of public addresses and hands one to each inside host the first time it goes out, one to one, until the pool is empty.' },
+            { who: 'nat', text: 'An access list tells the router whose traffic to translate. If the list permits the source, the router translates it. If the list denies it, the router sends it on untranslated, and it does not drop it. The list chooses who gets a mask, and that is all it does here.' },
+            { who: 'you', text: 'And when the pool is empty?' },
+            { who: 'nat', text: 'The next machine that needs a mask gets nothing, and the router drops its packet. The address stays with whoever has it until the translation times out or somebody clears it.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do I tell the router what is in the pool?', reply: 'Nat: "ip nat pool, a name, the first address and the last, then either prefix-length 29 or netmask 255.255.255.248. Then ip nat inside source list 1 pool and the name. The router does the mapping from there."' },
+            { tone: 'press', say: 'Two addresses for forty machines is never going to work.', reply: 'Nat: "Not one to one. So tonight we make it many to one. The router can put a whole crew behind one mask and tell them apart by port. Come and eat, I will show you a bar that has done it for years."' },
+            { tone: 'care', say: 'Did the clerk get her prescriptions through?', reply: 'Nat: "She phoned them in, like every morning for a year. Tonight she gets a mask, and so do the two receptionists, and they will all have to share it."' }
+          ] } },
+        { k: 'SCENE', where: 'Kabuki · the Seven Bowls noodle bar · half past ten',
+          lines: [
+            { who: 'narr', text: 'Steam rolls off the pots and fogs the window, and the air is thick with star anise and scallion. Ladles clatter against steel. Order tablets are clipped along the wall above eight stools, and above the fridge, beside a lucky cat, sits a small router with a label in Ma Tsai\'s handwriting.' },
+            { who: 'Ma Tsai', text: 'You are the one who named my router. Now I have eleven things on it, the tablets, the till, the card machine, my phone, and my provider gives me one address.' },
+            { who: 'nat', text: 'And all eleven get out, because the router tells them apart by port. That is [[PAT]], port address translation, and people call it NAT overload. Every tablet goes out as the same public address with its own source port, and the router remembers which port belongs to which tablet.' },
+            { who: 'you', text: 'How many can share one address?' },
+            { who: 'nat', text: 'There are sixty-five thousand ports, so thousands. On her router it is one line: ip nat inside source list 1 interface g0/1 overload. The list picks who gets translated and the interface says to use the router\'s own public address. At the clinic you will name the pool instead of the interface and put overload on the end.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why not use PAT for everything?', reply: 'Nat: "For going out, you nearly always do, because it saves the most addresses. It only works for conversations started from inside, though. A stranger on the street cannot start a conversation with one of these tablets, because the router has no idea which tablet he wants. That is what static NAT is for."' },
+            { tone: 'care', say: 'Does the bank mind that everything shares one address?', reply: 'Ma Tsai: "The bank asked me once which address the card machine uses, and I read them the one on the sticker. They were happy. Nobody outside can tell the till from my phone."' },
+            { tone: 'joke', say: 'Can I get a bowl while we are here?', reply: 'Ma Tsai sets one down in front of you before you finish asking. "Nat eats here every Thursday and still has not paid for the first bowl." Nat, not looking up: "It was a temporary arrangement."' }
+          ] } },
+        { k: 'LORE', title: 'THREE BLOCKS FOR EVERYONE', year: 1996, real: ['ietf'], vibe: 'Da bomb. Every office got its own little internet behind one door.',
+          text: 'Nat, between mouthfuls: "In February 1996 the IETF published RFC 1918, Address Allocation for Private Internets, by Rekhter, Moskowitz, Karrenberg, de Groot and Lear. It set aside the three private blocks so every company could number its own machines however it liked, as long as none of those numbers ever went out on the internet. Put that next to NAT and you get this bar: eleven private faces and one public one. I keep it because it made my trade."' },
+        { k: 'KIT', text: 'Nat writes on the back of Ma Tsai\'s menu, under the specials.', kit: [
+          { cmd: 'access-list 1 permit 192.168.44.0 0.0.0.255', what: 'whose traffic gets translated. Denied traffic goes out untranslated, not dropped' },
+          { cmd: 'ip nat pool CLINIC 203.0.113.5 203.0.113.6 prefix-length 29', what: 'the public addresses to hand out (or netmask 255.255.255.248)' },
+          { cmd: 'ip nat inside source list 1 pool CLINIC', what: 'dynamic NAT: the router makes one-to-one mappings itself. Pool empty: the packet is dropped' },
+          { cmd: 'ip nat inside source list 1 pool CLINIC overload', what: 'PAT on a pool' },
+          { cmd: 'ip nat inside source list 1 interface g0/1 overload', what: 'PAT on the router\'s own public address' },
+          { cmd: 'PAT · NAT overload', what: 'many inside addresses on one inside global, told apart by port. Saves the most public addresses' } ] },
+        { k: 'SYNC', q: { prompt: 'Ma Tsai, wiping the counter: "The card machine, the tablets and my phone all go out on one address. What do you call that?"', opts: ['PAT, or NAT overload', 'Static NAT', 'Dynamic NAT from a pool', 'A private address'], a: 0,
+          yes: 'Nat: "Overload. She has been running it for years without knowing the name."', no: 'Nat: "PAT. Many inside addresses, one global address, told apart by port."',
+          why: 'Nat: When many inside hosts share one inside global address at the same time, the router tells their conversations apart by source port. That is PAT, port address translation, also called NAT overload. Static NAT and dynamic NAT are both one to one.' } }
       ] }
   ] });
 })();
