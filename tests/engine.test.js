@@ -161,5 +161,15 @@ module.exports.run = function({ out }){
     ok(!A.routes('SW1').length && /not enabled/.test(Show.render(d.SW1, 'show ip route', A.state)), 'svi: the switch still has no routing table of its own');
     d.SW1.exec('exit'); d.SW1.exec('ip default-gateway 10.0.99.1'); A = Net.api(Net.build(net, d)); ok(A.ping('PC2', '10.0.99.4').ok && A.ping('SW1', '10.0.10.10').ok, 'svi: with ip default-gateway the switch answers and pings across the router');
   }
+  // 14. two Layer 2 islands joined only by routed links: each island has its own root, and show spanning-tree names it (also from config mode with do)
+  {
+    const net = { devices: { A1: { kind: 'l3switch', mac: '0014.0000.00a1' }, A2: { kind: 'switch', mac: '0014.0000.00a2' }, B1: { kind: 'l3switch', mac: '0014.0000.00b1' }, B2: { kind: 'switch', mac: '0014.0000.0001' } },
+      links: [ { a: 'A1', ap: 'gigabitethernet1/0/1', b: 'A2', bp: 'gigabitethernet0/1' }, { a: 'B1', ap: 'gigabitethernet1/0/1', b: 'B2', bp: 'gigabitethernet0/1' }, { a: 'A1', ap: 'gigabitethernet1/1/1', b: 'B1', bp: 'gigabitethernet1/1/1' } ] };
+    const d = devs({ A1: ['en', 'conf t', 'vlan 20', 'spanning-tree vlan 20 root primary', 'int g1/1/1', 'no switchport', 'ip add 10.0.0.1 255.255.255.252'], A2: ['en', 'conf t', 'vlan 20'], B1: ['en', 'conf t', 'vlan 20', 'int g1/1/1', 'no switchport', 'ip add 10.0.0.2 255.255.255.252'], B2: ['en', 'conf t', 'vlan 20'] });
+    const S = Net.build(net, d); d.A2.exec('do show spanning-tree vlan 20', d); d.A2.netState = () => S;
+    const out = Show.render(d.A2, 'show spanning-tree vlan 20', S); ok(/VLAN0020/.test(out) && /Address\s+0014\.0000\.00a1/.test(out), 'stp: A2 names its own island\'s root, not the lowest MAC in the building (' + out.split('\n')[3] + ')');
+    ok(S.stp[20].switches.B2.isRoot && S.stp[20].switches.A1.isRoot, 'stp: each island elects its own root');
+    ok(d.A2.lines.some(r => r.line === 'do show spanning-tree vlan 20'), 'shell: do show spanning-tree vlan 20 keeps its VLAN number');
+  }
   return { pass, fails };
 };

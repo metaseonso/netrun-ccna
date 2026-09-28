@@ -77,7 +77,7 @@
     const seen = new Set(); const roots = [];
     for (const start of names) { if (seen.has(start)) continue; const comp = []; const st = [start]; seen.add(start);
       while (st.length) { const x = st.pop(); comp.push(x); for (const e of adj[x]) if (!seen.has(e.to)) { seen.add(e.to); st.push(e.to); } }
-      let root = comp[0]; for (const c of comp) if (bidLess(sw[c].bid, sw[root].bid)) root = c; roots.push(root); sw[root].isRoot = true; sw[root].rootCost = 0;
+      let root = comp[0]; for (const c of comp) if (bidLess(sw[c].bid, sw[root].bid)) root = c; roots.push(root); sw[root].isRoot = true; sw[root].rootCost = 0; comp.forEach(c => { sw[c].rootOf = root; });
       // Dijkstra-ish with STP tiebreaks: cost, then neighbour BID, then neighbour port id
       const done = new Set([root]); const best = { [root]: { cost: 0, bid: sw[root].bid, nport: 0, via: null } };
       for (;;) { let pick = null;
@@ -107,6 +107,7 @@
     let root = null; for (const n in r.switches) if (r.switches[n].isRoot) { // root of my component: the one reachable; approximate by rootCost finite
       if (n === devName || me.rootCost < Infinity) { root = r.switches[n]; if (n === devName) break; } }
     if (me.isRoot) root = me;
+    if (me.rootOf && r.switches[me.rootOf]) root = r.switches[me.rootOf]; // several Layer 2 islands (routed links between them): each has its own root
     const mode = me.cfg.mode === 'pvst' ? 'ieee' : me.cfg.mode === 'mst' ? 'mstp' : 'rstp';
     const rp = me.rootPort ? me.ports[me.rootPort] : null;
     const lines = [];
