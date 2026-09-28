@@ -142,6 +142,50 @@
         { k: 'SYNC', q: { prompt: 'Syn, collecting the cups: "Sixx says a host looking for a router doesn\'t broadcast. What does it send to instead?"', opts: ['FF02::2, all routers on the link', 'FF02::1, all nodes on the link', 'FFFF:FFFF::, the IPv6 broadcast', '::1, the loopback'], a: 0,
           yes: 'Sixx: "All routers, and only routers. Nobody else has to listen."', no: 'Sixx: "FF02::2. IPv6 has no broadcast, so it asks the all-routers group."',
           why: 'Sixx: IPv6 has no broadcast. A message for every router on the link goes to the link-local multicast group FF02::2, all routers. FF02::1 is all nodes, and ::1 is the host\'s own loopback.' } }
+      ] },
+    // ------------------------------------------------------------ night 33 · IPv6, part 3
+    { id: 'n33-routes-to-the-wing', title: 'A road to the new wing', sub: 'the IPv6 header, NDP, SLAAC and IPv6 static routes', npc: 'sixx', day: [33], src: [PS('IPv6_Part3.md')], unlocks: ['ipv6-routes'],
+      beats: [
+        { k: 'SCENE', where: 'The top gallery · Friday, 20:00',
+          lines: [
+            { who: 'narr', text: 'Rain streams down the gallery\'s long windows and the brass mailboxes throw back the light in stripes. Forty-six flags stand on the boxes now. Sixx has a roll of paper spread on the bench, weighted at the corners with teacups, and on it a route drawn in violet ink from the exchange hall, through the cab rank, to the clinic\'s new wing.' },
+            { who: 'sixx', text: 'The new wing opens soon, and its first network is IPv6. Before you route anything to it, look at what you\'re routing. The IPv6 header is a fixed forty bytes: Version, Traffic Class for QoS, Flow Label to mark a stream of packets, Payload Length, Next Header, which says what\'s inside, Hop Limit, which counts down like IPv4\'s TTL, then the two addresses.' },
+            { who: 'sixx', text: 'There\'s no ARP either. [[NDP]], Neighbor Discovery Protocol, does its job with ICMPv6. A neighbor solicitation, NS, type 135, asks who has an address, and a neighbor advertisement, NA, type 136, answers. The NS doesn\'t go to everyone. It goes to the neighbour\'s [[solicited-node multicast]] address: FF02::1:FF plus the last six hex digits of the address it\'s looking for.' },
+            { who: 'sixx', text: 'A host that arrives with no address sends a router solicitation, RS, type 133, to FF02::2, all routers. The router replies with a router advertisement, RA, type 134, to FF02::1, all nodes, carrying the prefix of the link. The host builds its own address from that prefix, EUI-64 or a random interface ID. That\'s [[SLAAC]], stateless address autoconfiguration.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What stops two hosts building the same address?', reply: 'Sixx: "Duplicate Address Detection, DAD. Before it uses a new address, a host sends an NS to its own solicited-node address. If anyone answers with an NA, the address is taken. Silence means it\'s free."' },
+            { tone: 'press', say: 'Where do I see what NDP learned?', reply: 'Sixx: "show ipv6 neighbor on the router, the way show arp works for IPv4. And link-local addresses never go into the routing table. They belong to the link, not the road."' },
+            { tone: 'quiet', say: '(Trace the violet line with your finger.)', reply: 'It runs from the gallery to the rank and on to a square labelled NEW WING, and next to the rank someone has written, in a different hand, g0/0 only?? and underlined it twice. Sixx watches you find it. "Nexthop\'s cousin had a go last week," Sixx says.' }
+          ] } },
+        { k: 'SCENE', where: 'The top gallery · 20:40',
+          lines: [
+            { who: 'narr', text: 'A cold, clean scent reaches the bench before the footsteps do. Vesper Kade comes up the last flight of stairs without hurrying, rain still beading on her charcoal coat, and looks along the gallery at the flags.' },
+            { who: 'vesper', text: 'Forty-six. When I was an apprentice, this floor had three, and one of them was yours.' },
+            { who: 'sixx', text: 'Four. You forget the clinic\'s.' },
+            { who: 'vesper', text: 'Halvorsen\'s towers run IPv6 on every floor, and nobody there types a static route. The controller works them out.' },
+            { who: 'sixx', text: 'Down here we type them, so we know what they are. There are three kinds. A recursive route names only the next hop, and the router looks up how to reach the next hop. A directly attached route names only the exit interface. A fully specified route names both.' },
+            { who: 'sixx', text: 'On Ethernet a directly attached IPv6 route is accepted and never works, because the router has no next hop to look up with NDP. And if the next hop is a link-local address, the route must be fully specified, since the same FE80 address could sit on every link the router has.' },
+            { who: 'vesper', text: 'Dispatch has booked you for the clinic\'s two sites tomorrow night. Everything the street has taught you, in one building. I\'d like to see how it holds.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why are you interested in the clinic?', reply: 'Vesper: "Because it\'s where the street keeps promising it can look after itself. Tomorrow it gets to show me." She says it kindly, and doesn\'t wait for an answer.' },
+            { tone: 'press', say: 'What does Halvorsen want with the exchange hall?', reply: 'Vesper: "The same thing it wants with every building in Watson: one network, run properly, by people who aren\'t tired. Ask Sixx how long this gallery has been waiting for tenants."' },
+            { tone: 'care', say: 'You knew Sixx before?', reply: 'Sixx answers for her. "She painted the fourth flag. The clinic\'s. She was nineteen." Vesper looks at the flag and not at either of you.' }
+          ] } },
+        { k: 'LORE', title: 'THE LAST FIVE BLOCKS', year: 2011, vibe: 'Epic fail, and everybody saw it coming: the old floors were officially full.',
+          text: 'Sixx: "On the 3rd of February 2011, in Miami, IANA handed out its last five /8 blocks of IPv4 addresses, one to each of the five regional registries. After that there was nothing left to give them. The stairs up to this gallery were busy for a week after that, and then they went quiet again. I kept the newspaper."' },
+        { k: 'KIT', text: 'Sixx writes it in violet ink on the edge of the route map and tears the strip off for you.', kit: [
+          { cmd: 'header, 40 bytes: Version · Traffic Class · Flow Label · Payload Length · Next Header · Hop Limit · source · destination', what: 'Hop Limit is IPv4\'s TTL, Next Header its Protocol field' },
+          { cmd: 'NDP over ICMPv6: RS 133 → FF02::2 · RA 134 → FF02::1 · NS 135 · NA 136', what: 'replaces ARP. show ipv6 neighbor' },
+          { cmd: 'solicited-node multicast: FF02::1:FF + last 6 hex digits', what: 'where an NS goes. DAD sends an NS to its own' },
+          { cmd: 'SLAAC: RS/RA gives the prefix, the host adds an EUI-64 or random interface ID', what: 'DAD checks nobody else has it' },
+          { cmd: 'ipv6 route 2001:db8:33:3::/64 2001:db8:33:12::2', what: 'recursive: next hop only' },
+          { cmd: 'ipv6 route 2001:db8:33:3::/64 g0/1', what: 'directly attached: exit interface only. Does not work on Ethernet' },
+          { cmd: 'ipv6 route ::/0 g0/1 fe80::2', what: 'fully specified: both. Required for a link-local next hop. Link-local routes never enter the table' } ] },
+        { k: 'SYNC', q: { prompt: 'Sixx, capping the violet pen: "The wing\'s router should send everything to the rank\'s link-local address, FE80::2. Which kind of route?"', opts: ['Fully specified: the exit interface and FE80::2', 'Recursive: FE80::2 on its own', 'Directly attached: the exit interface on its own', 'None. Link-local addresses cannot be next hops'], a: 0,
+          yes: 'Sixx: "Both halves. A link-local on its own could be on any link."', no: 'Sixx: "Fully specified. The same FE80 address can exist on every link, so the router needs the exit interface too."',
+          why: 'Sixx: A link-local address is only unique on its own link, so a route that names only FE80::2 does not tell the router which link to look on. A fully specified route names the exit interface and the next hop together. A directly attached route with no next hop does not work on Ethernet.' } }
       ] }
   ] });
 })();

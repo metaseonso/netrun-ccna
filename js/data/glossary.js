@@ -203,5 +203,6 @@ window.GLOSSARY = {
   'vrrp': 'Virtual Router Redundancy Protocol: the open-standard FHRP. Master and backup routers, hellos to 224.0.0.18, virtual MAC 0000.5e00.01XX.',
   'glbp': 'Gateway Load Balancing Protocol: Cisco\'s FHRP that load-balances inside one subnet. One AVG assigns up to four AVFs, each with its own virtual MAC 0007.b400.XXYY.',
   'unique local': 'IPv6 private addresses, FC00::/7; in practice they begin with FD, then a random 40-bit global ID, a 16-bit subnet ID and a 64-bit interface ID. Not routed on the internet.',
-  'anycast': 'One-to-nearest-of-many: several devices share one address and the network delivers to the closest. ipv6 address X/64 anycast.'
+  'anycast': 'One-to-nearest-of-many: several devices share one address and the network delivers to the closest. ipv6 address X/64 anycast.',
+  'solicited-node multicast': 'The IPv6 multicast address FF02::1:FF plus the last 6 hex digits of a unicast address. NDP neighbor solicitations (and DAD) are sent to it instead of to every host.'
 };
