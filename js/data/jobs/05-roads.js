@@ -1,6 +1,6 @@
 /* jobs/05-roads.js — District 05 · The Roads (the cab rank and the map room): static routes, the life of a packet, dynamic routing, RIP, EIGRP, OSPF, HSRP. */
 (function(){
-  const { gi } = NETKIT;
+  const { gi, fa } = NETKIT;
   JOBS.push(
     // ------------------------------------------------------------------ night 24 · from Lab 24 (floating static routes)
     { id: 'c-n24-back-road', cls: 'C', rep: 15, from: 'nexthop', title: 'The Back Road', day: [24], requires: ['n24-night-routes'], devices: ['R1', 'R4', 'PC1'],
@@ -211,6 +211,81 @@
         { dev: 'R4', type: ['enable', 'configure terminal', 'router ospf 1', 'router-id 4.4.4.4', 'network 10.26.4.0 0.0.0.255 area 0', 'network 10.26.24.0 0.0.0.3 area 0', 'network 10.26.34.0 0.0.0.3 area 0', 'passive-interface g0/0'] }, 'commit',
         { dev: 'R4', type: ['do show ip ospf neighbor'] }, 'commit', { form: { r2: '2.2.2.2', r2why: 'its highest loopback address', r3: '10.26.34.1', r3why: 'its highest physical address' } }, 'commit', { choose: 0 }, 'commit',
         { dev: 'R1', type: ['default-information originate'] }, { dev: 'PC4', type: ['ping 203.0.113.2'] }, 'commit', { form: { r1: 'ASBR', r4: 'internal router', abr: 'ABR' } }, 'commit' ],
-      outro: 'Ospef pins four fresh index cards under the northern roads and photographs the wall. At six the first fares leave the rank, and the south depot\'s desk answers every one of them without a single call to the radio.' }
+      outro: 'Ospef pins four fresh index cards under the northern roads and photographs the wall. At six the first fares leave the rank, and the south depot\'s desk answers every one of them without a single call to the radio.' },
+
+    // ------------------------------------------------------------------ night 27 · from Lab 27 (OSPF part 2)
+    { id: 'c-n27-timetable-board', cls: 'C', rep: 15, from: 'ospef', title: 'The Board That Said Hello', day: [27], requires: ['n27-timetable-board'], devices: ['R1', 'R2', 'R3', 'R4', 'PC4'],
+      brief: 'DISPATCH » Ospef\'s northern routers can\'t tell old copper from gigabit, and the tram yard is talking OSPF to a timetable board. Fix the ruler, silence the yard office, and put the depot\'s loopback on the map.\n\nCLIENT (Ospef) » "Same ruler on every router. Hellos only where there are neighbours. And I want to see it in the tables, not hear about it."',
+      net: {
+        devices: {
+          R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' }, R4: { kind: 'router' }, TB: { kind: 'router' }, SW3: { kind: 'switch', mac: '0011.2227.0003' },
+          PC1: { kind: 'host', ip: '10.27.1.10', mask: '255.255.255.0', gw: '10.27.1.1' }, PC3: { kind: 'host', ip: '10.27.3.10', mask: '255.255.255.0', gw: '10.27.3.1' }, PC4: { kind: 'host', ip: '10.27.4.10', mask: '255.255.255.0', gw: '10.27.4.1' }
+        },
+        links: [ { a: 'PC1', b: 'R1', bp: gi(0) }, { a: 'R1', ap: gi(1), b: 'R2', bp: gi(0) }, { a: 'R1', ap: gi(2), b: 'R3', bp: gi(0) }, { a: 'R2', ap: fa(1), b: 'R4', bp: fa(1) }, { a: 'R3', ap: gi(1), b: 'R4', bp: gi(2) },
+          { a: 'R3', ap: gi(2), b: 'SW3', bp: gi(1) }, { a: 'SW3', ap: fa(1), b: 'PC3' }, { a: 'SW3', ap: fa(2), b: 'TB', bp: gi(0) }, { a: 'R4', ap: gi(0), b: 'PC4' } ],
+        preconfig: {
+          R1: ['interface g0/0', 'ip address 10.27.1.1 255.255.255.0', 'no shutdown', 'interface g0/1', 'ip address 10.27.12.1 255.255.255.252', 'no shutdown', 'interface g0/2', 'ip address 10.27.13.1 255.255.255.252', 'no shutdown',
+            'router ospf 1', 'router-id 1.1.1.1', 'network 10.27.0.0 0.0.255.255 area 0', 'passive-interface g0/0'],
+          R2: ['interface g0/0', 'ip address 10.27.12.2 255.255.255.252', 'no shutdown', 'interface f0/1', 'ip address 10.27.24.1 255.255.255.252', 'no shutdown', 'router ospf 1', 'router-id 2.2.2.2', 'network 10.27.0.0 0.0.255.255 area 0'],
+          R3: ['interface g0/0', 'ip address 10.27.13.2 255.255.255.252', 'no shutdown', 'interface g0/1', 'ip address 10.27.34.1 255.255.255.252', 'no shutdown', 'interface g0/2', 'ip address 10.27.3.1 255.255.255.0', 'no shutdown',
+            'router ospf 1', 'router-id 3.3.3.3', 'network 10.27.0.0 0.0.255.255 area 0'],
+          R4: ['interface loopback0', 'ip address 4.4.4.4 255.255.255.255', 'interface g0/0', 'ip address 10.27.4.1 255.255.255.0', 'no shutdown', 'interface f0/1', 'ip address 10.27.24.2 255.255.255.252', 'no shutdown', 'interface g0/2', 'ip address 10.27.34.2 255.255.255.252', 'no shutdown',
+            'router ospf 1', 'router-id 4.4.4.4', 'network 10.27.0.0 0.0.255.255 area 0', 'passive-interface g0/0'],
+          TB: ['interface loopback0', 'ip address 10.27.99.1 255.255.255.0', 'interface g0/0', 'ip address 10.27.3.99 255.255.255.0', 'no shutdown', 'router ospf 7', 'network 0.0.0.0 255.255.255.255 area 0']
+        }
+      },
+      map: { w: 580, h: 360, nodes: [
+          { id: 'PC1', label: 'rank dispatch', type: 'pc', x: 40, y: 110 }, { id: 'R1', label: 'R1 · the cab rank', type: 'router', x: 160, y: 110 },
+          { id: 'R2', label: 'R2 · the garage', type: 'router', x: 380, y: 50 }, { id: 'R3', label: 'R3 · the tram yard', type: 'router', x: 250, y: 250 },
+          { id: 'R4', label: 'R4 · the south depot', type: 'router', x: 460, y: 200 }, { id: 'PC4', label: 'depot desk', type: 'pc', x: 550, y: 280 },
+          { id: 'SW3', label: 'yard office switch', type: 'switch', x: 120, y: 280 }, { id: 'PC3', label: 'yard office', type: 'pc', x: 40, y: 340 }, { id: 'TB', label: 'the timetable board', type: 'router', x: 200, y: 340 } ],
+        links: [ { a: 'PC1', b: 'R1' }, { a: 'R1', b: 'R2', ap: gi(1), bp: gi(0) }, { a: 'R1', b: 'R3', ap: gi(2), bp: gi(0) }, { a: 'R2', b: 'R4', ap: fa(1), bp: fa(1), tag: 'old copper, 100 Mb' }, { a: 'R3', b: 'R4', ap: gi(1), bp: gi(2) },
+          { a: 'R3', b: 'SW3', ap: gi(2), bp: gi(1) }, { a: 'SW3', b: 'PC3' }, { a: 'SW3', b: 'TB', ap: fa(2), bp: gi(0) }, { a: 'R4', b: 'PC4' } ] },
+      steps: [
+        { type: 'form', skill: 'ospf-tuning', text: 'Ospef: "With the default reference of 100 megabits, what does OSPF charge for each of these?"',
+          fields: [ { key: 'e', label: '10 Mbps Ethernet', options: ['1', '10', '100', '1000'], answer: '10' }, { key: 'fe', label: 'FastEthernet, 100 Mbps', options: ['1', '10', '100', '1000'], answer: '1' },
+            { key: 'ge', label: 'gigabit', options: ['1', '10', '100', '1000'], answer: '1' }, { key: 'tg', label: '10-gig', options: ['1', '10', '100', '1000'], answer: '1' } ],
+          hint: '100 Mbps divided by the interface speed, and never less than 1.', ok: 'Ospef: "Everything from FastEthernet up costs 1. That\'s why the depot can\'t tell the copper from the gigabit."',
+          why: 'Ospef: OSPF cost is the reference bandwidth divided by the interface bandwidth, and the default reference is 100 Mbps. 100 ÷ 10 is 10 for old Ethernet, 100 ÷ 100 is 1 for FastEthernet, and anything faster would be less than 1, so it is rounded up to the minimum of 1. FastEthernet, gigabit and 10-gig all cost the same.' },
+        { type: 'cmd', skill: 'ospf-tuning', text: 'Ospef: "The depot splits its traffic to the rank over the copper and the gigabit, two equal routes in its table. Fix the ruler: reference bandwidth 100000 on all four routers."',
+          check: (d, ctx) => { const n = ctx.net(); const rs = n.routes('R4').filter(e => e.prefix === '10.27.1.0' && e.len === 24); return ['R1', 'R2', 'R3', 'R4'].every(r => ctx.cfg(r).ospf && ctx.cfg(r).ospf.refBw === 100000) && rs.length === 1 && rs[0].via === '10.27.34.1'; },
+          hint: 'R1(config)# router ospf 1\nR1(config-router)# auto-cost reference-bandwidth 100000\n(the same on R2, R3 and R4)', ok: 'Ospef: "One road to the rank now, through the yard. The copper is only a backup."',
+          why: 'Ospef: auto-cost reference-bandwidth 100000, under router ospf, sets the reference to 100,000 Mbps, a hundred gigabits. Now gigabit costs 100 and FastEthernet costs 1000, so the depot\'s path over the gigabit through the yard is cheaper than the one over the copper through the garage. It must be the same on every router, or they measure the same links with different rulers.' },
+        { type: 'calc', skill: 'ospf-tuning', text: 'Ospef: "Read the depot\'s table again and give me the new numbers."',
+          fields: [ { key: 'fe', label: 'cost of a FastEthernet interface now', check: v => String(v).replace(/[,\s]/g, '') === '1000' }, { key: 'ge', label: 'cost of a gigabit interface now', check: v => String(v).replace(/[,\s]/g, '') === '100' },
+            { key: 'm', label: 'the depot\'s metric to the rank\'s network, 10.27.1.0/24', check: v => String(v).replace(/[,\s]/g, '') === '300' } ],
+          answer: 'FastEthernet 1000, gigabit 100. Depot to 10.27.1.0/24: 100 + 100 + 100 = 300.', hint: '100000 divided by the speed in Mbps. Then add every outgoing interface on the path, and the rank\'s LAN interface.', ok: 'Ospef: "Three hundred. Every link on the map costs something again."',
+          why: 'Ospef: With a reference of 100,000 Mbps, FastEthernet costs 100,000 ÷ 100 = 1000 and gigabit costs 100,000 ÷ 1,000 = 100. The depot\'s path to 10.27.1.0/24 adds the cost of each outgoing interface on the way: the depot\'s gigabit to the yard, 100, the yard\'s gigabit to the rank, 100, and the rank\'s gigabit LAN interface, 100. That is 300.' },
+        { type: 'find', skill: 'ospf-tuning', target: 'TB', text: 'Ospef: "Now the thing that shouldn\'t be talking. Read the tram yard\'s neighbour table and click the neighbour that isn\'t a router of mine."',
+          hint: 'R3# show ip ospf neighbor\nOne neighbour is on Gi0/2, the yard office, with router ID 10.27.99.1.', ok: 'Ospef: "The timetable board. FULL, on the yard\'s office network."',
+          why: 'Ospef: show ip ospf neighbor on R3 lists the rank and the depot, and a third neighbour on Gi0/2, the interface to the yard office, with router ID 10.27.99.1. That is the router in the back of the timetable board, which the supplier left with OSPF running on every interface.' },
+        { type: 'cmd', skill: 'ospf-tuning', text: 'Ospef: "Silence the yard. Every interface passive by default, then open only the two links to real routers."',
+          check: (d, ctx) => { const n = ctx.net(); const nb = n.ospfNeighbors('R3').map(x => x.dev).sort().join(); const r3 = n.route('R1', '10.27.3.0/24'); return nb === 'R1,R4' && !n.route('R1', '10.27.99.0/24') && r3 && r3.proto === 'O' && !!ctx.cfg('R3').ospf.passiveDefault; },
+          hint: 'R3(config)# router ospf 1\nR3(config-router)# passive-interface default\nR3(config-router)# no passive-interface g0/0\nR3(config-router)# no passive-interface g0/1', ok: 'Ospef: "The board\'s network has gone from every table. The yard office is still on the map."',
+          why: 'Ospef: passive-interface default makes every OSPF interface on the router passive, so it sends no hellos and forms no neighbours anywhere. no passive-interface g0/0 and no passive-interface g0/1 open the two links to the rank and the depot again. The yard office network is still advertised, but the timetable board can no longer become a neighbour, so its network drops out of every table.' },
+        { type: 'order', skill: 'ospf-tuning', text: 'Tobiah, on the speaker: "So how did my board and your router get so friendly? Walk me through it."',
+          items: ['Exchange', 'Init', 'Full', 'Down', 'Loading', '2-way', 'Exstart'],
+          accept: arr => arr.join('|') === ['Down', 'Init', '2-way', 'Exstart', 'Exchange', 'Loading', 'Full'].join('|'),
+          hint: 'From silence to a complete adjacency, seven steps.', ok: 'Ospef: "Down to Full in seven. It should have stopped at the first."',
+          why: 'Ospef: Down: no hellos heard. Init: a hello arrived, but without my router ID in it. 2-way: each has seen its own ID in the other\'s hello, and on a shared network the DR and BDR are elected here. Exstart: the higher router ID becomes the master. Exchange: database descriptions, DBDs, are swapped. Loading: link state requests for what is missing. Full: identical databases.' },
+        { type: 'form', skill: 'ospf-tuning', text: 'Ospef: "Name the five messages, and where the hellos go."',
+          fields: [ { key: 't1', label: 'type 1', options: ['Hello', 'DBD', 'LSR', 'LSU', 'LSAck'], answer: 'Hello' }, { key: 't2', label: 'type 2', options: ['Hello', 'DBD', 'LSR', 'LSU', 'LSAck'], answer: 'DBD' },
+            { key: 't3', label: 'type 3', options: ['Hello', 'DBD', 'LSR', 'LSU', 'LSAck'], answer: 'LSR' }, { key: 't4', label: 'type 4', options: ['Hello', 'DBD', 'LSR', 'LSU', 'LSAck'], answer: 'LSU' },
+            { key: 't5', label: 'type 5', options: ['Hello', 'DBD', 'LSR', 'LSU', 'LSAck'], answer: 'LSAck' }, { key: 'mc', label: 'hellos are sent to', options: ['224.0.0.5', '224.0.0.9', '224.0.0.10', '255.255.255.255'], answer: '224.0.0.5' } ],
+          hint: 'Hello, then the database list, the request, the update, the acknowledgement.', ok: 'Ospef: "All five. And 224.0.0.5, every OSPF router on the link."',
+          why: 'Ospef: Type 1 is the Hello. Type 2 is the Database Description, the list of LSAs a router holds. Type 3 is the Link State Request for missing ones. Type 4 is the Link State Update, which carries the LSAs. Type 5 is the Link State Acknowledgement. Hellos go every 10 seconds on Ethernet to 224.0.0.5, all OSPF routers, and a neighbour silent for the 40-second dead timer is dropped.' },
+        { type: 'cmd', skill: 'ospf-tuning', text: 'Ospef: "Last. The depot\'s loopback, 4.4.4.4, isn\'t in OSPF. Put it on the map from the interface itself, no network command."',
+          check: (d, ctx) => { const r = ctx.net().route('R1', '4.4.4.4/32'); const i = ctx.cfg('R4').interfaces['loopback0']; return !!(r && r.proto === 'O' && i && i.ospfArea === 0); },
+          hint: 'R4(config)# interface loopback0\nR4(config-if)# ip ospf 1 area 0', ok: 'Ospef: "4.4.4.4/32 at the rank. A loopback costs 1, whatever the ruler says."',
+          why: 'Ospef: ip ospf 1 area 0 in interface config enables OSPF process 1 on that one interface, in area 0, with no network command. The rank learns 4.4.4.4/32 as an O route. A loopback always costs 1.' }
+      ],
+      solution: [ { form: { e: '10', fe: '1', ge: '1', tg: '1' } }, 'commit',
+        { dev: 'R1', type: ['enable', 'configure terminal', 'router ospf 1', 'auto-cost reference-bandwidth 100000'] }, { dev: 'R2', type: ['enable', 'configure terminal', 'router ospf 1', 'auto-cost reference-bandwidth 100000'] },
+        { dev: 'R3', type: ['enable', 'configure terminal', 'router ospf 1', 'auto-cost reference-bandwidth 100000'] }, { dev: 'R4', type: ['enable', 'configure terminal', 'router ospf 1', 'auto-cost reference-bandwidth 100000'] }, 'commit',
+        { calc: { fe: '1000', ge: '100', m: '300' } }, 'commit', { dev: 'R3', type: ['do show ip ospf neighbor'] }, { select: 'TB' }, 'commit',
+        { dev: 'R3', type: ['passive-interface default', 'no passive-interface g0/0', 'no passive-interface g0/1'] }, 'commit', { order: [3, 1, 5, 6, 0, 4, 2] }, 'commit',
+        { form: { t1: 'Hello', t2: 'DBD', t3: 'LSR', t4: 'LSU', t5: 'LSAck', mc: '224.0.0.5' } }, 'commit',
+        { dev: 'R4', type: ['interface loopback0', 'ip ospf 1 area 0'] }, 'commit' ],
+      outro: 'Tobiah unplugs the router from the back of the timetable board and mails it back to the supplier with a note. The board keeps showing the right times, and the south depot\'s traffic rides the gigabit through the yard all night.' }
   );
 })();

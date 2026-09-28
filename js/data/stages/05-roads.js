@@ -141,6 +141,51 @@
         { k: 'SYNC', q: { prompt: 'Nexthop, calling up the stairs: "My router says router ospf 1 and the garage\'s says router ospf 2. They\'ll never talk, right?"', opts: ['They will. The process ID only matters on the router itself', 'They won\'t. The process IDs must match', 'Only if both use area 2', 'Only if one of them is an ABR'], a: 0,
           yes: 'Ospef: "They\'ll talk. The number is his business, not the neighbour\'s."', no: 'Ospef: "They\'ll talk. The process ID is local. The area and the subnet have to match, not that."',
           why: 'Ospef: The number after router ospf is the process ID, and it only identifies the process on that router. Two routers with different process IDs still become neighbours, as long as things like their area and subnet on the shared link match.' } }
+      ] },
+    // ------------------------------------------------------------ night 27 · OSPF, part 2
+    { id: 'n27-timetable-board', title: 'The timetable board says hello', sub: 'OSPF cost, reference bandwidth, neighbour states and messages', npc: 'ospef', day: [27], src: [PS('OSPF_Part2.md')], unlocks: ['ospf-tuning'],
+      beats: [
+        { k: 'SCENE', where: 'The map room · Thursday, 19:30',
+          lines: [
+            { who: 'narr', text: 'Rain drums on the skylight and the map room smells of pencil shavings and the drone\'s warm battery. A length of red string has been added between the garage and the south depot since last night, and Ospef is frowning at it.' },
+            { who: 'ospef', text: 'The garage-to-depot line is old copper, FastEthernet, a hundred megabits. The yard route next to it is gigabit. And every router in the north thinks they\'re exactly as good as each other.' },
+            { who: 'ospef', text: 'OSPF works out each interface\'s cost as the reference bandwidth divided by the interface bandwidth. The default reference is 100 megabits, so FastEthernet costs 1, and gigabit would cost a tenth, except that nothing costs less than 1. So FastEthernet, gigabit and ten-gig all cost 1. Old ten-megabit Ethernet costs 10. A loopback always costs 1.' },
+            { who: 'you', text: 'So the old copper and the gigabit tie.' },
+            { who: 'ospef', text: 'And the depot splits its traffic across both, which it should not. auto-cost reference-bandwidth fixes the ruler: set it to 100000, a hundred gigabits, and gigabit costs 100 while FastEthernet costs 1000. Set it the same on every router, or they measure the same road with different rulers.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Can I just set the cost on one interface?', reply: 'Ospef: "ip ospf cost on the interface, yes, and that number wins over the formula. Or the bandwidth command, in kilobits, which changes what OSPF divides by. It doesn\'t change how fast the port runs. The speed command does that."' },
+            { tone: 'press', say: 'Why is the default reference so low?', reply: 'Ospef: "Because in 1989 a hundred megabits was a fantasy. The number never moved, and every network faster than it has had to fix the ruler by hand ever since."' },
+            { tone: 'quiet', say: '(Look at the depot\'s index card on the table.)', reply: 'The card for the south depot has a new line in Ospef\'s hand: loopback0, 4.4.4.4, ip ospf 1 area 0. "On the interface itself," he says. "No wildcard, no guessing which interfaces a network command catches."' }
+          ] } },
+        { k: 'SCENE', where: 'The map room · 20:15',
+          lines: [
+            { who: 'narr', text: 'The drone chirps and drops a printout on the table. Ospef reads it and his mouth goes thin.' },
+            { who: 'ospef', text: 'The tram yard router has a neighbour it shouldn\'t have. Something on the yard\'s office network is saying hello, and the yard is saying hello back.' },
+            { who: 'narr', text: 'A man\'s voice comes out of the phone on the table, over the clatter and hiss of a tram yard.' },
+            { who: 'Tobiah', text: 'That\'ll be the timetable board. The supplier left a router in the back of it with everything switched on. It\'s been running since Tuesday.' },
+            { who: 'ospef', text: 'OSPF routers send hellos every 10 seconds on Ethernet to 224.0.0.5, all OSPF routers, and a neighbour that\'s been silent for 40, the dead timer, is gone. Two routers that hear each other walk through the states: Down, Init when I\'ve heard your hello but you haven\'t listed me, 2-way when you have. Then Exstart, where the higher router ID becomes the master, Exchange of database descriptions, Loading while we request what we\'re missing, and Full.' },
+            { who: 'ospef', text: 'The yard\'s office port should never have said hello in the first place. passive-interface default makes every interface passive, and then no passive-interface opens only the ones that face real neighbours.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What messages go back and forth?', reply: 'Ospef: "Five types. 1 is the hello. 2 is the database description, a DBD, the list of LSAs I hold. 3 is a link state request, an LSR, for the ones you\'re missing. 4 is a link state update, an LSU, which carries the LSAs. 5 is the link state acknowledgement, an LSAck, so nothing gets lost."' },
+            { tone: 'press', say: 'What harm can a timetable board do?', reply: 'Ospef: "It\'s advertising a network nobody asked for into every router\'s map. Today it\'s the board\'s own little network. The day someone gives it a default route, every fare in the north goes to the timetable board."' },
+            { tone: 'care', say: 'You look angrier than the board deserves.', reply: 'Ospef: "I spent three weeks getting every router in the north to agree. A box in the back of a sign got a vote without asking." He puts the printout face down.' }
+          ] } },
+        { k: 'LORE', title: 'OPEN, SHORTEST, FIRST', year: 1989, real: ['ietf'], vibe: 'Rad to the max: one open map any vendor\'s router could read.',
+          text: 'Ospef: "The IETF published the first OSPF as RFC 1131 in October 1989, written by John Moy. Open meant anyone\'s router could run it, where the protocols before it belonged to one company or another. The reference bandwidth of a hundred megabits comes from those years, when that was faster than any link in the building. I keep a printed copy of RFC 1131 in the drawer, and the corners are soft from reading."' },
+        { k: 'KIT', text: 'Ospef writes a new index card, in red ink for once.', real: ['ietf'], kit: [
+          { cmd: 'cost = reference bandwidth ÷ interface bandwidth', what: 'default reference 100 Mbps: 10M 10 · FastEthernet 1 · gigabit 1 · 10-gig 1 · loopback always 1' },
+          { cmd: 'auto-cost reference-bandwidth 100000', what: 'in megabits, under router ospf. The same on every router' },
+          { cmd: 'ip ospf cost 50 · bandwidth 100000', what: 'on an interface: set the cost directly · change the bandwidth OSPF divides by, in kbps (not the speed)' },
+          { cmd: 'ip ospf 1 area 0', what: 'enable OSPF on one interface, without a network command' },
+          { cmd: 'passive-interface default → no passive-interface g0/0', what: 'everything quiet, then open only the links to real neighbours' },
+          { cmd: 'hello 10 s · dead 40 s · 224.0.0.5', what: 'Ethernet defaults. Hellos go to all OSPF routers' },
+          { cmd: 'Down → Init → 2-way → Exstart → Exchange → Loading → Full', what: 'DR and BDR in 2-way · higher router ID is master in Exstart' },
+          { cmd: '1 Hello · 2 DBD · 3 LSR · 4 LSU · 5 LSAck', what: 'the five OSPF message types. LSAs travel in LSUs' } ] },
+        { k: 'SYNC', q: { prompt: 'Tobiah, still on the speaker: "The board\'s router and ours heard each other\'s hellos, and each one has the other\'s ID in its hello now. What state are they in?"', opts: ['2-way', 'Init', 'Full', 'Exstart'], a: 0,
+          yes: 'Ospef: "2-way. And from there they went all the way to Full, which is the problem."', no: 'Ospef: "2-way. Init is when only one side has seen the other in a hello."',
+          why: 'Ospef: A router that receives a hello without its own router ID in it is in Init. Once each router sees its own ID in the other\'s hello, they are 2-way. From there they go on through Exstart, Exchange and Loading to Full.' } }
       ] }
   ] });
 })();
