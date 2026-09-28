@@ -137,5 +137,18 @@ module.exports.run = function({ out }){
     d.PC1.exec('ping 10.9.0.5', d); d.R1.exec('enable'); d.R1.exec('show arp'); ok(/10\.0\.0\.11\s+0\s+00d0\.bc11\.1111/.test(last('R1')) && /10\.9\.0\.5/.test(last('R1')), 'learn: the router learns both sides of a routed ping (' + last('R1') + ')');
     d.PC1.exec('arp -d', d); d.PC1.exec('arp -a', d); ok(/No ARP Entries/.test(last('PC1')), 'learn: arp -d clears the PC cache');
   }
+  // 11. speed and duplex negotiation: auto/auto is full; a hard-coded end makes the auto end fall back to half at 100; speeds must match
+  {
+    const net = { devices: { SW1: { kind: 'switch' }, SW2: { kind: 'switch' } }, links: [ { a: 'SW1', ap: 'fastethernet0/10', b: 'SW2', bp: 'fastethernet0/1' } ] };
+    const mk = (a, b) => ({ SW1: dev('SW1', 'ios', ['en', 'conf t', 'int f0/10'].concat(a)), SW2: dev('SW2', 'ios', ['en', 'conf t', 'int f0/1'].concat(b)) });
+    let d = mk([], []); let A = Net.api(Net.build(net, d)); const i1 = A.iface('SW1', 'f0/10');
+    ok(i1.op.speed === 100 && i1.op.duplex === 'full' && i1.op.autoDuplex && !A.issues.length, 'nego: auto on both ends gives 100/full (' + JSON.stringify(i1.op) + ')');
+    d = mk(['speed 100', 'duplex full'], []); A = Net.api(Net.build(net, d));
+    ok(A.iface('SW2', 'f0/1').op.duplex === 'half' && A.issues.some(x => x.kind === 'duplex-mismatch'), 'nego: a hard-coded end leaves the auto end at half duplex, a mismatch');
+    ok(/a-half\s+a-100/.test(Show.render(d.SW2, 'show interfaces status', A.state)), 'nego: show interfaces status marks negotiated values with a-');
+    ok(/[1-9]\d* CRC/.test(Show.render(d.SW1, 'show interfaces f0/10', A.state)) && /[1-9]\d* late collision/.test(Show.render(d.SW2, 'show interfaces f0/1', A.state)), 'nego: the full end counts CRC errors and the half end late collisions');
+    d = mk(['speed 100', 'duplex full'], ['speed 100', 'duplex full']); A = Net.api(Net.build(net, d)); ok(!A.issues.length && / 0 CRC/.test(Show.render(d.SW1, 'show interfaces f0/10', A.state)), 'nego: matching hard-coded ends are clean');
+    d = mk(['speed 100'], ['speed 10']); A = Net.api(Net.build(net, d)); ok(!A.up('SW1', 'f0/10') && A.issues.some(x => x.kind === 'speed-mismatch'), 'nego: different hard-coded speeds keep the link down');
+  }
   return { pass, fails };
 };

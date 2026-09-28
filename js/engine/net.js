@@ -51,8 +51,18 @@
       // subinterfaces need the parent up
       for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.parent) { const par = S.ifaces[n][i.parent]; i.up = i.admin && !!(par && par.up); i.cabled = !!(par && par.cabled); i.peer = par && par.peer; i.peerPort = par && par.peerPort; } }
     }
-    // duplex/speed mismatch issues
-    S.links.forEach(L => { const a = S.ifaces[L.a] && S.ifaces[L.a][L.ap], b = S.ifaces[L.b] && S.ifaces[L.b][L.bp]; if (a && b && a.cfg.duplex && b.cfg.duplex && a.cfg.duplex !== b.cfg.duplex && a.cfg.duplex !== 'auto' && b.cfg.duplex !== 'auto') S.issues.push({ kind: 'duplex-mismatch', where: L.a + ' ' + short(L.ap) + ' / ' + L.b + ' ' + short(L.bp) }); });
+    // speed and duplex: autonegotiation per link. Both ends auto: the fastest common speed, full duplex. A hard-coded end turns
+    // negotiation off, so the auto end senses the speed and, at 10 or 100 Mb/s, falls back to half duplex (IEEE 802.3).
+    // Different hard-coded speeds keep the link down. The operating values land on each interface as i.op.
+    const nominal = i => i.name === 'eth0' ? 1000 : ({ gi: 1000, fa: 100, te: 10000, e: 10 })[i.kind] || 1000;
+    const setSpeed = i => i.cfg.speed && i.cfg.speed !== 'auto' ? +i.cfg.speed : null, setDuplex = i => i.cfg.duplex && i.cfg.duplex !== 'auto' ? i.cfg.duplex : null;
+    S.links.forEach(L => { const a = S.ifaces[L.a] && S.ifaces[L.a][L.ap], b = S.ifaces[L.b] && S.ifaces[L.b][L.bp]; if (!a || !b) return; const where = L.a + ' ' + short(L.ap) + ' / ' + L.b + ' ' + short(L.bp);
+      const fixedA = !!(setSpeed(a) || setDuplex(a)), fixedB = !!(setSpeed(b) || setDuplex(b)); let speed;
+      if (setSpeed(a) && setSpeed(b) && setSpeed(a) !== setSpeed(b)) { S.issues.push({ kind: 'speed-mismatch', where }); a.up = b.up = false; a.op = { speed: setSpeed(a), duplex: setDuplex(a) || 'auto', autoSpeed: false, autoDuplex: !setDuplex(a) }; b.op = { speed: setSpeed(b), duplex: setDuplex(b) || 'auto', autoSpeed: false, autoDuplex: !setDuplex(b) }; return; }
+      speed = setSpeed(a) || setSpeed(b) || Math.min(nominal(a), nominal(b));
+      const dup = (i, fixedMe, fixedOther) => setDuplex(i) || (!fixedMe && !fixedOther ? 'full' : speed <= 100 ? 'half' : 'full');
+      a.op = { speed, duplex: dup(a, fixedA, fixedB), autoSpeed: !setSpeed(a), autoDuplex: !setDuplex(a) }; b.op = { speed, duplex: dup(b, fixedB, fixedA), autoSpeed: !setSpeed(b), autoDuplex: !setDuplex(b) };
+      if (a.up && b.up && a.op.duplex !== b.op.duplex) { S.issues.push({ kind: 'duplex-mismatch', where }); a.dupMismatch = b.dupMismatch = true; } });
 
     // ---- switch port modes, trunks, bundles
     const isSw = n => D[n].kind === 'switch' || D[n].kind === 'l3switch';

@@ -136,6 +136,12 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Speed and duplex negotiation per link (`i.op`): auto on both ends is the fastest common speed at full duplex; a
+  hard-coded end turns negotiation off, so the auto end senses the speed and falls back to half duplex at 10/100 (a mismatch);
+  different hard-coded speeds keep the link down (`speed-mismatch`). `show interfaces` prints the operating values and error
+  counters (CRC, runts, frame on the full end, late collisions on the half end during a mismatch); `show interfaces status` marks
+  negotiated values `a-`. Tested in `tests/engine.test.js` (section 11).
+
 - 2026-09-28 · `show interfaces description` (status, protocol, description per port). Tested in `tests/engine.test.js` (section 1).
 
 - 2026-09-28 · Learning, opt-in per gig with `net.learn: true`: switches learn source MACs and hosts and routers learn ARP
