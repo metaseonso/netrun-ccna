@@ -8,7 +8,8 @@ Register new files in `index.html` (one `<script>` line, keep the `?v=` suffix i
 ```
 js/data/grid.js              ARCS, SKILLS, SRC helpers            (edit SKILLS when you add a skill)
 js/data/stages/NN-name.js    one stage: STAGES.push({...})         (one file per stage)
-js/data/jobs.js              JOBS array (gigs) + CLASSES           (split into js/data/jobs/*.js if it grows; push onto window.JOBS)
+js/data/jobs/_base.js        JOBS array, CLASSES, NETKIT helpers (gi, fa, hasVlan)
+js/data/jobs/NN-name.js      one district's gigs: JOBS.push({...})  (one file per district, same NN as its stage file)
 js/data/glossary.js          GLOSSARY: 'lowercase term': 'exam-grade definition'
 js/data/npcs.js              NPCS cast; assets/npc/<id>.png overrides the procedural sprite
 js/data/cards.js             hand-written cards; js/data/cards/dayNN.js from tools/import_apkg.py
