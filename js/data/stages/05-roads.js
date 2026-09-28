@@ -43,6 +43,47 @@
         { k: 'SYNC', q: { prompt: 'Nexthop, over his shoulder: "My book has 10.0.0.0/8, 10.1.0.0/16 and a default. The fare wants 10.1.2.3. Which one do I use?"', opts: ['10.1.0.0/16', '10.0.0.0/8', '0.0.0.0/0', 'Whichever was typed first'], a: 0,
           yes: 'Nexthop: "The /16, the most specific street."', no: 'Nexthop: "The /16. Longest prefix wins, and the default only gets the fares nothing else matches."',
           why: 'Nexthop: All three routes match 10.1.2.3, so the router picks the most specific, the one with the longest prefix length: /16 beats /8, and /8 beats the default /0. The order the routes were configured in does not matter.' } }
+      ] },
+    // ------------------------------------------------------------ night 12 · the life of a packet
+    { id: 'n12-one-parcel', title: 'The whole trip', sub: 'the life of a packet, hop by hop', npc: 'nexthop', day: [12], src: [PS('Life_of_a_Packet.md')], unlocks: ['packet-life'],
+      beats: [
+        { k: 'SCENE', where: 'Nexthop\'s cab · the courier guild to the depot · after midnight',
+          lines: [
+            { who: 'narr', text: 'The cab smells of the pine air freshener and, tonight, of Osi\'s coffee. She sits in the back beside you with a small parcel on her knees and her clipboard on top of it. Nexthop pulls away from the guild\'s loading dock with the meter off.' },
+            { who: 'osi', text: 'I\'ve spent eleven years wrapping parcels and I\'ve never watched one make the whole trip. Tonight we follow one ping from the dispatch laptop to the depot\'s tracker, every hop of it.' },
+            { who: 'nexthop', text: 'First thing, before anything moves: the laptop looks at the tracker\'s address and its own mask, and sees the tracker is on another network. So the packet has to go to the default gateway, the guild router. The laptop knows the gateway\'s IP address and doesn\'t know its MAC.' },
+            { who: 'osi', text: 'So it asks. An ARP request, broadcast, for the gateway\'s address. The router answers with its MAC, unicast. The laptop wraps the packet in a frame with the router\'s MAC as the destination, and the packet inside still says the tracker\'s IP address.' },
+            { who: 'nexthop', text: 'The switch in between reads that frame, learns the laptop\'s MAC on its port, and sends the frame out the port it knows for the router. It doesn\'t change a single bit of it.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why doesn\'t the laptop ARP for the tracker itself?', reply: 'Nexthop: "Because the tracker isn\'t on its network. ARP is a broadcast, and broadcasts stop at the router. The laptop only ever needs the MAC of the next stop, which is the gateway."' },
+            { tone: 'press', say: 'Couldn\'t the laptop just put the tracker\'s MAC on the frame?', reply: 'Osi: "It doesn\'t know it, and it couldn\'t use it anyway. A frame only travels one hop. The address on the frame is the next stop, and the address on the packet is the end of the trip."' },
+            { tone: 'quiet', say: '(Watch the guild shrink in the rear window.)', reply: 'The guild\'s loading bay lights fall away behind the rain. Osi keeps one hand flat on the parcel the whole time, as if it might try to leave on its own.' }
+          ] } },
+        { k: 'SCENE', where: 'The cab · crossing the river',
+          lines: [
+            { who: 'nexthop', text: 'At the guild router the frame comes off. The router reads the packet\'s destination, finds the longest match in its table, and sees the next hop is the depot router across the river. It takes one off the TTL.' },
+            { who: 'osi', text: 'Then it needs the next hop\'s MAC, so it runs ARP again on the link across the river, and wraps the same packet in a new frame: source MAC its own port on that link, destination MAC the depot router. The IP addresses inside haven\'t changed since the laptop.' },
+            { who: 'nexthop', text: 'At the depot router it happens a third time. Frame off, TTL down one, look up the tracker\'s network, and this time it\'s directly connected, so the router ARPs for the tracker itself and sends the last frame straight to it.' },
+            { who: 'osi', text: 'And the reply comes back the same way, hop by hop, except every router already has the MAC it needs written down, so nobody has to ask twice.' },
+            { who: 'nexthop', text: 'That\'s why the first ping over a new path loses one and the second doesn\'t. Every hop is doing the asking the first time.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What changes at each hop and what stays the same?', reply: 'Nexthop: "The frame changes at every router: new source MAC, new destination MAC, new FCS. The packet keeps its source and destination IP the whole way, and loses one off the TTL at each router, so its header checksum gets redone too."' },
+            { tone: 'press', say: 'Where would you look if the parcel went missing?', reply: 'Osi: "Hop by hop, the way we just rode it. Does the laptop have the gateway in arp -a? Does each router have a route? Does each router have the next hop in show arp? The first place the answer is no is where it stopped."' },
+            { tone: 'care', say: 'Osi, why did you want to ride along tonight?', reply: 'Osi looks down at the parcel. "Because for eleven years I\'ve handed things to people at the door and trusted the rest. I wanted to see the rest once." Nexthop turns the meter off for the whole ride and says nothing about it.' }
+          ] } },
+        { k: 'LORE', title: 'THE SOUND OF SONAR', year: 1983, vibe: 'Rad. A program named after the sound a submarine makes when it listens for an echo.',
+          text: 'Nexthop, pulling up at the depot: "Mike Muuss wrote ping one night in December 1983, at an Army research lab in Maryland, to find out why a network was misbehaving. He named it after sonar, the ping a submarine sends out and listens for. A thousand lines of code, and it\'s the first thing every runner in Watson types when something breaks."' },
+        { k: 'KIT', text: 'Osi draws the trip on the back of the parcel\'s label.', kit: [
+          { cmd: 'destination on another network → send to the default gateway', what: 'the host decides with its own address and mask' },
+          { cmd: 'ARP for the next hop only · broadcast request · unicast reply', what: 'never for a host beyond a router' },
+          { cmd: 'at each router: frame off, TTL −1, route lookup, ARP next hop, new frame', what: 'new MACs every hop' },
+          { cmd: 'IP source and destination unchanged end to end', what: 'switches change nothing in the frame' },
+          { cmd: 'arp -a · show arp · show ip route · tracert', what: 'follow a parcel hop by hop' } ] },
+        { k: 'SYNC', q: { prompt: 'Osi, as the depot\'s door opens: "On the link across the river, whose MAC address is the destination on the frame?"', opts: ['The depot router\'s interface on that link', 'The depot tracker\'s', 'The dispatch laptop\'s', 'The broadcast address'], a: 0,
+          yes: 'Nexthop: "The next stop. Always the next stop."', no: 'Nexthop: "The depot router\'s. A frame is only ever addressed to the next hop."',
+          why: 'Nexthop: Each frame carries the packet one hop, so its destination MAC is the next device on that link: across the river, the depot router\'s interface. Only on the last hop, from the depot router to the tracker, is the tracker\'s MAC the destination.' } }
       ] }
   ] });
 })();
