@@ -4,6 +4,7 @@
    (the hidden app folder), so they follow the player across devices. Setup: docs/AUTH_PLAN.md. */
 window.PLATFORM = {
   googleClientId: '18221020659-3is07svdcb7d15gk27hkhhukge6mud8t.apps.googleusercontent.com',         // e.g. '1234567890-abc123.apps.googleusercontent.com'
+  dbUrl: '',                    // the Watson DB web app (tools/watson-db.gs, docs/WATSON_DB.md): suggestions and licenses. empty = both off
   dmCooldownMs: 3 * 60 * 1000,  // minimum gap between crew calls
   dmMaxPerSession: 12,
   dev: /[?&]dev=1/.test(location.search) // dev panel: lint, engine state, step evaluation, golden runs

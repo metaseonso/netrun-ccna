@@ -111,3 +111,13 @@
 .hud2 .bump .segs i.f,.hud2 .bump .rbar i{filter:brightness(1.6)}
 .hud2 .bump{animation:bump .5s ease-out} @keyframes bump{30%{transform:scale(1.04)}}
 @media (prefers-reduced-motion:reduce){.fdelta{animation:none;opacity:1} .hud2 .bump{animation:none}}
+
+/* the suggestion box */
+.sugbtn{display:flex;align-items:center;gap:7px;height:32px;padding:0 10px;font-size:11px;letter-spacing:.12em;border-color:var(--line) !important}
+.sugbtn:hover{color:var(--ink) !important;border-color:var(--cyan) !important}
+.modal.sug{border-color:var(--cyan)} .modal.sug h3{color:var(--cyan)}
+.modal.sug textarea{width:100%;box-sizing:border-box;padding:10px 12px;background:var(--bg);border:1px solid var(--line);color:var(--ink);font:13px/1.5 var(--mono);resize:vertical}
+.modal.sug textarea:focus{outline:none;border-color:var(--cyan)}
+.sugctx{font-size:11px;margin:8px 0 14px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:760px){.sugbtn span{display:none}}
