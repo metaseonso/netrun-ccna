@@ -190,6 +190,60 @@ Definition of done for a day:
   `fairQueue`, `wred`); `service-policy input|output N` and `mls qos trust cos|dscp|device cisco-phone` on interfaces.
   `show class-map`, `show policy-map`, `show policy-map interface [X]` (DSCP names shown with their values; counters stay
   at zero, there is no traffic model). Tested.
+- 2026-09-28 · The shell's abbreviation expander no longer eats keywords: `cdp run` / `lldp run` (they were read as `running-config`,
+  so CDP could not be turned off and LLDP never on), `sh ip int br` and `sh ip int g0/1` (they became `show ip interfaces`, which
+  had no output), `logging trap N` and `snmp-server community X ro`. The parser honours `no ntp server X`, `no logging X`,
+  `no snmp-server community X`, and reads `ntp master [stratum]` (`cfg.ntpMaster`, default 8). Tested (section 10).
+  `no access-list N` removes every line of list N from the running-config, not just the first. Tested (section 10).
+
+- 2026-09-28 · CDP and LLDP per port: `no cdp enable` / `cdp enable`, `no lldp transmit` / `no lldp receive` on an interface
+  (`Net` `discoveryPorts`: LLDP needs the sender to transmit and the listener to receive); `cdp timer|holdtime N`,
+  `lldp timer|holdtime|reinit N`, `[no] cdp advertise-v2` are parsed; `show cdp` and `show lldp` print the global timers.
+  Tested (section 11).
+
+- 2026-09-28 · NTP has state (`Net.ntpSync`, `ctx.net().ntp('R2')` → `{ synced, stratum, server, reason, tried }`): an `ntp server`
+  must answer a ping and be synchronised itself (a router) or be a server/cloud with `ntpStratum` in the gig's `net`; stratum is the
+  server's plus one, above 15 is unsynchronised; `ntp master [n]` is its own clock (default 8); `ntp authenticate` needs
+  `ntp server X key N`, `ntp trusted-key N` and a matching `ntp authentication-key N md5 K` on the server. Parsed too: `ntp peer`,
+  `ntp source`, `ntp update-calendar`, `clock timezone NAME H [M]`, `clock summer-time NAME recurring`. `show ntp status` and
+  `show ntp associations` follow the real sync; new `show clock [detail]` (the 1993 IOS default with `*` until NTP syncs, then
+  the time in the configured zone) and `show calendar`. `clock set`, `calendar set`, `clock read-calendar`, `clock update-calendar`
+  are accepted in privileged EXEC; `clock summer-time NAME recurring` follows the US rule (second Sunday in March to the first
+  Sunday in November). Tested (section 12).
+
+- 2026-09-28 · DNS (`Net.resolve`, `ctx.net().resolve('PC1', 'records')` → `{ ok, ip, server, reason, nx }`): a host asks its DNS
+  servers (`dns` on the host, or the DHCP lease) over UDP 53, so ACLs apply; a router with `ip dns server` answers from its
+  `ip host NAME IP` table and forwards the rest to its `ip name-server`s while `ip domain lookup` is on (the default); a server or
+  cloud answers from `dnsRecords: { name: ip }` in the gig's `net`. Parsed: `ip host`, `no ip host`, `ip name-server`,
+  `[no] ip dns server`, `[no] ip domain lookup` / `ip domain-lookup`. PCs: `nslookup NAME`, `ping NAME`, `tracert NAME`,
+  `ipconfig /displaydns`, `ipconfig /flushdns`. Routers: `show hosts`, `ping NAME` / `traceroute NAME` (translated first).
+  Tested (section 13).
+
+- 2026-09-28 · DHCP relay to a router's own pool: `ip helper-address` pointing at an interface address of a router that has a pool
+  for the relay interface's subnet gives the host a lease from that pool, after that router's `ip dhcp excluded-address` ranges
+  (before, relay only reached `server` devices with `pools`). The path between relay and server is not checked. Tested (section 14).
+  Two DHCP clients on one segment now get consecutive addresses (.21 and .22); the second used to skip one. Tested (section 14).
+
+- 2026-09-28 · SNMP has state: `ctx.net().snmp(nms, agentIp, community, write)` → `{ ok, reason }` (the community must exist,
+  `rw` for a Set, its ACL from `snmp-server community X ro|rw ACL` must permit the manager, and UDP 161 must get through);
+  `ctx.net().snmpTraps('R1')` → one entry per `snmp-server host` (needs `snmp-server enable traps` and UDP 162). Parsed:
+  `snmp-server contact`, `location`, `host IP [version 1|2c|3] COMMUNITY`, `no snmp-server host`, `enable traps [types]`.
+  New `show snmp` and `show snmp host`. Tested (section 15).
+
+- 2026-09-28 · Syslog has state: `logging console|monitor|buffered|trap LEVEL` (by number or name; `buffered` takes a size),
+  `no logging console|monitor|buffered`, `service timestamps log datetime|uptime [msec]`, `service sequence-numbers`, and
+  `logging synchronous` on a line are parsed (`cfg.logLevels`, `logBufferSize`, `logTs`, `logSeq`, `con.loggingSync`).
+  `ctx.net().syslog('R1')` → one entry per `logging host`, reached over UDP 514, at the trap level (default 6). `show logging`
+  prints the real levels and hosts and a buffer: a gig's old lines (`net.devices.R1.logBuffer: [{ sev, line }]`) plus a
+  `%SYS-5-CONFIG_I` line for the player's own configuring, stamped the way the box is set now (sequence number, datetime from
+  `show clock` with `*` while unsynchronised, or uptime), filtered by the buffer level. Tested (section 16).
+
+- 2026-09-28 · Remote logins: `ctx.net().ssh(from, ip, user)` and `ctx.net().telnet(from, ip)` → `{ ok, dev, reason }`. SSH needs a
+  domain and an RSA key (768+ bits for `ip ssh version 2`), `login local` with the user, `transport input` allowing ssh, the VTY
+  `access-class` to permit the source, and TCP 22 through; Telnet needs transport to allow it (no transport line allows it), a
+  password or local login, the access-class and TCP 23. PCs: `ssh -l USER IP`, `telnet IP`. A Layer 2 switch with an SVI now
+  replies through `ip default-gateway` (it had no way back to other subnets). Tested (section 17).
+  `crypto key generate rsa` names the keys after `ip domain name` as well as the older `ip domain-name`. Tested (section 17).
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service

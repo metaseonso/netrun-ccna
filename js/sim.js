@@ -58,6 +58,8 @@
     s = s.replace(/^no shut$/, 'no shutdown');
     s = s.replace(/^transport in(p|pu)? /, 'transport input ').replace(/^ip nat ins(i|id|ide)?$/, 'ip nat inside').replace(/^ip nat out(s|si|sid|side)?$/, 'ip nat outside').replace(/^ip nat ins(i|id|ide)? so(u|ur|urc|urce)? /, 'ip nat inside source ').replace(/^ip arp ins(p|pe|pec|pect|pecti|pectio|pection)? /, 'ip arp inspection ');
     s = s.replace(/ dot1q$/, ' dot1q');
+    // keywords the second-word expansion must leave alone: "cdp run" / "lldp run", "sh ip int" is interface, "logging trap", "snmp-server community X ro"
+    s = s.replace(/^(no )?(cdp|lldp) running-config$/, '$1$2 run').replace(/^(do )?show ip interfaces /, '$1show ip interface ').replace(/^(no )?logging traps /, '$1logging trap ').replace(/^(no )?snmp-server community (\S+) route( |$)/, '$1snmp-server community $2 ro$3');
     return s;
   }
 
@@ -129,6 +131,8 @@
       if (line === 'no service password-encryption') { enc = false; const i = b.findIndex(x => x.line === 'service password-encryption'); if (i >= 0) b.splice(i, 1); continue; }
       if (line === 'no shutdown') { const i = b.findIndex(x => x.line === 'shutdown'); if (i >= 0) b.splice(i, 1); b.noShut = true; continue; }
       if (line === 'shutdown') b.noShut = false;
+      { const na = line.match(/^no access-list (\d+)$/); if (na) { for (let i = b.length - 1; i >= 0; i--) if (b[i].line.startsWith('access-list ' + na[1] + ' ')) b.splice(i, 1); continue; } } // the whole numbered list goes
+      { const sc = line.match(/^snmp-server community (\S+)/); if (sc) for (let i = b.length - 1; i >= 0; i--) if (b[i].line === 'snmp-server community ' + sc[1] || b[i].line.startsWith('snmp-server community ' + sc[1] + ' ')) b.splice(i, 1); } // a community typed again replaces itself
       if (line.startsWith('no ')) { const what = line.slice(3); const i = b.findIndex(x => x.line === what || x.line.startsWith(what + ' ') || keyOf(x.line) && keyOf(x.line) === keyOf(what)); if (i >= 0) b.splice(i, 1); else if (what === 'ip address') { const j = b.findIndex(x => /^ip address /.test(x.line)); if (j >= 0) b.splice(j, 1); } continue; }
       if (r.raw && /^(name|description) /.test(line)) line = line.split(' ')[0] + ' ' + r.raw.replace(/^\s*\S+\s+/, ''); // names and descriptions keep the case they were typed in
       const e = put(b, line); if (/^enable password |^password |^username \S+ password /.test(line)) { e.enc = enc; secrets.push(e); } }
@@ -254,6 +258,9 @@
       if (q === 'show running-config' || q === 'show run' || q === 'show configuration') { dev.out.push({ t:'out', s: runningConfig(dev) }); dev.lines.push(rec); return; }
       if (q.startsWith('show ')) { let r = matchShow(dev, q); if (!r && window.Show && S) { const o = Show.render(dev, q, S); if (o != null) r = { key: q, out: o }; } if (r) rec.line = doCmd ? 'do ' + r.key : r.key; dev.out.push({ t: r ? 'out' : 'err', s: r ? r.out : ('% This sim has no output for "' + q + '" on ' + dev.host + '.') }); dev.lines.push(rec); return; }
       if (q === 'write memory' || q === 'copy running-config startup-config') { dev.lines.push(rec); dev.startup = configText(dev); dev.out.push({ t:'out', s:'Building configuration...\n[OK]' }); return; }
+      if ((q.startsWith('ping ') || q.startsWith('traceroute ')) && q.split(' ')[1] && !validIp(q.split(' ')[1]) && S && window.Net && Net.resolve) { const [verb, name] = q.split(' '); const r = Net.resolve(S, dev.name, name); // a name: translate it first, like IOS
+        if (!r.ok) { dev.lines.push(rec); dev.out.push({ t:'err', s: 'Translating "' + name + '"...domain server (' + (r.server || '255.255.255.255') + ')\n% Unrecognized host or address, or protocol not running.\n  [why: ' + r.reason + ']' }); return; }
+        dev.out.pop(); const n0 = dev.out.length; dev.exec((doCmd ? 'do ' : '') + verb + ' ' + r.ip, all, silent); if (dev.out[n0]) dev.out[n0].s = dev.out[n0].s.replace(r.ip, name); if (r.server !== 'host table') dev.out.splice(n0 + 1, 0, { t:'out', s: 'Translating "' + name + '"...domain server (' + r.server + ') [OK]' }); return; }
       if (q.startsWith('ping ') || q.startsWith('traceroute ')) { const ip = q.split(' ')[1]; dev.lines.push(rec);
         if (S && window.Net) { const r = Net.ping(S, dev.name, ip); dev._lastPing = r; const lost = Net.learnFrom(S, r) > 0 && r.ok ? 1 : 0; if (r.nat && r.nat.length) { dev._natSeen = dev._natSeen || []; r.nat.forEach(t => { if (!dev._natSeen.some(x => x.inside === t.inside && x.global === t.global && x.port === t.port)) dev._natSeen.push(t); }); (dev._all && Object.values(dev._all) || []).forEach(o => { if (o !== dev && r.path.some(p => p.dev === o.name)) { o._natSeen = o._natSeen || []; r.nat.forEach(t => { if (!o._natSeen.some(x => x.inside === t.inside && x.global === t.global && x.port === t.port)) o._natSeen.push(t); }); } }); }
           if (q.startsWith('ping ')) dev.out.push({ t: r.ok ? 'out' : 'err', s: 'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos to ' + ip + ', timeout is 2 seconds:\n' + (r.ok ? '.'.repeat(lost) + '!'.repeat(5 - lost) + '\nSuccess rate is ' + (100 - lost * 20) + ' percent (' + (5 - lost) + '/5), round-trip min/avg/max = 1/1/2 ms' : '.....\nSuccess rate is 0 percent (0/5)\n  [why: ' + r.reason + ']') });
@@ -264,6 +271,7 @@
       if (/^clear ip nat translations? \*$/.test(q)) { if (dev.mode === 'user') { dev.out.push({ t:'err', s:'% Invalid input detected. (clear needs privileged EXEC mode: enable first.)' }); return; } dev.lines.push(rec); dev._natSeen = []; return; } // dynamic entries go; static mappings stay in the config
       if (q.startsWith('copy ')) { if (dev.mode === 'user') { dev.out.push({ t:'err', s:'% Invalid input detected. (copy needs privileged EXEC mode: enable first.)' }); return; } startCopy(dev, q, rec); return; }
       if (q.startsWith('reload')) { dev.out.push({ t:'sys', s:'(nice try. no reloads in the sim.)' }); return; }
+      if (/^(clock set|calendar set|clock read-calendar|clock update-calendar)/.test(q) && (dev.mode === 'priv' || doCmd)) { dev.lines.push(rec); return; } // exec commands for the clocks: accepted, NTP decides what show clock says
       if (!doCmd && dev.mode !== 'config' && !s.startsWith('show')) { if (dev.mode === 'user' || dev.mode === 'priv') { dev.out.push({ t:'err', s:'% Invalid input detected at \'^\' marker. (Config commands need "configure terminal" first.)' }); return; } }
       if (doCmd) { dev.lines.push(rec); return; }
     }
@@ -289,6 +297,7 @@
     if ((m = s.match(/^ip vrf (\S+)$/))) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter('config-vrf', s); return; }
     if (s.startsWith('crypto key generate rsa')) { dev.out.push({ t:'out', s:'The name for the keys will be: ' + dev.host + '.' + (dev.domain || 'example.com') + '\n% Generating RSA keys ...[OK]' }); return; }
     if ((m = s.match(/^ip domain-name (\S+)$/))) { dev.domain = m[1]; return; }
+    if ((m = s.match(/^ip domain name (\S+)$/))) { dev.domain = m[1]; return; } // the newer spelling names the keys too
     if (s === 'shutdown') { dev.out.push({ t:'sys', s:'%LINK-5-CHANGED: Interface changed state to administratively down' }); return; }
     if (s === 'no shutdown') { dev.out.push({ t:'sys', s:'%LINK-3-UPDOWN: Interface changed state to up' }); return; }
     const IF_LEVEL = /^(ip address|ip access-group|ip helper-address|ip nat (inside|outside)$|ip ospf|ipv6 address|switchport|description|standby|channel-group|encapsulation|spanning-tree (vlan [\d,\-]+ )?(cost|port-priority)|spanning-tree portfast( edge| trunk)?$|spanning-tree bpduguard|spanning-tree guard|duplex|speed)/;

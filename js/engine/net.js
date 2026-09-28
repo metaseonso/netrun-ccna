@@ -152,8 +152,10 @@
 
     // ---- routing tables
     buildRouting(S);
+    switchGateways(S);
     // ---- MAC tables & neighbors
     buildMacTables(S); buildNeighbors(S);
+    discoveryPorts(S);
     return S;
   }
   function synthMac(seed){ let h = 0; for (const c of seed) h = (h * 33 + c.charCodeAt(0)) >>> 0; const hex = h.toString(16).padStart(8, '0'); return '0200.' + hex.slice(0, 4) + '.' + hex.slice(4, 8); }
@@ -165,6 +167,10 @@
     for (const o of S.owners[seg] || []) { if (o.kind !== 'iface') continue; const pools = S.cfg[o.dev].dhcp.pools; for (const pn in pools) { const p = pools[pn]; if (p.network && inSubnet(o.ip, p.network, p.mask)) cands.push({ dev: o.dev, via: o, pool: p, kind: 'router', rogue: false }); }
       // relay: helper-address to a server device by IP
       const i = S.ifaces[o.dev][o.iface]; for (const h of i.cfg.helpers) { for (const sn in D) { const sd = D[sn]; if ((sd.kind === 'server' || sd.kind === 'host') && sd.ip === h && sd.pools) for (const p of sd.pools) if (p.network && inSubnet(o.ip, p.network, p.mask)) cands.push({ dev: sn, via: o, pool: p, kind: 'relay', rogue: false, relayIf: o }); } } }
+    // relay to a router's own pool: the helper-address is one of that router's interface addresses (the path between them is not checked)
+    for (const o of S.owners[seg] || []) { if (o.kind !== 'iface') continue; const i = S.ifaces[o.dev][o.iface];
+      for (const h of i.cfg.helpers) { const srv = Object.keys(D).find(n => (D[n].kind === 'router' || D[n].kind === 'l3switch') && S.ifaces[n] && Object.values(S.ifaces[n]).some(x => x.up && x.cfg.ip === h)); if (!srv) continue;
+        const pools = S.cfg[srv].dhcp.pools; for (const pn in pools) { const p = pools[pn]; if (p.network && inSubnet(o.ip, p.network, p.mask)) cands.push({ dev: srv, via: o, pool: p, kind: 'relay', rogue: false, relayIf: o }); } } }
     // servers directly on segment
     for (const n in D) { const d = D[n]; if ((d.kind === 'server') && d.pools && S.uf.find(S.hostNode(n)) === seg) for (const p of d.pools) cands.push({ dev: n, pool: p, kind: 'server', rogue: false }); if (d.kind === 'rogue' && d.role === 'dhcp' && S.uf.find(S.hostNode(n)) === seg && !d.removed) cands.push({ dev: n, pool: null, kind: 'rogue', rogue: true, offer: d.offer || {} }); }
     // snooping filter: walk from candidate to host through switches; every switch with snooping on this VLAN must receive the offer on a trusted port
@@ -176,7 +182,7 @@
     return { ok: false, reason: cands.length ? 'offers dropped by DHCP snooping: ' + dropped.join(', ') : 'no DHCP server reachable', dropped };
   }
   function nextFree(S, seg, network, mask, host, serverDev){ // deterministic: hosts in name order get consecutive addresses after excluded/reserved ones
-    const D = S.net.devices; const excl = serverDev && S.cfg[serverDev] ? S.cfg[serverDev].dhcp.excluded : []; const used = new Set((S.owners[seg] || []).map(o => o.ip));
+    const D = S.net.devices; const excl = serverDev && S.cfg[serverDev] ? S.cfg[serverDev].dhcp.excluded : []; const used = new Set((S.owners[seg] || []).filter(o => !(o.kind === 'host' && D[o.dev] && D[o.dev].dhcp)).map(o => o.ip)); // other DHCP hosts are counted by their order, not as taken
     const base = IP.ip2n(network); const size = Math.pow(2, 32 - mlen(mask)); const order = Object.keys(D).filter(n => D[n].dhcp && S.uf.find(S.hostNode(n)) === seg).sort(); const idx = order.indexOf(host);
     let count = 0; for (let k = 1; k < size - 1; k++) { const ip = IP.n2ip(base + k); if (used.has(ip)) continue; if (excl.some(([a, b]) => IP.ip2n(ip) >= IP.ip2n(a) && IP.ip2n(ip) <= IP.ip2n(b))) continue; if (count === idx) return ip; count++; } return null;
   }
@@ -245,6 +251,85 @@
   function buildNeighbors(S){ const D = S.net.devices; S.neighbors = {}; for (const L of S.links) { const ka = D[L.a].kind, kb = D[L.b].kind; const netdev = k => ['router', 'switch', 'l3switch'].includes(k); if (!netdev(ka) || !netdev(kb)) continue; const a = S.ifaces[L.a][L.ap], b = S.ifaces[L.b][L.bp]; if (!a.up || !b.up) continue;
       (S.neighbors[L.a] = S.neighbors[L.a] || []).push({ dev: L.b, local: L.ap, remote: L.bp, cdp: S.cfg[L.a].cdp && S.cfg[L.b].cdp, lldp: S.cfg[L.a].lldp && S.cfg[L.b].lldp, platform: kb === 'router' ? 'cisco ISR4321' : 'cisco WS-C2960', ip: (S.l3.find(o => o.dev === L.b && o.kind === 'iface') || {}).ip || '' });
       (S.neighbors[L.b] = S.neighbors[L.b] || []).push({ dev: L.a, local: L.bp, remote: L.ap, cdp: S.cfg[L.a].cdp && S.cfg[L.b].cdp, lldp: S.cfg[L.a].lldp && S.cfg[L.b].lldp, platform: ka === 'router' ? 'cisco ISR4321' : 'cisco WS-C2960', ip: (S.l3.find(o => o.dev === L.a && o.kind === 'iface') || {}).ip || '' }); } }
+
+  // per-port CDP and LLDP: "no cdp enable" hides both ends of that link from CDP; LLDP needs the sender to transmit and the listener to receive
+  function discoveryPorts(S){ for (const n in S.neighbors) for (const x of S.neighbors[n]) { const me = S.ifaces[n][x.local].cfg, them = S.ifaces[x.dev][x.remote].cfg;
+      if (me.cdpOff || them.cdpOff) x.cdp = false; if (me.lldpRxOff || them.lldpTxOff) x.lldp = false; x.cdpHold = S.cfg[x.dev].cdpHoldtime || 180; x.lldpHold = S.cfg[x.dev].lldpHoldtime || 120; } }
+
+  // a Layer 2 switch is a host on its own management SVI: it answers on that address and replies through "ip default-gateway"
+  function switchGateways(S){ const D = S.net.devices; for (const n in D) { if (D[n].kind !== 'switch' || S.routers.includes(n)) continue; const svis = S.l3.filter(o => o.dev === n && o.kind === 'iface'); if (!svis.length) continue;
+      const t = svis.map(o => ({ prefix: netOf(o.ip, o.mask), len: mlen(o.mask), via: null, iface: o.iface, proto: 'C', ad: 0, metric: 0 })); const gw = S.cfg[n].defaultGateway; const o = gw && svis.find(x => inSubnet(gw, netOf(x.ip, x.mask), x.mask));
+      if (o) t.unshift({ prefix: '0.0.0.0', len: 0, via: gw, iface: o.iface, proto: 'S*', ad: 1, metric: 0 }); S.tables[n] = t; } }
+  // remote logins to a router or a switch SVI. SSH needs sshReady, TCP 22 through, the user to exist and the VTY access-class to permit
+  // the source; Telnet needs transport input to allow it (no transport line allows it), a login method with something to check, and TCP 23.
+  function remoteLogin(S, from, ip, proto, user){ const own = S.l3.find(o => o.ip === ip && o.kind === 'iface'); if (!own) return { ok: false, reason: 'nothing at ' + ip };
+    const d = own.dev, c = S.cfg[d], vty = c.vty; const h = S.hosts[from]; const src = h && h.ip; const port = proto === 'ssh' ? 22 : 23;
+    const tr = vty.transport; if (tr && !tr.includes(proto) && !tr.includes('all')) return { ok: false, dev: d, reason: 'connection refused: the VTY lines on ' + d + ' take ' + tr.join(' ') + ' only' };
+    if (proto === 'ssh') { if (!c.domain || !(c.sshKeyBits > 0)) return { ok: false, dev: d, reason: 'connection refused: ' + d + ' has no RSA key (ip domain name and crypto key generate rsa)' }; if (c.sshVersion === 2 && c.sshKeyBits < 768) return { ok: false, dev: d, reason: 'SSH version 2 needs a key of at least 768 bits' }; }
+    if (vty.login === 'local') { if (!c.users.length) return { ok: false, dev: d, reason: 'login local, but ' + d + ' has no usernames' }; if (user && !c.users.some(u => u.name === String(user).toLowerCase())) return { ok: false, dev: d, reason: '% Login invalid for ' + user }; }
+    else if (proto === 'ssh') return { ok: false, dev: d, reason: 'SSH needs login local on the VTY lines' };
+    else if (vty.login !== 'password' || !vty.password) return { ok: false, dev: d, reason: 'Password required, but none set' };
+    if (vty.accessClass && src && aclEval(S, d, vty.accessClass, { src, dst: ip, proto: 'tcp', dport: port }).action !== 'permit') return { ok: false, dev: d, reason: 'connection refused by access-class ' + vty.accessClass + ' on the VTY lines' };
+    const p = ping(S, from, ip, { proto: 'tcp', dport: port }); if (!p.ok) return { ok: false, dev: d, reason: 'TCP ' + port + ' to ' + ip + ': ' + p.reason };
+    return { ok: true, dev: d, encrypted: proto === 'ssh', version: proto === 'ssh' ? (c.sshVersion || 1.99) : null, reason: (proto === 'ssh' ? 'SSH' : 'Telnet') + ' session open to ' + d }; }
+
+  // ---------------------------------------------------------------- SNMP
+  // a manager (a host, the NMS) polls an agent (a router) at one of its addresses over UDP 161 with a community string:
+  // the string must exist on the agent (rw for a Set), its ACL (if any) must permit the manager, and the path must carry UDP 161.
+  // Traps go from the agent to each snmp-server host over UDP 162, and only once snmp-server enable traps is set.
+  function snmpPoll(S, nms, ip, community, write){ const own = S.l3.find(o => o.ip === ip && o.kind === 'iface'); if (!own) return { ok: false, reason: 'no agent at ' + ip };
+    const c = S.cfg[own.dev]; const cm = c.snmp.find(x => x.community === String(community).toLowerCase()); if (!cm) return { ok: false, reason: own.dev + ' has no community ' + community };
+    if (write && cm.mode !== 'rw') return { ok: false, reason: 'community ' + community + ' is read-only on ' + own.dev };
+    const h = S.hosts[nms]; if (!h || !h.ip) return { ok: false, reason: nms + ' has no address' };
+    if (cm.acl && aclEval(S, own.dev, cm.acl, { src: h.ip, dst: ip, proto: 'udp', dport: 161 }).action !== 'permit') return { ok: false, reason: 'ACL ' + cm.acl + ' on ' + own.dev + ' does not permit ' + h.ip };
+    const p = ping(S, nms, ip, { proto: 'udp', dport: 161 }); if (!p.ok) return { ok: false, reason: 'UDP 161 to ' + ip + ': ' + p.reason };
+    return { ok: true, agent: own.dev, mode: cm.mode, reason: (write ? 'Set' : 'Get') + ' answered by ' + own.dev }; }
+  function snmpTraps(S, dev){ const c = S.cfg[dev]; return (c.snmpHosts || []).map(x => { if (!(c.snmpTraps || []).length) return { host: x.ip, ok: false, reason: 'snmp-server enable traps is not set' };
+      const p = ping(S, dev, x.ip, { proto: 'udp', dport: 162 }); return { host: x.ip, version: x.version, community: x.community, ok: p.ok, reason: p.ok ? 'traps reach ' + x.ip : 'UDP 162 to ' + x.ip + ': ' + p.reason }; }); }
+
+  // syslog: every "logging host" gets messages at or below the trap level (default 6, informational) over UDP 514
+  function syslogHosts(S, dev){ const c = S.cfg[dev]; const lvl = (c.logLevels || {}).trap != null ? c.logLevels.trap : 6;
+    return c.logging.map(ip => { const p = ping(S, dev, ip, { proto: 'udp', dport: 514 }); return { host: ip, level: lvl, ok: p.ok, reason: p.ok ? 'messages at level ' + lvl + ' and below reach ' + ip : 'UDP 514 to ' + ip + ': ' + p.reason }; }); }
+
+  // ---------------------------------------------------------------- DNS
+  // names to addresses. A host asks its DNS servers (static dns or the DHCP lease) over UDP 53; a router answers from its
+  // "ip host" table when "ip dns server" is on and forwards what it does not know to its own "ip name-server"s (with lookup on);
+  // a server or cloud answers from dnsRecords: { 'name': 'ip' } in the gig's net. A router resolving for itself uses its host
+  // table first, then its name servers. Result: { ok, ip, server, reason, nx } (nx: the server answered that the name does not exist).
+  function resolve(S, from, name, depth){ depth = depth || 0; name = String(name).toLowerCase().replace(/\.$/, ''); const fail = (reason, extra) => Object.assign({ ok: false, name, ip: null, server: null, reason }, extra || {});
+    if (depth > 4) return fail('DNS loop'); let servers;
+    if (S.hosts[from] && S.hosts[from].kind !== 'cloud') { const h = S.hosts[from]; if (!h.ip) return fail(from + ' has no IP address'); servers = [].concat(h.dns || []).filter(Boolean); if (!servers.length) return fail(from + ' has no DNS server configured'); }
+    else if (S.cfg[from]) { const c = S.cfg[from]; if (c.hostTable && c.hostTable[name]) return { ok: true, name, ip: c.hostTable[name], server: 'host table', reason: 'from the host table' }; if (c.domainLookup === false) return fail('ip domain lookup is off');
+      servers = c.nameServers || []; if (!servers.length) return fail('no ip name-server configured (the query goes to 255.255.255.255 and nobody answers)'); }
+    else return fail(from + ' cannot ask for names');
+    let last = null; for (const srv of servers) { const r = dnsAsk(S, from, srv, name, depth); if (r.ok || r.nx) return r; last = r; } return last; }
+  function dnsAsk(S, from, srv, name, depth){ const D = S.net.devices; const fail = (reason, extra) => Object.assign({ ok: false, name, ip: null, server: srv, reason }, extra || {});
+    const p = ping(S, from, srv, { proto: 'udp', dport: 53 }); if (!p.ok) return fail('DNS server ' + srv + ' unreachable (' + p.reason + ')');
+    const own = S.l3.find(o => o.ip === srv && o.kind === 'iface');
+    if (own) { const c = S.cfg[own.dev]; if (!c.dnsServer) return fail(own.dev + ' at ' + srv + ' is not a DNS server (no ip dns server)'); if (c.hostTable && c.hostTable[name]) return { ok: true, name, ip: c.hostTable[name], server: srv, reason: 'answered by ' + own.dev };
+      if (c.domainLookup !== false && (c.nameServers || []).length) { const r = resolve(S, own.dev, name, depth + 1); return Object.assign({}, r, { server: srv, reason: r.ok ? 'answered by ' + own.dev + ' via ' + r.server : r.reason }); }
+      return fail(own.dev + ' has no record for ' + name, { nx: true }); }
+    const n = Object.keys(D).find(k => D[k].dnsRecords && (D[k].ip === srv || (S.hosts[k] && S.hosts[k].ip === srv))) || Object.keys(D).find(k => D[k].kind === 'cloud' && D[k].internet && D[k].dnsRecords && !RFC1918(srv));
+    if (!n) return fail('nothing answers DNS at ' + srv); const rec = D[n].dnsRecords[name]; return rec ? { ok: true, name, ip: rec, server: srv, reason: 'answered by ' + n } : fail(n + ' has no record for ' + name, { nx: true }); }
+
+  // ---------------------------------------------------------------- NTP
+  // who a box gets its time from: an "ntp master" is its own clock; an "ntp server" must answer a ping and be synchronised itself
+  // (a router) or be a server/cloud with ntpStratum set in the gig's net. Stratum is the server's plus one; above 15 is unsynchronised.
+  // With "ntp authenticate" the server needs a trusted key whose md5 string matches the server's key of the same number.
+  function ntpSync(S, dev, depth){ depth = depth || 0; const c = S.cfg[dev]; const none = reason => ({ synced: false, stratum: 16, server: null, reason });
+    if (!c) return none('no such device'); if (depth > 6) return none('NTP loop');
+    let best = c.ntpMaster ? { synced: true, stratum: c.ntpMaster, server: '127.127.1.1', master: true, reason: 'ntp master' } : null; const tried = [];
+    for (const ip of [...new Set(c.ntp)]) { const r = ntpAsk(S, dev, ip, depth); tried.push(Object.assign({ ip }, r)); if (r.ok && (!best || r.stratum < best.stratum)) best = { synced: true, stratum: r.stratum, server: ip, reason: 'synchronised to ' + ip }; }
+    return best ? Object.assign(best, { tried }) : Object.assign(none(tried.length ? tried.map(t => t.ip + ': ' + t.reason).join('; ') : 'no NTP server configured'), { tried }); }
+  function ntpAsk(S, dev, ip, depth){ const D = S.net.devices; const c = S.cfg[dev];
+    const p = ping(S, dev, ip); if (!p.ok) return { ok: false, reason: 'unreachable (' + p.reason + ')' };
+    const own = S.l3.find(o => o.ip === ip && o.kind === 'iface'); let stratum, key = null;
+    if (own) { const sub = ntpSync(S, own.dev, depth + 1); if (!sub.synced) return { ok: false, reason: own.dev + ' is not synchronised' }; stratum = sub.stratum + 1; key = (S.cfg[own.dev].ntpKeys || {}); }
+    else { const n = Object.keys(D).find(k => (D[k].ip === ip || (S.hosts[k] && S.hosts[k].ip === ip)) && D[k].ntpStratum != null); if (!n) return { ok: false, reason: 'no NTP server answers at ' + ip }; stratum = D[n].ntpStratum + 1; key = D[n].ntpKeys || {}; }
+    if (c.ntpAuth) { const k = (c.ntpServerKeys || {})[ip]; if (k == null) return { ok: false, reason: 'ntp authenticate is on and no key is set for ' + ip };
+      if (!(c.ntpTrusted || []).includes(k)) return { ok: false, reason: 'key ' + k + ' is not trusted' }; if (!(c.ntpKeys || {})[k] || key[k] !== c.ntpKeys[k]) return { ok: false, reason: 'authentication failed with key ' + k }; }
+    if (stratum > 15) return { ok: false, reason: 'stratum ' + stratum + ' is too far from a reference clock' };
+    return { ok: true, stratum }; }
 
   // ---------------------------------------------------------------- ACL / NAT
   function aclEval(S, dev, aclId, pkt){ const a = S.cfg[dev].acls[aclId]; if (!a) return { action: 'permit', reason: 'ACL ' + aclId + ' not defined (permits all)' };
@@ -340,7 +425,10 @@
       sshReady: d => { const c = S.cfg[d]; const vty = c.vty; const ok = !!(c.hostname && c.hostname !== d.replace(/\d+$/, '') || true) && !!c.domain && c.sshKeyBits > 0 && !!(vty.transport && vty.transport.includes('ssh')) && vty.login === 'local' && c.users.length > 0; return { ok, hostname: !!c.hostname, domain: !!c.domain, key: c.sshKeyBits, transport: vty.transport, login: vty.login, users: c.users.length }; },
       acl: (d, id) => S.cfg[d].acls[id] || null, aclTest: (d, id, pkt) => aclEval(S, d, id, pkt),
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),
-      neighbors: d => S.neighbors[d] || [], macTable: d => S.learn ? learnedRows(S, d) : (S.macTable[d] || []), arp: d => arpRows(S, d), bundles: S.bundles
+      neighbors: d => S.neighbors[d] || [], macTable: d => S.learn ? learnedRows(S, d) : (S.macTable[d] || []), arp: d => arpRows(S, d), bundles: S.bundles,
+      ntp: d => ntpSync(S, d), resolve: (d, name) => resolve(S, d, name),
+      snmp: (nms, ip, community, write) => snmpPoll(S, nms, ip, community, write), snmpTraps: d => snmpTraps(S, d), syslog: d => syslogHosts(S, d),
+      ssh: (from, ip, user) => remoteLogin(S, from, ip, 'ssh', user), telnet: (from, ip) => remoteLogin(S, from, ip, 'telnet')
     };
   }
 
@@ -371,4 +459,5 @@
     if (!r.ok && /^loop at |TTL expired/.test(r.reason || '') && t.length >= 2) { const at = String(r.reason).replace('loop at ', ''); const i = Math.max(0, t.length - 2); const cycle = t.slice(i); const out = t.slice(); while (out.length < 30) out.push(cycle[(out.length - t.length) % cycle.length]); const row = (n, ip) => style === 'pc' ? '  ' + String(n).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + n + ' ' + ip + ' 0 msec 0 msec 0 msec'; return out.map((ip, k) => row(k + 1, ip)); } const row = (i, ip) => style === 'pc' ? '  ' + String(i).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + i + ' ' + ip + ' 0 msec 0 msec 0 msec';
     const out = t.map((ip, i) => row(i + 1, ip)); if (!r.ok) out.push(style === 'pc' ? '  ' + String(t.length + 1).padStart(2) + '     *        *        *     Request timed out.' : '  ' + (t.length + 1) + '  *  *  * '); return out; }
   window.Net = { build, api, ping, traceLines, learnFrom, forget, arpRows, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
+  Net.ntpSync = ntpSync; Net.resolve = resolve; Net.remoteLogin = remoteLogin;
 })();

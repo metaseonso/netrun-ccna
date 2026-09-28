@@ -222,5 +222,12 @@ window.GLOSSARY = {
   'subnet': 'A smaller network made by splitting a larger one: bits are borrowed from the host part and added to the network part. Each borrowed bit doubles the number of subnets and halves their size.',
   'point-to-point': 'A link with exactly two devices on it, usually two routers. Needs only two addresses: a /30 (two usable) or a /31 (both usable, RFC 3021).',
   'broadcast domain': 'The group of devices that receive a broadcast (destination FFFF.FFFF.FFFF) sent by any one of them. Switches forward broadcasts; routers stop them; each VLAN is its own broadcast domain.',
-  'subinterface': 'A logical interface cut from a physical router interface, e.g. g0/0.10. In router on a stick each subinterface has encapsulation dot1q with one VLAN ID and that VLAN\'s gateway address.'
+  'subinterface': 'A logical interface cut from a physical router interface, e.g. g0/0.10. In router on a stick each subinterface has encapsulation dot1q with one VLAN ID and that VLAN\'s gateway address.',
+  'access control entry': 'ACE. One line of an ACL: permit or deny, and what to match. A router checks the ACEs top to bottom and acts on the first match; the entries below it are ignored.',
+  'icmp': 'Internet Control Message Protocol, IP protocol number 1. Carries ping (echo request and reply) and error messages such as unreachable and TTL exceeded. It has no ports.',
+  'stratum': 'An NTP server\'s distance from a reference clock. Reference clocks (atomic, GPS) are stratum 0, servers wired to them stratum 1, and each server that learns time from another adds one. Lower is preferred; above 15 is unreliable and 16 means unsynchronised.',
+  'nms': 'Network Management Station. The server that runs the SNMP manager software: it polls managed devices (UDP 161) and receives their Traps and Informs (UDP 162).',
+  'mib': 'Management Information Base. The structure of variables an SNMP agent keeps about its device (CPU, interfaces, counters), each identified by an OID.',
+  'oid': 'Object ID. The dotted number that names one variable in an SNMP MIB, such as a port\'s input counter.',
+  'fqdn': 'Fully Qualified Domain Name: a host\'s name with its domain, hostname.domainname (R1.watson.net). crypto key generate rsa names the RSA key pair after it.'
 };

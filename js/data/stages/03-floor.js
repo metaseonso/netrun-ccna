@@ -44,6 +44,7 @@
           yes: 'Mac: "Out every slot but one. When your till answers, I\'ll write it down."', no: 'Mac: "I flood it. Every slot except the one it came in on, and I learn the till when it answers."',
           why: 'Mac: The till has never sent a frame, so its MAC address is not in the table. A frame for an unknown unicast address is flooded out of every port except the one it arrived on. When the till replies, the switch learns its MAC address from the reply\'s source field.' } }
       ] },
+
     // ------------------------------------------------------------ night 6 · Ethernet LAN switching, part 2 (ARP)
     { id: 'n06-who-has', title: 'The first receipt of the morning', sub: 'ARP, ping and the MAC address table', npc: 'mac', day: [6], src: [PS('Ethernet_LAN_Switching_Part2.md')], unlocks: ['arp'],
       beats: [
@@ -86,6 +87,7 @@
           yes: 'Mac: "Everyone hears it, and only the printer answers."', no: 'Mac: "Everyone. The request goes to FFFF.FFFF.FFFF, and only the printer answers it."',
           why: 'Mac: An ARP request is sent to the broadcast MAC address FFFF.FFFF.FFFF, so the switch floods it to every device in the LAN. Every device reads it, but only the one with the requested IP address answers, and its ARP reply is unicast back to the asker.' } }
       ] },
+
     // ------------------------------------------------------------ night 9 · switch interfaces
     { id: 'n09-dropped-frames', title: 'The cameras that stutter', sub: 'speed, duplex and interface errors', npc: 'mac', day: [9], src: [PS('Switch_Interfaces.md')], unlocks: ['switch-ifaces'],
       beats: [
@@ -126,6 +128,7 @@
           yes: 'Vee Lan: "A hundred, half. Now you know why the cameras stutter."', no: 'Vee Lan: "It hears 100 on the wire and can\'t negotiate the duplex, so it uses half."',
           why: 'Vee Lan: Hard-coding speed and duplex on one end disables autonegotiation there. The auto end can still sense the speed, 100 Mb/s, but not the duplex, so at 10 or 100 Mb/s it defaults to half duplex. One end at full and the other at half is a duplex mismatch.' } }
       ] },
+
     // ------------------------------------------------------------ night 16 · VLANs, part 1
     { id: 'n16-borders', title: 'Tape on the floor', sub: 'broadcast domains and VLANs', npc: 'veelan', day: [16], src: [PS('VLAN_Part1.md')], unlocks: ['vlan-config'],
       beats: [
@@ -167,6 +170,7 @@
           yes: 'Vee Lan: "No. It stops at the tape."', no: 'Vee Lan: "No. A VLAN is its own broadcast domain, so a broadcast only reaches ports in the same VLAN."',
           why: 'Vee Lan: Each VLAN is a separate broadcast domain. The switch floods a broadcast only out of ports in the VLAN it arrived on, and routers do not forward broadcasts, so a broadcast from the stalls\' VLAN never reaches the office VLAN.' } }
       ] },
+
     // ------------------------------------------------------------ night 17 · VLANs, part 2: trunks and router on a stick
     { id: 'n17-one-cable', title: 'Three borders down one cable', sub: 'trunks, 802.1Q and router on a stick', npc: 'veelan', day: [17], src: [PS('VLAN_Part2.md')], unlocks: ['trunk-config'],
       beats: [
@@ -206,5 +210,47 @@
           yes: 'Vee Lan: "The native VLAN. On this trunk, 99."', no: 'Vee Lan: "The native VLAN. That\'s what native means."',
           why: 'Vee Lan: Frames in the native VLAN cross a trunk without a tag, and a switch that receives an untagged frame on a trunk assigns it to the native VLAN. The native VLAN is VLAN 1 by default; here it was changed to 99 on both ends.' } }
       ] },
+
+    // ------------------------------------------------------------ night 36 · CDP and LLDP
+    { id: 'n36-next-door', title: 'Everyone next door', sub: 'CDP and LLDP', npc: 'mac', day: [36], src: [PS('CDP_and_LLDP.md')], unlocks: ['cdp-lldp'],
+      beats: [
+        { k: 'SCENE', where: 'The switch floor under the market · ten past eleven at night',
+          lines: [
+            { who: 'narr', text: 'The stairs down from the market are warm, and the air at the bottom smells of hot dust and old solder. Fans hum along rows of blinking boxes under a low ceiling. Mac sits at his door with twenty-four numbered slots, cracking sunflower seeds between his front teeth, and he waves you in before you reach the last step.' },
+            { who: 'mac', text: 'Ace called. She said follow the clinic\'s old cable, and I did. It comes up through the floor right here and plugs into slot 24 on SW2. I\'ve never had a face on slot 24 in my life.' },
+            { who: 'mac', text: 'Here\'s how I know. Every Cisco box down here says hello to the box at the other end of each cable, once a minute: its name, its model, its software, its address, which port it\'s talking from. That\'s [[CDP]], the Cisco Discovery Protocol. It\'s on by default, on every port.' },
+            { who: 'you', text: 'Who hears the hello?' },
+            { who: 'mac', text: 'Only the box at the other end. It goes to a multicast address, 0100.0CCC.CCCC, and a Cisco box that gets it keeps it and never passes it on. It comes every 60 seconds, and if a neighbour goes quiet for 180, the holdtime, I forget him. Version 2 is the default.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do I read who\'s next door?', reply: 'Mac: "show cdp neighbors. Device ID, the port on your side, the holdtime counting down, what it is, a router or a switch, its model, and the port on its side. Add detail and you get its IP address and its software version as well. show cdp entry and a name gives you one neighbour."' },
+            { tone: 'press', say: 'If it tells everyone that much, why is it on?', reply: 'Mac: "Because it finds the cable the diagram got wrong, every time. You turn it off where you don\'t trust the far end: no cdp enable on that one port, or no cdp run for the whole box. show cdp tells you the timers, and show cdp traffic counts the hellos in and out."' },
+            { tone: 'joke', say: 'You forget faces after five minutes and neighbours after three?', reply: 'Mac: "Faces are the MAC table, 300 seconds, and that\'s every frame on every port. Neighbours are boxes, and they\'re chatty, so 180 is plenty."' }
+          ] } },
+        { k: 'SCENE', where: 'The switch floor · the end of the east row · slot 24', real: ['ieee'],
+          lines: [
+            { who: 'narr', text: 'Slot 24 has a cable in it that comes up through a hole in the floor tiles, furred with dust along its first metre and clean after that. The box on the end is a small switch zip-tied behind the rack, lights blinking, with no label.' },
+            { who: 'mac', text: 'Whatever that is, it\'s been hearing every hello on this floor for weeks. Every hostname, every address, which software each box runs and which port leads where. If I wanted to know which kiosk still had a cable to the clinic, that\'s exactly how I\'d find out.' },
+            { who: 'mac', text: 'The new cameras Vee Lan ordered for the stalls aren\'t Cisco, so they don\'t speak CDP at all. They speak [[LLDP]], the Link Layer Discovery Protocol, the IEEE\'s version, 802.1AB. On a Cisco box it\'s usually off. lldp run turns it on for the box, and then each port can transmit and receive separately.' },
+            { who: 'mac', text: 'LLDP says hello every 30 seconds, holds a neighbour for 120, and waits 2 seconds before it starts up on a port that\'s just come alive. It goes to 0180.C200.000E. A box can run CDP and LLDP at the same time, and CDP carries a few Cisco things LLDP doesn\'t, like the VTP domain.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Can we see what it heard?', reply: 'Mac: "Ask SW2 what\'s on slot 24, and ask for detail. CDP works both ways: if it heard us, we can hear it, and a box that says hello says its own name too."' },
+            { tone: 'press', say: 'Why not pull it out right now?', reply: 'Mac: "Because Ace wants its name and its address first, and once it\'s unplugged SW2 forgets it in 180 seconds. Read it, write it down, then pull it."' },
+            { tone: 'care', say: 'Did anyone come down here to plug it in?', reply: 'Mac spits a shell into his hand and looks at the stairs. "Nobody I remember. And I remember everybody. Whoever it was came up the old cable from the other end, not down my stairs."' }
+          ] } },
+        { k: 'LORE', title: 'EVERYONE SAYS HELLO', year: 2005, real: ['ieee'], vibe: 'That\'s hot. Every box on the block handing out business cards to strangers.',
+          text: 'Mac, cracking another seed: "Cisco boxes had been introducing themselves with CDP for years, but only to other Cisco boxes. In 2005 the IEEE approved 802.1AB, LLDP, so a phone or a camera from any maker could say hello the same way. The first non-Cisco phone that showed up on this floor with its name and its port, I printed the page and pinned it by the door. It\'s still there, under the grease."' },
+        { k: 'KIT', text: 'Mac writes the floor\'s rules on the inside of a sunflower-seed packet.', kit: [
+          { cmd: 'show cdp neighbors · show cdp neighbors detail · show cdp entry NAME', what: 'who is on each port. Detail adds the IP address and the software version' },
+          { cmd: 'cdp run · no cdp run · interface: cdp enable · no cdp enable', what: 'CDP is Cisco only and on by default. Turn it off where you don\'t trust the far end' },
+          { cmd: 'CDP: every 60 s · holdtime 180 s · CDPv2 · 0100.0CCC.CCCC', what: 'cdp timer · cdp holdtime · cdp advertise-v2' },
+          { cmd: 'lldp run · interface: lldp transmit · lldp receive', what: 'LLDP, IEEE 802.1AB, any maker. Usually off on Cisco. Both can run at once' },
+          { cmd: 'LLDP: every 30 s · holdtime 120 s · reinit 2 s · 0180.C200.000E', what: 'lldp timer · lldp holdtime · lldp reinit' },
+          { cmd: 'show cdp · show cdp traffic · show cdp interface · show lldp · show lldp neighbors [detail]', what: 'the timers, the counters, the ports, the neighbours' } ] },
+        { k: 'SYNC', q: { prompt: 'Vee Lan\'s camera installer comes down the stairs with a box of cameras: "These only speak the open one, LLDP. Your Cisco switches will see them out of the box, yes?"', opts: ['Yes, LLDP is on by default on every Cisco switch', 'Usually not. LLDP is off by default on Cisco boxes until someone types lldp run', 'No, Cisco switches can only run CDP', 'Yes, but only if CDP is turned off first'], a: 1,
+          yes: 'Mac: "Not until somebody tells them to. That\'s tonight\'s job."', no: 'Mac: "Off by default. lldp run, and they\'ll see each other."',
+          why: 'Mac: CDP is Cisco\'s own and is on by default. LLDP is the IEEE standard, 802.1AB, and on Cisco boxes it is usually off until you type lldp run in global config. A box can run both at once, so there is no need to turn CDP off.' } }
+      ] }
   ] });
 })();

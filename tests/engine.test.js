@@ -255,5 +255,127 @@ module.exports.run = function({ out }){
     ok(A.cfg('SW1').vlans[10].name === 'office' && A.cfg('SW1').interfaces['fastethernet0/1'].desc === 'accounts pc', 'config: names and descriptions stay lower case for checks');
     d.SW1.exec('do show running-config'); ok(/ name OFFICE/.test(d.SW1.out.map(o => o.s).join('\n')) && / description Accounts PC/.test(d.SW1.out.map(o => o.s).join('\n')), 'running-config: names and descriptions as typed');
   }
+  // 19. keywords the abbreviation expander must leave alone; "no" removes NTP servers, syslog hosts and SNMP communities
+  {
+    ok(Sim.normalize('cdp run') === 'cdp run' && Sim.normalize('no cdp run') === 'no cdp run' && Sim.normalize('lldp run') === 'lldp run', 'shell: cdp run and lldp run stay themselves (' + Sim.normalize('lldp run') + ')');
+    ok(Sim.normalize('sh ip int br') === 'show ip interface brief' && Sim.normalize('sh ip int g0/1') === 'show ip interface gigabitethernet0/1' && Sim.normalize('do sh ip int br') === 'do show ip interface brief', 'shell: sh ip int is show ip interface (' + Sim.normalize('sh ip int br') + ')');
+    ok(Sim.normalize('logging trap 6') === 'logging trap 6' && Sim.normalize('snmp-server community watson ro') === 'snmp-server community watson ro', 'shell: logging trap and snmp ro keep their words');
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.0000.0001' }, SW2: { kind: 'switch', mac: '0001.0000.0002' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'gigabitethernet0/2', b: 'SW2', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'no shut', 'exit', 'no cdp run', 'ntp server 10.0.0.9', 'ntp server 10.0.0.8', 'no ntp server 10.0.0.9', 'ntp master 4', 'logging host 10.0.9.50', 'logging 10.0.9.51', 'no logging 10.0.9.50', 'snmp-server community public rw', 'snmp-server community watson ro', 'no snmp-server community public'],
+      SW1: ['en', 'conf t', 'lldp run'], SW2: ['en', 'conf t', 'lldp run'] });
+    const A = Net.api(Net.build(net, d)); const c = A.cfg('R1');
+    ok(c.cdp === false && !A.neighbors('SW1').find(n => n.dev === 'R1').cdp && A.neighbors('SW1').find(n => n.dev === 'SW2').cdp, 'cdp: no cdp run turns CDP off on R1 only');
+    ok(A.neighbors('SW1').find(n => n.dev === 'SW2').lldp && /SW2/.test(Show.render(d.SW1, 'show lldp neighbors', A.state)), 'lldp: lldp run on both switches makes them LLDP neighbours');
+    ok(c.ntp.join() === '10.0.0.8' && c.ntpMaster === 4, 'ntp: no ntp server removes one server; ntp master stratum parsed');
+    ok(c.logging.join() === '10.0.9.51', 'syslog: no logging removes a host');
+    ok(c.snmp.length === 1 && c.snmp[0].community === 'watson' && c.snmp[0].mode === 'ro', 'snmp: no snmp-server community removes it; ro stays read-only');
+    const r1 = new Sim.Device('R1', { kind: 'ios' }); ['en', 'conf t', 'access-list 1 remark x', 'access-list 1 deny 10.0.0.0 0.0.0.255', 'access-list 1 permit any', 'access-list 2 permit any', 'no access-list 1', 'do show running-config'].forEach(l => r1.exec(l));
+    const run = r1.out[r1.out.length - 1].s; ok(!/access-list 1 /.test(run) && /access-list 2 permit any/.test(run), 'shell: no access-list 1 removes every line of list 1 from the running-config');
+  }
+  // 20. CDP and LLDP per port, and their timers
+  {
+    const net = { devices: { R1: { kind: 'router' }, EX: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.0000.0011' }, SW2: { kind: 'switch', mac: '0001.0000.0012' } },
+      links: [ { a: 'EX', ap: 'gigabitethernet0/0', b: 'R1', bp: 'gigabitethernet0/1' }, { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'gigabitethernet0/2', b: 'SW2', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ EX: ['en', 'conf t', 'int g0/0', 'no shut'], R1: ['en', 'conf t', 'int g0/0', 'no shut', 'int g0/1', 'no shut', 'no cdp enable', 'exit', 'cdp timer 30', 'cdp holdtime 120'],
+      SW1: ['en', 'conf t', 'lldp run', 'lldp timer 10', 'int g0/2', 'no lldp receive'], SW2: ['en', 'conf t', 'lldp run'] });
+    const A = Net.api(Net.build(net, d)); const nb = (a, b) => A.neighbors(a).find(n => n.dev === b);
+    ok(!nb('EX', 'R1').cdp && !nb('R1', 'EX').cdp && nb('SW1', 'R1').cdp && nb('R1', 'SW1').cdp, 'cdp: no cdp enable on one port hides only that link');
+    ok(nb('SW2', 'SW1').lldp && !nb('SW1', 'SW2').lldp, 'lldp: no lldp receive on SW1 g0/2 stops SW1 learning SW2, not the other way round');
+    ok(/every 30 seconds/.test(Show.render(d.R1, 'show cdp', A.state)) && /holdtime value of 120/.test(Show.render(d.R1, 'show cdp', A.state)) && /every 10 seconds/.test(Show.render(d.SW1, 'show lldp', A.state)) && /not enabled/.test(Show.render(d.R1, 'show lldp', A.state)), 'show cdp and show lldp print the timers');
+  }
+  // 21. NTP: a server must answer and be synchronised itself; stratum counts down from the reference clock; authentication; show clock
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, CLK: { kind: 'server', ip: '10.9.9.9', mask: '255.255.255.0', gw: '10.9.9.1', ntpStratum: 1 } },
+      links: [ { a: 'CLK', b: 'R1', bp: 'gigabitethernet0/2' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/2', 'ip add 10.9.9.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.12.1 255.255.255.252', 'no shut', 'int lo0', 'ip add 10.255.0.1 255.255.255.255'],
+      R2: ['en', 'conf t', 'int g0/1', 'ip add 10.0.12.2 255.255.255.252', 'no shut', 'exit', 'ip route 0.0.0.0 0.0.0.0 10.0.12.1', 'ntp server 10.255.0.1'] });
+    let A = Net.api(Net.build(net, d)); ok(!A.ntp('R2').synced && /not synchronised/.test(A.ntp('R2').reason), 'ntp: a server that is not synchronised itself gives no time (' + A.ntp('R2').reason + ')');
+    ok(/^\*00:14:52\.211 UTC Mon Mar 1 1993$/.test(Show.render(d.R2, 'show clock', A.state)), 'show clock: unsynchronised clock is the 1993 default, marked * (' + Show.render(d.R2, 'show clock', A.state) + ')');
+    d.R1.exec('ntp server 10.9.9.9'); A = Net.api(Net.build(net, d)); ok(A.ntp('R1').synced && A.ntp('R1').stratum === 2 && A.ntp('R2').synced && A.ntp('R2').stratum === 3, 'ntp: stratum 1 clock → R1 at 2 → R2 at 3');
+    ok(/synchronized, stratum 3, reference is 10\.255\.0\.1/.test(Show.render(d.R2, 'show ntp status', A.state)) && /^\*~10\.255\.0\.1/m.test(Show.render(d.R2, 'show ntp associations', A.state)), 'show ntp status and associations follow the sync');
+    d.R2.exec('clock timezone PST -8'); A = Net.api(Net.build(net, d)); ok(Show.render(d.R2, 'show clock', A.state) === '15:47:12.345 PST Mon Sep 28 2026', 'show clock: synchronised, no star, in the configured time zone (' + Show.render(d.R2, 'show clock', A.state) + ')');
+    d.R2.exec('clock summer-time PDT recurring'); A = Net.api(Net.build(net, d)); ok(Show.render(d.R2, 'show clock', A.state) === '16:47:12.345 PDT Mon Sep 28 2026', 'show clock: summer time recurring moves September forward an hour (' + Show.render(d.R2, 'show clock', A.state) + ')');
+    ok(/1993/.test(Show.render(d.R2, 'show calendar', A.state)), 'show calendar: the hardware clock is not updated without ntp update-calendar'); d.R2.exec('ntp update-calendar'); A = Net.api(Net.build(net, d)); ok(/2026/.test(Show.render(d.R2, 'show calendar', A.state)), 'show calendar: ntp update-calendar writes NTP time to the hardware clock');
+    d.R2.exec('ntp authenticate'); A = Net.api(Net.build(net, d)); ok(!A.ntp('R2').synced, 'ntp: authenticate with no key for the server refuses it');
+    ['ntp authentication-key 1 md5 tide', 'ntp trusted-key 1', 'ntp server 10.255.0.1 key 1'].forEach(l => d.R2.exec(l)); d.R1.exec('ntp authentication-key 1 md5 wrong'); A = Net.api(Net.build(net, d)); ok(!A.ntp('R2').synced && /authentication failed/.test(A.ntp('R2').reason), 'ntp: mismatched keys fail');
+    d.R1.exec('ntp authentication-key 1 md5 tide'); A = Net.api(Net.build(net, d)); ok(A.ntp('R2').synced, 'ntp: matching trusted key → synchronised');
+    const m = devs({ R3: ['en', 'conf t', 'ntp master'] }); const B = Net.api(Net.build({ devices: { R3: { kind: 'router' } }, links: [] }, m)); ok(B.ntp('R3').synced && B.ntp('R3').stratum === 8, 'ntp: ntp master alone is stratum 8');
+    d.R2.exec('end'); d.R2.exec('clock set 10:00:00 28 sep 2026'); ok(d.R2.lines.some(r => r.mode === 'priv' && r.line === 'clock set 10:00:00 28 sep 2026') && !/Invalid/.test(d.R2.out[d.R2.out.length - 1].s), 'shell: clock set is accepted in privileged EXEC');
+  }
+  // 22. DNS: a router with ip dns server answers from its host table and forwards the rest to its name server; PCs nslookup and ping by name
+  {
+    const net = { devices: { R1: { kind: 'router' }, ISP: { kind: 'cloud', ip: '203.0.113.1', mask: '255.255.255.252', internet: true, dnsRecords: { 'exchange.watson.net': '198.51.100.20' } },
+        PC1: { kind: 'host', ip: '10.0.1.10', mask: '255.255.255.0', gw: '10.0.1.1', dns: '10.0.1.1' }, PC2: { kind: 'host', ip: '10.0.1.11', mask: '255.255.255.0', gw: '10.0.1.1' },
+        SRV: { kind: 'server', ip: '10.0.2.10', mask: '255.255.255.0', gw: '10.0.2.1' } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'PC2', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'SRV', b: 'R1', bp: 'gigabitethernet0/2' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'ISP' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.1.1 255.255.255.0', 'no shut', 'int g0/2', 'ip add 10.0.2.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 203.0.113.2 255.255.255.252', 'no shut', 'exit', 'ip route 0.0.0.0 0.0.0.0 203.0.113.1', 'ip host records 10.0.2.66'] });
+    let A = Net.api(Net.build(net, d)); ok(!A.resolve('PC1', 'records').ok && /not a DNS server/.test(A.resolve('PC1', 'records').reason), 'dns: a router without ip dns server does not answer (' + A.resolve('PC1', 'records').reason + ')');
+    ok(!A.resolve('PC2', 'records').ok && /no DNS server/.test(A.resolve('PC2', 'records').reason), 'dns: a host with no DNS server cannot resolve');
+    ok(A.resolve('R1', 'records').ip === '10.0.2.66', 'dns: the router resolves its own host table');
+    d.R1.exec('ip dns server'); d.R1.exec('no ip host records'); d.R1.exec('ip host records 10.0.2.10'); A = Net.api(Net.build(net, d)); ok(A.resolve('PC1', 'records').ok && A.resolve('PC1', 'records').ip === '10.0.2.10', 'dns: ip dns server answers from the host table; no ip host replaces the entry');
+    ok(A.resolve('PC1', 'exchange.watson.net').nx, 'dns: a name not in the table and no name server is a non-existent domain');
+    d.R1.exec('ip name-server 8.8.8.8'); A = Net.api(Net.build(net, d)); ok(A.resolve('PC1', 'exchange.watson.net').ip === '198.51.100.20', 'dns: the router forwards to its name server on the internet');
+    d.R1.exec('no ip domain lookup'); A = Net.api(Net.build(net, d)); ok(!A.resolve('PC1', 'exchange.watson.net').ok && A.resolve('PC1', 'records').ok, 'dns: no ip domain lookup stops forwarding, the host table still answers');
+    ok(/records\s+None\s+\(perm, OK\)\s+0\s+IP\s+10\.0\.2\.10/.test(Show.render(d.R1, 'show hosts', A.state)) && /Name servers are 8\.8\.8\.8/.test(Show.render(d.R1, 'show hosts', A.state)), 'show hosts lists the table and the name servers');
+    const pc = new Sim.Device('PC1', { kind: 'host', netState: () => A.state }); pc.exec('nslookup records'); ok(/Name:\s+records\nAddress:\s+10\.0\.2\.10/.test(pc.out[pc.out.length - 1].s), 'pc: nslookup prints the answer');
+    pc.exec('ping records'); ok(/Pinging records \[10\.0\.2\.10\]/.test(pc.out[pc.out.length - 1].s) && /Received = 4/.test(pc.out[pc.out.length - 1].s), 'pc: ping by name resolves then pings'); pc.exec('ipconfig /displaydns'); ok(/A \(Host\) Record . . . : 10\.0\.2\.10/.test(pc.out[pc.out.length - 1].s), 'pc: ipconfig /displaydns shows the cache');
+    pc.exec('ipconfig /flushdns'); pc.exec('ipconfig /displaydns'); ok(/empty/.test(pc.out[pc.out.length - 1].s), 'pc: ipconfig /flushdns empties it');
+    const r1 = d.R1; r1.netState = null; r1._netState = () => A.state; r1.exec('end'); r1.exec('ping records'); ok(r1.out.some(o => /Success rate is 100/.test(o.s)) && r1.out.filter(o => /ping records/.test(o.s)).length === 1, 'router: ping by name uses the host table, echoed once');
+  }
+  // 23. DHCP relay to a router's own pool, with that router's exclusions; the lease carries the DNS server
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, PC1: { kind: 'host', dhcp: true }, PC3: { kind: 'host', dhcp: true } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/0', b: 'PC3' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.1.1.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.12.1 255.255.255.252', 'no shut', 'exit', 'ip route 10.3.3.0 255.255.255.0 10.0.12.2',
+        'ip dhcp excluded-address 10.3.3.1 10.3.3.20', 'ip dhcp pool FAR', 'network 10.3.3.0 255.255.255.0', 'default-router 10.3.3.1', 'dns-server 10.1.1.1'],
+      R2: ['en', 'conf t', 'int g0/0', 'ip add 10.3.3.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.12.2 255.255.255.252', 'no shut', 'exit', 'ip route 0.0.0.0 0.0.0.0 10.0.12.1'] });
+    let A = Net.api(Net.build(net, d)); ok(!A.lease('PC3').ok, 'dhcp relay: no helper, no lease across the router (' + A.lease('PC3').reason + ')');
+    d.R2.exec('int g0/0'); d.R2.exec('ip helper-address 10.0.12.1'); A = Net.api(Net.build(net, d)); const l = A.lease('PC3');
+    ok(l.ok && l.server === 'R1' && l.ip === '10.3.3.21' && l.gw === '10.3.3.1' && [].concat(l.dns).includes('10.1.1.1'), 'dhcp relay: helper to R1 gets a lease from R1\'s pool after its exclusions (' + JSON.stringify(l) + ')');
+    ok(A.ping('PC3', '10.1.1.1').ok && /10\.3\.3\.21/.test(Show.render(d.R1, 'show ip dhcp binding', A.state)), 'dhcp relay: the relayed host routes home and shows in the server\'s bindings');
+    const net2 = { devices: Object.assign({}, net.devices, { PC4: { kind: 'host', dhcp: true } }), links: net.links.concat([ { a: 'PC4', b: 'R2', bp: 'gigabitethernet0/0' } ]) }; const B = Net.api(Net.build(net2, d));
+    ok(B.lease('PC3').ip === '10.3.3.21' && B.lease('PC4').ip === '10.3.3.22', 'dhcp: two clients get consecutive addresses (' + B.lease('PC3').ip + ', ' + B.lease('PC4').ip + ')');
+  }
+  // 24. SNMP: polls need the community (rw for a Set), its ACL and UDP 161; traps need a host, enable traps and UDP 162
+  {
+    const net = { devices: { R1: { kind: 'router' }, NMS: { kind: 'server', ip: '10.0.9.50', mask: '255.255.255.0', gw: '10.0.9.1' }, PC1: { kind: 'host', ip: '10.0.1.10', mask: '255.255.255.0', gw: '10.0.1.1' } },
+      links: [ { a: 'NMS', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.9.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.1.1 255.255.255.0', 'no shut', 'exit', 'snmp-server community cellar rw'] });
+    let A = Net.api(Net.build(net, d)); ok(A.snmp('PC1', '10.0.1.1', 'cellar', true).ok, 'snmp: an rw community lets anyone who knows it Set');
+    ['no snmp-server community cellar', 'access-list 40 permit host 10.0.9.50', 'snmp-server community watch ro 40', 'snmp-server contact denise', 'snmp-server location exchange hall', 'snmp-server host 10.0.9.50 version 2c watch'].forEach(l => d.R1.exec(l)); A = Net.api(Net.build(net, d));
+    ok(!A.snmp('PC1', '10.0.1.1', 'cellar', true).ok && A.snmp('NMS', '10.0.9.1', 'watch').ok && !A.snmp('NMS', '10.0.9.1', 'watch', true).ok, 'snmp: ro community reads but cannot Set; the old one is gone');
+    ok(!A.snmp('PC1', '10.0.1.1', 'watch').ok && /ACL 40/.test(A.snmp('PC1', '10.0.1.1', 'watch').reason), 'snmp: the community ACL refuses anyone but the NMS');
+    d.R1.exec('snmp-server community watch ro'); A = Net.api(Net.build(net, d)); ok(A.cfg('R1').snmp.length === 1 && A.snmp('PC1', '10.0.1.1', 'watch').ok, 'snmp: typing a community again replaces it (the ACL is gone)'); d.R1.exec('snmp-server community watch ro 40');
+    ok(A.snmpTraps('R1').length === 1 && !A.snmpTraps('R1')[0].ok, 'snmp: no traps until snmp-server enable traps'); d.R1.exec('snmp-server enable traps'); A = Net.api(Net.build(net, d)); ok(A.snmpTraps('R1')[0].ok, 'snmp: traps reach the host once enabled');
+    ok(/Contact: denise/.test(Show.render(d.R1, 'show snmp', A.state)) && /Logging to 10\.0\.9\.50\.162/.test(Show.render(d.R1, 'show snmp', A.state)) && /security model: v2c/.test(Show.render(d.R1, 'show snmp host', A.state)), 'show snmp and show snmp host');
+  }
+  // 25. syslog: levels, hosts over UDP 514, the buffer stamped by service timestamps and sequence numbers
+  {
+    const net = { devices: { R1: { kind: 'router', logBuffer: [ { sev: 3, line: '3d04h: %LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to down' }, { sev: 6, line: '3d04h: %SYS-6-LOGGINGHOST_STARTSTOP: Logging to host 10.0.9.60 stopped' } ] },
+        LOG: { kind: 'server', ip: '10.0.9.60', mask: '255.255.255.0', gw: '10.0.9.1' } }, links: [ { a: 'LOG', b: 'R1', bp: 'gigabitethernet0/0' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.9.1 255.255.255.0', 'no shut', 'exit', 'logging host 10.0.9.60', 'logging trap warnings', 'logging console 3', 'logging buffered 16384 informational', 'line con 0', 'logging synchronous'] });
+    let A = Net.api(Net.build(net, d)); const c = A.cfg('R1');
+    ok(c.logLevels.trap === 4 && c.logLevels.console === 3 && c.logLevels.buffered === 6 && c.logBufferSize === 16384 && c.con.loggingSync, 'syslog: levels by name or number, buffer size, logging synchronous parsed');
+    ok(A.syslog('R1').length === 1 && A.syslog('R1')[0].ok && A.syslog('R1')[0].level === 4, 'syslog: the host is reached over UDP 514 at the trap level');
+    let t = Show.render(d.R1, 'show logging', A.state); ok(/Trap logging: level warnings/.test(t) && /Logging to 10\.0\.9\.60/.test(t) && /Log Buffer \(16384 bytes\)/.test(t) && /LINK-3-UPDOWN/.test(t), 'show logging: levels, host and the buffer');
+    d.R1.exec('exit'); d.R1.exec('service timestamps log datetime msec'); d.R1.exec('service sequence-numbers'); A = Net.api(Net.build(net, d)); t = Show.render(d.R1, 'show logging', A.state);
+    ok(/000003: \*Mar  1 00:14:52\.211: %SYS-5-CONFIG_I/.test(t), 'show logging: a new line carries a sequence number and a datetime stamp (* while the clock is not synchronised) (' + t.split('\n').pop() + ')');
+    d.R1.exec('logging buffered 4'); A = Net.api(Net.build(net, d)); t = Show.render(d.R1, 'show logging', A.state); ok(/LINK-3/.test(t) && !/SYS-6/.test(t) && !/SYS-5/.test(t), 'show logging: the buffer keeps only messages at its level and below');
+  }
+  // 26. remote logins: Telnet until the VTY lines take SSH only; SSH needs a domain, a key, login local, a user and the access-class; a switch replies through ip default-gateway
+  {
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0042.0000.0001' }, ADM: { kind: 'host', ip: '10.0.9.10', mask: '255.255.255.0', gw: '10.0.9.1' }, PC1: { kind: 'host', ip: '10.0.1.20', mask: '255.255.255.0', gw: '10.0.1.1' } },
+      links: [ { a: 'ADM', b: 'R1', bp: 'gigabitethernet0/1' }, { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.1.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.9.1 255.255.255.0', 'no shut', 'line vty 0 15', 'password open', 'login'],
+      SW1: ['en', 'conf t', 'int vlan1', 'ip add 10.0.1.2 255.255.255.0', 'no shut'] });
+    let A = Net.api(Net.build(net, d)); ok(A.telnet('ADM', '10.0.1.1').ok && !A.ssh('ADM', '10.0.1.1', 'shell').ok, 'login: Telnet with a line password works, SSH does not');
+    ok(!A.ping('ADM', '10.0.1.2').ok && A.ping('PC1', '10.0.1.2').ok, 'switch: its SVI answers its own subnet only, until it has a default gateway'); d.SW1.exec('ip default-gateway 10.0.1.1'); A = Net.api(Net.build(net, d)); ok(A.ping('ADM', '10.0.1.2').ok, 'switch: ip default-gateway lets it reply across the router');
+    ['exit', 'ip domain name watson.net', 'crypto key generate rsa modulus 1024', 'ip ssh version 2', 'username shell secret brass', 'line vty 0 15', 'login local', 'transport input ssh'].forEach(l => d.R1.exec(l)); A = Net.api(Net.build(net, d));
+    ok(A.ssh('ADM', '10.0.1.1', 'shell').ok && !A.telnet('ADM', '10.0.1.1').ok && !A.ssh('ADM', '10.0.1.1', 'nobody').ok, 'login: SSH as a local user works, Telnet is refused, an unknown user is refused');
+    ['access-list 5 permit 10.0.9.0 0.0.0.255', 'line vty 0 15', 'access-class 5 in'].forEach(l => d.R1.exec(l)); A = Net.api(Net.build(net, d)); ok(A.ssh('ADM', '10.0.1.1', 'shell').ok && !A.ssh('PC1', '10.0.1.1', 'shell').ok && /access-class 5/.test(A.ssh('PC1', '10.0.1.1', 'shell').reason), 'login: access-class limits who may connect');
+    ok(d.R1.out.some(o => /The name for the keys will be: R1\.watson\.net/.test(o.s)), 'shell: crypto key generate rsa names the keys after hostname.domain (ip domain name)');
+    const pc = new Sim.Device('ADM', { kind: 'host', netState: () => A.state }); pc.exec('ssh -l shell 10.0.1.1'); ok(/Open/.test(pc.out[pc.out.length - 1].s) && /SSH 2 session to R1/.test(pc.out[pc.out.length - 1].s), 'pc: ssh -l opens a session'); pc.exec('telnet 10.0.1.1'); ok(/refused/.test(pc.out[pc.out.length - 1].s), 'pc: telnet is refused');
+  }
   return { pass, fails };
 };
