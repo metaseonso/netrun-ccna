@@ -2,7 +2,7 @@
    Osi Sevenfold's courier guild and Enable's console. Written to docs/STORY_BIBLE.md (Voice) and docs/CAMPAIGN_MAP.md. */
 (function(){
   const { PS } = SRC;
-  STAGES.push({ id: 'wires', arc: 'grid', title: 'STAGE 1 · THE WIRES', sub: 'devices, cables, the OSI model, the console', npc: 'osi', status: 'live', levels: [
+  STAGES.push({ id: 'wires', arc: 'grid', title: 'STAGE 1 · THE WIRES', sub: 'devices, cables, the OSI model, the command line', npc: 'osi', status: 'live', levels: [
     // ------------------------------------------------------------ night 1 · network devices
     { id: 'n01-back-room', title: 'The back room', sub: 'network devices', npc: 'osi', day: [1], src: [PS('Network_Devices.md')], unlocks: ['net-devices'],
       beats: [
