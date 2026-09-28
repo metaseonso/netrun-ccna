@@ -116,7 +116,7 @@
   // settings that replace themselves inside a block (the last one typed wins); "no X" removes X
   const SINGLE = [/^hostname /, /^enable secret /, /^enable password /, /^ip domain[- ]name /, /^banner motd /, /^spanning-tree mode /, /^ip default-gateway /, /^service password-encryption$/,
     /^ip address (?!.* secondary$)/, /^description /, /^speed /, /^duplex /, /^switchport mode /, /^switchport access vlan /, /^switchport trunk native vlan /, /^switchport trunk encapsulation /, /^switchport trunk allowed vlan (?!add )/,
-    /^encapsulation dot1q /, /^router-id /, /^password /, /^login( local)?$/, /^transport input /, /^exec-timeout /, /^ip ospf cost /, /^name /, /^network (?=\S+ \S+$)/, /^default-router /, /^dns-server /, /^standby \d+ priority /];
+    /^encapsulation dot1q /, /^router-id /, /^password /, /^login( local)?$/, /^transport input /, /^exec-timeout /, /^ip ospf cost /, /^name /, /^network (?=\S+ \S+$)/, /^default-router /, /^dns-server /, /^standby \d+ priority /, /^ip nat inside source list \S+ /];
   const keyOf = line => { const r = SINGLE.find(x => x.test(line)); return r ? r.source : null; };
   function configText(dev){
     const S = dev._netState ? dev._netState() : null; const blocks = new Map([['', []]]); let enc = false; const secrets = [];
@@ -254,6 +254,7 @@
           if (q.startsWith('ping ')) dev.out.push({ t: r.ok ? 'out' : 'err', s: 'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos to ' + ip + ', timeout is 2 seconds:\n' + (r.ok ? '!!!!!\nSuccess rate is 100 percent (5/5), round-trip min/avg/max = 1/1/2 ms' : '.....\nSuccess rate is 0 percent (0/5)\n  [why: ' + r.reason + ']') });
           else dev.out.push({ t:'out', s: 'Type escape sequence to abort.\nTracing the route to ' + ip + '\n' + Net.traceLines(r, 'ios').join('\n') + (r.ok ? '' : '\n  [why: ' + r.reason + ']') }); return; }
         dev.out.push({ t:'out', s:'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos:\n!!!!!\nSuccess rate is 100 percent (5/5)' }); return; }
+      if (/^clear ip nat translations? \*$/.test(q)) { if (dev.mode === 'user') { dev.out.push({ t:'err', s:'% Invalid input detected. (clear needs privileged EXEC mode: enable first.)' }); return; } dev.lines.push(rec); dev._natSeen = []; return; } // dynamic entries go; static mappings stay in the config
       if (q.startsWith('copy ')) { if (dev.mode === 'user') { dev.out.push({ t:'err', s:'% Invalid input detected. (copy needs privileged EXEC mode: enable first.)' }); return; } startCopy(dev, q, rec); return; }
       if (q.startsWith('reload')) { dev.out.push({ t:'sys', s:'(nice try. no reloads in the sim.)' }); return; }
       if (!doCmd && dev.mode !== 'config' && !s.startsWith('show')) { if (dev.mode === 'user' || dev.mode === 'priv') { dev.out.push({ t:'err', s:'% Invalid input detected at \'^\' marker. (Config commands need "configure terminal" first.)' }); return; } }

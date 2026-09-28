@@ -60,7 +60,9 @@
         else if ((m = s.match(/^access-list (\d+) (permit|deny) (.+)$/))) { const n = m[1]; const a = cfg.acls[n] || (cfg.acls[n] = { id: n, type: (+n >= 100 && +n <= 199) || (+n >= 2000 && +n <= 2699) ? 'extended' : 'standard', entries: [] }); const e = parseAclEntry(m[3].split(' ')); e.action = m[2]; e.seq = (a.entries.length + 1) * 10; a.entries.push(e); }
         else if ((m = s.match(/^access-list (\d+) remark (.*)$/))) { const n = m[1]; cfg.acls[n] || (cfg.acls[n] = { id: n, type: +n >= 100 ? 'extended' : 'standard', entries: [] }); }
         else if ((m = s.match(/^ip nat inside source static (\S+) (\S+)$/))) cfg.natStatic.push({ inside: m[1], outside: m[2] });
-        else if ((m = s.match(/^ip nat inside source list (\S+) (?:interface (\S+)|pool (\S+))( overload)?$/))) cfg.natDynamic.push({ acl: m[1], iface: m[2] || null, pool: m[3] || null, overload: !!m[4] });
+        else if ((m = s.match(/^ip nat inside source list (\S+) (?:interface (\S+)|pool (\S+))( overload)?$/))) { cfg.natDynamic = cfg.natDynamic.filter(x => x.acl !== m[1]); cfg.natDynamic.push({ acl: m[1], iface: m[2] || null, pool: m[3] || null, overload: !!m[4] }); } // a new statement for the same list replaces the old one
+        else if ((m = s.match(/^no ip nat inside source list (\S+)/))) cfg.natDynamic = cfg.natDynamic.filter(x => x.acl !== m[1]);
+        else if ((m = s.match(/^no ip nat inside source static (\S+) (\S+)$/))) cfg.natStatic = cfg.natStatic.filter(x => !(x.inside === m[1] && x.outside === m[2]));
         else if ((m = s.match(/^ip nat pool (\S+) (\S+) (\S+) (?:netmask|prefix-length) (\S+)$/))) cfg.natPools[m[1]] = { start: m[2], end: m[3], mask: m[4] };
         else if ((m = s.match(/^ip dhcp excluded-address (\S+)(?: (\S+))?$/))) cfg.dhcp.excluded.push([m[1], m[2] || m[1]]);
         else if (s === 'ip dhcp snooping') cfg.dhcp.snooping = true;

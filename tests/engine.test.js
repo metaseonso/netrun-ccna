@@ -137,5 +137,27 @@ module.exports.run = function({ out }){
     ok((R1.sent || []).some(x => x.file === 'r1-confg' && x.what === 'running-config' && x.proto === 'tftp') && R1.lines.some(r => r.line === 'copy running-config tftp://10.0.43.100/r1-confg'), 'copy: the running-config goes to the TFTP server and is recorded');
     R1.exec('copy tftp: flash:'); R1.exec('10.0.43.99'); R1.exec(img); R1.exec(''); ok(/Timed out/.test(said()), 'copy: an address nobody answers times out');
   }
+  // 11. NAT as the shell shows it: pings from PCs fill the table, a dynamic pool holds one address per host and runs out,
+  //     clear ip nat translation * frees it, a new statement for the same list replaces the old one, PAT keeps ports apart
+  {
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.4500.0001' }, ISP: { kind: 'cloud', ip: '203.0.113.1', mask: '255.255.255.248', internet: true },
+      PC1: { kind: 'host', ip: '192.168.45.11', mask: '255.255.255.0', gw: '192.168.45.1' }, PC2: { kind: 'host', ip: '192.168.45.12', mask: '255.255.255.0', gw: '192.168.45.1' }, PC3: { kind: 'host', ip: '192.168.45.13', mask: '255.255.255.0', gw: '192.168.45.1' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'SW1', ap: 'fastethernet0/2', b: 'PC2' }, { a: 'SW1', ap: 'fastethernet0/3', b: 'PC3' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'ISP' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 192.168.45.1 255.255.255.0', 'no shut', 'ip nat inside', 'int g0/1', 'ip add 203.0.113.2 255.255.255.248', 'no shut', 'ip nat outside', 'exit', 'ip route 0.0.0.0 0.0.0.0 203.0.113.1',
+      'access-list 1 permit 192.168.45.0 0.0.0.255', 'ip nat pool bowls 203.0.113.3 203.0.113.4 netmask 255.255.255.248', 'ip nat inside source list 1 pool bowls', 'ip nat inside source static 192.168.45.50 203.0.113.6', 'end'], SW1: [] });
+    const st = () => Net.build(net, d); for (const n of ['PC1', 'PC2', 'PC3']) { d[n] = new Sim.Device(n, { kind: 'host', netState: st }); d[n]._all = d; } d.R1._netState = st;
+    const say = (n, c) => { const k = d[n].out.length; d[n].exec(c, d); return d[n].out.slice(k).map(o => o.s).join('\n'); };
+    ok(/Reply from 8\.8\.8\.8/.test(say('PC1', 'ping 8.8.8.8')) && (d.R1._natSeen || []).length === 1, 'nat: a PC ping fills the router\'s translation table');
+    say('PC2', 'ping 8.8.8.8'); const g = d.R1._natSeen.map(t => t.global); ok(g[0] === '203.0.113.3' && g[1] === '203.0.113.4', 'nat: the dynamic pool hands each host its own address (' + g.join(', ') + ')');
+    say('PC1', 'ping 8.8.4.4'); ok(d.R1._natSeen.filter(t => t.inside === '192.168.45.11').every(t => t.global === '203.0.113.3'), 'nat: a host keeps its pool address for its next ping');
+    ok(/no global address/.test(say('PC3', 'ping 8.8.8.8')), 'nat: the third host finds the pool empty and the packet is dropped');
+    const tr = Show.render(d.R1, 'show ip nat translations', st()); ok(/---\s+203\.0\.113\.6\s+192\.168\.45\.50/.test(tr) && /icmp\s+203\.0\.113\.3:1\s+192\.168\.45\.11:1\s+8\.8\.8\.8:1\s+8\.8\.8\.8:1/.test(tr), 'show ip nat translations: static mapping and the outside address, local and global the same (' + tr + ')');
+    d.R1.exec('clear ip nat translation *'); ok(!d.R1._natSeen.length && /203\.0\.113\.6/.test(Show.render(d.R1, 'show ip nat translations', st())), 'nat: clear ip nat translation * empties the dynamic entries, static stays');
+    ok(/Reply from/.test(say('PC3', 'ping 8.8.8.8')), 'nat: after the clear the pool has room again');
+    d.R1.exec('conf t'); d.R1.exec('ip nat inside source list 1 pool bowls overload'); d.R1.exec('end'); ok(NetConfig.parse(d.R1).natDynamic.length === 1 && NetConfig.parse(d.R1).natDynamic[0].overload, 'nat: a new statement for list 1 replaces the old one');
+    ok(/Reply from/.test(say('PC1', 'ping 8.8.8.8')) && /Reply from/.test(say('PC2', 'ping 8.8.8.8')), 'nat: with overload every host gets out');
+    const pat = d.R1._natSeen.filter(t => t.kind === 'pat'); ok(pat.length >= 2 && new Set(pat.map(t => t.global + ':' + t.gport)).size === pat.length, 'nat: PAT gives each host its own port on the shared address');
+    const run = d.R1.exec('show running-config') || d.R1.out[d.R1.out.length - 1].s; ok((run.match(/ip nat inside source list 1/g) || []).length === 1, 'running-config shows one statement for list 1');
+  }
   return { pass, fails };
 };

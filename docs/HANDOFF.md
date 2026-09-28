@@ -143,6 +143,12 @@ Definition of done for a day:
   `dev.flash`; `copy running-config|startup-config|flash:<file> tftp:|ftp:` records uploads in `dev.sent`; both add a
   `copy <proto>://host/file ...` line to the transcript. `show flash`, `show file systems`; `boot system`, `ip ftp username`,
   `ip ftp password` parsed (`cfg.bootSystem`, `cfg.ftpUser`, `cfg.ftpPass`). Tested.
+- 2026-09-28 · NAT as the shell shows it: a ping from a PC now fills the translation table of every router it crossed (it
+  used to take a ping from the router itself); a dynamic pool gives each inside host its own address and keeps it until
+  `clear ip nat translation *` (new), so a small pool runs out and the next host's packet is dropped; PAT gives each host its
+  own port on the shared address; a new `ip nat inside source list N ...` replaces the old one for that list, and
+  `no ip nat inside source list|static` removes it. `show ip nat translations` lists static mappings from the config and the
+  outside address of every translation. Tested.
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
