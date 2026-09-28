@@ -52,7 +52,7 @@ window.GLOSSARY = {
   'broadcast': 'A frame to FF:FF:FF:FF:FF:FF. Everyone in the VLAN gets it.',
   'full duplex': 'A port sends and receives at the same time. Possible on switch ports, where each port is its own collision domain.',
   'speed/duplex mismatch': 'One side auto, one side hardwired. Classic slow-link cause. Check "show interfaces status".',
-  'vlan': 'Virtual LAN. One switch, many broadcast domains. Each VLAN is its own street.',
+  'vlan': 'Virtual LAN: a Layer 2 broadcast domain configured on a switch. Ports in different VLANs cannot exchange frames; traffic between VLANs must be routed. Usable VLANs 1–4094.',
   'access port': 'A port in one VLAN, for end hosts. Frames leave untagged.',
   'trunk port': 'A port carrying many VLANs between switches or to a router, each frame tagged with its VLAN.',
   '802.1q': 'The trunk tagging standard. A 4-byte tag inside the Ethernet frame holding the VLAN ID (12 bits: 1–4094).',
@@ -220,5 +220,6 @@ window.GLOSSARY = {
   'policing': 'QoS: traffic over the configured rate is dropped (or re-marked).',
   'shaping': 'QoS: traffic over the configured rate is buffered in a queue and sent later, smoothing it to the rate.',
   'subnet': 'A smaller network made by splitting a larger one: bits are borrowed from the host part and added to the network part. Each borrowed bit doubles the number of subnets and halves their size.',
-  'point-to-point': 'A link with exactly two devices on it, usually two routers. Needs only two addresses: a /30 (two usable) or a /31 (both usable, RFC 3021).'
+  'point-to-point': 'A link with exactly two devices on it, usually two routers. Needs only two addresses: a /30 (two usable) or a /31 (both usable, RFC 3021).',
+  'broadcast domain': 'The group of devices that receive a broadcast (destination FFFF.FFFF.FFFF) sent by any one of them. Switches forward broadcasts; routers stop them; each VLAN is its own broadcast domain.'
 };

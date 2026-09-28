@@ -133,7 +133,7 @@
       ], outro: 'The office manager watches the direct line light up and stops talking about the invoice. Old Root: "You changed the tree by changing what it measures. That is the only clean way." Dispatch: "Rep credited."' },
 
     // ------------------------------------------------------------------ B · Two Trees, Two Uplinks
-    { id: 'b-per-vlan-split', cls: 'B', rep: 100, creds: 500, rite: true, from: 'root', title: 'Two Trees, Two Uplinks', requires: ['vlan-intro', 'stp-config', 'stp-bpdu'], devices: ['SW1', 'SW2', 'SW3'],
+    { id: 'b-per-vlan-split', cls: 'B', rep: 100, creds: 500, rite: true, from: 'root', title: 'Two Trees, Two Uplinks', requires: ['n16-borders', 'stp-config', 'stp-bpdu'], devices: ['SW1', 'SW2', 'SW3'],
       brief: 'DISPATCH » Class B. Vee Lan and Old Root are on the same building in Charter Hill: two departments, two VLANs, two uplinks, and one uplink sits idle all day because one root rules everything. Split the trees. Both links should earn their keep.\n\nVEE LAN » "Streets 10 and 20. Make them exist before he starts."\nOLD ROOT » "One root per street. Each the other\'s backup."',
       topo: triangle({ SW1: '0001.9642.a3c0', SW2: '0c11.7a3b.9902', SW3: '00d0.f8e4.0a01' }, t => { t.defaultMode = 'pvst'; }), map: triMap(),
       day: [20, 21], team: { min: 1 },

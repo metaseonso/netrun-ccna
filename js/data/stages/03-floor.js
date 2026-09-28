@@ -126,20 +126,46 @@
           yes: 'Vee Lan: "A hundred, half. Now you know why the cameras stutter."', no: 'Vee Lan: "It hears 100 on the wire and can\'t negotiate the duplex, so it uses half."',
           why: 'Vee Lan: Hard-coding speed and duplex on one end disables autonegotiation there. The auto end can still sense the speed, 100 Mb/s, but not the duplex, so at 10 or 100 Mb/s it defaults to half duplex. One end at full and the other at half is a duplex mismatch.' } }
       ] },
-    { id: 'vlan-intro', title: 'Borders inside one building', sub: 'VLANs, trunks, DTP/VTP, EtherChannel', npc: 'veelan', day: [16,17,18,19,23], src: [PS('VLAN_Part1.md'), PS('VLAN_Part2.md'), SJ('04 - Day 16 - VLANs Part 1.md'), SJ('11 - Day 23 - EtherChannel.md')], unlocks: ['vlan-config', 'trunk-config'],
+    // ------------------------------------------------------------ night 16 · VLANs, part 1
+    { id: 'n16-borders', title: 'Tape on the floor', sub: 'broadcast domains and VLANs', npc: 'veelan', day: [16], src: [PS('VLAN_Part1.md')], unlocks: ['vlan-config'],
       beats: [
-        { k: 'SCENE', where: 'Second floor of the clinic annex · a taped line down the middle of the corridor',
+        { k: 'SCENE', where: 'The Kabuki market · the office above the stalls · morning',
           lines: [
-            { who: 'veelan', text: 'Sales on that side, engineering on this side. Same switch. A [[VLAN]] is a border drawn in software. Mac\'s flooding stops at the tape.' },
-            { who: 'you', text: 'How does a port know which side it is on?' },
-            { who: 'veelan', text: 'You tell it. A host port is an [[access port]]: one VLAN, frames leave untagged. Between switches, or up to a router, you run a [[trunk port]]. Every frame on a trunk carries an [[802.1Q]] tag with its VLAN number. Except one VLAN, the [[native VLAN]], which rides untagged. Keep it the same on both ends.' }
+            { who: 'narr', text: 'The market office is a mezzanine over the stalls, and the smell of frying dough comes up through the floor with the noise. Three desks share one switch with the stall cable that runs down to sixty traders, the security cameras and a free hotspot by the stairs. Vee Lan is on her knees laying a strip of yellow tape across the carpet between the desks and the stairwell.' },
+            { who: 'veelan', text: 'The office does the market\'s books on the same network as every stall and every stranger on the hotspot. One switch, one [[broadcast domain]]: every ARP request from a phone on the stairs lands on the accountant\'s PC, and anyone who can plug in can see the accounts server.' },
+            { who: 'veelan', text: 'A [[VLAN]] draws a border inside the switch. Ports in VLAN 10 only hear VLAN 10, ports in VLAN 20 only hear VLAN 20, and a broadcast stops at the edge of its own VLAN. It\'s a Layer 2 border: the switch keeps the VLANs apart and won\'t forward a frame from one to another.' },
+            { who: 'veelan', text: 'The office gets VLAN 10, the stalls VLAN 20 and the cameras VLAN 30. Each VLAN is its own subnet, and anything that needs to cross from one to another has to go through a router.' }
           ],
           choice: { opts: [
-            { say: 'How do the two sides talk?', reply: '"Through a router. [[Router on a stick]]: one trunk up to it, one subinterface per VLAN. Or an [[SVI]] on a Layer 3 switch. And ask Old Root about this too. With PVST+, every VLAN gets its own spanning tree."' },
-            { say: 'Why do you care about borders so much?', reply: '"Target, 2013. Attackers got in through a heating contractor\'s login and walked straight to the tills. Forty million cards. One flat network. The tape on this floor is not bureaucracy."' }
+            { tone: 'ask', say: 'What VLANs does a switch come with?', reply: 'Vee Lan: "Five. VLAN 1, the default, which every port starts in, and 1002 to 1005, leftovers from Token Ring and FDDI that you can\'t delete. Everything on this floor is in VLAN 1 right now, which is the problem."' },
+            { tone: 'press', say: 'Couldn\'t you just use three switches?', reply: 'Vee Lan: "I could, and buy two more switches, and run new cable, and do it again every time someone moves a desk. When the pharmacy downstairs wants its own border, I add a line to the config instead of buying another switch."' },
+            { tone: 'care', say: 'Why do you care so much about lines on the floor?', reply: 'She presses the end of the tape flat. "Because Old Root taught me that most of what goes wrong on a network is something where it shouldn\'t be. A border stops things wandering. I owe him that lesson, and I hate owing him."' }
           ] } },
-        { k: 'KIT', text: 'She writes on the tape with a marker.', kit: [ { cmd: 'vlan 10 → name SALES', what: 'create a VLAN' }, { cmd: 'interface f0/5 → switchport mode access → switchport access vlan 10', what: 'put a host port on it' }, { cmd: 'interface g0/1 → switchport trunk encapsulation dot1q → switchport mode trunk', what: 'trunk between switches' }, { cmd: 'switchport trunk allowed vlan 10,20 · switchport trunk native vlan 99', what: 'limit the trunk, move the native VLAN off 1' }, { cmd: 'show vlan brief · show interfaces trunk', what: 'check' } ] },
-        { k: 'SYNC', q: { prompt: 'Vee Lan: "Native VLAN frames on a trunk. Tagged or not?"', opts: ['Tagged with VLAN 1', 'Untagged', 'Encrypted', 'Only if DTP is on'], a: 1, yes: '"Untagged. Which is why I move it off VLAN 1 on every trunk I touch."', no: '"Untagged. That is the whole point of the native VLAN, and the whole reason attackers like a mismatched one."' , why: 'Vee Lan: On a trunk every frame gets a tag with its VLAN number, except frames from the native VLAN. Those travel with no tag at all. Both ends must agree on which VLAN is native, or untagged frames land in the wrong VLAN.' } }
-      ] }
+        { k: 'SCENE', where: 'The market office · the switch under the desk',
+          lines: [
+            { who: 'veelan', text: 'You create a VLAN in global configuration with vlan and its number, and give it a name so the next person knows what it\'s for. Then each port that connects to a host becomes an [[access port]] in one VLAN: switchport mode access, then switchport access vlan and the number.' },
+            { who: 'veelan', text: 'A port that carries more than one VLAN, between switches, is a [[trunk port]]. That\'s tomorrow night\'s problem. Tonight the router gets one cable per VLAN, one port in each, and routes between them.' },
+            { who: 'veelan', text: 'show vlan brief lists every VLAN with its name and the access ports in it. If a port\'s in the wrong VLAN, that\'s where you see it.' },
+            { who: 'narr', text: 'Mac leans in the doorway with a tea from the stall below.' },
+            { who: 'mac', text: 'The cameras too? Some of those are mine.' },
+            { who: 'veelan', text: 'Especially the cameras, Mac. Anyone on the hotspot can pull up the stairwell feed right now.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How does a PC in VLAN 10 reach the stalls, then?', reply: 'Vee Lan: "Through the router. The PC sends to its gateway, the router\'s address in VLAN 10, and the router sends it out its port in VLAN 20. Every crossing goes through a box I can put rules on."' },
+            { tone: 'press', say: 'What stops a stall plugging into an office port?', reply: 'Vee Lan: "Tonight, the tape and the fact that the office ports are behind a locked door. Later, port security, which Ace Elle will want to talk to you about. A VLAN keeps traffic apart; it doesn\'t stop someone plugging in."' },
+            { tone: 'joke', say: 'Does Mac get a VLAN of his own?', reply: 'Mac, from the doorway: "VLAN 99. For management." Vee Lan: "That\'s a real thing, and you\'re getting it next week, and it won\'t be yours."' }
+          ] } },
+        { k: 'LORE', title: 'THE HEATING CONTRACTOR', year: 2013, real: ['target'], vibe: 'Cray. A heating contractor\'s login, one flat network, forty million cards gone.',
+          text: 'Vee Lan, cutting the tape with her teeth: "In late 2013 somebody broke into a big American retailer, Target, using a login stolen from the company that serviced its heating and air conditioning. From there they reached the tills, and card details for about forty million customers went out the door. The heating contractor\'s login should never have been anywhere near a till. I tell that story to every shop that asks why I want borders."' },
+        { k: 'KIT', text: 'Vee Lan writes on the yellow tape with a marker.', kit: [
+          { cmd: 'VLAN = one broadcast domain · Layer 2 · no forwarding between VLANs without a router', what: 'a border inside a switch' },
+          { cmd: 'default VLANs 1, 1002–1005 · every port starts in VLAN 1', what: 'what a new switch has' },
+          { cmd: 'vlan 10 → name OFFICE', what: 'create and name a VLAN' },
+          { cmd: 'interface f0/1 → switchport mode access → switchport access vlan 10', what: 'an access port: one VLAN, for hosts' },
+          { cmd: 'show vlan brief', what: 'every VLAN, its name and its access ports' } ] },
+        { k: 'SYNC', q: { prompt: 'The accountant, watching you work: "If a phone on the stairs sends a broadcast, does my PC still get it?"', opts: ['No. The broadcast stays inside the stalls\' VLAN', 'Yes. Broadcasts go to every port on the switch', 'Only if the router forwards it', 'Only if it is an ARP request'], a: 0,
+          yes: 'Vee Lan: "No. It stops at the tape."', no: 'Vee Lan: "No. A VLAN is its own broadcast domain, so a broadcast only reaches ports in the same VLAN."',
+          why: 'Vee Lan: Each VLAN is a separate broadcast domain. The switch floods a broadcast only out of ports in the VLAN it arrived on, and routers do not forward broadcasts, so a broadcast from the stalls\' VLAN never reaches the office VLAN.' } }
+      ] },
   ] });
 })();

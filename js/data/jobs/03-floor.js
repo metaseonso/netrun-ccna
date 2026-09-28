@@ -162,6 +162,57 @@
         { dev: 'SW1', type: ['configure terminal', 'interface f0/10', 'speed auto', 'duplex auto'] }, 'commit',
         { dev: 'SW2', type: ['configure terminal', 'interface range f0/2 - 4', 'description ## camera ##'] }, 'commit',
         { form: { r: 'runts', g: 'giants', c: 'CRC' } }, 'commit', { choose: 0 }, 'commit' ],
-      outro: 'All sixteen squares on the monitor run smooth for the first time in a month. Mac buys Vee Lan a tea from the stall upstairs without being asked, and she drinks it without saying anything, which Mac says is how she says you were right.' }
+      outro: 'All sixteen squares on the monitor run smooth for the first time in a month. Mac buys Vee Lan a tea from the stall upstairs without being asked, and she drinks it without saying anything, which Mac says is how she says you were right.' },
+
+    // ------------------------------------------------------------------ night 16 · from Lab 16 (VLANs, part 1)
+    { id: 'd-n16-market-office', cls: 'D', rep: 10, from: 'veelan', title: 'Tape on the Floor', day: [16], requires: ['n16-borders'], devices: ['SW1', 'OFFICE1', 'STALL'],
+      brief: 'DISPATCH » The market office shares one flat network with sixty stalls, the cameras and a free hotspot. Vee Lan has the tape down. Put the borders in the switch.\n\nCLIENT (Vee Lan) » "Office in 10, stalls in 20, cameras in 30. The router already has a port in each. Make the switch agree."',
+      net: {
+        devices: { SW1: { kind: 'switch', mac: '0011.2216.0001' }, R1: { kind: 'router' },
+          OFFICE1: { kind: 'host', ip: '10.16.10.11', mask: '255.255.255.0', gw: '10.16.10.1' }, OFFICE2: { kind: 'host', ip: '10.16.10.12', mask: '255.255.255.0', gw: '10.16.10.1' },
+          STALL: { kind: 'host', ip: '10.16.20.21', mask: '255.255.255.0', gw: '10.16.20.1' }, CAM: { kind: 'host', ip: '10.16.30.31', mask: '255.255.255.0', gw: '10.16.30.1' } },
+        links: [ { a: 'SW1', ap: 'fastethernet0/1', b: 'OFFICE1' }, { a: 'SW1', ap: 'fastethernet0/2', b: 'OFFICE2' }, { a: 'SW1', ap: 'fastethernet0/5', b: 'STALL' }, { a: 'SW1', ap: 'fastethernet0/8', b: 'CAM' },
+          { a: 'SW1', ap: 'gigabitethernet0/1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'SW1', ap: 'gigabitethernet0/2', b: 'R1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/24', b: 'R1', bp: 'gigabitethernet0/2' } ],
+        preconfig: { SW1: ['hostname MARKET-SW'], R1: ['hostname MARKET-R', 'interface gigabitethernet0/0', 'ip address 10.16.10.1 255.255.255.0', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 10.16.20.1 255.255.255.0', 'no shutdown', 'interface gigabitethernet0/2', 'ip address 10.16.30.1 255.255.255.0', 'no shutdown'] }
+      },
+      map: { w: 560, h: 290, nodes: [ { id: 'R1', label: 'MARKET-R', type: 'router', x: 280, y: 50 }, { id: 'SW1', label: 'MARKET-SW', type: 'switch', x: 280, y: 145 },
+          { id: 'OFFICE1', label: 'office PC', type: 'pc', x: 70, y: 245 }, { id: 'OFFICE2', label: 'office PC', type: 'pc', x: 190, y: 245 }, { id: 'STALL', label: 'stall PC', type: 'pc', x: 370, y: 245 }, { id: 'CAM', label: 'camera', type: 'pc', x: 490, y: 245 } ],
+        links: [ { a: 'R1', b: 'SW1', ap: 'gigabitethernet0/0', bp: 'gigabitethernet0/1' }, { a: 'R1', b: 'SW1', ap: 'gigabitethernet0/1', bp: 'gigabitethernet0/2' }, { a: 'R1', b: 'SW1', ap: 'gigabitethernet0/2', bp: 'fastethernet0/24' },
+          { a: 'SW1', b: 'OFFICE1', ap: 'fastethernet0/1' }, { a: 'SW1', b: 'OFFICE2', ap: 'fastethernet0/2' }, { a: 'SW1', b: 'STALL', ap: 'fastethernet0/5' }, { a: 'SW1', b: 'CAM', ap: 'fastethernet0/8' } ] },
+      steps: [
+        { type: 'cmd', skill: 'vlan-config', text: 'Vee Lan: "Read the switch\'s VLANs before you change anything."',
+          need: [ { dev: 'SW1', line: /^(do )?show vlan brief$/ } ], hint: 'MARKET-SW> enable\nMARKET-SW# show vlan brief', ok: 'Vee Lan: "Every port in VLAN 1. One big room with no walls."',
+          why: 'Vee Lan: show vlan brief lists each VLAN, its name, its status and the access ports in it. On a switch nobody has configured, every port is in VLAN 1, so everything is in one broadcast domain.' },
+        { type: 'multi', skill: 'vlan-config', text: 'Vee Lan: "Which VLANs were there before anyone touched it?"',
+          opts: ['VLAN 1', 'VLAN 10', 'VLAN 1002', 'VLAN 1003', 'VLAN 1004', 'VLAN 1005', 'VLAN 4095'], answers: [0, 2, 3, 4, 5],
+          hint: 'The default one, and four leftovers from old kinds of network.', ok: 'Vee Lan: "One, and 1002 to 1005, which nobody has used since before I was born."',
+          why: 'Vee Lan: A Cisco switch starts with VLAN 1, the default VLAN every port is in, and VLANs 1002 to 1005, kept for FDDI and Token Ring. None of the five can be deleted. VLAN 4095 is reserved and never usable.' },
+        { type: 'cmd', skill: 'vlan-config', text: 'Vee Lan: "Make the three VLANs and name them: 10 OFFICE, 20 STALLS, 30 CAMERAS."',
+          check: (d, ctx) => { const v = ctx.cfg('SW1').vlans; return !!(v[10] && v[10].name === 'office' && v[20] && v[20].name === 'stalls' && v[30] && v[30].name === 'cameras'); },
+          hint: 'MARKET-SW# configure terminal\nMARKET-SW(config)# vlan 10\nMARKET-SW(config-vlan)# name OFFICE\nMARKET-SW(config-vlan)# vlan 20\nMARKET-SW(config-vlan)# name STALLS\nMARKET-SW(config-vlan)# vlan 30\nMARKET-SW(config-vlan)# name CAMERAS', ok: 'Vee Lan: "Three names on the list. No ports in them yet."',
+          why: 'Vee Lan: vlan 10 in global configuration creates VLAN 10 and enters VLAN configuration mode, where name OFFICE labels it. Creating a VLAN does not move any ports into it; that is done on each interface.' },
+        { type: 'cmd', skill: 'vlan-config', text: 'Vee Lan: "The two office PCs are on Fa0/1 and Fa0/2, and the router\'s office port comes in on Gi0/1. All three are access ports in VLAN 10."',
+          check: (d, ctx) => { const n = ctx.net(); const c = ctx.cfg('SW1').interfaces; return ['f0/1', 'f0/2', 'g0/1'].every(p => n.vlanOf('SW1', p) === 10) && ['fastethernet0/1', 'fastethernet0/2', 'gigabitethernet0/1'].every(p => c[p] && c[p].mode === 'access'); },
+          hint: 'MARKET-SW(config)# interface range f0/1 - 2, g0/1\nMARKET-SW(config-if-range)# switchport mode access\nMARKET-SW(config-if-range)# switchport access vlan 10', ok: 'Vee Lan: "The office is inside its border."',
+          why: 'Vee Lan: switchport mode access makes the port an access port that carries one VLAN, and switchport access vlan 10 puts it in VLAN 10. The router\'s link belongs in the VLAN it serves, so its port on the switch is an access port in VLAN 10 too.' },
+        { type: 'cmd', skill: 'vlan-config', text: 'Vee Lan: "Stalls next: the stall PC on Fa0/5 and the router\'s stall port on Gi0/2 into VLAN 20. Cameras: Fa0/8 and the router\'s camera port on Fa0/24 into VLAN 30."',
+          check: (d, ctx) => { const n = ctx.net(); return n.vlanOf('SW1', 'f0/5') === 20 && n.vlanOf('SW1', 'g0/2') === 20 && n.vlanOf('SW1', 'f0/8') === 30 && n.vlanOf('SW1', 'f0/24') === 30 && ['fastethernet0/5', 'gigabitethernet0/2', 'fastethernet0/8', 'fastethernet0/24'].every(p => (ctx.cfg('SW1').interfaces[p] || {}).mode === 'access'); },
+          hint: 'interface range f0/5, g0/2 → switchport mode access → switchport access vlan 20\ninterface range f0/8, f0/24 → switchport mode access → switchport access vlan 30', ok: 'Vee Lan: "Three rooms. Read the list again if you want to see them."',
+          why: 'Vee Lan: Each host port and each of the router\'s links goes into the VLAN of the subnet on the other end. Now show vlan brief lists Fa0/1, Fa0/2 and Gi0/1 in VLAN 10, Fa0/5 and Gi0/2 in VLAN 20, and Fa0/8 and Fa0/24 in VLAN 30.' },
+        { type: 'cmd', skill: 'vlan-config', text: 'Vee Lan: "Prove the borders hold and the door still works. Ping the stall PC, 10.16.20.21, from an office PC."',
+          need: [ { dev: 'OFFICE1', line: /^ping 10\.16\.20\.21$/ } ], check: (d, ctx) => { const n = ctx.net(); return n.ping('OFFICE1', '10.16.20.21').ok && !n.sameSegment('OFFICE1', 'STALL') && n.sameSegment('OFFICE1', 'OFFICE2'); },
+          hint: 'OFFICE1 shell:\nC:\\> ping 10.16.20.21', ok: 'Vee Lan: "It gets there through the router, which is the only way through the tape."',
+          why: 'Vee Lan: The office PC and the stall PC are now in different VLANs, so no frame passes between them in the switch. The ping still works because the office PC sends it to its gateway, the router\'s port in VLAN 10, and the router sends it out its port in VLAN 20. Every crossing between VLANs goes through the router.' },
+        { type: 'choice', skill: 'vlan-config', text: 'The accountant: "And the hotspot on the stairs, which is in the stalls\' VLAN now. Does my PC still hear its broadcasts?"',
+          opts: ['No. Each VLAN is its own broadcast domain', 'Yes. Broadcasts reach every port on the switch', 'Yes, through the router', 'Only ARP broadcasts'], a: 0,
+          hint: 'Where does a broadcast stop?', ok: 'Vee Lan: "No. The tape is in the switch now."',
+          why: 'Vee Lan: A switch floods a broadcast only out of ports in the same VLAN it arrived on, and a router does not forward broadcasts. So a broadcast in VLAN 20 never reaches a port in VLAN 10.' }
+      ],
+      solution: [ { dev: 'SW1', type: ['enable', 'show vlan brief'] }, 'commit', { multi: [0, 2, 3, 4, 5] }, 'commit',
+        { dev: 'SW1', type: ['configure terminal', 'vlan 10', 'name OFFICE', 'vlan 20', 'name STALLS', 'vlan 30', 'name CAMERAS'] }, 'commit',
+        { dev: 'SW1', type: ['interface range f0/1 - 2, g0/1', 'switchport mode access', 'switchport access vlan 10'] }, 'commit',
+        { dev: 'SW1', type: ['interface range f0/5, g0/2', 'switchport mode access', 'switchport access vlan 20', 'interface range f0/8, f0/24', 'switchport mode access', 'switchport access vlan 30'] }, 'commit',
+        { dev: 'OFFICE1', type: ['ping 10.16.20.21'] }, 'commit', { choose: 0 }, 'commit' ],
+      outro: 'The accountant closes the books that night without once seeing a stranger\'s phone in the network list. Vee Lan peels the yellow tape off the carpet, because the border it marked is in the switch now, and throws it in the bin by the stairs.' }
   );
 })();
