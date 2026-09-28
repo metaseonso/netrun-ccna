@@ -147,7 +147,7 @@
           ],
           choice: { opts: [
             { tone: 'ask', say: 'Why does option 82 exist at all?', reply: 'Ace: "For big buildings where the server is far away. The relay agent, the switch or router nearest the client, writes down where the request came in, and the server can hand out addresses by floor or by port. When the server is a router on the same network, the note only gets the request thrown away."' },
-            { tone: 'press', say: 'You know whose box this is.', reply: 'Ace wipes the dust off her hands one finger at a time. "I know who had keys to this wing on Tuesday. That is a list with more than one name on it, and I will not shorten it by guessing."' },
+            { tone: 'press', say: 'You know whose box this is.', reply: 'Ace wipes the dust off her hands one finger at a time. "I know who had keys to this wing last week. That is a list with more than one name on it, and I will not shorten it by guessing."' },
             { tone: 'joke', say: 'Could we just trust every port and save time?', reply: 'Ace: "Then the switch believes every server it hears, which is what it was doing at seven this morning. Trust goes on the ports that face the real server, and every other port stays untrusted so the snooping can do its job."' }
           ] } },
         { k: 'LORE', title: 'A NOTE IN THE MARGIN', year: 2001, real: ['ietf'], vibe: 'Da bomb. The box in the middle started writing on your mail.',
@@ -162,6 +162,70 @@
         { k: 'SYNC', q: { prompt: 'Imani, watching the screens come back one by one: "So when you switch this snooping on, is the port my PC plugs into trusted or not?"', opts: ['Untrusted, like every port until someone trusts it', 'Trusted, because it is an access port', 'Trusted only after the PC gets a lease', 'Neither until the VLAN is added'], a: 0,
           yes: 'Ace: "Untrusted. Only the uplinks get trusted."', no: 'Ace: "Untrusted. Every port starts untrusted, and I trust the uplinks by hand."',
           why: 'Ace: When DHCP snooping is enabled, every interface is untrusted by default. You configure ip dhcp snooping trust only on the ports that lead toward the legitimate DHCP server, usually the uplinks. Server messages arriving on untrusted ports are discarded.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 51 · dynamic ARP inspection, the reveal, Marrow's tab
+    { id: 'n51-who-is-asking', title: 'Who is asking', sub: 'dynamic ARP inspection', npc: 'ace', day: [51], src: [PS('Dynamic_ARP_Inspection.md')], unlocks: ['dai'],
+      beats: [
+        { k: 'SCENE', where: 'The Watson clinic · the comms room · twenty past eleven at night',
+          lines: [
+            { who: 'narr', text: 'The comms room is warm and dry and loud with fans, and it smells of dust cooking slowly on hot metal. Ace sits cross-legged on the floor in front of the rack with a laptop on her knees. Sticky is asleep across the doorway with one ear up. On the laptop is a printout of an ARP table from the nurses\' station, with one line circled twice in red pen.' },
+            { who: 'ace', text: 'The ward PC says the router, 192.168.44.1, is at a MAC address that is not the router\'s. Something on this network has been answering ARP for the gateway with its own face, and every frame the ward sends out goes through it first. That is [[ARP spoofing]], the man in the middle from my map.' },
+            { who: 'ace', text: 'Last night I put [[DAI]], dynamic ARP inspection, on the ward switch for one hour, from ten to eleven, and took it off again before anyone noticed. It inspects every ARP message that arrives on an untrusted port. The sender MAC and the sender IP inside it have to match a line in the DHCP snooping binding table, or a line in an ARP ACL, or the message is dropped. Messages on trusted ports are not inspected at all.' },
+            { who: 'ace', text: 'At ten to eleven it dropped eight ARP replies that claimed to be 192.168.44.1, all from one MAC, all on port Fa0/14. I followed Fa0/14 back through the patch panel this afternoon.' },
+            { who: 'you', text: 'Where does it go?' },
+            { who: 'ace', text: 'Conference room B, in the new wing. Halvorsen Consolidated booked it on Tuesday to walk the council through its plans for the Exchange. Come on.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What about the printers? They never ask for a lease.', reply: 'Ace: "That is why I took it off after an hour. A box with a fixed address is not in the binding table, so DAI drops its ARP and it goes dark. You write it an ARP ACL: arp access-list, then permit ip host with its address and mac host with its MAC, and ip arp inspection filter with the list\'s name and the VLAN. DAI checks the ACL first and the binding table after."' },
+            { tone: 'press', say: 'Why did the ward lose the router while it was on?', reply: 'Ace: "Because I did not trust the uplink, on purpose, to see who would notice. The router has a fixed address too, and its ARP replies come up the uplink. ip arp inspection trust goes on the uplinks and on links between switches that both run DAI. Then there is ip arp inspection validate src-mac dst-mac ip, which also checks that the MACs in the frame match the MACs inside the ARP, and that the IP addresses make sense."' },
+            { tone: 'quiet', say: '(Watch the ARP table on the printout.)', reply: 'You read the circled line again: 192.168.44.1, and a MAC address that belongs to nothing on the clinic\'s inventory. Ace, without looking up: "DAI also counts. An untrusted port may send fifteen ARP packets a second by default, and a port that sends more is err-disabled. ip arp inspection limit rate changes the number, and errdisable recovery cause arp-inspection brings the port back."' }
+          ] } },
+        { k: 'SCENE', where: 'The new wing · conference room B · a quarter to midnight',
+          lines: [
+            { who: 'narr', text: 'Conference room B smells of new carpet and cold coffee. Name cards from the afternoon\'s walkthrough still stand along the table, one for each councillor, and a projector hums over a blank screen. A small black box is plugged into the floor socket under the table. At the far end sits a woman in a charcoal coat, her hands folded, a thin silver pin on her lapel. You first saw her at the Seven Bowls, paying for your noodles, and more than once since.' },
+            { who: 'vesper', text: 'Ace Elle. I wondered whether you would get here first or the dog would.' },
+            { who: 'ace', text: 'Vesper Kade. The market switch that wiped Vee Lan\'s VLANs. The box under the desk at the annex. The roads, the night of Every Road Home. The repeater in the ceiling on Monday. And this one.' },
+            { who: 'vesper', text: 'Stress tests. Halvorsen\'s board wanted to know what this district\'s network does when somebody leans on it, and I wanted to know it more than they did.' },
+            { who: 'you', text: 'You paid for my bowl at the Seven Bowls.' },
+            { who: 'vesper', text: 'Before that, I vouched for you. Dispatch needed a name to take a chance on a new runner, and I gave mine. I wanted somebody fresh off the train to fail in front of the whole street, where the council could watch it happen.' },
+            { who: 'vesper', text: 'Part of me hoped you would not. That part has been getting louder since the spring.' },
+            { who: 'vesper', text: 'Twenty years ago I was Old Root\'s apprentice in that annex. The night of the loop the clinic went to paper for nine hours, and I carried charts up three floors with Imani. A patient\'s records never came back. I left the street that week, because I had decided it could not keep its own net safe, and I have spent twenty years getting ready to prove it.' },
+            { who: 'ace', text: 'Every one of your tests was caught by somebody who lives here, and DAI caught this one in its first hour.' },
+            { who: 'vesper', text: 'Then here is the last. Halvorsen inspects the clinic for the council at midnight tomorrow, and every box I have left in this building wakes up at that hour. I cannot stop them without my board asking why, and I will not. If the clinic keeps answering its own patients through all of it, I will tell the council so myself.' },
+            { who: 'narr', text: 'She stands, takes the name card with her own name on it from the end of the table, and leaves the box where it is. Sticky watches her all the way to the lift and does not lie down until the doors close.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Does Old Root know?', reply: 'Vesper, at the door: "He guessed years ago. He never said a word to me about it, which is how he says most things." She presses the call button. "He taught me that DAI is only as good as the binding table under it. Switch off snooping and it has nothing to check against. Remember that tomorrow."' },
+            { tone: 'press', say: 'Unplug your boxes tonight.', reply: 'Vesper: "Then the council hears that Halvorsen found holes, and nobody ever sees them closed. Your trusted ports, your ARP lists for the printers, your snooping and your limits all have to be in place by midnight tomorrow, and they have to hold while everything I left behind is talking at once. You want that inspection as much as I do."' },
+            { tone: 'care', say: 'The patient whose records were lost. Who were they?', reply: 'She is quiet for a long time. "A boy of nine with a bad heart. His notes were rebuilt from memory by three nurses over a month, and they got most of it right. Imani remembers his name. I made myself forget it, and I have been sorry for that ever since."' }
+          ] } },
+        { k: 'LORE', title: 'SEVENTY-FIVE CENTS', year: 1986, real: ['lbl'], vibe: 'Gnarly. A stranger on the mainframe and a printout as long as a hallway.',
+          text: 'Ace, on the stairs down from the new wing: "In August 1986 an astronomer called Clifford Stoll was running the computers at Lawrence Berkeley Laboratory, and the accounts came out seventy-five cents short. Everyone else would have rounded it off. He followed it instead, for ten months, printing every keystroke the intruder typed, until the trail ended at a man called Markus Hess in Hanover, West Germany, who was selling what he found to the KGB. Stoll wrote it all down in a book called The Cuckoo\'s Egg in 1989. I keep it for the seventy-five cents. Mine was one face at two doors in Mac\'s ledger."' },
+        { k: 'KIT', text: 'Ace writes it on the back of the councillor\'s name card nobody came to collect.', real: ['cisco'], kit: [
+          { cmd: 'ip arp inspection vlan 1', what: 'DAI on for VLAN 1. It checks ARP sender MAC and sender IP against the DHCP snooping binding table and ARP ACLs' },
+          { cmd: 'interface g0/1 → ip arp inspection trust', what: 'uplinks and links to other DAI switches. Every port is untrusted by default; trusted ports are not inspected' },
+          { cmd: 'arp access-list PRINTERS → permit ip host 192.168.44.30 mac host 0050.7966.4430', what: 'an ARP ACL for a box with a fixed address' },
+          { cmd: 'ip arp inspection filter PRINTERS vlan 1', what: 'apply the ARP ACL to DAI for the VLAN' },
+          { cmd: 'ip arp inspection validate src-mac dst-mac ip', what: 'extra checks: frame MACs against ARP MACs, and sane IP addresses' },
+          { cmd: 'ip arp inspection limit rate 25 · errdisable recovery cause arp-inspection', what: 'default 15 packets per second on untrusted ports. Over it: err-disabled' },
+          { cmd: 'show ip arp inspection · show ip arp inspection interfaces', what: 'settings, counts and drops · trust state and rate per port' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani, by the printer at the nurses\' station: "This one has a fixed address and never asks anyone for a lease. When you switch DAI on, does it still work?"', opts: ['Only if an ARP ACL permits its address and MAC, or its port is trusted', 'Yes, DAI only checks boxes that lease', 'Yes, because printers do not use ARP', 'No, never. It needs a lease'], a: 0,
+          yes: 'Ace: "Only with an ARP ACL. I will write it one tonight."', no: 'Ace: "Only if an ARP ACL lets it through. It is not in the binding table."',
+          why: 'Ace: DAI checks the sender MAC and sender IP of every ARP message on an untrusted port against ARP ACLs and the DHCP snooping binding table. A host with a static address never leased, so it is not in the binding table, and its ARP is dropped unless an ARP ACL applied with ip arp inspection filter permits it, or its port is trusted.' } },
+        { k: 'SCENE', where: 'Under the overpass · Marrow\'s stall · half past one',
+          lines: [
+            { who: 'narr', text: 'Rain comes off the overpass in long ropes and hisses where it hits the lamp over the stall. The stall smells of bone broth, star anise and wet cardboard. Marrow is wiping the counter with a rag that has seen better decades, and he puts a bowl down in front of you before you have finished sitting.' },
+            { who: 'marrow', text: 'Dispatch says you are in the clinic tomorrow at midnight with the council watching. You have the face of somebody who is planning to go in on nothing. Eat.' },
+            { who: 'marrow', text: 'I ran, you know, before Dispatch had the booth. I was quick and I was broke, and I owed money to people who do not send reminders. One night I went into a dive two days without food, because I could not make myself ask anyone for a bowl.' },
+            { who: 'marrow', text: 'I flatlined about forty minutes in. The ripperdoc two doors down had me back inside four minutes, and my hands have shaken ever since. You cannot run a deck with hands like these.' },
+            { who: 'marrow', text: 'The man who had this stall fed me for a month and never wrote any of it down. When he retired he left me the pots, so now there is a tab. I am not kind about it.' }
+          ],
+          choice: { opts: [
+            { tone: 'care', say: 'Why tell me tonight?', reply: 'Marrow: "Because tomorrow is the kind of dive people go into hungry to prove a point. There is no fixer in a room like that. Eat first. The clinic can wait twenty minutes for you, and it will get a better runner."' },
+            { tone: 'ask', say: 'Did you ever go back in?', reply: 'Marrow turns the ladle over in his hand. "Once, a year after, to see if the shaking stopped when I was jacked in. It did not. I came out, bought the pots a new lid, and I have been standing here ever since."' },
+            { tone: 'joke', say: 'Is this one on the tab?', reply: 'Marrow: "You have creds, so this one is twelve. The change goes toward the next kid who comes in without any." He does not smile, but he tops up the bowl.' }
+          ] } }
       ] }
   ] });
 })();
