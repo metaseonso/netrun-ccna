@@ -55,7 +55,10 @@
         else if (s === 'ip routing') cfg.ipRouting = true;
         else if (s === 'ipv6 unicast-routing') cfg.ipv6Routing = true;
         else if ((m = s.match(/^vlan ([\d,\-]+)$/))) m[1].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let i = a; i <= (b || a); i++) cfg.vlans[i] = cfg.vlans[i] || { id: i, name: 'VLAN' + String(i).padStart(4, '0') }; });
-        else if ((m = s.match(/^ip route (\S+) (\S+) (\S+)(?: (\d+))?$/))) cfg.routes.push({ prefix: m[1], mask: m[2], via: m[3], ad: m[4] ? +m[4] : 1 });
+        else if ((m = s.match(/^ip route (\S+) (\S+) (\S+)(?: (\S+))?(?: (\d+))?$/))) { // next hop, exit interface, or exit interface then next hop; an AD may follow
+          const isIp = x => /^\d+\.\d+\.\d+\.\d+$/.test(x || ''); let via = m[3], exit = null, ad = 1;
+          if (!isIp(m[3])) { exit = m[3]; via = isIp(m[4]) ? m[4] : m[3]; if (isIp(m[4]) && m[5]) ad = +m[5]; else if (!isIp(m[4]) && m[4]) ad = +m[4]; } else if (m[4]) ad = +m[4];
+          cfg.routes.push({ prefix: m[1], mask: m[2], via, exit, ad }); }
         else if ((m = s.match(/^ipv6 route (\S+) (\S+)$/))) cfg.routes6.push({ prefix: m[1], via: m[2] });
         else if ((m = s.match(/^access-list (\d+) (permit|deny) (.+)$/))) { const n = m[1]; const a = cfg.acls[n] || (cfg.acls[n] = { id: n, type: (+n >= 100 && +n <= 199) || (+n >= 2000 && +n <= 2699) ? 'extended' : 'standard', entries: [] }); const e = parseAclEntry(m[3].split(' ')); e.action = m[2]; e.seq = (a.entries.length + 1) * 10; a.entries.push(e); }
         else if ((m = s.match(/^access-list (\d+) remark (.*)$/))) { const n = m[1]; cfg.acls[n] || (cfg.acls[n] = { id: n, type: +n >= 100 ? 'extended' : 'standard', entries: [] }); }

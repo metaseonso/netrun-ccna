@@ -160,5 +160,18 @@ module.exports.run = function({ out }){
     ok(!r.ok && /loop/.test(r.reason) && lines.length === 30 && /10\.0\.12\.2$/.test(lines[1]) && /10\.0\.12\.1$/.test(lines[2]) && /10\.0\.12\.2$/.test(lines[29]), 'loop: tracert bounces between the two routers to hop 30 (' + lines.slice(0, 4).join(' | ') + ')');
     const pc = new Sim.Device('PC1', { kind: 'host', netState: () => A.state }); pc.exec('ping 10.9.0.5'); ok(/TTL expired in transit/.test(pc.out.map(o => o.s).join('\n')), 'loop: ping reports TTL expired in transit');
   }
+  // 13. static routes three ways (next hop, exit interface with proxy ARP, both), local routes, IOS layout of show ip route
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, PC1: { kind: 'host', ip: '10.0.1.10', mask: '255.255.255.0', gw: '10.0.1.1' }, PC2: { kind: 'host', ip: '10.0.2.10', mask: '255.255.255.0', gw: '10.0.2.1' } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/0', b: 'PC2' } ] };
+    const base1 = ['en', 'conf t', 'int g0/0', 'ip add 10.0.1.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.12.1 255.255.255.252', 'no shut', 'exit'], base2 = ['en', 'conf t', 'int g0/0', 'ip add 10.0.2.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.12.2 255.255.255.252', 'no shut', 'exit', 'ip route 10.0.1.0 255.255.255.0 10.0.12.1'];
+    let d = devs({ R1: base1.concat(['ip route 10.0.2.0 255.255.255.0 g0/1']), R2: base2 }); let A = Net.api(Net.build(net, d)); let r = A.route('R1', '10.0.2.0/24');
+    ok(r && r.iface === 'gigabitethernet0/1' && !r.via && A.ping('PC1', '10.0.2.10').ok, 'static: exit-interface route works through proxy ARP (' + JSON.stringify(r) + ')');
+    ok(/S\s+10\.0\.2\.0\/24 is directly connected, GigabitEthernet0\/1/.test(Show.render(d.R1, 'show ip route', A.state)), 'static: an exit-interface route shows as directly connected');
+    d = devs({ R1: base1.concat(['ip route 10.0.2.0 255.255.255.0 g0/1 10.0.12.2 5']), R2: base2 }); A = Net.api(Net.build(net, d)); r = A.route('R1', '10.0.2.0/24');
+    ok(r && r.via === '10.0.12.2' && r.iface === 'gigabitethernet0/1' && r.ad === 5 && A.ping('PC1', '10.0.2.10').ok, 'static: exit interface plus next hop, with an AD (' + JSON.stringify(r) + ')');
+    const txt = Show.render(d.R1, 'show ip route', A.state); ok(/L\s+10\.0\.1\.1\/32 is directly connected/.test(txt) && /10\.0\.0\.0\/8 is variably subnetted/.test(txt) && /\[5\/0\] via 10\.0\.12\.2, GigabitEthernet0\/1/.test(txt), 'show ip route: local /32 routes and classful headers');
+    d.R1.exec('int g0/1'); d.R1.exec('shutdown'); A = Net.api(Net.build(net, d)); ok(!A.route('R1', '10.0.2.0/24'), 'static: the route leaves the table when its exit interface goes down');
+  }
   return { pass, fails };
 };

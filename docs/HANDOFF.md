@@ -136,6 +136,11 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Static routes three ways: `ip route P M NEXTHOP`, `ip route P M EXIT` (the router ARPs for the destination and
+  the neighbour answers by proxy ARP) and `ip route P M EXIT NEXTHOP`, each with an optional AD; a route whose exit
+  interface is down leaves the table. `show ip route` prints like IOS: full codes, local /32 routes, entries grouped under
+  their classful network (`is variably subnetted, N subnets, M masks`). Tested in `tests/engine.test.js` (section 13).
+
 - 2026-09-28 · Routing loops: traceroute repeats the looping routers up to hop 30, and a PC ping into a loop answers `TTL expired
   in transit` from the last router. Tested in `tests/engine.test.js` (section 12).
 

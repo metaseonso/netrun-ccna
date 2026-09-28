@@ -195,8 +195,11 @@
     // per-router candidate routes
     const cands = {}; const add = (r, e) => (cands[r] = cands[r] || []).push(e);
     for (const r of S.routers) { for (const o of S.l3) if (o.dev === r && o.kind === 'iface') add(r, { prefix: netOf(o.ip, o.mask), len: mlen(o.mask), via: null, iface: o.iface, proto: 'C', ad: 0, metric: 0 });
-      for (const st of S.cfg[r].routes) { let iface = null, via = st.via; if (!IP.validIp(via)) { iface = Sim.canonIf(via) || via; via = null; } else { const o = S.l3.find(x => x.dev === r && x.kind === 'iface' && inSubnet(via, netOf(x.ip, x.mask), x.mask)); if (!o) { S.issues.push({ kind: 'static-route-nexthop-unreachable', where: r + ' ' + st.prefix + ' via ' + via }); continue; } iface = o.iface; }
-        add(r, { prefix: st.prefix, len: mlen(st.mask), via, iface, proto: st.prefix === '0.0.0.0' ? 'S*' : 'S', ad: st.ad, metric: 0 }); } }
+      for (const st of S.cfg[r].routes) { let iface = null, via = st.via;
+        if (st.exit) { iface = Sim.canonIf(st.exit) || st.exit; via = IP.validIp(st.via) ? st.via : null; const ii = S.ifaces[r][iface]; if (!ii || !ii.up) continue; } // an exit interface that is down removes the route
+        else if (!IP.validIp(via)) { iface = Sim.canonIf(via) || via; via = null; const ii = S.ifaces[r][iface]; if (!ii || !ii.up) continue; }
+        else { const o = S.l3.find(x => x.dev === r && x.kind === 'iface' && inSubnet(via, netOf(x.ip, x.mask), x.mask)); if (!o) { S.issues.push({ kind: 'static-route-nexthop-unreachable', where: r + ' ' + st.prefix + ' via ' + via }); continue; } iface = o.iface; }
+        add(r, { prefix: st.prefix, len: mlen(st.mask), via, iface, exit: !!(st.exit || !IP.validIp(st.via)), proto: st.prefix === '0.0.0.0' ? 'S*' : 'S', ad: st.ad, metric: 0 }); } }
     // OSPF
     const ospfRouters = S.routers.filter(r => S.cfg[r].ospf);
     const inOspf = (r, o) => { const c = S.cfg[r].ospf; const i = S.ifaces[r][o.iface]; if (i.cfg.ospfArea != null) return { area: i.cfg.ospfArea }; for (const n of c.networks) if (wildMatch(o.ip, n.addr, n.wild)) return { area: n.area }; return null; };
@@ -298,7 +301,9 @@
       if (pkt.reply && oi.cfg.natInside) { /* reply heading back inside: src stays */ }
       if (oi.cfg.aclOut) { const v = aclEval(S, r, oi.cfg.aclOut, pkt); if (v.action === 'deny') { path.push({ dev: r, act: 'DENIED outbound on ' + short(outIf) + ' by ACL ' + oi.cfg.aclOut + (v.implicit ? ' (implicit deny)' : ' line ' + v.seq) }); return { ok: false, reason: 'denied by ACL ' + oi.cfg.aclOut + ' outbound on ' + r + ' ' + short(outIf), hops }; } }
       const o = S.l3.find(x => x.dev === r && x.iface === outIf); const seg = o && o.seg;
-      const nh = rt.via || pkt.dst; const target = ownerOn(S, seg, nh); path.push({ dev: r, act: 'route ' + rt.prefix + '/' + rt.len + ' [' + rt.proto + '] via ' + (rt.via || short(outIf)) });
+      const nh = rt.via || pkt.dst; let target = ownerOn(S, seg, nh);
+      // a route with only an exit interface ARPs for the destination itself; a router on that link with a route to it answers for it (proxy ARP, on by default)
+      if (!target && !rt.via && rt.proto !== 'C') target = (S.owners[seg] || []).find(o => o.kind === 'iface' && o.dev !== r && lookup(S, o.dev, pkt.dst)) || null; path.push({ dev: r, act: 'route ' + rt.prefix + '/' + rt.len + ' [' + rt.proto + '] via ' + (rt.via || short(outIf)) });
       if (!target) return { ok: false, reason: r + ': next hop ' + nh + ' unreachable on ' + short(outIf) + ' (no ARP reply)', hops };
       if (target.ip === pkt.dst && (target.kind === 'host')) { path.push({ dev: target.dev, act: 'deliver' }); return { ok: true, at: { kind: 'host', dev: target.dev, seg }, dstDev: target.dev, dstIp: pkt.dst, hops, srcSeen }; }
       if (target.kind === 'cloud') { if (target.internet && RFC1918(pkt.src)) { path.push({ dev: target.dev, act: 'DROP private source ' + pkt.src }); return { ok: false, reason: target.dev + ' drops packets from private address ' + pkt.src + ' (no NAT?)', hops }; } path.push({ dev: target.dev, act: target.ip === pkt.dst ? 'deliver' : 'internet delivers to ' + pkt.dst }); return { ok: true, at: { kind: 'cloud', dev: target.dev, seg }, dstDev: target.dev, dstIp: pkt.dst, hops, srcSeen }; }
