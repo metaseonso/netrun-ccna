@@ -91,7 +91,7 @@
     const openJobs = JOBS.filter(j => Game.jobStatus(j).locked.length === 0 && !s.jobsDone[j.id]).length; const alive = Protege.active(s.roster).length, lost = Protege.lost(s.roster).length; const dm = Game.dm.pending(); const u = window.Auth && Auth.user(); const on = viewGroup(view);
     const cp = s.checkpoint, initials = (u && u.name ? u.name : s.handle || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
     const id = '<div class="band b-id"><div class="logo"><span class="lgo">NETRUNNER</span><span class="sh">NR</span><small>://</small><span class="lgo">CCNA</span></div><span class="sep"></span>' +
-      '<div class="who"' + tipAttr(u ? 'Signed in as ' + u.name + '. Your record saves to your Drive.' : 'Your record saves on this deck only.') + '>' + (u && u.avatar ? '<img src="' + esc(u.avatar) + '" alt="">' : '<span class="ava">' + esc(initials) + '</span>') + '<b>' + esc(s.handle) + '</b></div>' +
+      '<div class="who"' + tipAttr(u ? 'Signed in as ' + u.name + '. Your record saves to your Drive.' : 'Your record saves on this deck only.') + '>' + (u && u.avatar ? avatarImg(u.avatar, u.name) : '<span class="ava">' + esc(initials) + '</span>') + '<b>' + esc(s.handle) + '</b></div>' +
       '<span class="cls ' + c.id + '"' + tipAttr(c.name + (nx ? '. Next: Class ' + nx.id + ' at ' + nx.min + ' rep.' : '.')) + '>CLASS ' + c.id + '</span>' + diffChip() +
       (rite && !s.jobsDone[rite.id] ? '<div class="riteline"' + tipAttr(nx ? 'Clear this gig' + (rb ? '' : ' with ' + nx.min + ' rep') + ' to reach Class ' + nx.id + '. It costs more and pays more.' : '') + '>' + icon('rite') + '<span><em>CLEARANCE</em> · ' + esc(rite.title) + '</span></div>' : '') +
       '<span class="grow"></span>' +
@@ -127,6 +127,9 @@
 
   // the door, signed in: the Google account is the key. the record lives in the account's Drive; the door lists names, one load per pick.
   const DRIVE_WHY = 'When Google asks, tick the Drive box. Your save goes there.';
+  // a Google profile photo: sent with no referrer (googleusercontent refuses some), and initials if it still fails
+  const avatarImg = (url, name) => { const ini = (name || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    return '<img src="' + esc(url) + '" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML=\'<span class=&quot;ava&quot;>' + esc(ini) + '</span>\'">'; };
   function doorSignedIn(){ const u = Auth.user(), tok = !!Auth.token(), mine = Game.myHandles(), last = Game.lastHandle(), loose = Game.deckHandles();
     let body;
     if (Game.linking) body = '<p class="muted">Reading your Drive…</p>';
@@ -137,7 +140,7 @@
     else body = (mine.length ? mine.map((h, i) => '<button class="btn ' + (i ? 'ghost' : 'mag') + ' wide" data-mine="' + esc(h) + '">JACK IN AS ' + esc(h) + '</button>').join('') + '<div class="or"><span>or start a new one</span></div>' : '') +
       '<div class="login one"><input id="handle" placeholder="' + (mine.length ? 'new handle' : 'pick a handle') + '" maxlength="18" autocomplete="off"><button class="btn ' + (mine.length ? 'ghost' : 'mag') + '" id="go">JACK IN</button></div>' +
       (loose.length ? '<div class="chips"><span class="muted">Also on this device:</span>' + loose.map(h => '<button class="btn ghost sm" data-mine="' + esc(h) + '">' + esc(h) + '</button>').join('') + '</div>' : '');
-    return '<div class="door-id">' + (u.avatar ? '<img src="' + esc(u.avatar) + '" alt="">' : '') + '<span><b>' + esc(u.name) + '</b><em>Saved to your Google Drive</em></span><button class="btn ghost sm" id="signout">SIGN OUT</button></div>' + body; }
+    return '<div class="door-id">' + (u.avatar ? avatarImg(u.avatar, u.name) : '') + '<span><b>' + esc(u.name) + '</b><em>Saved to your Google Drive</em></span><button class="btn ghost sm" id="signout">SIGN OUT</button></div>' + body; }
   // the door, no account: a handle and a passcode on this deck only. Google is offered first because it follows the player.
   function doorLocal(){ const deck = Game.deckHandles(), g = window.Auth && Auth.configured;
     return (g ? '<button class="btn mag wide" id="signin">SIGN IN WITH GOOGLE</button><p class="hint">' + esc(DRIVE_WHY) + '</p><div class="or"><span>or play on this device only</span></div>' : '') +

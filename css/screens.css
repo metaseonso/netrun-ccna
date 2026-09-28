@@ -222,8 +222,8 @@
 .dgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(20px,4vw,48px);align-items:center}
 .door2 .lede{margin:0 0 22px;max-width:none;font-size:15px;line-height:1.8;color:var(--ink)}
 .doorwhat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
-.doorwhat li{display:grid;grid-template-columns:22px 110px 1fr;gap:12px;align-items:baseline;font-size:13px;color:var(--ink2)}
-.doorwhat li .ic{color:var(--cyan);align-self:center} .doorwhat b{font-family:var(--disp);font-size:11px;letter-spacing:.14em;color:var(--cyan);font-weight:600}
+.doorwhat li{display:grid;grid-template-columns:22px 110px 1fr;gap:12px;align-items:start;font-size:13px;line-height:20px;color:var(--ink2)}
+.doorwhat li .ic{color:var(--cyan);margin-top:2px} .doorwhat b{font-family:var(--disp);font-size:11px;letter-spacing:.14em;color:var(--cyan);font-weight:600}
 .dcard{display:flex;flex-direction:column;gap:12px;padding:24px;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--bg2));box-shadow:0 20px 50px rgba(0,0,0,.45),inset 0 1px 0 rgba(63,246,255,.08)}
 .dcard h2{margin:0 0 4px;font-family:var(--disp);font-size:14px;letter-spacing:.24em;color:var(--ink)}
 .dcard p{margin:0;max-width:none;text-align:left}
@@ -293,3 +293,4 @@
 .dicon.easy{color:var(--cyan)} .dicon.normal{color:var(--yel)} .dicon.cyberpsycho{color:var(--mag);filter:drop-shadow(0 0 6px rgba(255,63,164,.55))}
 .diffchip .dicon{margin-right:0} .diffchip .dicon .ic{width:18px;height:18px}
 @media (max-width:520px){.diffchip .dicon .ic{width:16px;height:16px}}
+.door-id .ava{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--cyan);display:inline-flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:12px;letter-spacing:.06em;color:var(--cyan)}
