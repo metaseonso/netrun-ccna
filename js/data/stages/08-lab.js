@@ -258,6 +258,49 @@
         { k: 'SYNC', q: { prompt: 'Beacon, packing up the scanner: "Say someone records the wing\'s WPA3 traffic tonight and steals the passphrase next year. Can they read tonight\'s recording?"', opts: ['No. WPA3 has forward secrecy', 'Yes. The passphrase unlocks everything it ever protected', 'Only if they also steal the WLC', 'Only on the 2.4 GHz band'], a: 0,
           yes: 'Ace: "No. Tonight stays tonight."', no: 'Ace: "No. Forward secrecy means an old recording stays locked."',
           why: 'Ace: WPA3 provides forward secrecy: the keys protecting each session are not derived in a way that a stolen passphrase can recreate later, so traffic captured before the theft cannot be decrypted. SAE also protects the four-way handshake in personal mode.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 58 · wireless configuration
+    { id: 'n58-the-controller', title: 'The wing\'s controller', sub: 'wireless configuration', npc: 'beacon', day: [58], src: [PS('Wireless_Configuration.md')], unlocks: ['wlc-config'],
+      beats: [
+        { k: 'SCENE', where: 'The clinic\'s new wing · the comms room · three in the morning',
+          lines: [
+            { who: 'narr', text: 'The comms room is the size of a wardrobe and twice as warm, and the only sound is the steady whirr of the switch fans. WLC1 sits racked under the wing\'s switch, a flat grey box with a row of blinking ports. Beacon has a laptop on an upturned bin and a patch cable between her teeth.' },
+            { who: 'beacon', text: 'Words first, because the controller is fussy about them. On a WLC a port is a physical socket and an interface is a logical thing that lives on a port. The [[service port]] is for managing the box out of band, and it goes to an access port on the switch. The distribution system ports carry the real traffic to the switched network, and there\'s a redundancy port for joining a second WLC as a standby pair.' },
+            { who: 'beacon', text: 'Then the interfaces. The management interface is where the CAPWAP tunnels from every AP arrive. The virtual interface talks to wireless clients: it relays their DHCP and runs web authentication. A [[dynamic interface]] maps a WLAN to a VLAN, so the staff SSID lands in the staff VLAN. There\'s also a redundancy management interface for reaching the standby WLC, and a service port interface bound to the service port.' },
+            { who: 'beacon', text: 'And the builders cabled two distribution ports to the switch as an EtherChannel with LACP. A WLC only does static LAG. It won\'t speak LACP or PAgP, so the switch has to be set to channel-group mode on.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How will the Kabuki APs find this controller?', reply: 'Beacon: "They\'re on another subnet, so they can\'t hear it shout. When a lightweight AP boots it asks for an address by DHCP, and the DHCP server can hand it the WLC\'s address as well, in DHCP option 43. The AP goes straight to it."' },
+            { tone: 'press', say: 'Why won\'t it just speak LACP?', reply: 'Beacon: "Because it doesn\'t. You don\'t argue with a controller, you set the switch to on. Put active or desirable on the switch and the two ends never agree, so the bundle never forms and you\'re down to one cable."' },
+            { tone: 'quiet', say: '(Take the patch cable from her.)', reply: 'She lets you take it and wipes her mouth on her sleeve. "Service port, the one on its own at the left. Access port on the switch, management VLAN. Thank you."' }
+          ] } },
+        { k: 'SCENE', where: 'The comms room · the controller\'s web page on Beacon\'s laptop',
+          lines: [
+            { who: 'narr', text: 'The laptop shows the controller\'s web page in the harsh colours of something designed by a committee. Beacon clicks WLANs, then Create New, and the fan in the laptop spins up as if it has been asked to lift something.' },
+            { who: 'beacon', text: 'Three WLANs: staff, guests and the phones. Each gets an SSID, a dynamic interface for its VLAN, security and QoS. Layer 2 security happens before a client even gets an address: WPA+WPA2, 802.1X, static WEP, CKIP, or None with EAP passthrough. Layer 3 security happens after, on a web page: web authentication, web passthrough, conditional web redirect, splash page web redirect.' },
+            { who: 'beacon', text: 'A PSK can be typed as ASCII or as hex, and in ASCII it has to be at least 8 characters long. The guest one goes on a sign in reception, so make it long and easy to read.' },
+            { who: 'beacon', text: 'Then [[QoS]] per WLAN. Platinum is for voice, Gold for video, Silver for best effort, and Bronze for background. Silver is the default, so the phones only get Platinum if you give it to them.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why web authentication for the guests?', reply: 'Beacon: "Because a web page can ask them to accept the clinic\'s terms, or type a code off a card, without handing them a password for the building. It\'s Layer 3: they get an address first and the page stops them until they\'re through it."' },
+            { tone: 'press', say: 'Who can log in to the controller itself?', reply: 'Beacon: "Nobody from the guest WLAN, if I have anything to say about it. A CPU ACL filters traffic aimed at the WLC itself, so only the management VLAN can reach its login page."' },
+            { tone: 'joke', say: 'Can the phones have Platinum and the radio have Gold?', reply: 'Beacon: "The station streams audio, so strictly speaking I\'m voice, but I\'ll settle for Gold. Video gets Gold. The phones are Platinum because a nurse calling for help can\'t stutter."' }
+          ] } },
+        { k: 'LORE', title: 'EVERY AP PHONES HOME', year: 2009, real: ['ietf', 'cisco'], vibe: 'Epic. Every AP in the building on a leash to one box.',
+          text: 'Beacon, with her feet up on the bin: "In March 2009 the IETF published CAPWAP as RFC 5415, the standard way for a lightweight AP to talk to its controller, with control on UDP 5246 and data on 5247. It grew out of LWAPP, which came from a company called Airespace, and Cisco had bought Airespace in 2005. I keep it because it\'s the night the APs stopped being forty separate radios and became one network with forty antennas."' },
+        { k: 'KIT', text: 'Beacon sticks a label on the top of WLC1 and writes on it.', kit: [
+          { cmd: 'port = physical · interface = logical', what: 'on a WLC' },
+          { cmd: 'service port (OOB, switch access port) · distribution system ports (data) · redundancy port (HA pair)', what: 'WLC ports' },
+          { cmd: 'management (CAPWAP) · virtual (DHCP relay, web auth) · dynamic (WLAN to VLAN) · redundancy management · service port', what: 'WLC interfaces' },
+          { cmd: 'channel-group 1 mode on', what: 'WLCs only support static LAG. No LACP, no PAgP' },
+          { cmd: 'DHCP option 43', what: 'tells APs the WLC\'s address' },
+          { cmd: 'L2: WPA+WPA2, 802.1X, static WEP, CKIP, None + EAP passthrough · L3: web auth, web passthrough, conditional web redirect, splash page web redirect', what: 'WLAN security' },
+          { cmd: 'PSK: ASCII (8 characters or more) or hex', what: 'the pre-shared key' },
+          { cmd: 'Platinum voice · Gold video · Silver best effort (default) · Bronze background', what: 'WLAN QoS. CPU ACLs protect the WLC itself' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani, reading over Beacon\'s shoulder: "You left the phones\' WLAN on the default QoS. What is the default, and is that right?"', opts: ['Silver, best effort. The phones need Platinum', 'Platinum. It is right', 'Gold. It is right', 'Bronze. The phones need Silver'], a: 0,
+          yes: 'Beacon: "Silver, and no, it isn\'t. Platinum for the phones. Good catch."', no: 'Beacon: "Silver is the default, best effort. The phones need Platinum, which is voice."',
+          why: 'Beacon: A WLAN\'s QoS is Silver (best effort) unless you change it. Platinum is voice, Gold is video and Bronze is background, so a WLAN carrying phones should be set to Platinum.' } }
       ] }
   ] });
 })();

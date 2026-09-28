@@ -226,5 +226,8 @@ window.GLOSSARY = {
   'eap': 'Extensible Authentication Protocol, used with 802.1X. Methods: LEAP (challenge phrases, dynamic WEP keys), EAP-FAST (PAC, then a TLS tunnel), PEAP (certificate on the server only), EAP-TLS (certificates on the server and the client).',
   'tkip': 'Temporal Key Integrity Protocol. Encryption and MIC used by WPA, built as an improvement on WEP for the same hardware.',
   'ccmp': 'Counter/CBC-MAC Protocol. Used by WPA2: AES counter mode for encryption, CBC-MAC as the MIC.',
-  'gcmp': 'Galois/Counter Mode Protocol. Used by WPA3: AES counter mode for encryption, GMAC as the MIC.'
+  'gcmp': 'Galois/Counter Mode Protocol. Used by WPA3: AES counter mode for encryption, GMAC as the MIC.',
+  // ---- night 58 · wireless configuration
+  'service port': 'The WLC port used for out-of-band management. Connects to a switch access port. The service port interface is bound to it.',
+  'dynamic interface': 'A WLC interface that maps a WLAN to a VLAN. The other WLC interfaces: management (CAPWAP), virtual (DHCP relay, web authentication), redundancy management, service port.'
 };
