@@ -56,7 +56,7 @@
           lines: [
             { who: 'narr', text: 'Reception smells of floor polish and burnt coffee, and behind the counter a printer is chewing slowly through a queue. Three people wait on the plastic chairs with numbered tickets. Imani stands at her workstation with a folder under one arm, watching a circle spin on a screen that has not found the network yet.' },
             { who: 'Imani', text: 'Every morning. I switch it on and it sits there for half a minute. He says it\'s the switch being careful.' },
-            { who: 'root', text: 'It is. Get your phone out. You\'re the stopwatch.' },
+            { who: 'root', text: 'It is, so get your phone out and time it for me.' },
             { who: 'narr', text: 'He reaches under the counter, pulls the workstation\'s cable out of the wall socket and pushes it back in. The little light beside the socket comes on amber.' },
             { who: 'root', text: 'Start it. A port that comes up doesn\'t forward straight away. The first fifteen seconds it\'s listening: it sends and receives BPDUs, carries no traffic, learns no addresses.' },
             { who: 'narr', text: 'Fifteen seconds. The light is still amber.' },
@@ -98,7 +98,7 @@
           { cmd: 'spanning-tree vlan 1 root primary | root secondary | priority 4096', what: '24576, or 4096 under the current root · 28672 · steps of 4096' },
           { cmd: 'spanning-tree vlan 1 cost 4 · spanning-tree vlan 1 port-priority 64', what: 'on a port: change what it adds to the root cost, or break a tie' } ] },
         { k: 'SYNC', q: { prompt: 'Imani, as her workstation comes up green before she has pulled her chair in: "If they\'d put that fast setting on the cables between the switches too, what would have happened?"', opts: ['Those ports could forward before the tree had checked them, and make a loop', 'Nothing. It is safe on any port', 'The ports would refuse to come up', 'The whole building would get faster'], a: 0,
-          yes: 'Old Root: "A loop before the tree could stop it. Desks only."', no: 'Old Root: "It skips the checks. Towards a switch that means a loop before the tree can react. Desks only."',
+          yes: 'Old Root: "A loop, before the tree could stop it, which is why PortFast goes on desk ports only."', no: 'Old Root: "It skips the checks, so towards a switch it makes a loop before the tree can react, and that\'s why it goes on desk ports only."',
           why: 'Old Root: PortFast skips listening and learning and goes straight to forwarding. A workstation cannot make a loop, so that is safe on a desk port. A port that faces another switch could start forwarding before spanning tree had judged it, and two switches with two paths between them make a loop.' } }
       ] },
     // ------------------------------------------------------------ night 22 · rapid spanning tree
@@ -121,8 +121,8 @@
           lines: [
             { who: 'narr', text: 'Rain on wool reaches you first, then a clean, cold scent like the lobby of a tower. Vesper Kade stands in the closet doorway in her charcoal coat, hands in her pockets, the thin silver pin on her lapel catching the rack lights. She looks at the rack for a long time before she looks at either of you.' },
             { who: 'root', text: 'Vesper.' },
-            { who: 'vesper', text: 'Twenty years, and it\'s the same rack. You kept the tag.' },
-            { who: 'root', text: 'She kept this closet with me, twenty years ago. My apprentice, before Halvorsen.' },
+            { who: 'vesper', text: 'It\'s the same rack after twenty years, and you kept the tag.' },
+            { who: 'root', text: 'She kept this closet with me twenty years ago, as my apprentice, before Halvorsen.' },
             { who: 'vesper', text: 'We\'ve met. I came to see him off, and to see how the runner Dispatch keeps sending into buildings like this one is getting on. I\'ve heard your handle more than once this month.' },
             { who: 'vesper', text: 'The night of the loop, this clinic was on paper for nine hours, and one patient\'s records never came back. The street patched it and called it fixed. Halvorsen wants to buy the Watson Exchange so the district never again depends on whoever happens to be on shift.' }
           ],
@@ -141,7 +141,7 @@
           { cmd: 'link types: edge (spanning-tree portfast) · point-to-point (full duplex) · shared (half duplex)', what: 'spanning-tree link-type point-to-point | shared' },
           { cmd: 'RSTP costs: 10 Mb 2,000,000 · 100 Mb 200,000 · 1 Gb 20,000 · 10 Gb 2,000 · 100 Gb 200 · 1 Tb 20 · 10 Tb 2', what: 'Cisco switches keep the short costs (19, 4) until spanning-tree pathcost method long' } ] },
         { k: 'SYNC', q: { prompt: 'Vesper, from the doorway, as if asking the room: "On the rapid tree, a port that\'s discarding because it hears a better BPDU from another switch. What do you call it?"', opts: ['An alternate port', 'A backup port', 'A designated port', 'An edge port'], a: 0,
-          yes: 'Vesper: "Alternate. He taught you properly."', no: 'Old Root: "Alternate. Backup is the one that hears itself, from the same switch."',
+          yes: 'Vesper: "Alternate, the way he taught it to me."', no: 'Old Root: "Alternate. Backup is the one that hears itself, from the same switch."',
           why: 'Old Root: On the rapid tree a discarding port that receives a superior BPDU from another switch is an alternate port, and it takes over if the root port fails. A discarding port that receives a superior BPDU from another port on the same switch is a backup port, and it stands in for a designated port. Edge ports face end hosts.' } }
       ] }
   ] });

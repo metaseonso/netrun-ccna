@@ -44,7 +44,7 @@
           why: 'Old Root: SW1 and SW2 each reach the root over one gigabit link, cost 4, so Gi0/1 is the root port on both. Every port on the root, SW3, is designated. On the two cables between SW1 and SW2 both switches have root cost 4, so the lower bridge ID, SW1, wins the designated port on each, and SW2\'s ends, Gi0/2 and the tagged Fa0/24, are non-designated and block.' },
         { type: 'choice', skill: 'stp-election', text: 'Imani: "Both of those switches are the same distance from the pharmacy box. Why does SW1 get to keep its end of the cable open?"',
           opts: ['They tie on root cost, so the lower bridge ID wins, and SW1\'s MAC is lower', 'SW1 has the lower root cost', 'SW1 has more ports', 'SW1\'s port number is lower'], a: 0,
-          hint: 'Designated port: lowest root cost first, then lowest bridge ID.', ok: 'Old Root: "A tie, broken by the ID. Same as the election."',
+          hint: 'Designated port: lowest root cost first, then lowest bridge ID.', ok: 'Old Root: "A tie, broken by the ID the same way as the election."',
           why: 'Old Root: On each segment the designated port goes to the switch with the lower root cost. SW1 and SW2 both have root cost 4, so it is a tie, and a tie goes to the lower bridge ID. The priorities match, so the MAC decides, and SW1\'s 0019.e8a1.1c01 is lower than SW2\'s 0c11.7a3b.9902.' },
         { type: 'cmd', skill: 'stp-election', text: 'Old Root: "Now the part I brought you here for. Pull the wards\' main cable: shut SW2 Gi0/1. Then go to the ward station and ping the pharmacy till at 10.20.0.31."',
           need: [ { dev: 'PC2', line: /^ping 10\.20\.0\.31$/ } ], check: (d, ctx) => { const s = ctx.compute(1).switches.SW2; return !ctx.net().up('SW2', 'g0/1') && s.rootPort === gi(2) && ctx.net().ping('PC2', '10.20.0.31').ok; },
@@ -129,7 +129,7 @@
 
     // ------------------------------------------------------------------ night 22 · from Lab 22 (rapid STP)
     { id: 'c-n22-last-shift', cls: 'C', rep: 15, from: 'root', title: 'The Last Shift', day: [22], requires: ['n22-last-shift'], devices: ['SW1', 'SW2', 'SW3', 'PC2'],
-      brief: 'DISPATCH » Old Root\'s last shift at the clinic annex. He wants all three switches on the rapid tree before he goes, and the wards\' failover down from fifty seconds to one.\n\nCLIENT (Old Root) » "You type. I sit on the crate and watch. Then I go home."',
+      brief: 'DISPATCH » Old Root\'s last shift at the clinic annex. He wants all three switches on the rapid tree before he goes, and the wards\' failover down from fifty seconds to one.\n\nCLIENT (Old Root) » "You type, and I sit on the crate and watch, and then I go home."',
       net: {
         stpMode: 'pvst',
         devices: {
@@ -149,7 +149,7 @@
       steps: [
         { type: 'cmd', skill: 'rstp', text: 'Old Root: "show spanning-tree on any of them says protocol ieee. That\'s the classic tree. Put all three on the rapid one."',
           check: (d, ctx) => ['SW1', 'SW2', 'SW3'].every(n => ctx.compute(1).switches[n].cfg.mode === 'rapid-pvst'),
-          hint: 'SW1# configure terminal\nSW1(config)# spanning-tree mode rapid-pvst\n(the same on SW2 and SW3)', ok: 'Old Root: "protocol rstp on all three. The tree is the same shape. It just stopped waiting."',
+          hint: 'SW1# configure terminal\nSW1(config)# spanning-tree mode rapid-pvst\n(the same on SW2 and SW3)', ok: 'Old Root: "protocol rstp on all three, and the tree is the same shape with no waiting in it."',
           why: 'Old Root: spanning-tree mode rapid-pvst, in global config, switches a Cisco switch to Rapid PVST+, the rapid tree with one instance per VLAN. It has to be done on every switch: a rapid switch talking to a classic one falls back to the classic tree on that port. show spanning-tree then says protocol rstp instead of ieee.' },
         { type: 'calc', skill: 'rstp', text: 'Old Root: "The rapid standard came with bigger costs, for faster links than I ever owned. The Board asks them. Give me three."',
           fields: [ { key: 'g', label: 'RSTP cost of a 1 Gbps port', check: v => String(v).replace(/[,\s_]/g, '') === '20000' },
@@ -237,7 +237,7 @@
           why: 'Vee Lan: channel-group 1 mode active on both ports of each switch forms an LACP EtherChannel. The two cables become one port-channel, spanning tree sees one link, and both carry traffic.' },
         { type: 'cmd', skill: 'stp-toolkit', text: 'Imani: "The wards\' desk ports, 1 to 12 on SW2. Nobody plugs a box into my building again and takes it over."',
           check: (d, ctx) => { const c = ctx.compute(1).switches.SW2.cfg; const pf = p => !!(p.portfast || (c.portfastDefault && p.mode === 'access')); const g = p => pf(p) && !!(p.bpduguard || c.bpduguardDefault); for (let i = 1; i <= 12; i++) { const p = c.ports[fa(i)]; if (!p || !g(p)) return false; } return true; },
-          hint: 'SW2(config)# interface range f0/1 - 12\nSW2(config-if-range)# switchport mode access\nSW2(config-if-range)# spanning-tree portfast\nSW2(config-if-range)# spanning-tree bpduguard enable', ok: 'Imani: "Every socket in the waiting room is guarded now. Even the empty ones."',
+          hint: 'SW2(config)# interface range f0/1 - 12\nSW2(config-if-range)# switchport mode access\nSW2(config-if-range)# spanning-tree portfast\nSW2(config-if-range)# spanning-tree bpduguard enable', ok: 'Imani: "Every socket in the waiting room is guarded now, the empty ones too."',
           why: 'Vee Lan: switchport mode access, spanning-tree portfast and spanning-tree bpduguard enable on SW2\'s desk ports. PortFast lets a workstation forward at once, and BPDU Guard err-disables any of those ports the moment a switch speaks on it, including sockets nobody is using yet.' },
         { type: 'cmd', skill: 'fhrp', text: 'Nexthop, on speaker from his cab: "The annex has two routers and reception knows one gateway, 10.33.10.254. HSRP group 1, R1 on duty, R1 takes it back after a fault."',
           check: (d, ctx) => { const n = ctx.net(); const s = (ctx.cfg('R1').interfaces[gi(0)] || { standby: {} }).standby['1'] || {}; const g = Object.values(n.state.hsrp).find(x => x.vip === '10.33.10.254'); return !!g && g.members.length === 2 && n.hsrpActive('10.33.10.254') === 'R1' && s.priority > 100 && !!s.preempt; },

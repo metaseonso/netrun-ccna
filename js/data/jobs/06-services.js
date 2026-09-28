@@ -125,7 +125,7 @@
         { type: 'calc', skill: 'ipv6-addr', text: 'Sixx: "The exchange hall has its own block now. How is it cut?"',
           fields: [ { key: 'ent', label: 'prefix length an enterprise usually receives (/n)', check: v => String(v).replace(/[\/\s]/g, '') === '48' }, { key: 'sub', label: 'prefix length of a normal subnet (/n)', check: v => String(v).replace(/[\/\s]/g, '') === '64' },
             { key: 'n', label: 'how many /64 subnets fit in a /48', check: v => String(v).replace(/[,\s]/g, '') === '65536' } ],
-          answer: '/48 for the site, /64 per subnet, 2^16 = 65,536 subnets.', hint: 'From 48 to 64 is 16 bits of subnet ID.', ok: 'Sixx: "Sixty-five thousand rooms. The hall uses two."',
+          answer: '/48 for the site, /64 per subnet, 2^16 = 65,536 subnets.', hint: 'From 48 to 64 is 16 bits of subnet ID.', ok: 'Sixx: "Sixty-five thousand rooms, and the hall uses two."',
           why: 'Sixx: An enterprise is usually given a /48. Subnets are normally /64, which leaves 64 bits for the interface ID. The bits between 48 and 64, sixteen of them, are the subnet ID, so a /48 holds 2^16 = 65,536 /64 subnets.' },
         { type: 'cmd', skill: 'ipv6-addr', text: 'Sixx: "The gallery is 2001:db8:31:1::/64 and the courier desk is 2001:db8:31:2::/64. Give the router ::1 in each, and make sure each room can reach its gateway."',
           check: (d, ctx) => { const n = ctx.net(); return n.ping6('PC1', '2001:db8:31:1::1').ok && n.ping6('PC2', '2001:db8:31:2::1').ok; },

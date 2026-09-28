@@ -59,7 +59,7 @@
           ],
           choice: { opts: [
             { tone: 'ask', say: 'So how short does that one get?', reply: 'Sixx: "2001:DB8:0:31::1. The 0DB8 loses its zero, the 0000 in the third group becomes 0, 0031 becomes 31, and the four zero groups at the end become ::. The third group stays, because the double colon is already spent on the longer run."' },
-            { tone: 'press', say: 'If IPv4 ran out, why is this gallery still empty?', reply: 'Sixx: "Because people are clever about being lazy. NAT let a whole building hide behind one address, and it made the old floors last twenty years longer than they should have. They\'ll come up here eventually. I\'m good at waiting."' },
+            { tone: 'press', say: 'If IPv4 ran out, why is this gallery still empty?', reply: 'Sixx: "Because people are clever about being lazy. NAT let a whole building hide behind one address, and it made the old floors last twenty years longer than they should have. They\'ll come up here eventually, and I\'m good at waiting."' },
             { tone: 'joke', say: 'Do you ever get lonely up here?', reply: 'Sixx: "I have three hundred and forty undecillion mailboxes for company." A pause. "Also Syn brings me tea on Thursdays."' }
           ] } },
         { k: 'SCENE', where: 'The top gallery · the registry desk · 22:30',
@@ -84,7 +84,7 @@
           { cmd: 'ipv6 unicast-routing', what: 'global config: without it the router forwards no IPv6' },
           { cmd: 'ipv6 address 2001:db8:31:1::1/64 · show ipv6 interface brief · show ipv6 route', what: 'address an interface, and check it' } ] },
         { k: 'SYNC', q: { prompt: 'Syn, arriving at the top of the stairs with a tray: "Sixx says an address can only have one double colon. Why not two?"', opts: ['With two, nobody could tell how many zero quartets each one replaced', 'Two would make the address longer', 'The second one would mean a different prefix length', 'Routers only read the first colon'], a: 0,
-          yes: 'Sixx: "Exactly. One gap, you can count it. Two gaps, you\'re guessing."', no: 'Sixx: "Because :: means as many zero quartets as it takes to make eight. With two of them, the split between them would be a guess."',
+          yes: 'Sixx: "Exactly. With one gap you can count the missing groups, and with two you can\'t tell how many zeros go in each."', no: 'Sixx: "Because :: means as many zero quartets as it takes to make eight. With two of them, the split between them would be a guess."',
           why: 'Sixx: A double colon stands for however many all-zero quartets are needed to bring the address back to eight. If an address had two, there would be no way to know how many zeros each one replaced, so :: may be used only once.' } }
       ] },
     // ------------------------------------------------------------ night 32 · IPv6, part 2
@@ -140,7 +140,7 @@
             { who: 'sixx', text: 'A host that arrives with no address sends a router solicitation, RS, type 133, to FF02::2, all routers. The router replies with a router advertisement, RA, type 134, to FF02::1, all nodes, carrying the prefix of the link. The host builds its own address from that prefix, EUI-64 or a random interface ID. That\'s [[SLAAC]], stateless address autoconfiguration.' }
           ],
           choice: { opts: [
-            { tone: 'ask', say: 'What stops two hosts building the same address?', reply: 'Sixx: "Duplicate Address Detection, DAD. Before it uses a new address, a host sends an NS to its own solicited-node address. If anyone answers with an NA, the address is taken. Silence means it\'s free."' },
+            { tone: 'ask', say: 'What stops two hosts building the same address?', reply: 'Sixx: "Duplicate Address Detection, DAD. Before it uses a new address, a host sends an NS to its own solicited-node address. If anyone answers with an NA, the address is taken, and if nobody answers, it\'s free."' },
             { tone: 'press', say: 'Where do I see what NDP learned?', reply: 'Sixx: "show ipv6 neighbor on the router, the way show arp works for IPv4. And link-local addresses never go into the routing table. They belong to the link, not the road."' },
             { tone: 'quiet', say: '(Trace the violet line with your finger.)', reply: 'It runs from the gallery to the rank and on to a square labelled NEW WING, and next to the rank someone has written, in a different hand, g0/0 only?? and underlined it twice. Sixx watches you find it. "Nexthop\'s cousin had a go last week," Sixx says.' }
           ] } },

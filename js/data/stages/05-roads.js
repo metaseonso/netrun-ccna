@@ -123,7 +123,7 @@
           { cmd: 'ip route 10.24.4.0 255.255.255.0 10.24.13.2 111', what: 'floating static route: an AD above the protocol\'s, used only when the dynamic route is gone' },
           { cmd: 'O 10.24.4.0/24 [110/3] via 10.24.12.2', what: '[AD/metric]. /32 = host route, anything wider = network route' } ] },
         { k: 'SYNC', q: { prompt: 'A night driver at the coffee van, reading your receipt over your shoulder: "Say a router hears about the depot from OSPF and from RIP at the same time. Which one goes in the table?"', opts: ['The OSPF route, because 110 is lower than RIP\'s 120', 'The RIP route, because it counts hops', 'Whichever has the lower metric', 'Both, split evenly'], a: 0,
-          yes: 'Nexthop: "OSPF. Lower AD, every time."', no: 'Nexthop: "OSPF. Different protocols get compared by AD, and 110 beats 120."',
+          yes: 'Nexthop: "OSPF, because its AD is lower."', no: 'Nexthop: "OSPF. Different protocols get compared by AD, and 110 beats 120."',
           why: 'Nexthop: When two different protocols offer a route to the same network, the router cannot compare their metrics, so it compares administrative distance and keeps the lower one. OSPF is 110 and RIP is 120, so the OSPF route goes in the table. Metrics only decide between routes from the same protocol.' } }
       ] },
     // ------------------------------------------------------------ night 25 · RIP and EIGRP
@@ -313,7 +313,7 @@
           choice: { opts: [
             { tone: 'ask', say: 'How do the two routers know which one is on duty?', reply: 'Nexthop: "They multicast hellos to each other. In [[HSRP]], Cisco\'s, the one with the highest priority is active and the other is standby. The default priority is 100, and on a tie the highest IP address wins."' },
             { tone: 'press', say: 'When your cab\'s fixed, do you get the number back?', reply: 'Stan: "Not unless he\'s set to take it. Preemption is off by default on all of them. Without it, I keep the number until my cab dies too." Nexthop, from under the bumper: "standby 1 preempt. I\'m typing it the minute I\'m out of here."' },
-            { tone: 'joke', say: 'Does anyone ever notice it\'s not the same cab?', reply: 'Stan: "One old lady. She said the ride was smoother. I didn\'t tell him."' }
+            { tone: 'joke', say: 'Does anyone ever notice it\'s not the same cab?', reply: 'Stan: "One old lady said the ride was smoother, and I didn\'t tell him that."' }
           ] } },
         { k: 'SCENE', where: 'Stan\'s cab · the ring road · 03:40',
           lines: [
