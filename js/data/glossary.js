@@ -202,5 +202,17 @@ window.GLOSSARY = {
   'community cloud': 'A cloud shared by a group of organisations with common concerns. The four NIST deployment models: private, community, public, hybrid.',
   'saas': 'Software as a Service: the provider runs a finished application you use over the network, like Microsoft Office 365.',
   'paas': 'Platform as a Service: the provider runs a platform for your own code, like AWS Lambda or Google App Engine.',
-  'iaas': 'Infrastructure as a Service: the provider rents you virtual machines, storage and network, like Amazon EC2 or Google Compute Engine.'
+  'iaas': 'Infrastructure as a Service: the provider rents you virtual machines, storage and network, like Amazon EC2 or Google Compute Engine.',
+  // ---- night 55 · wireless fundamentals
+  '802.11': 'The IEEE standard for wireless LANs (Wi-Fi). 802.11 2 Mbps, b 11 Mbps, a 54 Mbps, g 54 Mbps, n 600 Mbps (Wi-Fi 4), ac 6.93 Gbps (Wi-Fi 5), ax (Wi-Fi 6).',
+  'wi-fi alliance': 'The industry group that tests and certifies 802.11 equipment for standards compliance and interoperability.',
+  'csma/ca': 'Carrier Sense Multiple Access with Collision Avoidance. Wireless devices listen and wait for a quiet channel before sending, because wireless is half-duplex.',
+  'frequency': 'The number of cycles a wave completes per second, measured in hertz (Hz). kHz a thousand, MHz a million, GHz a billion, THz a trillion.',
+  'period': 'The time one cycle of a wave takes. Period = 1 / frequency.',
+  'amplitude': 'The maximum strength of a wave\'s electric and magnetic fields: how tall the wave is.',
+  'absorption': 'A signal passing through a material and being turned into heat, weakening it. The other effects: reflection (bounces), refraction (bends), diffraction (travels around an obstacle), scattering (spreads in all directions).',
+  'roaming': 'A wireless client moving from one AP to another within the same ESS without losing its connection.',
+  'bss': 'Basic Service Set: one AP and its associated clients (stations). Identified by the BSSID, the MAC address of the AP\'s radio. The area it covers is the BSA.',
+  'ess': 'Extended Service Set: several BSSes sharing one SSID, joined by the wired distribution system (DS), so clients can roam.',
+  'ibss': 'Independent Basic Service Set: an ad hoc wireless network in which devices talk directly with no AP.'
 };

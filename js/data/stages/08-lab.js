@@ -132,6 +132,47 @@
         { k: 'SYNC', q: { prompt: 'Clerk Adebayo reads from the brochure: "The clinic would rent virtual machines from Halvorsen and install its own software on them." He looks up. "Which service model is that?"', opts: ['IaaS', 'SaaS', 'PaaS', 'A community cloud'], a: 0,
           yes: 'Prof. Hypervisor: "Infrastructure as a service. The machines are theirs and everything on them is the clinic\'s problem."', no: 'Prof. Hypervisor: "IaaS. Renting the virtual machines themselves is infrastructure as a service."',
           why: 'Prof. Hypervisor: With IaaS the provider gives you virtual machines, storage and network, and you install and run everything on them. PaaS runs your code on a platform they manage, and SaaS is a finished program you just use. A community cloud is a deployment model, not a service model.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 55 · wireless fundamentals
+    { id: 'n55-channel-six', title: 'Channel six', sub: 'wireless fundamentals', npc: 'beacon', day: [55], src: [PS('Wireless_Fundamentals.md')], unlocks: ['wifi-basics'],
+      beats: [
+        { k: 'SCENE', where: 'The college roof · Beacon\'s station · half past one in the morning', real: ['ieee'],
+          lines: [
+            { who: 'narr', text: 'Cold wind and the smell of tar paper, and under it the hot-dust smell of old valve amplifiers. Beacon\'s station is a weather hut on the college roof with a whip antenna bolted to the chimney, and through its open door comes a bassline loud enough to feel in your teeth. Inside, a woman with pink spiked hair and an antenna clipped to her headband slides a fader down, leans into the microphone and tells half of Watson to stay put.' },
+            { who: 'beacon', text: 'Back in four minutes, Watson. Don\'t touch that dial. You! Dispatch said you\'d come. Sit on the crate, the chair bites.' },
+            { who: 'beacon', text: 'The clinic\'s new wing went up across the street, and the builders hung three wireless access points in its corridor, all on channel 6. My channel 6. My listeners on the stream have been dropping out since Tuesday.' },
+            { who: 'beacon', text: 'Wi-Fi is [[802.11]], the IEEE\'s standard for wireless LANs, and the [[Wi-Fi Alliance]] tests the kit and puts its sticker on the box when it plays nicely with everyone else\'s. Radio is one shared room. Only one voice on a channel at a time, so wireless is always half-duplex, and nobody can hear a collision while they\'re talking. So every radio listens first, waits for quiet, and then talks. That\'s [[CSMA/CA]], carrier sense multiple access with collision avoidance.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What actually is a channel?', reply: 'Beacon: "A slice of frequency. A radio wave goes up and down, and how many times a second it does that is its [[frequency]], counted in hertz. A thousand is kilohertz, a million megahertz, a billion gigahertz, a trillion terahertz. How long one up-and-down takes is the [[period]], and how tall the wave is, the strength of it, is the [[amplitude]]. Wi-Fi lives in two main bands, 2.4 gigahertz and 5, and each band is cut into channels."' },
+            { tone: 'press', say: 'Why do the walls kill the signal?', reply: 'Beacon: "Walls do five things to it. Concrete and water soak it up and turn it into heat, which is [[absorption]]. Metal bounces it, which is reflection. Glass or water bends it as it goes through, because the wave changes speed there, which is refraction. A pillar makes it wrap round the edge, which is diffraction, and a rough surface like a mesh fence throws it every which way, which is scattering. The new wing has all five in one corridor."' },
+            { tone: 'joke', say: 'Did you pick channel 6 because it\'s in the middle?', reply: 'Beacon: "I picked it when I was twelve because 6 is the best number. Then I found out I was right. On 2.4 gigahertz the channels are so close together that they overlap, and only 1, 6 and 11 stay clear of each other. Everything else stamps on its neighbours."' }
+          ] } },
+        { k: 'SCENE', where: 'Beacon\'s station · the window facing the clinic',
+          lines: [
+            { who: 'narr', text: 'From the hut\'s grimy window you can see the clinic\'s new wing across the street, its corridor lights on and its rooms still dark. Beacon sets a scanner on the sill, and its screen fills with names stacked on top of each other: three of them are all called WING-TEMP, and all three sit on channel 6.' },
+            { who: 'beacon', text: 'Each name on there is an [[SSID]], a service set identifier, the network\'s name as a human reads it. It doesn\'t have to be unique. Those three are one network, three APs sharing one SSID so a laptop can walk down the corridor and hop from one to the next, which is [[roaming]].' },
+            { who: 'beacon', text: 'One AP and the clients joined to it is a [[BSS]], a basic service set. The clients are called stations, and they never talk to each other directly. Everything goes through the AP. The AP\'s radio has its own MAC address, the BSSID, and the patch of ground where you can hear it is the basic service area. Several BSSes with the same SSID joined by the wired network, which 802.11 calls the distribution system, make an [[ESS]], an extended service set.' },
+            { who: 'beacon', text: 'The 2.4 band reaches further and gets through walls better, but it only has three clean channels. The 5 band has lots of channels that don\'t overlap, and it doesn\'t travel as far. For a clinic, put the important kit on 5 and use 2.4 for whatever can\'t.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Which standards use which band?', reply: 'Beacon: "The first 802.11 did 2 megabits on 2.4. Then b, 11 megabits on 2.4, and a, 54 on 5. Then g, 54 on 2.4 again. n does up to 600 on both bands, and that\'s Wi-Fi 4. ac does 6.93 gigabits on 5 only, which is Wi-Fi 5. ax is Wi-Fi 6, about four times ac, on 2.4, 5 and 6 gigahertz."' },
+            { tone: 'press', say: 'What if there\'s no AP at all?', reply: 'Beacon: "Then two laptops talk straight to each other in an [[IBSS]], an independent basic service set, what people call ad hoc. Or there\'s a mesh, an MBSS, where APs link to each other by radio and only the root AP, the RAP, is wired in. The others are mesh APs. An AP can also be a repeater to stretch a BSS, a workgroup bridge that joins a wired box to Wi-Fi, or an outdoor bridge between two buildings with no cable."' },
+            { tone: 'care', say: 'Are your listeners still out there?', reply: 'Beacon looks at the stream counter and her shoulders drop an inch. "Four hundred and twelve, and half of them buffering. The night nurses listen on the ward, you know. Somebody over there has a radio on right now, and it\'s stuttering."' }
+          ] } },
+        { k: 'LORE', title: 'ISLANDS TALKING', year: 1971, vibe: 'Right on. Packets on the radio, hopping between islands.',
+          text: 'Beacon, between records: "June 1971, the University of Hawaii. Norman Abramson\'s team switches on ALOHAnet, computers on different islands sending packets to each other by radio with no cables at all. Anyone could talk whenever they liked, and when two talked at once both packets were lost and both tried again later. Bob Metcalfe read about it and built Ethernet on the same idea. I keep it because every radio in Watson is still learning ALOHAnet\'s rule: if two talk at once, nobody hears either."' },
+        { k: 'KIT', text: 'Beacon writes it on the back of a playlist in fat marker.', real: ['ieee'], kit: [
+          { cmd: '802.11 · Wi-Fi Alliance · half-duplex · CSMA/CA', what: 'the standard · the certifier · one talker at a time · listen before talking' },
+          { cmd: 'absorption · reflection · refraction · diffraction · scattering', what: 'turned to heat · bounced · bent · wrapped round · thrown everywhere' },
+          { cmd: 'amplitude · frequency (Hz, kHz, MHz, GHz, THz) · period', what: 'height · cycles per second · time for one cycle' },
+          { cmd: '2.4 GHz: further, overlapping, use 1 · 6 · 11 only · 5 GHz: non-overlapping', what: 'the two main bands' },
+          { cmd: '802.11 2 Mbps 2.4 · b 11 2.4 · a 54 5 · g 54 2.4 · n 600 2.4/5 (Wi-Fi 4) · ac 6.93 Gbps 5 (Wi-Fi 5) · ax 4×ac 2.4/5/6 (Wi-Fi 6)', what: 'the standards' },
+          { cmd: 'IBSS (ad hoc) · BSS (BSSID = AP radio MAC, BSA) · ESS (roaming) · MBSS (RAP, MAP)', what: 'service sets. Clients in a BSS talk through the AP. The wired side is the DS' } ] },
+        { k: 'SYNC', q: { prompt: 'A listener rings the station\'s request line: "My laptop and my phone are both on the clinic\'s Wi-Fi. Do they talk straight to each other?"', opts: ['No. In a BSS every frame goes through the AP', 'Yes, if they are close enough', 'Only on 5 GHz', 'Only if they share a channel with the station'], a: 0,
+          yes: 'Beacon, on air: "Through the AP, caller. Always through the AP."', no: 'Beacon, on air: "No, caller. In a BSS it all goes through the AP."',
+          why: 'Beacon: In a basic service set the clients, the stations, never send to each other directly. Every frame goes to the AP and the AP passes it on. Only in an IBSS, an ad hoc network with no AP, do devices talk straight to each other.' } }
       ] }
   ] });
 })();
