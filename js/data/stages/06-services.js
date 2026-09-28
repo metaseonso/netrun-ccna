@@ -178,6 +178,52 @@
         { k: 'SYNC', q: { prompt: 'Dora, eating an orange at the lease desk: "If the router tells the NMS a port went down and wants to know the NMS heard it, what does it send?"', opts: ['A Trap', 'A Response', 'An Inform', 'A GetNext'], a: 2,
           yes: 'Denise: "An Inform. It waits for the acknowledgement."', no: 'Denise: "An Inform. A Trap is sent and never acknowledged."',
           why: 'Denise: Both Trap and Inform are notifications the agent sends without being asked. A Trap is not acknowledged, so the agent never knows if it arrived. An Inform is acknowledged by the manager. A Response answers a Get, GetNext, GetBulk or Set, and GetNext comes from the manager.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 41 · syslog
+    { id: 'n41-on-air', title: 'The night band', sub: 'syslog', npc: 'beacon', day: [41], src: [PS('Syslog.md')], unlocks: ['syslog'],
+      beats: [
+        { k: 'SCENE', where: 'The exchange hall · the attic · Beacon\'s station, on air',
+          lines: [
+            { who: 'narr', text: 'The attic stairs are narrow, and the air at the top is hot and smells of warm electronics and cheap incense. A red bulb over the door says ON AIR. Inside, a woman with pink spiky hair leans into a microphone on a boom arm, and on the screen beside her mixing desk, lines of text scroll past, every one with a percent sign in it.' },
+            { who: 'beacon', text: '...and that\'s the market router telling us port seven on the east stalls went down at two minutes past eleven and came back at four minutes past, so whoever kicked that cable, I heard you. This is Beacon on the Watson night band. Stay close.' },
+            { who: 'narr', text: 'She flips a switch, the red bulb goes dark, and a record starts on its own.' },
+            { who: 'beacon', text: 'You\'re Ace\'s runner! Come in, mind the cables, sit on the amp. Every night I read the district\'s logs on air. Every Cisco box writes down what happens to it: a port going down, somebody logging in, somebody changing the config. That\'s [[syslog]].' },
+            { who: 'beacon', text: 'By default a box only shows its messages on the console line and keeps them in a buffer in its own memory, and the buffer\'s gone when the power goes. Point the box at a syslog server and it sends every line there too, over UDP port 514. Mine is the grey box under this desk.' },
+            { who: 'you', text: 'Why read them on air?' },
+            { who: 'beacon', text: 'Because when the whole street hears that a router changed, the person who changed it has to explain it to the whole street.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do I read one of those lines?', reply: 'Beacon: "Left to right. A sequence number, if the box is set to number them. A timestamp. Then the percent sign and three words joined by dashes: the facility, the part of the box that\'s talking, like LINK or SYS; the severity, a number; and the mnemonic, a short code for what happened, like UPDOWN. After the colon, the description in plain words."' },
+            { tone: 'press', say: 'What do the severity numbers mean?', reply: 'Beacon: "Lower is worse. 0 Emergency, 1 Alert, 2 Critical, 3 Error, 4 Warning, 5 Notice, 6 Informational, 7 Debugging. Every Awesome Cisco Engineer Will Need Ice cream Daily. When I set a level, the box sends that level and everything worse."' },
+            { tone: 'joke', say: 'Do you take requests?', reply: 'Beacon: "From anyone who can tell me why channel 6 is the only channel worth broadcasting on. Nobody\'s managed it yet. Ask me again when you\'re ready to lose that argument."' }
+          ] } },
+        { k: 'SCENE', where: 'The attic · the scrolling screen', real: ['cisco'],
+          lines: [
+            { who: 'beacon', text: 'Every place a message can go has its own level. logging console for the console line, logging monitor for people on the VTY lines, and they also have to type terminal monitor to see anything. logging buffered for the buffer, with a size in bytes if you want a bigger one. And logging trap for the syslog servers, which you name with logging host or just logging and the address.' },
+            { who: 'beacon', text: 'service timestamps log datetime msec puts the date and time on every line, from the box\'s clock, so it only helps if Denise has already fixed the clock. service sequence-numbers numbers them, so I know if one went missing. And logging synchronous on the console line keeps a message from landing in the middle of whatever you\'re typing.' },
+            { who: 'narr', text: 'She scrolls back through a file she saved from the gate router\'s buffer, the morning the market\'s tills went dead. The timestamps say 3d04h, three days and four hours since the box last booted, and nothing about the date. She stops on one line and taps it with a fingernail painted the same pink as her hair.' },
+            { who: 'beacon', text: 'Configured from console by vty0. That means somebody came in over the network, not with a cable in the console port, and changed the config. There\'s an address in brackets. I\'m not reading that one on air until Ace hears it first.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why doesn\'t it say who logged in?', reply: 'Beacon: "Because the gate\'s VTY lines only ask for a password, one password for everyone. No username, so nothing to write down. Shell\'s been shouting about that for a year, and you\'re next."' },
+            { tone: 'press', say: 'Couldn\'t someone just delete the log?', reply: 'Beacon: "From the buffer, easily, it\'s only memory. From my server, they\'d have to get into this attic. That\'s the point of sending it somewhere else the moment it happens."' },
+            { tone: 'quiet', say: '(Read the rest of the file.)', reply: 'Four more lines follow the one she tapped: the same address logging out two minutes later, and then nothing but ports going up and down until the market opened.' }
+          ] } },
+        { k: 'LORE', title: 'WRITTEN DOWN TWENTY YEARS LATE', year: 2001, real: ['cisco', 'ietf'], vibe: 'Whatever. The logs were there all along; nobody had written down how.',
+          text: 'Beacon, cueing the next record: "Eric Allman wrote syslog in the early eighties at Berkeley, for his mail program, Sendmail, and everything else on Unix started using it because it was there. Nobody wrote down how it worked for almost twenty years. In August 2001 Chris Lonvick at Cisco finally described it for the IETF in RFC 3164, the BSD syslog protocol. I keep a copy taped to the transmitter, because every line on this screen follows it."' },
+        { k: 'KIT', text: 'Beacon scribbles on the back of a record sleeve.', kit: [
+          { cmd: 'seq: timestamp: %FACILITY-SEVERITY-MNEMONIC: description', what: 'one syslog line, e.g. %LINK-3-UPDOWN' },
+          { cmd: '0 Emergency · 1 Alert · 2 Critical · 3 Error · 4 Warning · 5 Notice · 6 Informational · 7 Debugging', what: 'a level sends that severity and everything worse' },
+          { cmd: 'logging console 4 · logging monitor 6 · logging buffered 16384 6', what: 'console line, VTY lines, the buffer (with a size)' },
+          { cmd: 'logging host 10.37.3.60 (or logging 10.37.3.60) · logging trap informational', what: 'a syslog server over UDP 514, and the level it gets' },
+          { cmd: 'terminal monitor', what: 'on an SSH or Telnet session: show me the messages' },
+          { cmd: 'service timestamps log datetime msec · service sequence-numbers', what: 'date and time on every line · number every line' },
+          { cmd: 'line con 0 · logging synchronous', what: 'messages stop landing in the middle of your typing' },
+          { cmd: 'show logging', what: 'the levels, the servers and the buffer' } ] },
+        { k: 'SYNC', q: { prompt: 'Beacon, hand over the microphone switch: "A line comes in marked 4. Is that worse or better news than a 6?"', opts: ['Better. Higher numbers are worse', 'Worse. 4 is a Warning, 6 is only Informational', 'The same. Both are notifications', 'It depends on the facility'], a: 1,
+          yes: 'Beacon: "Worse. A 4 is a Warning."', no: 'Beacon: "Worse. The lower the number, the worse the news."',
+          why: 'Beacon: Syslog severity runs from 0, Emergency, the worst, down to 7, Debugging. 4 is Warning and 6 is Informational, so a 4 is worse news. The facility says which part of the box is talking, not how bad it is.' } }
       ] }
   ] });
 })();
