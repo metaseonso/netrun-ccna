@@ -170,6 +170,12 @@ Definition of done for a day:
   (before, relay only reached `server` devices with `pools`). The path between relay and server is not checked. Tested (section 14).
   Two DHCP clients on one segment now get consecutive addresses (.21 and .22); the second used to skip one. Tested (section 14).
 
+- 2026-09-28 · SNMP has state: `ctx.net().snmp(nms, agentIp, community, write)` → `{ ok, reason }` (the community must exist,
+  `rw` for a Set, its ACL from `snmp-server community X ro|rw ACL` must permit the manager, and UDP 161 must get through);
+  `ctx.net().snmpTraps('R1')` → one entry per `snmp-server host` (needs `snmp-server enable traps` and UDP 162). Parsed:
+  `snmp-server contact`, `location`, `host IP [version 1|2c|3] COMMUNITY`, `no snmp-server host`, `enable traps [types]`.
+  New `show snmp` and `show snmp host`. Tested (section 15).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a

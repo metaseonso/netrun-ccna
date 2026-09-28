@@ -198,5 +198,18 @@ module.exports.run = function({ out }){
     const net2 = { devices: Object.assign({}, net.devices, { PC4: { kind: 'host', dhcp: true } }), links: net.links.concat([ { a: 'PC4', b: 'R2', bp: 'gigabitethernet0/0' } ]) }; const B = Net.api(Net.build(net2, d));
     ok(B.lease('PC3').ip === '10.3.3.21' && B.lease('PC4').ip === '10.3.3.22', 'dhcp: two clients get consecutive addresses (' + B.lease('PC3').ip + ', ' + B.lease('PC4').ip + ')');
   }
+  // 15. SNMP: polls need the community (rw for a Set), its ACL and UDP 161; traps need a host, enable traps and UDP 162
+  {
+    const net = { devices: { R1: { kind: 'router' }, NMS: { kind: 'server', ip: '10.0.9.50', mask: '255.255.255.0', gw: '10.0.9.1' }, PC1: { kind: 'host', ip: '10.0.1.10', mask: '255.255.255.0', gw: '10.0.1.1' } },
+      links: [ { a: 'NMS', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.9.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.1.1 255.255.255.0', 'no shut', 'exit', 'snmp-server community cellar rw'] });
+    let A = Net.api(Net.build(net, d)); ok(A.snmp('PC1', '10.0.1.1', 'cellar', true).ok, 'snmp: an rw community lets anyone who knows it Set');
+    ['no snmp-server community cellar', 'access-list 40 permit host 10.0.9.50', 'snmp-server community watch ro 40', 'snmp-server contact denise', 'snmp-server location exchange hall', 'snmp-server host 10.0.9.50 version 2c watch'].forEach(l => d.R1.exec(l)); A = Net.api(Net.build(net, d));
+    ok(!A.snmp('PC1', '10.0.1.1', 'cellar', true).ok && A.snmp('NMS', '10.0.9.1', 'watch').ok && !A.snmp('NMS', '10.0.9.1', 'watch', true).ok, 'snmp: ro community reads but cannot Set; the old one is gone');
+    ok(!A.snmp('PC1', '10.0.1.1', 'watch').ok && /ACL 40/.test(A.snmp('PC1', '10.0.1.1', 'watch').reason), 'snmp: the community ACL refuses anyone but the NMS');
+    d.R1.exec('snmp-server community watch ro'); A = Net.api(Net.build(net, d)); ok(A.cfg('R1').snmp.length === 1 && A.snmp('PC1', '10.0.1.1', 'watch').ok, 'snmp: typing a community again replaces it (the ACL is gone)'); d.R1.exec('snmp-server community watch ro 40');
+    ok(A.snmpTraps('R1').length === 1 && !A.snmpTraps('R1')[0].ok, 'snmp: no traps until snmp-server enable traps'); d.R1.exec('snmp-server enable traps'); A = Net.api(Net.build(net, d)); ok(A.snmpTraps('R1')[0].ok, 'snmp: traps reach the host once enabled');
+    ok(/Contact: denise/.test(Show.render(d.R1, 'show snmp', A.state)) && /Logging to 10\.0\.9\.50\.162/.test(Show.render(d.R1, 'show snmp', A.state)) && /security model: v2c/.test(Show.render(d.R1, 'show snmp host', A.state)), 'show snmp and show snmp host');
+  }
   return { pass, fails };
 };

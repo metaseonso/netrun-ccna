@@ -242,6 +242,20 @@
   function discoveryPorts(S){ for (const n in S.neighbors) for (const x of S.neighbors[n]) { const me = S.ifaces[n][x.local].cfg, them = S.ifaces[x.dev][x.remote].cfg;
       if (me.cdpOff || them.cdpOff) x.cdp = false; if (me.lldpRxOff || them.lldpTxOff) x.lldp = false; x.cdpHold = S.cfg[x.dev].cdpHoldtime || 180; x.lldpHold = S.cfg[x.dev].lldpHoldtime || 120; } }
 
+  // ---------------------------------------------------------------- SNMP
+  // a manager (a host, the NMS) polls an agent (a router) at one of its addresses over UDP 161 with a community string:
+  // the string must exist on the agent (rw for a Set), its ACL (if any) must permit the manager, and the path must carry UDP 161.
+  // Traps go from the agent to each snmp-server host over UDP 162, and only once snmp-server enable traps is set.
+  function snmpPoll(S, nms, ip, community, write){ const own = S.l3.find(o => o.ip === ip && o.kind === 'iface'); if (!own) return { ok: false, reason: 'no agent at ' + ip };
+    const c = S.cfg[own.dev]; const cm = c.snmp.find(x => x.community === String(community).toLowerCase()); if (!cm) return { ok: false, reason: own.dev + ' has no community ' + community };
+    if (write && cm.mode !== 'rw') return { ok: false, reason: 'community ' + community + ' is read-only on ' + own.dev };
+    const h = S.hosts[nms]; if (!h || !h.ip) return { ok: false, reason: nms + ' has no address' };
+    if (cm.acl && aclEval(S, own.dev, cm.acl, { src: h.ip, dst: ip, proto: 'udp', dport: 161 }).action !== 'permit') return { ok: false, reason: 'ACL ' + cm.acl + ' on ' + own.dev + ' does not permit ' + h.ip };
+    const p = ping(S, nms, ip, { proto: 'udp', dport: 161 }); if (!p.ok) return { ok: false, reason: 'UDP 161 to ' + ip + ': ' + p.reason };
+    return { ok: true, agent: own.dev, mode: cm.mode, reason: (write ? 'Set' : 'Get') + ' answered by ' + own.dev }; }
+  function snmpTraps(S, dev){ const c = S.cfg[dev]; return (c.snmpHosts || []).map(x => { if (!(c.snmpTraps || []).length) return { host: x.ip, ok: false, reason: 'snmp-server enable traps is not set' };
+      const p = ping(S, dev, x.ip, { proto: 'udp', dport: 162 }); return { host: x.ip, version: x.version, community: x.community, ok: p.ok, reason: p.ok ? 'traps reach ' + x.ip : 'UDP 162 to ' + x.ip + ': ' + p.reason }; }); }
+
   // ---------------------------------------------------------------- DNS
   // names to addresses. A host asks its DNS servers (static dns or the DHCP lease) over UDP 53; a router answers from its
   // "ip host" table when "ip dns server" is on and forwards what it does not know to its own "ip name-server"s (with lookup on);
@@ -362,7 +376,8 @@
       acl: (d, id) => S.cfg[d].acls[id] || null, aclTest: (d, id, pkt) => aclEval(S, d, id, pkt),
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),
       neighbors: d => S.neighbors[d] || [], macTable: d => S.macTable[d] || [], bundles: S.bundles,
-      ntp: d => ntpSync(S, d), resolve: (d, name) => resolve(S, d, name)
+      ntp: d => ntpSync(S, d), resolve: (d, name) => resolve(S, d, name),
+      snmp: (nms, ip, community, write) => snmpPoll(S, nms, ip, community, write), snmpTraps: d => snmpTraps(S, d)
     };
   }
 

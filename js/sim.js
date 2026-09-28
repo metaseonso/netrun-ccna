@@ -131,6 +131,7 @@
       if (line === 'no shutdown') { const i = b.findIndex(x => x.line === 'shutdown'); if (i >= 0) b.splice(i, 1); b.noShut = true; continue; }
       if (line === 'shutdown') b.noShut = false;
       { const na = line.match(/^no access-list (\d+)$/); if (na) { for (let i = b.length - 1; i >= 0; i--) if (b[i].line.startsWith('access-list ' + na[1] + ' ')) b.splice(i, 1); continue; } } // the whole numbered list goes
+      { const sc = line.match(/^snmp-server community (\S+)/); if (sc) for (let i = b.length - 1; i >= 0; i--) if (b[i].line === 'snmp-server community ' + sc[1] || b[i].line.startsWith('snmp-server community ' + sc[1] + ' ')) b.splice(i, 1); } // a community typed again replaces itself
       if (line.startsWith('no ')) { const what = line.slice(3); const i = b.findIndex(x => x.line === what || x.line.startsWith(what + ' ') || keyOf(x.line) && keyOf(x.line) === keyOf(what)); if (i >= 0) b.splice(i, 1); else if (what === 'ip address') { const j = b.findIndex(x => /^ip address /.test(x.line)); if (j >= 0) b.splice(j, 1); } continue; }
       const e = put(b, line); if (/^enable password |^password |^username \S+ password /.test(line)) { e.enc = enc; secrets.push(e); } }
     const show = x => { let m; const l = x.line;

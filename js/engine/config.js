@@ -69,7 +69,8 @@
         else if ((m = s.match(/^ntp server (\S+) .*\bkey (\d+)/))) { cfg.ntp.push(m[1]); (cfg.ntpServerKeys = cfg.ntpServerKeys || {})[m[1]] = +m[2]; }
         else if ((m = s.match(/^ntp server (\S+)/))) cfg.ntp.push(m[1]);
         else if ((m = s.match(/^logging (?:host )?(\S+)$/)) && !/^(console|monitor|buffered|trap|on)$/.test(m[1])) cfg.logging.push(m[1]);
-        else if ((m = s.match(/^snmp-server community (\S+)(?: (ro|rw))?/))) cfg.snmp.push({ community: m[1], mode: m[2] || 'ro' });
+        else if ((m = s.match(/^snmp-server community (\S+) (ro|rw) (\S+)$/))) cfg.snmp = cfg.snmp.filter(x => x.community !== m[1]).concat([{ community: m[1], mode: m[2], acl: m[3] }]);
+        else if ((m = s.match(/^snmp-server community (\S+)(?: (ro|rw))?/))) cfg.snmp = cfg.snmp.filter(x => x.community !== m[1]).concat([{ community: m[1], mode: m[2] || 'ro' }]);
         else if (s === 'no cdp run') cfg.cdp = false; else if (s === 'cdp run') cfg.cdp = true;
         else if (s === 'lldp run') cfg.lldp = true; else if (s === 'no lldp run') cfg.lldp = false;
         else if ((m = s.match(/^no ntp server (\S+)/))) cfg.ntp = cfg.ntp.filter(x => x !== m[1]);
@@ -79,6 +80,10 @@
         else if ((m = s.match(/^cdp (timer|holdtime) (\d+)$/))) cfg[m[1] === 'timer' ? 'cdpTimer' : 'cdpHoldtime'] = +m[2];
         else if ((m = s.match(/^lldp (timer|holdtime|reinit) (\d+)$/))) cfg['lldp' + m[1][0].toUpperCase() + m[1].slice(1)] = +m[2];
         else if (s === 'no cdp advertise-v2') cfg.cdpV1 = true; else if (s === 'cdp advertise-v2') cfg.cdpV1 = false;
+        else if ((m = s.match(/^snmp-server contact (.+)$/))) cfg.snmpContact = m[1]; else if ((m = s.match(/^snmp-server location (.+)$/))) cfg.snmpLocation = m[1];
+        else if ((m = s.match(/^snmp-server host (\S+)(?: (?:traps|informs))?(?: version (1|2c|3)(?: (?:auth|noauth|priv))?)? (\S+)/))) (cfg.snmpHosts = cfg.snmpHosts || []).push({ ip: m[1], version: m[2] || '1', community: m[3] });
+        else if ((m = s.match(/^no snmp-server host (\S+)/))) cfg.snmpHosts = (cfg.snmpHosts || []).filter(x => x.ip !== m[1]);
+        else if ((m = s.match(/^snmp-server enable traps ?(.*)$/))) cfg.snmpTraps = (cfg.snmpTraps || []).concat(m[1] ? m[1].split(' ') : ['all']);
         else if ((m = s.match(/^ip host (\S+) (\d+\.\d+\.\d+\.\d+)/))) (cfg.hostTable = cfg.hostTable || {})[m[1]] = m[2];
         else if ((m = s.match(/^no ip host (\S+)/))) { if (cfg.hostTable) delete cfg.hostTable[m[1]]; }
         else if ((m = s.match(/^ip name-server (.+)$/))) cfg.nameServers = (cfg.nameServers || []).concat(m[1].split(' ').filter(x => !(cfg.nameServers || []).includes(x)));
