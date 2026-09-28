@@ -116,7 +116,7 @@ Definition of done for a day:
   (add a `SUBJECTS` line for them). Do not run it yourself; it spends money.
 - Archetype voice lines are seed content: 3–4 lines per situation. Add depth, keep every situation covered (lint warns).
 - The crew's calls use real-time spacing (10 min, 1 h, 1 d …). In dev, DEV → CALLS → FORCE CALL.
-- `Day 63 (part 2) Terraform` deck skipped (new Anki format; not exam content). Terraform gets a mention in Ansible's stage, no more.
+- All 72 decks are imported. Six decks (days 3, 5, 59, 61) and Terraform use Anki's compressed format; `tools/import_apkg.py` now reads it (needs `pip install zstandard`). Card pictures: `tools/extract_card_images.py` → `js/data/cards/images.js`, shown in crew calls.
 - Sign-in is code-complete (Google, saves in the player's own Drive). It is off until the owner pastes a client ID
   into `config/platform.js`; `docs/AUTH_PLAN.md` has the ten-minute setup. Never touch `js/platform/` for content.
 - Save records are `VERSION` 3. Older records are dropped, not migrated. New keys go in `fresh()` with a default;

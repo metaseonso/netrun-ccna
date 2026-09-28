@@ -14,7 +14,7 @@ Card shape: { id, day, deck, skill, q, a, type:'text'|'choice', opts?, tags, why
 
 No third-party packages. Uses zipfile + sqlite3 from the standard library.
 """
-import argparse, html, json, os, re, sqlite3, sys, tempfile, zipfile
+import argparse, html, io, json, os, re, sqlite3, sys, tempfile, zipfile
 
 DAY_SKILL = {
     # Only days with a built level map to a real skill (feeds STATS "weak skills"). Every other day gets
@@ -36,25 +36,31 @@ def clean(s):
 def read_apkg(path):
     with zipfile.ZipFile(path) as z:
         names = z.namelist()
-        if 'collection.anki21b' in names and 'collection.anki21' not in names:
-            print('WARN new compressed Anki format (anki21b) in', os.path.basename(path), '- export the deck from Anki with "legacy support" or pip install zstandard and extend read_apkg'); 
-        name = 'collection.anki21' if 'collection.anki21' in names else 'collection.anki2'
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.anki2'); tmp.write(z.read(name)); tmp.close()
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.anki2')
+        if 'collection.anki21b' in names:
+            # newer Anki: the collection is a zstd-compressed SQLite file (pip install zstandard)
+            import zstandard
+            tmp.write(zstandard.ZstdDecompressor().stream_reader(io.BytesIO(z.read('collection.anki21b'))).read())
+        else:
+            name = 'collection.anki21' if 'collection.anki21' in names else 'collection.anki2'
+            tmp.write(z.read(name))
+        tmp.close()
     con = sqlite3.connect(tmp.name); cur = con.cursor()
-    models = json.loads(cur.execute('select models from col').fetchone()[0])
-    decks = json.loads(cur.execute('select decks from col').fetchone()[0])
+    try: models = json.loads(cur.execute('select models from col').fetchone()[0] or '{}')
+    except Exception: models = {}
     out = []
     for nid, mid, flds, tags in cur.execute('select id, mid, flds, tags from notes'):
         model = models.get(str(mid)) or {}
         fields = flds.split('\x1f'); names = [f['name'] for f in model.get('flds', [])]
-        is_cloze = model.get('type') == 1 or 'cloze' in (model.get('name', '').lower())
+        is_cloze = model.get('type') == 1 or 'cloze' in (model.get('name', '').lower()) or bool(CLOZE.search(fields[0] if fields else ''))
         if is_cloze:
             text = clean(fields[0]); answers = CLOZE.findall(fields[0])
             q = CLOZE.sub('____', fields[0]); q = clean(q); a = ' / '.join(clean(x) for x in answers)
         else:
             q = clean(fields[0]) if fields else ''; a = clean(fields[1]) if len(fields) > 1 else ''
         if not q or not a: continue
-        out.append({'nid': nid, 'q': q, 'a': a, 'tags': [t for t in tags.split() if t]})
+        imgs = re.findall(r'<img[^>]+src="([^"]+)"', flds)
+        out.append({'nid': nid, 'q': q, 'a': a, 'tags': [t for t in tags.split() if t], 'imgs': imgs})
     con.close(); os.unlink(tmp.name)
     return out
 

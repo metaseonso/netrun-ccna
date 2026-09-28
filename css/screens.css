@@ -281,3 +281,6 @@
 .modal.contact{border-color:var(--cyan)} .cth{display:flex;gap:14px;align-items:center;margin-bottom:14px} .cth img{border-radius:50%;box-shadow:0 0 0 1px var(--line),0 0 0 4px var(--panel),0 0 0 5px rgba(63,246,255,.4)}
 .modal.contact h3{margin:0 0 4px;color:var(--ink)} .cmail{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);background:var(--bg);margin-bottom:12px} .cmail code{color:var(--cyan)}
 .modal.contact textarea{width:100%;box-sizing:border-box;padding:10px 12px;margin-bottom:12px;background:var(--bg);border:1px solid var(--line);color:var(--ink);font:13px/1.5 var(--mono);resize:vertical} .modal.contact textarea:focus{outline:none;border-color:var(--cyan)}
+
+/* a card's picture in a crew call */
+.cardimg{display:block;max-width:220px;max-height:140px;margin:8px 0;padding:6px;background:#fff;border-radius:6px}

@@ -1,0 +1,130 @@
+# Course files (on the owner machine only)
+
+Folder: `C:/Users/Seonso/Desktop/CCNA Course Files`. All 72 decks are imported into `js/data/cards/` (including the six in the newer compressed format, and Terraform). The `.pkt` labs cannot be read here; each gig rebuilds its lab from the topic. The Mega Lab addressing plan is copied into `docs/megalab/ADDRESSING.md`.
+
+- ## CAN'T SEE ALL THE FILES_ ##.docx
+- ## CAN'T SEE ALL THE FILES_ ##.txt
+- CCNA Mega Lab
+- CCNA Mega Lab (Jeremy's IT Lab).pka
+- Connections & IPv4 Addresses.xlsx
+- Day 01 Flashcards - Network Devices.apkg
+- Day 01 Lab - Packet Tracer Introduction.pkt
+- Day 02 Flashcards - Interfaces and Cables.apkg
+- Day 02 Lab - Connecting Devices.pkt
+- Day 03 Flashcards - TCP-IP.apkg
+- Day 03 Lab - OSI Model.pkt
+- Day 04 Flashcards - Intro to the CLI.apkg
+- Day 04 Lab - Basic Device Security.pkt
+- Day 05 Flashcards - Ethernet LAN Switching (Part 1).apkg
+- Day 06 Flashcards - Ethernet LAN Switching (Part 2).apkg
+- Day 06 Lab - Ethernet LAN Switching.pkt
+- Day 07 Flashcards - IPv4 Addresses (Part 1).apkg
+- Day 08 Flashcards - IPv4 Addresses (Part 2).apkg
+- Day 08 Lab - IPv4 Addresses.pkt
+- Day 09 Flashcards - Switch Interfaces.apkg
+- Day 09 Lab - Interface Configuration.pkt
+- Day 10 Flashcards - IPv4 Header.apkg
+- Day 11 (part 1) Flashcards - Routing Fundamentals.apkg
+- Day 11 (part 2) Flashcards - Static Routing.apkg
+- Day 11 Lab - Configuring Static Routes.pkt
+- Day 11 Lab - Troubleshooting Static Routes.pkt
+- Day 12 Lab - Life of a Packet.pkt
+- Day 13 Flashcards - Subnetting.apkg
+- Day 15 Lab - VLSM.pkt
+- Day 16 Flashcards - VLANs (Part 1).apkg
+- Day 16 Lab - VLANs (Part 1).pkt
+- Day 17 Flashcards - VLANs (Part 2).apkg
+- Day 17 Lab - VLANs (Part 2).pkt
+- Day 18 Flashcards - VLANs (Part 3).apkg
+- Day 18 Lab - Multilayer Switching.pkt
+- Day 19 Flashcards - DTP & VTP.apkg
+- Day 19 Lab - DTP & VTP.pkt
+- Day 20 Flashcards - STP (Part 1).apkg
+- Day 20 Lab - Analyzing STP.pkt
+- Day 21 Flashcards - STP (Part 2).apkg
+- Day 21 Lab - Configuring Spanning Tree.pkt
+- Day 21-1 Flashcards - PortFast.apkg
+- Day 21-2 Flashcards - BPDU Guard & BPDU Filter.apkg
+- Day 21-3 Flashcards - Root Guard.apkg
+- Day 21-4 Flashcards - Loop Guard.apkg
+- Day 22 Flashcards - Rapid STP.apkg
+- Day 22 Lab - Rapid STP.pkt
+- Day 23 Flashcards - EtherChannel.apkg
+- Day 23 Lab - EtherChannel.pkt
+- Day 24 Flashcards - Dynamic Routing.apkg
+- Day 24 Lab - Floating Static Routes.pkt
+- Day 25 Flashcards (1) - RIP & EIGRP.apkg
+- Day 25 Flashcards (2 - Lab Video) - EIGRP Terms.apkg
+- Day 25 Lab - EIGRP Configuration.pkt
+- Day 26 Flashcards - OSPF (Part 1).apkg
+- Day 26 Lab - OSPF (Part 1).pkt
+- Day 27 Flashcards - OSPF (Part 2).apkg
+- Day 27 Lab - OSPF (Part 2).pkt
+- Day 28 Flashcards - OSPF (Part 3).apkg
+- Day 28 Lab - OSPF (Part 3).pkt
+- Day 29 Flashcards - FHRPs.apkg
+- Day 29 Lab - HSRP Configuration.pkt
+- Day 30 Flashcards - TCP & UDP.apkg
+- Day 31 Flashcards - IPv6 (Part 1).apkg
+- Day 31 Lab - IPv6 Configuration (Part 1).pkt
+- Day 32 Flashcards - IPv6 (Part 2).apkg
+- Day 32 Lab - IPv6 Configuration (Part 2).pkt
+- Day 33 Flashcards - IPv6 (Part 3).apkg
+- Day 33 Lab - IPv6 Static Routes.pkt
+- Day 34 Flashcards - Standard ACLs.apkg
+- Day 34 Lab - Standard ACLs.pkt
+- Day 35 Flashcards - Extended ACLs.apkg
+- Day 35 Lab - Extended ACLs.pkt
+- Day 36 Flashcards - CDP & LLDP.apkg
+- Day 36 Lab - CDP & LLDP.pkt
+- Day 37 Flashcards - NTP.apkg
+- Day 37 Lab - NTP.pkt
+- Day 38 Flashcards - DNS.apkg
+- Day 38 Lab - DNS.pkt
+- Day 39 Flashcards - DHCP.apkg
+- Day 39 Lab - DHCP.pkt
+- Day 40 Flashcards - SNMP.apkg
+- Day 40 Lab - SNMP.pkt
+- Day 41 Flashcards - Syslog.apkg
+- Day 41 Lab - Syslog.pkt
+- Day 42 Flashcards - SSH.apkg
+- Day 42 Lab - SSH.pkt
+- Day 43 Flashcards - FTP & TFTP.apkg
+- Day 43 Lab - FTP & TFTP.pkt
+- Day 44 Flashcards - NAT (Part 1).apkg
+- Day 44 Lab - Static NAT.pkt
+- Day 45 Flashcards - NAT (Part 2).apkg
+- Day 45 Lab - Dynamic NAT.pkt
+- Day 46 Flashcards - QoS (Part 1).apkg
+- Day 46 Lab - Voice VLANs.pkt
+- Day 47 Flashcards - QoS (Part 2).apkg
+- Day 47 Lab - QoS.pkt
+- Day 48 Flashcards - Security Fundamentals.apkg
+- Day 49 Flashcards - Port Security.apkg
+- Day 49 Lab - Port Security.pkt
+- Day 50 Flashcards - DHCP Snooping.apkg
+- Day 50 Lab - DHCP Snooping.pkt
+- Day 51 Flashcards - Dynamic ARP Inspection.apkg
+- Day 51 Lab - Dynamic ARP Inspection.pkt
+- Day 52  Flashcards - LAN Architectures.apkg
+- Day 52 Lab - STP & HSRP Synchronization.pkt
+- Day 53 Flashcards - WAN Architectures.apkg
+- Day 53 Lab - GRE Tunnels.pkt
+- Day 54 (Part 1) Flashcards - Virtualization & Cloud.apkg
+- Day 54 (Part 2) Flashcards - Containers.apkg
+- Day 54 (Part 3) Flashcards - VRF.apkg
+- Day 55 Flashcards - Wireless Fundamentals.apkg
+- Day 56 Flashcards - Wireless Architectures.apkg
+- Day 57 Flashcards - Wireless Security.apkg
+- Day 58 Flashcards - Wireless Configuration.apkg
+- Day 58 Lab - Wireless LANs.pkt
+- Day 59 (Part 1) Flashcards - Network Automation.apkg
+- Day 59 (Part 2) Flashcards - AI & Machine Learning.apkg
+- Day 60 Flashcards - JSON, XML, & YAML.apkg
+- Day 61 (Part 1) Flashcards - REST APIs.apkg
+- Day 61 (Part 2) Flashcards - REST Authentication.apkg
+- Day 62 Flashcards - SDN.apkg
+- Day 63 (part 1) Flashcards - Ansible, Puppet, Chef.apkg
+- Day 63 (part 2) Flashcards - Terraform.apkg
+- _fetch.py
+- _listing.json
