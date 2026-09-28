@@ -121,7 +121,7 @@
         if (ok === 'router' || ok === 'l3switch') { // router port and its subinterfaces
           const base = S.ifaces[oth][othp]; if (si.trunk) { uf.union(node(sw, si.native), ifNode(oth, othp)); for (const p in S.ifaces[oth]) { const sub = S.ifaces[oth][p]; if (sub.parent === othp && sub.up && sub.cfg.dot1q != null) { if (!blockedIn(sub.cfg.dot1q, sw, swp) && carries(si, sub.cfg.dot1q)) uf.union(node(sw, sub.cfg.dot1q === si.native ? si.native : sub.cfg.dot1q), ifNode(oth, p)); } } }
           else { if (!blockedIn(si.vlan, sw, swp)) uf.union(node(sw, si.vlan), ifNode(oth, othp)); } }
-        else { const v = si.trunk ? si.native : si.vlan; if (!blockedIn(v, sw, swp)) uf.union(node(sw, v), hostNode(oth)); } }
+        else { const v = si.trunk ? si.native : (D[oth].voice && si.cfg.voiceVlan ? si.cfg.voiceVlan : si.vlan); if (!blockedIn(v, sw, swp)) uf.union(node(sw, v), hostNode(oth)); } } // an IP phone (host with voice: true) tags into the port's voice VLAN when it has one
       else { // no switch: point to point
         const na = (ka === 'router' || ka === 'l3switch') ? ifNode(L.a, L.ap) : hostNode(L.a), nb = (kb === 'router' || kb === 'l3switch') ? ifNode(L.b, L.bp) : hostNode(L.b); uf.union(na, nb); } });
     // SVIs join their VLAN node
@@ -253,10 +253,19 @@
       const pm = (spec, v) => !spec || (spec.op === 'eq' ? v === spec.p : spec.op === 'gt' ? v > spec.p : spec.op === 'lt' ? v < spec.p : spec.op === 'neq' ? v !== spec.p : spec.op === 'range' ? v >= spec.a && v <= spec.b : true); if (!pm(e.sport, pkt.sport) || !pm(e.dport, pkt.dport)) continue; return { action: e.action, line: e, seq: e.seq }; }
     return { action: 'deny', reason: 'implicit deny at end of ACL ' + aclId, implicit: true }; }
   function natOut(S, dev, inIf, outIf, pkt, tbl){ const cfg = S.cfg[dev]; const ii = S.ifaces[dev][inIf], oi = S.ifaces[dev][outIf]; if (!(ii && ii.cfg.natInside && oi && oi.cfg.natOutside)) return null;
-    for (const s of cfg.natStatic) if (s.inside === pkt.src) { tbl.push({ inside: pkt.src, global: s.outside, kind: 'static', proto: pkt.proto, port: pkt.sport }); return s.outside; }
-    for (const d of cfg.natDynamic) { const r = aclEval(S, dev, d.acl, { src: pkt.src, dst: pkt.dst, proto: 'ip' }); if (r.action !== 'permit') continue; let g = null; if (d.iface) { const o = S.l3.find(x => x.dev === dev && x.iface === (Sim.canonIf(d.iface) || d.iface)); g = o && o.ip; } else if (d.pool && cfg.natPools[d.pool]) { const p = cfg.natPools[d.pool]; const used = tbl.filter(t => t.pool === d.pool).map(t => t.global); const size = IP.ip2n(p.end) - IP.ip2n(p.start) + 1; for (let k = 0; k < size; k++) { const cand = IP.n2ip(IP.ip2n(p.start) + k); if (!used.includes(cand) || d.overload) { g = cand; break; } } }
-      if (!g) return { fail: 'NAT: no global address available' }; tbl.push({ inside: pkt.src, global: g, kind: d.overload ? 'pat' : 'dynamic', proto: pkt.proto, port: pkt.sport, pool: d.pool }); return g; }
+    for (const s of cfg.natStatic) if (s.inside === pkt.src) { tbl.push({ inside: pkt.src, global: s.outside, kind: 'static', proto: pkt.proto, port: pkt.sport, outside: pkt.dst }); return s.outside; }
+    // translations this router already holds (pings typed in the shell, until clear ip nat translation *): a dynamic pool keeps one address per inside host
+    const held = (S.devices && S.devices[dev] && S.devices[dev]._natSeen) || [];
+    for (const d of cfg.natDynamic) { const r = aclEval(S, dev, d.acl, { src: pkt.src, dst: pkt.dst, proto: 'ip' }); if (r.action !== 'permit') continue; let g = null; if (d.iface) { const o = S.l3.find(x => x.dev === dev && x.iface === (Sim.canonIf(d.iface) || d.iface)); g = o && o.ip; } else if (d.pool && cfg.natPools[d.pool]) { const p = cfg.natPools[d.pool]; const mine = !d.overload && held.find(t => t.pool === d.pool && t.kind === 'dynamic' && t.inside === pkt.src); const used = tbl.filter(t => t.pool === d.pool).map(t => t.global).concat(held.filter(t => t.pool === d.pool && t.kind === 'dynamic' && t.inside !== pkt.src).map(t => t.global)); const size = IP.ip2n(p.end) - IP.ip2n(p.start) + 1; if (mine) g = mine.global; else for (let k = 0; k < size; k++) { const cand = IP.n2ip(IP.ip2n(p.start) + k); if (!used.includes(cand) || d.overload) { g = cand; break; } } }
+      if (!g) return { fail: 'NAT: no global address available' }; let gport = pkt.sport; if (d.overload) while (held.some(t => t.global === g && (t.gport || t.port) === gport && t.inside !== pkt.src)) gport++;
+      tbl.push({ inside: pkt.src, global: g, kind: d.overload ? 'pat' : 'dynamic', proto: pkt.proto, port: pkt.sport, gport, pool: d.pool, outside: pkt.dst }); return g; }
     return null; }
+
+  // traffic arriving from the internet (a cloud) for a public address that a router on the cloud's link translates (a static
+  // mapping or a NAT pool) goes to that router; an address inside the link's own subnet that nobody holds answers nothing (false)
+  function cloudHandoff(S, o, dst){ const owners = S.owners[o.seg] || []; if (owners.some(x => x.ip === dst)) return null;
+    for (const x of owners) { if (x.kind !== 'iface') continue; const c = S.cfg[x.dev]; if (c.natStatic.some(s => s.outside === dst) || Object.values(c.natPools).some(p => IP.ip2n(dst) >= IP.ip2n(p.start) && IP.ip2n(dst) <= IP.ip2n(p.end))) return x; }
+    if (inSubnet(dst, netOf(o.ip, o.mask), o.mask)) return false; return null; }
 
   // ---------------------------------------------------------------- forwarding
   function ownerOn(S, seg, ip){ return (S.owners[seg] || []).find(o => o.ip === ip) || (S.owners[seg] || []).find(o => o.kind === 'cloud' && (o.internet && !RFC1918(ip) || o.serves.includes(ip))); }
@@ -270,6 +279,7 @@
     if (S.hosts[from]) { const h = S.hosts[from]; if (!h.up) return fail(from + ' has no link'); if (!h.ip) return fail(from + ' has no IP address' + (h.lease && h.lease.reason ? ' (' + h.lease.reason + ')' : '')); pkt.src = h.ip; cur = { kind: 'host', dev: from, seg: h.seg, ip: h.ip, mask: h.mask, gw: h.gw }; }
     else if (S.routers.includes(from)) { const rt = lookup(S, from, dstIp); if (!rt) return fail(from + ' has no route to ' + dstIp); const o = S.l3.find(x => x.dev === from && x.iface === rt.iface); pkt.src = opts.src || (o ? o.ip : null); if (!pkt.src) return fail('no source address'); cur = { kind: 'router', dev: from, inIf: null }; }
     else return fail(from + ' cannot originate traffic');
+    if (S.hosts[from] && S.hosts[from].kind === 'cloud') cur = { kind: 'cloud', dev: from, seg: S.hosts[from].seg }; // the internet sends like the internet, not like a PC with no gateway
     const res = forward(S, cur, pkt, path, natTbl, 'request'); const trail = (path.trail || []).slice(); const fwdLen = path.length; if (res.ok && trail[trail.length - 1] !== dstIp) trail.push(dstIp); if (!res.ok) return fail(res.reason, { hops: res.hops, trail, fwdLen });
     // reply
     const rpkt = { src: res.dstIp, dst: pkt.src === res.srcSeen ? pkt.src : res.srcSeen, proto, sport: pkt.dport, dport: pkt.sport, reply: true };
@@ -280,7 +290,9 @@
     const D = S.net.devices; let ttl = 30; const visited = new Set(); let hops = 0; let srcSeen = pkt.src;
     for (;;) { if (ttl-- <= 0) return { ok: false, reason: 'TTL expired (routing loop?)', hops };
       if (cur.kind === 'host' || cur.kind === 'cloud') { const h = S.hosts[cur.dev]; let target;
-        if (cur.kind === 'cloud') { const o = S.l3.find(x => x.dev === cur.dev); if (RFC1918(pkt.dst) && !o.serves.includes(pkt.dst)) return { ok: false, reason: cur.dev + ' will not route a private address (' + pkt.dst + ')', hops }; target = ownerOn(S, o.seg, pkt.dst) || (S.owners[o.seg] || []).find(x => x.kind === 'iface'); if (!target) return { ok: false, reason: cur.dev + ' has no next hop', hops }; if (target.ip !== pkt.dst && target.kind === 'iface') { path.push({ dev: cur.dev, act: 'forward to ' + target.dev }); cur = { kind: 'router', dev: target.dev, inIf: target.iface }; continue; } }
+        if (cur.kind === 'cloud') { const o = S.l3.find(x => x.dev === cur.dev); if (RFC1918(pkt.dst) && !o.serves.includes(pkt.dst)) return { ok: false, reason: cur.dev + ' will not route a private address (' + pkt.dst + ')', hops };
+          const hand = cloudHandoff(S, o, pkt.dst); if (hand === false) return { ok: false, reason: 'nothing answers at ' + pkt.dst + ' on ' + cur.dev + '\'s link', hops }; if (hand) { path.push({ dev: cur.dev, act: 'forward to ' + hand.dev + ' (its NAT address)' }); cur = { kind: 'router', dev: hand.dev, inIf: hand.iface }; continue; }
+          target = ownerOn(S, o.seg, pkt.dst) || (S.owners[o.seg] || []).find(x => x.kind === 'iface'); if (!target) return { ok: false, reason: cur.dev + ' has no next hop', hops }; if (target.ip !== pkt.dst && target.kind === 'iface') { path.push({ dev: cur.dev, act: 'forward to ' + target.dev }); cur = { kind: 'router', dev: target.dev, inIf: target.iface }; continue; } }
         else { if (inSubnet(pkt.dst, netOf(h.ip, h.mask), h.mask)) target = ownerOn(S, h.seg, pkt.dst); else { if (!h.gw) return { ok: false, reason: cur.dev + ' has no default gateway', hops }; target = ownerOn(S, h.seg, h.gw); if (!target) return { ok: false, reason: cur.dev + ' cannot reach its gateway ' + h.gw + ' (no ARP reply)', hops }; if (target.kind === 'host' || (target.kind === 'cloud')) return { ok: false, reason: 'gateway ' + h.gw + ' is not a router', hops }; } }
         if (!target) return { ok: false, reason: 'no host ' + pkt.dst + ' on ' + cur.dev + "'s network", hops };
         path.push({ dev: cur.dev, act: (target.ip === pkt.dst ? 'deliver to ' : 'send to gateway ') + target.dev });
@@ -297,6 +309,7 @@
       const rt = lookup(S, r, pkt.dst); if (!rt) { path.push({ dev: r, act: 'no route to ' + pkt.dst }); return { ok: false, reason: r + ' has no route to ' + pkt.dst, hops }; }
       const outIf = rt.iface; const oi = S.ifaces[r][outIf]; if (!oi || !oi.up) return { ok: false, reason: r + ' egress ' + short(outIf) + ' is down', hops };
       // NAT outbound
+      if (cur.inIf && pkt.reply) { const ri = S.ifaces[r][cur.inIf]; const st = ri && ri.cfg.natInside && oi.cfg.natOutside && S.cfg[r].natStatic.find(x => x.inside === pkt.src); if (st) { path.push({ dev: r, act: 'NAT ' + pkt.src + ' → ' + st.outside }); pkt = Object.assign({}, pkt, { src: st.outside }); } } // a server's answer leaves wearing its static mapping
       if (cur.inIf && !pkt.reply) { const g = natOut(S, r, cur.inIf, outIf, pkt, natTbl); if (g && g.fail) { path.push({ dev: r, act: g.fail }); return { ok: false, reason: g.fail, hops }; } if (g) { path.push({ dev: r, act: 'NAT ' + pkt.src + ' → ' + g }); pkt = Object.assign({}, pkt, { src: g }); srcSeen = g; } }
       if (pkt.reply && oi.cfg.natInside) { /* reply heading back inside: src stays */ }
       if (oi.cfg.aclOut) { const v = aclEval(S, r, oi.cfg.aclOut, pkt); if (v.action === 'deny') { path.push({ dev: r, act: 'DENIED outbound on ' + short(outIf) + ' by ACL ' + oi.cfg.aclOut + (v.implicit ? ' (implicit deny)' : ' line ' + v.seq) }); return { ok: false, reason: 'denied by ACL ' + oi.cfg.aclOut + ' outbound on ' + r + ' ' + short(outIf), hops }; } }

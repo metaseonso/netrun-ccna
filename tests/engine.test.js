@@ -58,7 +58,9 @@ module.exports.run = function({ out }){
     let d = devs({ R1: base }); let A = Net.api(Net.build(net, d)); const p0 = A.ping('PC1', '8.8.8.8'); ok(!p0.ok && /private/.test(p0.reason), 'nat: ISP drops private source without NAT (' + p0.reason + ')');
     d.R1.exec('access-list 1 permit 192.168.1.0 0.0.0.255'); d.R1.exec('ip nat inside source list 1 interface g0/1 overload'); d.R1.exec('int g0/0'); d.R1.exec('ip nat inside'); d.R1.exec('int g0/1'); d.R1.exec('ip nat outside'); A = Net.api(Net.build(net, d));
     const p1 = A.ping('PC1', '8.8.8.8'); ok(p1.ok && p1.nat.length && p1.nat[0].global === '203.0.113.2', 'nat: PAT translates and ping works (' + p1.reason + ')');
+    const p15 = A.ping('ISP', '203.0.113.3'); ok(!p15.ok, 'nat: an unmapped address on the provider link answers nothing (' + p15.reason + ')');
     d.R1.exec('ip nat inside source static 192.168.1.50 203.0.113.3'); A = Net.api(Net.build(net, d)); const p2 = A.ping('ISP', '203.0.113.3'); ok(p2.ok, 'nat: static NAT reachable from outside (' + p2.reason + ')');
+    ok(p2.dst === 'SRV' && p2.path.some(p => p.act === 'NAT 203.0.113.3 → 192.168.1.50') && p2.path.some(p => p.act === 'NAT 192.168.1.50 → 203.0.113.3'), 'nat: the internet hands the static address to R1, and the server\'s answer leaves translated (' + JSON.stringify(p2.path) + ')');
   }
   // 5. VLANs, trunk, router-on-a-stick, DHCP with snooping and a rogue
   {
@@ -173,6 +175,77 @@ module.exports.run = function({ out }){
     const txt = Show.render(d.R1, 'show ip route', A.state); ok(/L\s+10\.0\.1\.1\/32 is directly connected/.test(txt) && /10\.0\.0\.0\/8 is variably subnetted/.test(txt) && /\[5\/0\] via 10\.0\.12\.2, GigabitEthernet0\/1/.test(txt), 'show ip route: local /32 routes and classful headers');
     d.R1.exec('no ip route 10.0.2.0 255.255.255.0 g0/1 10.0.12.2'); A = Net.api(Net.build(net, d)); ok(!A.route('R1', '10.0.2.0/24'), 'static: no ip route removes an exit-interface route');
     d.R1.exec('ip route 10.0.2.0 255.255.255.0 10.0.12.2'); d.R1.exec('int g0/1'); d.R1.exec('shutdown'); A = Net.api(Net.build(net, d)); ok(!A.route('R1', '10.0.2.0/24'), 'static: the route leaves the table when its interface goes down');
+  }
+  // 14. copy over TFTP and FTP: the questions IOS asks, the file landing in flash, FTP logins, boot system, a config backup
+  {
+    const img = 'c2900-universalk9-mz.spa.155-3.m4a.bin';
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.4300.0001' }, SRV1: { kind: 'server', ip: '10.0.43.100', mask: '255.255.255.0', gw: '10.0.43.1', files: [{ name: img, size: 97794040 }], ftp: { user: 'shell', pass: 'keys' } } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'SRV1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.43.1 255.255.255.0', 'no shut', 'end'], SW1: [] }); let S = Net.build(net, d); d.R1._netState = () => (S = Net.build(net, d));
+    const R1 = d.R1; const said = () => R1.out.map(o => o.s).join('\n');
+    R1.exec('copy tftp: flash:'); ok(R1.ask && R1.prompt() === 'Address or name of remote host []? ', 'copy: asks for the remote host');
+    R1.exec('10.0.43.100'); ok(R1.prompt() === 'Source filename []? ', 'copy: asks for the source file'); R1.exec(img.toUpperCase()); ok(R1.prompt() === 'Destination filename [' + img + ']? ', 'copy: offers the source name as the destination');
+    R1.exec(''); ok(!R1.ask && R1.prompt() === 'R1#' && (R1.flash || []).some(f => f.name === img) && /\[OK - 97794040 bytes\]/.test(said()), 'copy: TFTP download lands in flash');
+    ok(new RegExp(img.replace(/\./g, '\\.')).test(Show.render(R1, 'show flash', S)) && /c2900-universalk9-mz\.SPA\.151-4\.M4\.bin/.test(Show.render(R1, 'show flash:', S)), 'show flash lists the old image and the new one');
+    ok(/network\s+rw\s+tftp:/.test(Show.render(R1, 'show file systems', S)) && /disk\s+rw\s+flash:/.test(Show.render(R1, 'show file systems', S)), 'show file systems lists disk and network types');
+    const n0 = R1.out.length; R1.exec('copy ftp://10.0.43.100/' + img + ' flash:'); R1.exec(''); ok(/Incorrect Login\/Password/.test(R1.out.slice(n0).map(o => o.s).join('\n')), 'copy: FTP refuses a box with no matching ip ftp username/password');
+    R1.exec('conf t'); R1.exec('ip ftp username shell'); R1.exec('ip ftp password keys'); R1.exec('boot system flash:' + img); R1.exec('end');
+    const n1 = R1.out.length; R1.exec('copy ftp://10.0.43.100/' + img + ' flash:'); R1.exec(''); ok(/\[OK - 97794040 bytes\]/.test(R1.out.slice(n1).map(o => o.s).join('\n')), 'copy: FTP works once the login matches');
+    const c = NetConfig.parse(R1); ok(c.ftpUser === 'shell' && c.ftpPass === 'keys' && (c.bootSystem || [])[0] === img, 'config: ip ftp username/password and boot system are parsed');
+    R1.exec('copy tftp: flash:'); R1.exec('10.0.43.100'); R1.exec('missing.bin'); R1.exec(''); ok(/No such file/.test(said()), 'copy: a file the server does not have fails');
+    R1.exec('copy running-config tftp:'); R1.exec('10.0.43.100'); ok(R1.prompt() === 'Destination filename [r1-confg]? ', 'copy: a config backup offers hostname-confg'); R1.exec('');
+    ok((R1.sent || []).some(x => x.file === 'r1-confg' && x.what === 'running-config' && x.proto === 'tftp') && R1.lines.some(r => r.line === 'copy running-config tftp://10.0.43.100/r1-confg'), 'copy: the running-config goes to the TFTP server and is recorded');
+    R1.exec('copy tftp: flash:'); R1.exec('10.0.43.99'); R1.exec(img); R1.exec(''); ok(/Timed out/.test(said()), 'copy: an address nobody answers times out');
+  }
+  // 15. NAT as the shell shows it: pings from PCs fill the table, a dynamic pool holds one address per host and runs out,
+  //     clear ip nat translation * frees it, a new statement for the same list replaces the old one, PAT keeps ports apart
+  {
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.4500.0001' }, ISP: { kind: 'cloud', ip: '203.0.113.1', mask: '255.255.255.248', internet: true },
+      PC1: { kind: 'host', ip: '192.168.45.11', mask: '255.255.255.0', gw: '192.168.45.1' }, PC2: { kind: 'host', ip: '192.168.45.12', mask: '255.255.255.0', gw: '192.168.45.1' }, PC3: { kind: 'host', ip: '192.168.45.13', mask: '255.255.255.0', gw: '192.168.45.1' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'SW1', ap: 'fastethernet0/2', b: 'PC2' }, { a: 'SW1', ap: 'fastethernet0/3', b: 'PC3' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'ISP' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 192.168.45.1 255.255.255.0', 'no shut', 'ip nat inside', 'int g0/1', 'ip add 203.0.113.2 255.255.255.248', 'no shut', 'ip nat outside', 'exit', 'ip route 0.0.0.0 0.0.0.0 203.0.113.1',
+      'access-list 1 permit 192.168.45.0 0.0.0.255', 'ip nat pool bowls 203.0.113.3 203.0.113.4 netmask 255.255.255.248', 'ip nat inside source list 1 pool bowls', 'ip nat inside source static 192.168.45.50 203.0.113.6', 'end'], SW1: [] });
+    const st = () => Net.build(net, d); for (const n of ['PC1', 'PC2', 'PC3']) { d[n] = new Sim.Device(n, { kind: 'host', netState: st }); d[n]._all = d; } d.R1._netState = st;
+    const say = (n, c) => { const k = d[n].out.length; d[n].exec(c, d); return d[n].out.slice(k).map(o => o.s).join('\n'); };
+    ok(/Reply from 8\.8\.8\.8/.test(say('PC1', 'ping 8.8.8.8')) && (d.R1._natSeen || []).length === 1, 'nat: a PC ping fills the router\'s translation table');
+    say('PC2', 'ping 8.8.8.8'); const g = d.R1._natSeen.map(t => t.global); ok(g[0] === '203.0.113.3' && g[1] === '203.0.113.4', 'nat: the dynamic pool hands each host its own address (' + g.join(', ') + ')');
+    say('PC1', 'ping 8.8.4.4'); ok(d.R1._natSeen.filter(t => t.inside === '192.168.45.11').every(t => t.global === '203.0.113.3'), 'nat: a host keeps its pool address for its next ping');
+    ok(/no global address/.test(say('PC3', 'ping 8.8.8.8')), 'nat: the third host finds the pool empty and the packet is dropped');
+    const tr = Show.render(d.R1, 'show ip nat translations', st()); ok(/---\s+203\.0\.113\.6\s+192\.168\.45\.50/.test(tr) && /icmp\s+203\.0\.113\.3:1\s+192\.168\.45\.11:1\s+8\.8\.8\.8:1\s+8\.8\.8\.8:1/.test(tr), 'show ip nat translations: static mapping and the outside address, local and global the same (' + tr + ')');
+    d.R1.exec('clear ip nat translation *'); ok(!d.R1._natSeen.length && /203\.0\.113\.6/.test(Show.render(d.R1, 'show ip nat translations', st())), 'nat: clear ip nat translation * empties the dynamic entries, static stays');
+    ok(/Reply from/.test(say('PC3', 'ping 8.8.8.8')), 'nat: after the clear the pool has room again');
+    d.R1.exec('conf t'); d.R1.exec('ip nat inside source list 1 pool bowls overload'); d.R1.exec('end'); ok(NetConfig.parse(d.R1).natDynamic.length === 1 && NetConfig.parse(d.R1).natDynamic[0].overload, 'nat: a new statement for list 1 replaces the old one');
+    ok(/Reply from/.test(say('PC1', 'ping 8.8.8.8')) && /Reply from/.test(say('PC2', 'ping 8.8.8.8')), 'nat: with overload every host gets out');
+    const pat = d.R1._natSeen.filter(t => t.kind === 'pat'); ok(pat.length >= 2 && new Set(pat.map(t => t.global + ':' + t.gport)).size === pat.length, 'nat: PAT gives each host its own port on the shared address');
+    const run = d.R1.exec('show running-config') || d.R1.out[d.R1.out.length - 1].s; ok((run.match(/ip nat inside source list 1/g) || []).length === 1, 'running-config shows one statement for list 1');
+  }
+  // 16. voice VLANs: a phone (voice: true) joins the port's voice VLAN, the PC stays in the access VLAN; show interfaces X switchport
+  {
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.4600.0001' }, PH1: { kind: 'host', voice: true, ip: '10.46.11.21', mask: '255.255.255.0', gw: '10.46.11.1' }, PC1: { kind: 'host', ip: '10.46.10.21', mask: '255.255.255.0', gw: '10.46.10.1' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'PH1' }, { a: 'SW1', ap: 'fastethernet0/2', b: 'PC1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'no shut', 'int g0/0.10', 'encapsulation dot1q 10', 'ip add 10.46.10.1 255.255.255.0', 'int g0/0.11', 'encapsulation dot1q 11', 'ip add 10.46.11.1 255.255.255.0'],
+      SW1: ['en', 'conf t', 'vlan 10', 'name data', 'vlan 11', 'name voice', 'int g0/1', 'switchport mode trunk', 'int range f0/1 - 2', 'switchport mode access', 'switchport access vlan 10'] });
+    let A = Net.api(Net.build(net, d)); ok(!A.ping('PH1', '10.46.11.1').ok && A.ping('PC1', '10.46.10.1').ok, 'voice: with no voice VLAN the phone sits in the data VLAN and cannot reach its gateway');
+    d.SW1.exec('int f0/1'); d.SW1.exec('switchport voice vlan 11'); d.SW1.exec('power inline police'); A = Net.api(Net.build(net, d)); ok(A.ping('PH1', '10.46.11.1').ok && A.ping('PC1', '10.46.10.1').ok, 'voice: switchport voice vlan puts the phone in VLAN 11');
+    const c = NetConfig.parse(d.SW1).interfaces['fastethernet0/1']; ok(c.voiceVlan === 11 && c.powerPolice === 'errdisable', 'config: voice vlan and power inline police parsed');
+    const t = Show.render(d.SW1, 'show interfaces f0/1 switchport', A.state); ok(/Access Mode VLAN: 10 \(data\)/.test(t) && /Voice VLAN: 11 \(voice\)/.test(t) && /Administrative Mode: static access/.test(t), 'show interfaces switchport shows the access and voice VLANs (' + t + ')');
+  }
+  // 17. QoS (MQC): class-map and policy-map sub-modes, the parsed policy, service-policy and trust, running-config nesting, the show commands
+  {
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.4700.0001' } }, links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'class-map match-any VOICE', 'match dscp ef', 'class-map match-any WEB', 'match protocol https', 'policy-map MARK', 'class WEB', 'set dscp af31', 'exit', 'exit',
+      'policy-map WAN-OUT', 'class VOICE', 'priority percent 20', 'class class-default', 'fair-queue', 'police 8000000 conform-action transmit exceed-action drop', 'exit', 'exit', 'int g0/0', 'service-policy output WAN-OUT', 'service-policy input MARK', 'end'],
+      SW1: ['en', 'conf t', 'int f0/1', 'mls qos trust device cisco-phone', 'mls qos trust cos'] });
+    ok(d.R1.mode === 'priv', 'qos: the sub-modes unwind with exit and end');
+    const q = NetConfig.parse(d.R1).qos; const wan = q.policyMaps['wan-out'];
+    ok(q.classMaps.voice && q.classMaps.voice.type === 'match-any' && q.classMaps.voice.matches[0] === 'dscp ef' && q.classMaps.web.matches[0] === 'protocol https', 'qos: class-maps and their matches are parsed');
+    ok(wan && wan.order.join(',') === 'voice,class-default' && wan.classes.voice.priority.percent === 20 && wan.classes['class-default'].fairQueue && wan.classes['class-default'].police.bps === 8000000 && q.policyMaps.mark.classes.web.setDscp === 'af31', 'qos: policy-maps, classes, priority, fair-queue, police, set dscp');
+    const i = NetConfig.parse(d.R1).interfaces['gigabitethernet0/0']; ok(i.servicePolicy.output === 'wan-out' && i.servicePolicy.input === 'mark', 'qos: service-policy input and output on the interface');
+    const s = NetConfig.parse(d.SW1).interfaces['fastethernet0/1']; ok(s.qosTrustDevice === 'cisco-phone' && s.qosTrust === 'cos', 'qos: mls qos trust and trust device on a switch port');
+    const S = Net.build(net, d); const run = (() => { const n = d.R1.out.length; d.R1.exec('show running-config'); return d.R1.out.slice(n).map(o => o.s).join('\n'); })();
+    ok(/policy-map wan-out\n class voice\n  priority percent 20\n class class-default\n  fair-queue/.test(run) && /class-map match-any voice\n match dscp ef/.test(run), 'running-config nests classes under their policy-map (' + run.slice(run.indexOf('class-map'), run.indexOf('class-map') + 200) + ')');
+    ok(/Match dscp ef \(46\)/.test(Show.render(d.R1, 'show class-map', S)) && /Strict Priority, 20% of the link/.test(Show.render(d.R1, 'show policy-map', S)), 'show class-map and show policy-map render');
+    const pi = Show.render(d.R1, 'show policy-map interface g0/0', S); ok(/Service-policy output: wan-out/.test(pi) && /Service-policy input: mark/.test(pi) && /set dscp af31 \(26\)/.test(pi), 'show policy-map interface lists both directions and the AF31 value (' + pi + ')');
   }
   return { pass, fails };
 };

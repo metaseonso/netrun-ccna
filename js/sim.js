@@ -78,6 +78,7 @@
   Device.prototype.preload = function(lines){ const keepOut = this.out.length; lines = (lines || []).slice(); if (this.kind !== 'host') { const first = normalize(lines[0] || ''); if (first !== 'enable' && first !== 'configure terminal') lines = ['enable', 'configure terminal'].concat(lines); }
     lines.forEach(l => this.exec(l, this._all, true)); this.out.length = keepOut; this.lines.forEach(r => { if (r.pre === undefined) r.pre = true; }); this.mode = 'user'; this.ctx = ''; this.stack = []; this.pending = null; if (this.kind !== 'host' && lines.length > 2) this.startup = configText(this); };
   Device.prototype.prompt = function(){
+    if (this.ask) return this.ask.q; // a copy command waiting for an answer (Address or name of remote host []?)
     const h = this.host; if (this.kind === 'host') return h + '>'; if (this.pending) return 'Password:';
     switch (this.mode) {
       case 'user': return h + '>'; case 'priv': return h + '#'; case 'config': return h + '(config)#';
@@ -111,11 +112,11 @@
   function type7(pw){ let h = 0; for (const c of pw) h = (h * 31 + c.charCodeAt(0)) >>> 0; const salt = h % 16; let out = String(salt).padStart(2, '0');
     for (let i = 0; i < pw.length; i++) out += (pw.charCodeAt(i) ^ XLAT.charCodeAt((salt + i) % XLAT.length)).toString(16).toUpperCase().padStart(2, '0'); return out; }
   function type5(pw){ const A = './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'; let h = 2166136261; const pick = n => { let o = ''; for (let i = 0; i < n; i++) { for (const c of pw + i) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; o += A[h % 64]; } return o; }; const salt = pick(4); return '$1$' + salt + '$' + pick(22); }
-  const OPENER = /^(interface |router |line |ip access-list (standard|extended) |vlan [\d,\-]+$|ip dhcp pool |ip vrf )/;
+  const OPENER = /^(interface |router |line |ip access-list (standard|extended) |vlan [\d,\-]+$|ip dhcp pool |ip vrf |class-map |policy-map |arp access-list )/;
   // settings that replace themselves inside a block (the last one typed wins); "no X" removes X
   const SINGLE = [/^hostname /, /^enable secret /, /^enable password /, /^ip domain[- ]name /, /^banner motd /, /^spanning-tree mode /, /^ip default-gateway /, /^service password-encryption$/,
     /^ip address (?!.* secondary$)/, /^description /, /^speed /, /^duplex /, /^switchport mode /, /^switchport access vlan /, /^switchport trunk native vlan /, /^switchport trunk encapsulation /, /^switchport trunk allowed vlan (?!add )/,
-    /^encapsulation dot1q /, /^router-id /, /^password /, /^login( local)?$/, /^transport input /, /^exec-timeout /, /^ip ospf cost /, /^name /, /^network (?=\S+ \S+$)/, /^default-router /, /^dns-server /, /^standby \d+ priority /];
+    /^encapsulation dot1q /, /^router-id /, /^password /, /^login( local)?$/, /^transport input /, /^exec-timeout /, /^ip ospf cost /, /^name /, /^network (?=\S+ \S+$)/, /^default-router /, /^dns-server /, /^standby \d+ priority /, /^ip nat inside source list \S+ /];
   const keyOf = line => { const r = SINGLE.find(x => x.test(line)); return r ? r.source : null; };
   function configText(dev){
     const S = dev._netState ? dev._netState() : null; const blocks = new Map([['', []]]); let enc = false; const secrets = [];
@@ -139,6 +140,10 @@
     const top = G.filter(x => /^enable (secret|password) /.test(x.line)); if (top.length) o.push(...top.sort((a, b) => a.line.localeCompare(b.line) * -1).map(show), '!');
     const late = x => /^(ip route |ipv6 route |access-list |banner |ip nat )/.test(x.line);
     const rest = G.filter(x => !/^(hostname |enable (secret|password) |service password-encryption$)/.test(x.line) && !late(x)); if (rest.length) o.push(...rest.map(show), '!');
+    // class-maps, then policy-maps with each class's actions nested under it, then ARP ACLs, where IOS prints them: before the interfaces
+    [...blocks.keys()].filter(k => /^class-map /.test(k)).forEach(k => o.push(k, ...blocks.get(k).map(x => ' ' + show(x)), '!'));
+    [...blocks.keys()].filter(k => /^policy-map \S+$/.test(k)).forEach(k => { o.push(k); blocks.get(k).forEach(x => { o.push(' ' + show(x)); const c = x.line.match(/^class (\S+)$/); if (c) (blocks.get(k + ' class ' + c[1]) || []).forEach(y => o.push('  ' + show(y))); }); o.push('!'); });
+    [...blocks.keys()].filter(k => /^arp access-list /.test(k)).forEach(k => o.push(k, ...blocks.get(k).map(x => ' ' + show(x)), '!'));
     // interfaces: every port the box has in this network, in the order IOS lists them, then any the player created
     const ifs = []; const seen = new Set(); const addIf = n => { if (!seen.has(n)) { seen.add(n); ifs.push(n); } };
     const kind = S && S.net && S.net.devices[dev.name] ? S.net.devices[dev.name].kind : null;
@@ -159,6 +164,44 @@
     return o.join('\n'); }
   function runningConfig(dev){ const t = configText(dev); return 'Building configuration...\n\nCurrent configuration : ' + t.length + ' bytes\n!\n' + t; }
   function startupConfig(dev){ return dev.startup ? 'Using ' + dev.startup.length + ' out of 262136 bytes\n!\n' + dev.startup : 'startup-config is not present'; }
+
+  // ---- copy between the box and a TFTP or FTP server: IOS asks for the host and the file names, then the file moves if the
+  // server answers a ping, holds the file (net device `files: [{ name, size }]`) and, for FTP, the box's ip ftp username/password
+  // match the server's `ftp: { user, pass }`. Downloads land in dev.flash (show flash); uploads are listed in dev.sent.
+  function startCopy(dev, q, rec){
+    const t = q.split(' '); const net = x => { const m = (x || '').match(/^(tftp|ftp):?(?:\/\/([^/\s]+)\/(\S+))?$/); return m ? { proto: m[1], host: m[2] || null, file: m[3] || null } : null; };
+    const src = net(t[1]), dst = net(t[2]); const toFlash = /^flash:?(\S*)$/.exec(t[2] || ''), fromConf = /^(running-config|startup-config|flash:(\S+))$/.exec(t[1] || '');
+    dev.lines.push(rec);
+    if (src && toFlash) dev.ask = { dir: 'down', proto: src.proto, host: src.host, file: src.file, dest: toFlash[1] || null };
+    else if (fromConf && dst) dev.ask = { dir: 'up', proto: dst.proto, host: dst.host, file: fromConf[2] || fromConf[1], dest: dst.file };
+    else { dev.out.push({ t:'err', s:'%Error: this shell copies from tftp: or ftp: to flash:, and from running-config, startup-config or flash:<file> to tftp: or ftp:' }); return; }
+    copyNext(dev); }
+  function copyNext(dev){ const a = dev.ask;
+    if (!a.host) { a.stage = 'host'; a.q = 'Address or name of remote host []? '; return; }
+    if (a.dir === 'down' && !a.file) { a.stage = 'file'; a.q = 'Source filename []? '; return; }
+    if (!a.confirmed) { a.stage = 'dest'; const def = a.dest || (a.dir === 'down' ? a.file : (a.file === 'running-config' || a.file === 'startup-config' ? dev.host.toLowerCase() + '-confg' : a.file)); a.def = def; a.q = 'Destination filename [' + def + ']? '; return; }
+    dev.ask = null; copyRun(dev, a); }
+  function copyAnswer(dev, raw){ const a = dev.ask; const v = raw.trim().toLowerCase(); dev.out.push({ t:'in', s: a.q + raw.trim() });
+    if (a.stage === 'host') { if (!v) { dev.ask = null; dev.out.push({ t:'err', s:'%Error parsing filename (no host given)' }); return; } a.host = v; }
+    else if (a.stage === 'file') { if (!v) { dev.ask = null; dev.out.push({ t:'err', s:'%Error parsing filename (no file given)' }); return; } a.file = v; }
+    else if (a.stage === 'dest') { a.dest = v || a.def; a.confirmed = true; }
+    copyNext(dev); }
+  function copyRun(dev, a){ const S = dev._netState ? dev._netState() : null; const url = a.proto + '://' + a.host + '/' + (a.dir === 'down' ? a.file : a.dest);
+    const D = S && S.net ? S.net.devices : {}; const srvName = Object.keys(D).find(n => D[n].ip === a.host && !D[n].removed); const srv = srvName ? D[srvName] : null;
+    const reach = S && window.Net ? Net.ping(S, dev.name, a.host) : { ok: !!srv };
+    const fail = why => { dev.out.push({ t:'err', s:'%Error opening ' + url + ' (' + why + ')' }); };
+    if (!srv || !reach.ok) return fail('Timed out');
+    if (a.proto === 'ftp') { const c = window.NetConfig ? NetConfig.parse(dev) : {}; const want = srv.ftp || null; if (want && !(c.ftpUser === String(want.user).toLowerCase() && c.ftpPass === String(want.pass).toLowerCase())) return fail('Incorrect Login/Password'); }
+    const bar = n => '!'.repeat(Math.max(4, Math.min(40, Math.round(n / 1000000)))); const size = f => f.size || 1024;
+    if (a.dir === 'down') { const f = (srv.files || []).map(x => typeof x === 'string' ? { name: x } : x).find(x => x.name.toLowerCase() === a.file); if (!f) return fail('No such file or directory');
+      dev.flash = (dev.flash || []).filter(x => x.name !== a.dest); dev.flash.push({ name: a.dest, size: size(f) });
+      dev.out.push({ t:'out', s:'Accessing ' + url + '...\nLoading ' + a.file + ' from ' + a.host + ': ' + bar(size(f)) + '\n[OK - ' + size(f) + ' bytes]\n\n' + size(f) + ' bytes copied in ' + (size(f) / 2800000 + 0.4).toFixed(3) + ' secs' });
+      dev.lines.push({ mode: 'priv', ctx: '', line: 'copy ' + a.proto + '://' + a.host + '/' + a.file + ' flash:' + a.dest, copied: true }); return; }
+    const body = a.file === 'running-config' ? configText(dev) : a.file === 'startup-config' ? (dev.startup || '') : null; const fl = body == null ? (dev.flash || []).find(x => x.name === a.file.replace(/^flash:/, '')) : null;
+    if (body == null && !fl) { dev.out.push({ t:'err', s:'%Error opening flash:' + a.file + ' (File not found)' }); return; } const n = body != null ? body.length : fl.size;
+    dev.sent = dev.sent || []; dev.sent.push({ proto: a.proto, host: a.host, file: a.dest, what: a.file, bytes: n });
+    dev.out.push({ t:'out', s:'Writing ' + a.dest + ' ' + bar(n) + '\n' + n + ' bytes copied in 0.' + String(100 + (n % 800)).slice(0, 3) + ' secs' });
+    dev.lines.push({ mode: 'priv', ctx: '', line: 'copy ' + a.file + ' ' + a.proto + '://' + a.host + '/' + a.dest, copied: true }); }
   const HELP = {
     user: [['enable', 'Turn on privileged commands'], ['exit', 'Exit from the EXEC'], ['ping', 'Send echo messages'], ['show', 'Show running system information'], ['traceroute', 'Trace route to destination']],
     priv: [['configure', 'Enter configuration mode'], ['copy', 'Copy from one file to another'], ['disable', 'Turn off privileged commands'], ['enable', 'Turn on privileged commands'], ['exit', 'Exit from the EXEC'], ['ping', 'Send echo messages'], ['show', 'Show running system information'], ['traceroute', 'Trace route to destination'], ['write', 'Write running configuration to memory']],
@@ -172,6 +215,7 @@
 
   Device.prototype.exec = function(raw, all, silent){
     const dev = this; if (all) dev._all = all; const S = dev._netState ? dev._netState() : null;
+    if (dev.ask) { copyAnswer(dev, raw); return; } // the answer to a copy command's question, not a command
     if (dev.kind === 'host') { dev.out.push({ t:'in', s: dev.prompt() + ' ' + raw.trim() }); const o = window.Show ? Show.host(dev, raw, S) : 'no network'; if (o) dev.out.push({ t: /timed out|not recognized/.test(o) ? 'err' : 'out', s: o }); dev.lines.push({ mode: 'host', ctx: '', line: normalize(raw) }); return; }
     // the enable password prompt: the typed word is never echoed or recorded
     if (dev.pending === 'enable') { dev.out.push({ t:'in', s: 'Password: ' }); const c = window.NetConfig ? NetConfig.parse(dev) : {}; const want = c.enableSecret || c.enablePassword;
@@ -216,6 +260,8 @@
         dev.out.push({ t:'out', s:'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos:\n!!!!!\nSuccess rate is 100 percent (5/5)' }); return; }
       if (q === 'clear mac address-table dynamic' || q.startsWith('clear mac address-table dynamic ')) { dev.lines.push(rec); const m = q.match(/ address (\S+)$/), i = q.match(/ interface (\S+)$/); if (S && window.Net) Net.forget(S, 'mac', dev.name, m ? { mac: m[1] } : i ? { port: canonIf(i[1]) || i[1] } : null); return; }
       if (q === 'clear arp-cache' || q === 'clear arp') { dev.lines.push(rec); if (S && window.Net) Net.forget(S, 'arp', dev.name); return; }
+      if (/^clear ip nat translations? \*$/.test(q)) { if (dev.mode === 'user') { dev.out.push({ t:'err', s:'% Invalid input detected. (clear needs privileged EXEC mode: enable first.)' }); return; } dev.lines.push(rec); dev._natSeen = []; return; } // dynamic entries go; static mappings stay in the config
+      if (q.startsWith('copy ')) { if (dev.mode === 'user') { dev.out.push({ t:'err', s:'% Invalid input detected. (copy needs privileged EXEC mode: enable first.)' }); return; } startCopy(dev, q, rec); return; }
       if (q.startsWith('reload')) { dev.out.push({ t:'sys', s:'(nice try. no reloads in the sim.)' }); return; }
       if (!doCmd && dev.mode !== 'config' && !s.startsWith('show')) { if (dev.mode === 'user' || dev.mode === 'priv') { dev.out.push({ t:'err', s:'% Invalid input detected at \'^\' marker. (Config commands need "configure terminal" first.)' }); return; } }
       if (doCmd) { dev.lines.push(rec); return; }
@@ -235,6 +281,10 @@
     if ((m = s.match(/^ip access-list (standard|extended) (\S+)$/))) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter(m[1] === 'standard' ? 'config-std-nacl' : 'config-ext-nacl', s); return; }
     if ((m = s.match(/^vlan ([\d,\-]+)$/)) && dev.mode.startsWith('config')) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter('config-vlan', s); return; }
     if ((m = s.match(/^ip dhcp pool (\S+)$/))) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter('config-dhcp', s); return; }
+    // QoS (MQC) and ARP ACL sub-modes: class-map, policy-map and its class, arp access-list
+    if ((m = s.match(/^class-map(?: (?:match-any|match-all))? (\S+)$/)) || (m = s.match(/^policy-map (\S+)$/)) || (m = s.match(/^arp access-list (\S+)$/))) { if (dev.mode !== 'config') { dev.mode = 'config'; dev.ctx = ''; dev.stack = [['priv', '']]; rec.mode = 'config'; rec.ctx = ''; }
+      dev.enter(s.startsWith('class-map') ? 'config-cmap' : s.startsWith('policy-map') ? 'config-pmap' : 'config-arp-nacl', s); return; }
+    if ((m = s.match(/^class (\S+)$/)) && (dev.mode === 'config-pmap' || dev.mode === 'config-pmap-c')) { if (dev.mode === 'config-pmap-c') { dev.leave(); rec.mode = dev.mode; rec.ctx = dev.ctx; } dev.enter('config-pmap-c', dev.ctx + ' class ' + m[1]); return; }
     if ((m = s.match(/^ip vrf (\S+)$/))) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter('config-vrf', s); return; }
     if (s.startsWith('crypto key generate rsa')) { dev.out.push({ t:'out', s:'The name for the keys will be: ' + dev.host + '.' + (dev.domain || 'example.com') + '\n% Generating RSA keys ...[OK]' }); return; }
     if ((m = s.match(/^ip domain-name (\S+)$/))) { dev.domain = m[1]; return; }

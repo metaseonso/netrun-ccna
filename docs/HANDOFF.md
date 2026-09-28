@@ -157,6 +157,35 @@ Definition of done for a day:
   ARP entry loses one packet (`Request timed out.` / `.!!!!`); `clear mac address-table dynamic [address|interface]`,
   `clear arp-cache`, PC `arp -d`; `show arp` / `show ip arp` on routers; `api.macTable`, `api.arp`. Without `learn` the tables
   stay all-knowing as before. PC ping prints real Windows statistics. Tested in `tests/engine.test.js` (section 10).
+- 2026-09-28 · FTP and TFTP in the shell: `copy tftp: flash:`, `copy ftp: flash:` (or `copy tftp://host/file flash:`) ask for
+  the host, the source and the destination like IOS (`Device.ask`, the prompt shows the question; an empty answer takes the
+  default), then the file moves if the router can ping the server, the server's net device lists it in `files: [{ name, size }]`,
+  and for FTP the box's `ip ftp username`/`ip ftp password` match the server's `ftp: { user, pass }`. Downloads land in
+  `dev.flash`; `copy running-config|startup-config|flash:<file> tftp:|ftp:` records uploads in `dev.sent`; both add a
+  `copy <proto>://host/file ...` line to the transcript. `show flash`, `show file systems`; `boot system`, `ip ftp username`,
+  `ip ftp password` parsed (`cfg.bootSystem`, `cfg.ftpUser`, `cfg.ftpPass`). Tested.
+- 2026-09-28 · NAT as the shell shows it: a ping from a PC now fills the translation table of every router it crossed (it
+  used to take a ping from the router itself); a dynamic pool gives each inside host its own address and keeps it until
+  `clear ip nat translation *` (new), so a small pool runs out and the next host's packet is dropped; PAT gives each host its
+  own port on the shared address; a new `ip nat inside source list N ...` replaces the old one for that list, and
+  `no ip nat inside source list|static` removes it. `show ip nat translations` lists static mappings from the config and the
+  outside address of every translation. Tested.
+- 2026-09-28 · The internet and NAT: a ping from a `cloud` now leaves as the internet (it used to take the PC path and
+  "deliver" any public address to itself); traffic from the internet for a router's static NAT address or NAT pool is
+  handed to that router (`cloudHandoff`), an address on the provider link that nobody holds answers nothing, and a
+  server's reply leaves wearing its static mapping. Before this, `ping('ISP', <static global>)` passed without reaching
+  the server. Tested.
+- 2026-09-28 · Voice VLANs: `switchport voice vlan N` and `power inline police [action errdisable|log]` are parsed
+  (`cfg.interfaces[p].voiceVlan`, `.powerPolice`); a host with `voice: true` (an IP phone) joins its port's voice VLAN when
+  the port has one, else the access VLAN; `show interfaces X switchport` shows the mode, the access VLAN and the voice VLAN.
+  Tested.
+- 2026-09-28 · QoS (MQC) in the shell: `class-map [match-any|match-all] N` (config-cmap), `policy-map N` (config-pmap) and
+  `class N` inside it (config-pmap-c), plus `arp access-list N` (config-arp-nacl), are real sub-modes; running-config prints
+  class-maps and policy-maps (classes nested) before the interfaces. Parsed into `cfg.qos.classMaps` (matches) and
+  `cfg.qos.policyMaps` (`order`, `classes[n]`: `setDscp`, `setCos`, `priority`, `bandwidth`, `police`, `shape`,
+  `fairQueue`, `wred`); `service-policy input|output N` and `mls qos trust cos|dscp|device cisco-phone` on interfaces.
+  `show class-map`, `show policy-map`, `show policy-map interface [X]` (DSCP names shown with their values; counters stay
+  at zero, there is no traffic model). Tested.
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
