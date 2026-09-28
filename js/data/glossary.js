@@ -36,12 +36,12 @@ window.GLOSSARY = {
   'service password-encryption': 'Weakly scrambles plaintext passwords in the config (type 7). Better than nothing, not real security.',
   'ipv4 address': 'A 32-bit (4-byte) address written as four decimal octets, e.g. 192.168.1.10. Part network, part host; the prefix length or mask says where the split is.',
   'subnet mask': 'The network/host split written as 32 bits in dotted decimal: 1s for the network part, 0s for the host part. 255.255.255.0 = /24.',
-  'cidr': 'Classless Inter-Domain Routing (RFC 1519, 1993). Killed the old A/B/C classes. Prefix length /n instead.',
+  'cidr': 'Classless Inter-Domain Routing (RFC 1518 and 1519, 1993). Replaced the fixed A/B/C classes: a network\'s size is whatever prefix length follows the slash.',
   'prefix length': 'The number of network bits in an address, written after a slash: /8, /16, /24. The same information as the subnet mask.',
   'network address': 'The address with all host bits set to 0. Identifies the network itself; cannot be assigned to a host.',
   'broadcast address': 'The address with all host bits set to 1. Reaches every host on the network; cannot be assigned to a host.',
   'usable range': 'Network + 1 through broadcast − 1. The addresses hosts can actually use.',
-  'vlsm': 'Variable Length Subnet Masking. Different subnets, different sizes. Slice big first, then small.',
+  'vlsm': 'Variable Length Subnet Masking: subnets of different sizes cut from one block, each sized to its hosts. Assign the largest subnets first, then the smaller ones from what is left.',
   'wildcard mask': 'Inverse of the subnet mask. 0 bits = must match, 1 bits = don\'t care. 0.0.0.255 covers a /24.',
   'private address': 'RFC 1918 ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Never routed on the public internet.',
   'ttl': 'Time to Live: the 8-bit IPv4 header field. The sender sets it (64 recommended), each router decreases it by 1, and a router drops the packet at 0 and sends ICMP time exceeded. It stops routing loops from lasting forever.',
@@ -218,5 +218,7 @@ window.GLOSSARY = {
   'dscp': 'Differentiated Services Code Point: 6 bits in the IP header for QoS marks (RFC 2474, replacing 3-bit IP precedence). DF 0, EF 46 (voice), AFxy = 8x + 2y (AF41 34), CSx = 8x.',
   'trust boundary': 'The point in the network where QoS marks start being believed. With an IP phone on the port it sits at the phone: the switch trusts the phone\'s marks, not the PC\'s.',
   'policing': 'QoS: traffic over the configured rate is dropped (or re-marked).',
-  'shaping': 'QoS: traffic over the configured rate is buffered in a queue and sent later, smoothing it to the rate.'
+  'shaping': 'QoS: traffic over the configured rate is buffered in a queue and sent later, smoothing it to the rate.',
+  'subnet': 'A smaller network made by splitting a larger one: bits are borrowed from the host part and added to the network part. Each borrowed bit doubles the number of subnets and halves their size.',
+  'point-to-point': 'A link with exactly two devices on it, usually two routers. Needs only two addresses: a /30 (two usable) or a /31 (both usable, RFC 3021).'
 };

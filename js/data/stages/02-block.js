@@ -124,5 +124,44 @@
           yes: 'Cider: "The TTL. It\'s the only line on the tab that counts down."', no: 'Cider: "The TTL ran out. Every router took one off, and the one that reached zero dropped it."',
           why: 'Cider: Each router that forwards a packet decreases its TTL by 1. When a router decreases it to 0, it drops the packet and sends an ICMP time exceeded message to the source. That is what ends a routing loop. The checksum, MTU and DF bit have nothing to do with loops.' } }
       ] },
+    // ------------------------------------------------------------ night 13 · subnetting, part 1
+    { id: 'n13-three-shops', title: 'One block, three shops', sub: 'CIDR, masks from /25 to /32, cutting a /24', npc: 'cider', day: [13], src: [PS('Subnetting_Part1.md')], unlocks: ['subnetting'],
+      beats: [
+        { k: 'SCENE', where: 'Cider\'s bar · the back room · an afternoon',
+          lines: [
+            { who: 'narr', text: 'In daylight the back room smells of cardboard and the vinegar Cider cleans the taps with. A roll of floor plan is pinned flat on a trestle table under two bottles, showing the empty building across the street divided into three units in blue pencil: a tattoo studio, a pharmacy and a phone repair shop.' },
+            { who: 'cider', text: 'The landlord has one /24 for the whole building, 192.168.13.0/24, and three tenants who each want their own network. Nobody gets the whole block. I cut it.' },
+            { who: 'cider', text: 'Cutting is borrowing. Every bit I take from the host part and give to the network part doubles the number of pieces and halves the size of each one. Borrow one bit from a /24 and you get a /25: two [[subnet]]s of 128 addresses, 126 hosts each. Borrow two and you get a /26: four subnets of 64, 62 hosts each.' },
+            { who: 'cider', text: 'Three tenants, so one bit isn\'t enough and two gives me four pieces. Each shop gets a /26 and the fourth one sits in the drawer for whoever moves in next.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do I write the masks for those?', reply: 'Cider: "The last octet fills up from the left, one bit at a time. /25 is 255.255.255.128, /26 is .192, /27 is .224, /28 is .240, /29 is .248, /30 is .252, /31 is .254 and /32 is .255. Say them until you stop having to think."' },
+            { tone: 'press', say: 'Where does each /26 start?', reply: 'Cider: "Take the value of the last bit you borrowed. For a /26 that\'s 64, the block size, and it\'s also 256 minus 192. The subnets start at .0, .64, .128 and .192. Each one\'s broadcast is one below the next one\'s start: .63, .127, .191, .255."' },
+            { tone: 'joke', say: 'Can the tattoo studio have the pretty numbers?', reply: 'Cider: "The tattoo studio gets the first one because it signed first. If they want pretty numbers, they can ink them."' }
+          ] } },
+        { k: 'SCENE', where: 'The back room · the trestle table',
+          lines: [
+            { who: 'cider', text: 'This way of cutting is [[CIDR]], classless inter-domain routing. The classes said a 192 address was a /24 and nothing else. CIDR says the prefix length is whatever you write after the slash, and routers believe you.' },
+            { who: 'cider', text: 'The router joining the three shops gets the first usable address in each piece: .1, .65 and .129, each with a /26 mask. The hosts in each shop use that address as their gateway.' },
+            { who: 'cider', text: 'Between two routers you only ever need two addresses, one for each end, so there\'s no point giving a [[point-to-point]] link a /24. A /30 gives four addresses and two usable. A /31 gives two and both are usable, because a link with only two ends has no use for a network or broadcast address. Cisco routers take a /31 on a point-to-point link.' },
+            { who: 'narr', text: 'She draws a thin blue line from the building across the street to her own bar on the plan, and writes /30 next to it.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What\'s a /32 for?', reply: 'Cider: "One address and nothing else. You\'ve seen them in the routing table already as the local routes, the router\'s own address on each port. You\'ll also see them on loopbacks and in lists that match one single host."' },
+            { tone: 'press', say: 'Isn\'t leaving a /26 in the drawer a waste?', reply: 'Cider: "It\'s a spare, which is different. When the fourth unit gets a tenant, I don\'t have to renumber the other three to make room. The waste is giving a two-address link sixty-two hosts it will never use."' },
+            { tone: 'care', say: 'Who owns the building?', reply: 'Cider: "An old woman who has turned down Halvorsen twice. She wants people in there who sell things the street needs. I cut her block carefully because she\'s one of the few who asks."' }
+          ] } },
+        { k: 'LORE', title: 'THE KNIFE IN THE MASK', year: 1985, real: ['ietf'], vibe: 'Radical. Cut your class B into pieces, and nobody downtown ever has to hear about it.',
+          text: 'Cider, rolling up the plan: "In August 1985, RFC 950 set out how to cut a network into subnets with a mask. Jeffrey Mogul and Jon Postel wrote it. Before that a university with one class B had one enormous flat network, or begged for more. After it, they took the knife to their own block, and the rest of the internet only ever saw the one route. My grandmother learned it from a photocopy."' },
+        { k: 'KIT', text: 'Cider writes the ladder on a beer mat.', kit: [
+          { cmd: '/25 .128 · /26 .192 · /27 .224 · /28 .240 · /29 .248 · /30 .252 · /31 .254 · /32 .255', what: 'the mask ladder' },
+          { cmd: 'subnets = 2^borrowed bits · hosts = 2^host bits − 2', what: 'borrowing doubles the pieces and halves each one' },
+          { cmd: 'block size = 256 − mask octet', what: '/26: 64 · subnets start .0 .64 .128 .192' },
+          { cmd: 'gateway: first usable · broadcast: one below the next subnet', what: 'network and broadcast never go to a host' },
+          { cmd: 'point-to-point: /30 (2 usable) or /31 (both usable)', what: 'don\'t spend a /24 on two ends' } ] },
+        { k: 'SYNC', q: { prompt: 'The pharmacist, reading the plan upside down: "We\'re the second /26. What\'s our broadcast address?"', opts: ['192.168.13.127', '192.168.13.128', '192.168.13.63', '192.168.13.64'], a: 0,
+          yes: 'Cider: "One-two-seven. The next subnet starts at .128."', no: 'Cider: "The second /26 runs .64 to .127, so .127."',
+          why: 'Cider: A /26 has a block size of 64, so the subnets of 192.168.13.0/24 are .0, .64, .128 and .192. The second one runs from 192.168.13.64, its network address, to 192.168.13.127, its broadcast address, one below the start of the next subnet.' } }
+      ] },
   ] });
 })();
