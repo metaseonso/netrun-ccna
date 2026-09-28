@@ -84,6 +84,79 @@
         { form: { sp: 'spear phishing', wh: 'whaling', sm: 'smishing', wa: 'watering hole', ta: 'tailgating' } }, 'commit', { multi: [0, 2, 4] }, 'commit',
         { form: { au: 'authentication', az: 'authorization', ac: 'accounting', ra: 'UDP 1812 and 1813', ta: 'TCP 49' } }, 'commit',
         { dev: 'R1', type: ['enable', 'configure terminal', 'ip domain-name clinic.watson', 'crypto key generate rsa modulus 2048', 'username imani secret pharmacy', 'line vty 0 15', 'transport input ssh', 'login local'] }, 'commit' ],
-      outro: 'The incident book goes on the wall behind the front desk with a pen on a string. At ten past nine the man rings again, asks for Imani by name, and hears her read him the page it belongs on before she hangs up. Ace moves one pin on her map an inch to the left and does not say why.' }
+      outro: 'The incident book goes on the wall behind the front desk with a pen on a string. At ten past nine the man rings again, asks for Imani by name, and hears her read him the page it belongs on before she hangs up. Ace moves one pin on her map an inch to the left and does not say why.' },
+
+    // ------------------------------------------------------------------ night 49 · from Lab 49 (port security)
+    { id: 'b-n49-slot-22', cls: 'B', rep: 20, from: 'ace', title: 'Slot 22', day: [49], requires: ['n49-two-doors'], devices: ['SW1'],
+      brief: 'DISPATCH » Market switch floor. A box behind the noodle stall is wearing the pharmacy reader\'s face and flooding Mac\'s table. Ace wants every door taught its faces, and the box to hit one.\n\nCLIENT (Hollis, the market pharmacy) » "Forty card payments went somewhere else last night. I have been writing receipts by hand since eleven."',
+      shows: { SW1: { 'show logging': 'Syslog logging: enabled (0 messages dropped, 0 flushes, 0 overruns)\n    Console logging: level debugging, 212 messages logged\n    Buffer logging:  level debugging, 212 messages logged\n\nLog Buffer (8192 bytes):\n' +
+        '*Sep 28 22:20:14.512: %SW_MATM-4-MACFLAP_NOTIF: Host 0060.2f11.4a01 in vlan 1 is flapping between port Fa0/14 and port Fa0/22\n' +
+        '*Sep 28 22:20:31.077: %SW_MATM-4-MACFLAP_NOTIF: Host 0060.2f11.4a01 in vlan 1 is flapping between port Fa0/22 and port Fa0/14\n' +
+        '*Sep 28 22:41:52.940: %SW_MATM-4-MACFLAP_NOTIF: Host 0060.2f11.4a01 in vlan 1 is flapping between port Fa0/14 and port Fa0/22\n' +
+        '*Sep 28 23:02:08.311: %SW_MATM-4-MACFLAP_NOTIF: Host 0060.2f11.4a01 in vlan 1 is flapping between port Fa0/22 and port Fa0/14' } },
+      net: {
+        devices: {
+          R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0011.4949.0001' },
+          TILL: { kind: 'host', ip: '192.168.49.14', mask: '255.255.255.0', gw: '192.168.49.1', mac: '0060.2f11.4a01' },
+          DESK7: { kind: 'host', ip: '192.168.49.7', mask: '255.255.255.0', gw: '192.168.49.1', mac: '00e0.4c68.0701', macs: ['00e0.4c68.0701', '00e0.4c68.0702'] },
+          BOX: { kind: 'rogue', role: 'macflood', macs: ['0060.2f11.4a01'].concat(Array.from({ length: 40 }, (_, k) => '02ba.d0' + String(k).padStart(2, '0') + '.' + (4096 + k * 37).toString(16).padStart(4, '0'))) }
+        },
+        links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/14', b: 'TILL' }, { a: 'SW1', ap: 'fastethernet0/7', b: 'DESK7' }, { a: 'SW1', ap: 'fastethernet0/22', b: 'BOX' } ],
+        preconfig: { R1: ['interface gigabitethernet0/0', 'ip address 192.168.49.1 255.255.255.0', 'no shutdown'] },
+        alert: ['BOX']
+      },
+      map: { w: 540, h: 320, nodes: [
+          { id: 'R1', label: 'market router', type: 'router', x: 270, y: 50 }, { id: 'SW1', label: 'Mac\'s door (switch floor)', type: 'switch', x: 270, y: 150 },
+          { id: 'DESK7', label: 'stall 7 desk · slot 7', type: 'pc', x: 90, y: 270 }, { id: 'TILL', label: 'pharmacy card reader · slot 14', type: 'pc', x: 270, y: 270 }, { id: 'BOX', label: 'slot 22 · behind the noodle stall', type: 'rogue', x: 450, y: 270 } ],
+        links: [ { a: 'R1', b: 'SW1' }, { a: 'SW1', b: 'DESK7', ap: 'fastethernet0/7' }, { a: 'SW1', b: 'TILL', ap: 'fastethernet0/14' }, { a: 'SW1', b: 'BOX', ap: 'fastethernet0/22' } ] },
+      steps: [
+        { type: 'cmd', skill: 'port-security', text: 'Mac, tapping the switch: "Before you touch anything, read what it wrote down last night. It saw this before I did."',
+          need: [ { dev: 'SW1', line: /^(do )?show logging$/ } ], hint: 'SW1> enable\nSW1# show logging', ok: 'Mac: "There. Fa0/14 and Fa0/22, back and forth for most of an hour."',
+          why: 'Mac: show logging prints the switch\'s log buffer. %SW_MATM-4-MACFLAP_NOTIF means the same MAC address was learned on two ports one after the other: one face at two doors. A switch whose MAC address table is full cannot learn new addresses, so it floods their frames out of every port, and anyone on the switch can hear them.' },
+        { type: 'find', skill: 'port-security', target: 'BOX', text: 'Ace: "One of those two doors belongs to the card reader. Click the other one."', hint: 'The reader has always been on slot 14.',
+          ok: 'Ace: "Slot 22. The box behind the noodle stall."',
+          why: 'Ace: The card reader has lived on Fa0/14 since the pharmacy opened. The same MAC address turning up on Fa0/22, a socket nothing should be using, is the box wearing its face.' },
+        { type: 'cmd', skill: 'port-security', text: 'Ace: "Slot 22 first. Default rules: one face and shutdown. Then let the box try."',
+          check: (d, ctx) => ctx.net().errdisabled('SW1', 'f0/22'),
+          hint: 'SW1# configure terminal\nSW1(config)# interface f0/22\nSW1(config-if)# switchport mode access\nSW1(config-if)# switchport port-security',
+          ok: 'The link light on slot 22 goes dark. Ace: "Forty-one faces, one allowed. It lasted less than a second."',
+          why: 'Ace: Port security needs the port set to access (or trunk) first; on dynamic auto or desirable the command is rejected. switchport port-security with nothing else allows one MAC address and uses violation shutdown. The box sends a second address almost at once, so the port goes err-disabled.' },
+        { type: 'cmd', skill: 'port-security', text: 'Ace: "Now the pharmacy counter. Slot 14 learns the reader\'s face and writes it down for good. The till has to keep taking cards while you do it."',
+          check: (d, ctx) => { const n = ctx.net(); const p = n.portsec('SW1', 'f0/14'); return !!(p && p.enabled && p.sticky && p.learned.includes('0060.2f11.4a01')) && n.ping('TILL', '192.168.49.1').ok; },
+          hint: 'SW1(config)# interface f0/14\nSW1(config-if)# switchport mode access\nSW1(config-if)# switchport port-security\nSW1(config-if)# switchport port-security mac-address sticky',
+          ok: 'Hollis, from the top of the stairs: "The reader just beeped. That was a card going through."',
+          why: 'Ace: switchport port-security mac-address sticky makes the port learn the MAC addresses it sees, up to its maximum, and writes them into the running-config as sticky secure addresses. The reader\'s 0060.2f11.4a01 is now the one face slot 14 accepts, so a copy of it anywhere else is the only way left to use it.' },
+        { type: 'form', skill: 'port-security', text: 'Mac, pencil ready over the ledger: "Write me the three modes the way I\'ll need them at two in the morning."',
+          fields: [ { key: 'pr', label: 'Drops the stranger\'s frames. No log, no count', options: ['shutdown', 'restrict', 'protect'], answer: 'protect' },
+            { key: 're', label: 'Drops the stranger\'s frames, logs it, counts it. The port stays up', options: ['shutdown', 'restrict', 'protect'], answer: 'restrict' },
+            { key: 'sh', label: 'Err-disables the whole port, logs it, counts it', options: ['shutdown', 'restrict', 'protect'], answer: 'shutdown' },
+            { key: 'df', label: 'What a port uses if nobody sets a mode', options: ['shutdown', 'restrict', 'protect'], answer: 'shutdown' } ],
+          hint: 'Protect is silent. Restrict drops and counts. Shutdown is the default and takes the port down.', ok: 'Mac: "In the ledger. Front page."',
+          why: 'Ace: Shutdown, the default, err-disables the interface, sends a syslog and SNMP message and increments the violation counter. Restrict drops frames from unknown MAC addresses, sends the messages and increments the counter, and the port stays up. Protect only drops the frames: no messages, no count.' },
+        { type: 'cmd', skill: 'port-security', text: 'Ace: "Stall 7. The laptop has a label printer behind it on a little desk switch, so two faces belong on that slot. Allow two, and make a third one get dropped and counted, not the whole desk."',
+          check: (d, ctx) => { const n = ctx.net(); const p = n.portsec('SW1', 'f0/7'); return !!(p && p.enabled && p.max === 2 && p.violation === 'restrict' && p.violations === 0) && !n.errdisabled('SW1', 'f0/7') && n.ping('DESK7', '192.168.49.1').ok; },
+          hint: 'SW1(config)# interface f0/7\nSW1(config-if)# switchport mode access\nSW1(config-if)# switchport port-security\nSW1(config-if)# switchport port-security maximum 2\nSW1(config-if)# switchport port-security violation restrict',
+          ok: 'Ace: "Two faces, both known. A third one gets dropped and counted, and the laptop keeps working."',
+          why: 'Ace: switchport port-security maximum 2 lets the port hold two MAC addresses, here the laptop and the printer. With violation restrict a third address is dropped, logged and counted, but the port stays up for the two that belong. With the default maximum of 1 the printer would have err-disabled the whole desk.' },
+        { type: 'cmd', skill: 'port-security', text: 'Ace, pulling on a glove: "Read slot 22 before I take the box off the wall. I want its status and its count in the book."',
+          need: [ { dev: 'SW1', line: /^(do )?show port-security interface fastethernet0\/22$/ } ], hint: 'SW1# show port-security interface f0/22\n(or from config mode: do show port-security interface f0/22)',
+          ok: 'Ace: "Secure-shutdown, forty violations." She peels the tape back and drops the box into an evidence bag.',
+          onPass: (ctx) => { ctx.netDef.devices.BOX.removed = true; },
+          why: 'Ace: show port-security interface shows one port\'s port security: whether it is enabled, the port status (Secure-up, or Secure-shutdown when err-disabled), the violation mode, the maximum, how many addresses it holds, how many are sticky, and the violation count.' },
+        { type: 'cmd', skill: 'port-security', text: 'Ace: "The box is gone and slot 22 is still dead, which is correct. Bring it back by hand now. Then tell the switch to do it by itself next time, after three minutes, so Mac is not woken up."',
+          need: [ { dev: 'SW1', ctx: 'interface fastethernet0/22', line: 'shutdown' }, { dev: 'SW1', ctx: 'interface fastethernet0/22', line: 'no shutdown' } ],
+          check: (d, ctx) => { const s = ctx.cfg('SW1').sec; return !ctx.net().errdisabled('SW1', 'f0/22') && s.recoveryCauses.has('psecure-violation') && s.recoveryInterval === 180; },
+          hint: 'SW1(config)# interface f0/22\nSW1(config-if)# shutdown\nSW1(config-if)# no shutdown\nSW1(config-if)# exit\nSW1(config)# errdisable recovery cause psecure-violation\nSW1(config)# errdisable recovery interval 180',
+          ok: 'Mac: "Slot 22 says notconnect, which is the right kind of empty."',
+          why: 'Ace: An err-disabled port stays down after the cause is gone until someone types shutdown and then no shutdown on it. errdisable recovery cause psecure-violation lets the switch do that itself, and errdisable recovery interval 180 sets the wait to 180 seconds instead of the default 300. Recovery is disabled for every cause by default; show errdisable recovery lists them.' }
+      ],
+      solution: [ { dev: 'SW1', type: ['enable', 'show logging'] }, 'commit', { select: 'BOX' }, 'commit',
+        { dev: 'SW1', type: ['configure terminal', 'interface f0/22', 'switchport mode access', 'switchport port-security'] }, 'commit',
+        { dev: 'SW1', type: ['interface f0/14', 'switchport mode access', 'switchport port-security', 'switchport port-security mac-address sticky'] }, 'commit',
+        { form: { pr: 'protect', re: 'restrict', sh: 'shutdown', df: 'shutdown' } }, 'commit',
+        { dev: 'SW1', type: ['interface f0/7', 'switchport mode access', 'switchport port-security', 'switchport port-security maximum 2', 'switchport port-security violation restrict'] }, 'commit',
+        { dev: 'SW1', type: ['do show port-security interface f0/22'] }, 'commit',
+        { dev: 'SW1', type: ['interface f0/22', 'shutdown', 'no shutdown', 'exit', 'errdisable recovery cause psecure-violation', 'errdisable recovery interval 180'] }, 'commit' ],
+      outro: 'By one in the morning the pharmacy reader has taken eleven payments, and every one of them has landed at the pharmacy. Hollis tears up the handwritten receipts except the first, which she pins over the till. Mac draws a small dog in the margin next to slot 22. Ace keeps the evidence bag and writes the box\'s serial number in her own book.' }
   );
 })();

@@ -159,6 +159,7 @@ Rules and numbers live there, never in a character's mouth.
 | The Kid (crew) | types in bursts, caps when scared, lowercase when relieved, apologises twice |
 | Nat | smooth and unhurried, paints while talking, jokes about temporary fixes that outlived everyone, talks about addresses as faces |
 | Ace Elle | direct and fair, gives an order once, names things exactly, keeps what she suspects to herself until she can prove every line |
+| Mac | quick and friendly, talks in faces, slots and his ledger, notices things before anyone asks and admits when the switch noticed first |
 | Imani (walk-on) | a charge nurse, practical and short-tempered with machines, measures every outage in what the ward had to do by hand |
 
 **Still true:**
