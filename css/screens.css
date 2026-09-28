@@ -101,3 +101,38 @@
 .bpay{display:flex;justify-content:space-between;margin-top:12px;font-size:12px;color:var(--ink2)} .bpay b{font-weight:400;color:var(--yel)}
 .bgo{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap} .btn.big{flex:1;height:48px;font-family:var(--disp);letter-spacing:.2em}
 @media (prefers-reduced-motion:reduce){.bbar .bt i.ghost{animation:none}}
+
+/* the map */
+.alert{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 14px;border:1px solid var(--line);background:var(--bg2);font-size:13px}
+.alert span{flex:1} .alert.m{border-color:var(--mag)} .alert.m .ic{color:var(--mag);animation:hpulse 1.2s infinite} .alert.y{border-color:var(--yel)} .alert.y .ic{color:var(--yel)}
+.ctabs button[disabled]{color:var(--ink3);cursor:default;display:inline-flex;align-items:center;gap:6px}
+.mapwrap{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;margin-top:14px}
+@media (max-width:1100px){.mapwrap{grid-template-columns:1fr}}
+.map{position:relative;height:540px;border:1px solid var(--line);overflow:hidden;background-color:var(--bg2);background-image:linear-gradient(rgba(35,48,73,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(35,48,73,.35) 1px,transparent 1px);background-size:40px 40px}
+.mapin{position:absolute;left:0;right:0;top:0;bottom:40px} .map svg{position:absolute;inset:0;width:100%;height:100%}
+.map polyline{fill:none;stroke:var(--cyan);stroke-width:2;stroke-dasharray:6 6;opacity:.55;animation:mdash 1.4s linear infinite} @keyframes mdash{to{stroke-dashoffset:-24}}
+.stn{position:absolute;transform:translate(-50%,-11px);display:flex;flex-direction:column;align-items:center;gap:8px;background:transparent;border:0;color:var(--ink);padding:0}
+.stn .dot{position:relative;width:22px;height:22px;border-radius:50%;background:var(--bg);border:3px solid var(--ink3);transition:transform .15s}
+.stn.lit .dot{border-color:var(--cyan)} .stn.cleared .dot{background:var(--grn);border-color:var(--grn)}
+.stn.here .dot{background:var(--mag);border-color:var(--mag);box-shadow:0 0 18px rgba(255,63,164,.7)}
+.stn .ring{position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--mag);animation:mring 1.8s ease-out infinite} @keyframes mring{from{transform:scale(.7);opacity:.9}to{transform:scale(1.9);opacity:0}}
+.stn .card{display:flex;flex-direction:column;gap:5px;min-width:150px;padding:9px 11px;background:var(--panel);border:1px solid var(--line);text-align:left;transition:border-color .15s,transform .15s,box-shadow .15s}
+.stn:hover .card{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 0 18px rgba(63,246,255,.15)} .stn:hover .dot{transform:scale(1.15)}
+.stn.on .card{border-color:var(--mag);box-shadow:0 0 20px rgba(255,63,164,.2)}
+.stn .k{font-size:10px;letter-spacing:.16em;color:var(--ink2)} .stn.cleared .k{color:var(--grn)} .stn.lit .k{color:var(--cyan)} .stn.on .k{color:var(--mag)}
+.stn .n{font-family:var(--disp);font-size:13px;letter-spacing:.1em} .stn.new .n{color:var(--ink2)}
+.nights{display:flex;flex-wrap:wrap;gap:3px;max-width:140px} .nights i{width:8px;height:8px;border:1px solid var(--ink3)} .nights i.r{background:var(--grn);border-color:var(--grn)}
+.mlegend{position:absolute;left:0;right:0;bottom:0;height:40px;display:flex;align-items:center;gap:18px;padding:0 14px;border-top:1px solid var(--line);background:rgba(7,8,13,.85);font-size:10px;letter-spacing:.12em;color:var(--ink2)}
+.mlegend span{display:flex;align-items:center;gap:7px} .mlegend i{width:9px;height:9px;border:1px solid var(--ink3)} .mlegend i.r{background:var(--grn);border-color:var(--grn)} .mlegend i.h{border-radius:50%;background:var(--mag);border-color:var(--mag)} .mlegend .grow1{flex:1}
+.mpanel{border:1px solid var(--line);background:var(--bg2);display:flex;flex-direction:column;gap:10px;padding:16px}
+.mph{display:flex;gap:14px;align-items:center} .mph .k{font-size:10px;letter-spacing:.2em;color:var(--mag)} .mph .n{font-family:var(--disp);font-size:18px;letter-spacing:.1em;margin:3px 0} .mph .muted{font-size:12px}
+.mpw{font-size:12px;line-height:1.6;color:var(--ink2);padding-bottom:6px;border-bottom:1px solid var(--line)} .mpw b{color:var(--ink)}
+.mnights,.mgigs{display:flex;flex-direction:column}
+.mnight,.mgig{display:flex;align-items:center;gap:10px;padding:8px 6px;background:transparent;border:0;border-bottom:1px solid #1a2233;color:var(--ink);text-align:left;font-size:13px}
+.mnight:hover,.mgig:hover{background:var(--panel2)} .mnight .d{font-family:var(--disp);font-size:11px;width:24px;color:var(--cyan)} .mnight .t,.mgig .t{flex:1}
+.mnight.r{color:var(--ink2)} .mnight.r .d,.mnight.r .ic{color:var(--grn)} .mnight .new{font-size:10px;letter-spacing:.14em;color:var(--cyan)}
+.mgig .cls{font-size:10px;padding:1px 6px} .mgig .s{font-size:10px;letter-spacing:.12em;color:var(--ink2)} .mgig .s.c{color:var(--cyan)} .mgig .s.g{color:var(--grn)}
+.mgo{display:flex;gap:10px;margin-top:auto;padding-top:8px}
+@media (max-width:760px){.map{height:auto;padding:12px 12px 52px} .mapin{position:static;display:flex;flex-direction:column;gap:8px} .map svg{display:none} .stn{position:static;transform:none;flex-direction:row;align-items:center} .stn .card{flex:1}}
+@media (prefers-reduced-motion:reduce){.map polyline,.stn .ring{animation:none}}
+.mgig.sealed{color:var(--ink3)} .mgig.sealed .t{letter-spacing:.2em}
