@@ -124,6 +124,11 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · The license card grows with the setting: Easy prints the word, Normal adds a stamp and a holographic sheen,
+  Cyberpsycho a glowing double frame, a glitching title, a sliding hazard stripe, circuit traces and its own last line
+  (SMIL animation; the PNG export freezes a frame). The card prints in any deck skin the runner switched on during the run
+  (`state.perks.used`, `Game.cardThemes()`); with more than one, the completion screen asks before issuing. The choice
+  rides on the record (`theme`) to the DB and the Hall of Fame. Tested in tests/game.test.js.
 - 2026-09-28 · Settings: `DIFFICULTY` in js/data/jobs/_base.js (easy, normal, cyberpsycho) sets the class pay for every
   gig without its own `creds` (rites keep theirs) and the chrome a wrong commit burns. `state.difficulty` (default
   normal), `Game.setDifficulty(id)`: easier at any time, harder only before the first gig. Picked once on the map

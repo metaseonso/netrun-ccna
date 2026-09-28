@@ -83,7 +83,7 @@ function license_(d, who) {
   if (!limit_('l:' + who, 60)) return json_({ ok: false, why: 'one license a minute' });
   const number = 'NR-' + String(rows.length + 1).padStart(6, '0');
   const issued = new Date().toISOString();
-  const keep = JSON.stringify({ fingerprint: fp, completedAt: clip_(rec.completedAt, 40), cls: clip_(rec.cls, 2), difficulty: clip_(rec.difficulty, 12), stats: rec.stats || {} }).slice(0, 4000);
+  const keep = JSON.stringify({ fingerprint: fp, completedAt: clip_(rec.completedAt, 40), cls: clip_(rec.cls, 2), difficulty: clip_(rec.difficulty, 12), theme: clip_(rec.theme, 12), stats: rec.stats || {} }).slice(0, 4000);
   sh.appendRow([number, issued, who, d.hall ? 'yes' : 'no', keep]);
   return json_({ ok: true, number, issued });
 }

@@ -62,6 +62,13 @@ module.exports.run = function({ out }){
     ok(Game.setDifficulty('easy').ok && Game.state.difficulty === 'easy', 'setting: easier at any time');
     ok(!Game.setDifficulty('normal').ok && Game.state.difficulty === 'easy', 'setting: harder is refused after the first gig');
     ok(Game.licenseRecord().difficulty === 'easy', 'setting: the license record carries it');
+    // the license colours: the default deck and every skin switched on during the run; anything else falls back
+    const pk = JSON.parse(JSON.stringify(Game.state.perks)); Game.state.perks = { theme: null, skins: ['skin-noir'], used: [] };
+    ok(Game.cardThemes().join() === 'default', 'card: only the default deck before any skin is used');
+    Game.shop.setTheme('noir'); Game.shop.setTheme(null);
+    ok(Game.cardThemes().join() === 'default,noir' && Game.licenseRecord('noir').theme === 'noir', 'card: a skin used once can print the card (' + Game.cardThemes() + ')');
+    ok(Game.licenseRecord('ember').theme === 'default', 'card: a skin never used cannot (' + Game.licenseRecord('ember').theme + ')');
+    Game.state.perks = pk;
     Object.assign(Game.state, keep);
   }
   // the stall: prices scale by half the base price per class; Marrow's patch adds 35 chrome, the tune-up fills it
