@@ -142,6 +142,7 @@
 
     // ---- routing tables
     buildRouting(S);
+    switchGateways(S);
     // ---- MAC tables & neighbors
     buildMacTables(S); buildNeighbors(S);
     discoveryPorts(S);
@@ -241,6 +242,23 @@
   // per-port CDP and LLDP: "no cdp enable" hides both ends of that link from CDP; LLDP needs the sender to transmit and the listener to receive
   function discoveryPorts(S){ for (const n in S.neighbors) for (const x of S.neighbors[n]) { const me = S.ifaces[n][x.local].cfg, them = S.ifaces[x.dev][x.remote].cfg;
       if (me.cdpOff || them.cdpOff) x.cdp = false; if (me.lldpRxOff || them.lldpTxOff) x.lldp = false; x.cdpHold = S.cfg[x.dev].cdpHoldtime || 180; x.lldpHold = S.cfg[x.dev].lldpHoldtime || 120; } }
+
+  // a Layer 2 switch is a host on its own management SVI: it answers on that address and replies through "ip default-gateway"
+  function switchGateways(S){ const D = S.net.devices; for (const n in D) { if (D[n].kind !== 'switch' || S.routers.includes(n)) continue; const svis = S.l3.filter(o => o.dev === n && o.kind === 'iface'); if (!svis.length) continue;
+      const t = svis.map(o => ({ prefix: netOf(o.ip, o.mask), len: mlen(o.mask), via: null, iface: o.iface, proto: 'C', ad: 0, metric: 0 })); const gw = S.cfg[n].defaultGateway; const o = gw && svis.find(x => inSubnet(gw, netOf(x.ip, x.mask), x.mask));
+      if (o) t.unshift({ prefix: '0.0.0.0', len: 0, via: gw, iface: o.iface, proto: 'S*', ad: 1, metric: 0 }); S.tables[n] = t; } }
+  // remote logins to a router or a switch SVI. SSH needs sshReady, TCP 22 through, the user to exist and the VTY access-class to permit
+  // the source; Telnet needs transport input to allow it (no transport line allows it), a login method with something to check, and TCP 23.
+  function remoteLogin(S, from, ip, proto, user){ const own = S.l3.find(o => o.ip === ip && o.kind === 'iface'); if (!own) return { ok: false, reason: 'nothing at ' + ip };
+    const d = own.dev, c = S.cfg[d], vty = c.vty; const h = S.hosts[from]; const src = h && h.ip; const port = proto === 'ssh' ? 22 : 23;
+    const tr = vty.transport; if (tr && !tr.includes(proto) && !tr.includes('all')) return { ok: false, dev: d, reason: 'connection refused: the VTY lines on ' + d + ' take ' + tr.join(' ') + ' only' };
+    if (proto === 'ssh') { if (!c.domain || !(c.sshKeyBits > 0)) return { ok: false, dev: d, reason: 'connection refused: ' + d + ' has no RSA key (ip domain name and crypto key generate rsa)' }; if (c.sshVersion === 2 && c.sshKeyBits < 768) return { ok: false, dev: d, reason: 'SSH version 2 needs a key of at least 768 bits' }; }
+    if (vty.login === 'local') { if (!c.users.length) return { ok: false, dev: d, reason: 'login local, but ' + d + ' has no usernames' }; if (user && !c.users.some(u => u.name === String(user).toLowerCase())) return { ok: false, dev: d, reason: '% Login invalid for ' + user }; }
+    else if (proto === 'ssh') return { ok: false, dev: d, reason: 'SSH needs login local on the VTY lines' };
+    else if (vty.login !== 'password' || !vty.password) return { ok: false, dev: d, reason: 'Password required, but none set' };
+    if (vty.accessClass && src && aclEval(S, d, vty.accessClass, { src, dst: ip, proto: 'tcp', dport: port }).action !== 'permit') return { ok: false, dev: d, reason: 'connection refused by access-class ' + vty.accessClass + ' on the VTY lines' };
+    const p = ping(S, from, ip, { proto: 'tcp', dport: port }); if (!p.ok) return { ok: false, dev: d, reason: 'TCP ' + port + ' to ' + ip + ': ' + p.reason };
+    return { ok: true, dev: d, encrypted: proto === 'ssh', version: proto === 'ssh' ? (c.sshVersion || 1.99) : null, reason: (proto === 'ssh' ? 'SSH' : 'Telnet') + ' session open to ' + d }; }
 
   // ---------------------------------------------------------------- SNMP
   // a manager (a host, the NMS) polls an agent (a router) at one of its addresses over UDP 161 with a community string:
@@ -381,7 +399,8 @@
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),
       neighbors: d => S.neighbors[d] || [], macTable: d => S.macTable[d] || [], bundles: S.bundles,
       ntp: d => ntpSync(S, d), resolve: (d, name) => resolve(S, d, name),
-      snmp: (nms, ip, community, write) => snmpPoll(S, nms, ip, community, write), snmpTraps: d => snmpTraps(S, d), syslog: d => syslogHosts(S, d)
+      snmp: (nms, ip, community, write) => snmpPoll(S, nms, ip, community, write), snmpTraps: d => snmpTraps(S, d), syslog: d => syslogHosts(S, d),
+      ssh: (from, ip, user) => remoteLogin(S, from, ip, 'ssh', user), telnet: (from, ip) => remoteLogin(S, from, ip, 'telnet')
     };
   }
 
@@ -389,5 +408,5 @@
   function traceLines(r, style){ const t = r.trail || []; const row = (i, ip) => style === 'pc' ? '  ' + String(i).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + i + ' ' + ip + ' 0 msec 0 msec 0 msec';
     const out = t.map((ip, i) => row(i + 1, ip)); if (!r.ok) out.push(style === 'pc' ? '  ' + String(t.length + 1).padStart(2) + '     *        *        *     Request timed out.' : '  ' + (t.length + 1) + '  *  *  * '); return out; }
   window.Net = { build, api, ping, traceLines, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
-  Net.ntpSync = ntpSync; Net.resolve = resolve;
+  Net.ntpSync = ntpSync; Net.resolve = resolve; Net.remoteLogin = remoteLogin;
 })();

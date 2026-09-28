@@ -184,6 +184,12 @@ Definition of done for a day:
   `%SYS-5-CONFIG_I` line for the player's own configuring, stamped the way the box is set now (sequence number, datetime from
   `show clock` with `*` while unsynchronised, or uptime), filtered by the buffer level. Tested (section 16).
 
+- 2026-09-28 · Remote logins: `ctx.net().ssh(from, ip, user)` and `ctx.net().telnet(from, ip)` → `{ ok, dev, reason }`. SSH needs a
+  domain and an RSA key (768+ bits for `ip ssh version 2`), `login local` with the user, `transport input` allowing ssh, the VTY
+  `access-class` to permit the source, and TCP 22 through; Telnet needs transport to allow it (no transport line allows it), a
+  password or local login, the access-class and TCP 23. PCs: `ssh -l USER IP`, `telnet IP`. A Layer 2 switch with an SVI now
+  replies through `ip default-gateway` (it had no way back to other subnets). Tested (section 17).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a

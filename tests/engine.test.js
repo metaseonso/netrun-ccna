@@ -224,5 +224,18 @@ module.exports.run = function({ out }){
     ok(/000003: \*Mar  1 00:14:52\.211: %SYS-5-CONFIG_I/.test(t), 'show logging: a new line carries a sequence number and a datetime stamp (* while the clock is not synchronised) (' + t.split('\n').pop() + ')');
     d.R1.exec('logging buffered 4'); A = Net.api(Net.build(net, d)); t = Show.render(d.R1, 'show logging', A.state); ok(/LINK-3/.test(t) && !/SYS-6/.test(t) && !/SYS-5/.test(t), 'show logging: the buffer keeps only messages at its level and below');
   }
+  // 17. remote logins: Telnet until the VTY lines take SSH only; SSH needs a domain, a key, login local, a user and the access-class; a switch replies through ip default-gateway
+  {
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0042.0000.0001' }, ADM: { kind: 'host', ip: '10.0.9.10', mask: '255.255.255.0', gw: '10.0.9.1' }, PC1: { kind: 'host', ip: '10.0.1.20', mask: '255.255.255.0', gw: '10.0.1.1' } },
+      links: [ { a: 'ADM', b: 'R1', bp: 'gigabitethernet0/1' }, { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.1.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.9.1 255.255.255.0', 'no shut', 'line vty 0 15', 'password open', 'login'],
+      SW1: ['en', 'conf t', 'int vlan1', 'ip add 10.0.1.2 255.255.255.0', 'no shut'] });
+    let A = Net.api(Net.build(net, d)); ok(A.telnet('ADM', '10.0.1.1').ok && !A.ssh('ADM', '10.0.1.1', 'shell').ok, 'login: Telnet with a line password works, SSH does not');
+    ok(!A.ping('ADM', '10.0.1.2').ok && A.ping('PC1', '10.0.1.2').ok, 'switch: its SVI answers its own subnet only, until it has a default gateway'); d.SW1.exec('ip default-gateway 10.0.1.1'); A = Net.api(Net.build(net, d)); ok(A.ping('ADM', '10.0.1.2').ok, 'switch: ip default-gateway lets it reply across the router');
+    ['exit', 'ip domain name watson.net', 'crypto key generate rsa modulus 1024', 'ip ssh version 2', 'username shell secret brass', 'line vty 0 15', 'login local', 'transport input ssh'].forEach(l => d.R1.exec(l)); A = Net.api(Net.build(net, d));
+    ok(A.ssh('ADM', '10.0.1.1', 'shell').ok && !A.telnet('ADM', '10.0.1.1').ok && !A.ssh('ADM', '10.0.1.1', 'nobody').ok, 'login: SSH as a local user works, Telnet is refused, an unknown user is refused');
+    ['access-list 5 permit 10.0.9.0 0.0.0.255', 'line vty 0 15', 'access-class 5 in'].forEach(l => d.R1.exec(l)); A = Net.api(Net.build(net, d)); ok(A.ssh('ADM', '10.0.1.1', 'shell').ok && !A.ssh('PC1', '10.0.1.1', 'shell').ok && /access-class 5/.test(A.ssh('PC1', '10.0.1.1', 'shell').reason), 'login: access-class limits who may connect');
+    const pc = new Sim.Device('ADM', { kind: 'host', netState: () => A.state }); pc.exec('ssh -l shell 10.0.1.1'); ok(/Open/.test(pc.out[pc.out.length - 1].s) && /SSH 2 session to R1/.test(pc.out[pc.out.length - 1].s), 'pc: ssh -l opens a session'); pc.exec('telnet 10.0.1.1'); ok(/refused/.test(pc.out[pc.out.length - 1].s), 'pc: telnet is refused');
+  }
   return { pass, fails };
 };

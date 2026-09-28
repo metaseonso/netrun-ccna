@@ -93,10 +93,13 @@
   function host(dev, raw, S){
     const t = raw.trim().split(/\s+/); const c = (t[0] || '').toLowerCase(); const h = S && S.hosts[dev.name];
     if (!c) return '';
-    if (c === 'help' || c === '?') return 'ping <ip or name>   ipconfig [/all | /displaydns | /flushdns]   arp -a   tracert <ip or name>   nslookup <name>';
+    if (c === 'help' || c === '?') return 'ping <ip or name>   ipconfig [/all | /displaydns | /flushdns]   arp -a   tracert <ip or name>   nslookup <name>   telnet <ip>   ssh -l <user> <ip>';
     if (!h) return 'no network stack';
     if (c === 'ipconfig' && /^\/displaydns$/i.test(t[1] || '')) { const k = Object.keys(dev._dnsCache || {}); return 'Windows IP Configuration\n' + (k.map(n => '\n    ' + n + '\n    ----------------------------------------\n    Record Name . . . . . : ' + n + '\n    Record Type . . . . . : 1\n    A (Host) Record . . . : ' + dev._dnsCache[n]).join('\n') || '\n    (the DNS cache is empty)'); }
     if (c === 'ipconfig' && /^\/flushdns$/i.test(t[1] || '')) { dev._dnsCache = {}; return 'Windows IP Configuration\n\nSuccessfully flushed the DNS Resolver Cache.'; }
+    if (c === 'telnet' || c === 'ssh') { let user = null, ip = null; for (let i = 1; i < t.length; i++) { if (t[i] === '-l') user = t[++i]; else ip = t[i]; } if (!ip) return c === 'ssh' ? 'Usage: ssh -l <username> <ip>' : 'Usage: telnet <ip>';
+      if (c === 'ssh' && !user) return 'Usage: ssh -l <username> <ip>'; const r = Net.remoteLogin(S, dev.name, ip, c, user);
+      return 'Trying ' + ip + ' ...' + (r.ok ? 'Open\n' + (c === 'ssh' ? '\nPassword:\n\n[SSH ' + r.version + ' session to ' + r.dev + ' as ' + user + ': encrypted end to end]' : '\n\nUser Access Verification\n\nPassword:\n\n[Telnet session to ' + r.dev + ': everything you type crosses the wire in clear text]') + '\n(work on ' + r.dev + ' from its own shell tab)' : '\n% ' + r.reason); }
     if (c === 'nslookup') { if (!t[1]) return 'Usage: nslookup <name>'; const r = Net.resolve(S, dev.name, t[1]); const srv = r.server || [].concat(h.dns || [])[0] || '(none)';
       if (r.ok) { (dev._dnsCache = dev._dnsCache || {})[r.name] = r.ip; return 'Server:  UnKnown\nAddress:  ' + srv + '\n\nName:    ' + r.name + '\nAddress:  ' + r.ip; }
       return r.nx ? 'Server:  UnKnown\nAddress:  ' + srv + '\n\n*** UnKnown can\'t find ' + r.name + ': Non-existent domain' : 'DNS request timed out.\n    timeout was 2 seconds.\n*** Request to ' + srv + ' timed-out\n  [why: ' + r.reason + ']'; }
