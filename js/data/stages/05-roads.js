@@ -229,6 +229,49 @@
         { k: 'SYNC', q: { prompt: 'Nexthop, leaning in the doorway with two coffees: "Three routers on the round table, all priority 1, IDs 1.1.1.1, 2.2.2.2 and 3.3.3.3. Who chairs it?"', opts: ['3.3.3.3, the highest router ID, and 2.2.2.2 is the BDR', '1.1.1.1, the lowest router ID', 'Whichever came up first, always', 'Nobody. Ethernet has no DR'], a: 0,
           yes: 'Ospef: "3.3.3.3, with 2.2.2.2 as the backup. Unless somebody changes a priority."', no: 'Ospef: "3.3.3.3. Equal priorities, so the highest router ID is DR and the next is BDR."',
           why: 'Ospef: On a broadcast segment the DR is the router with the highest OSPF interface priority, and every interface starts at 1. With the priorities tied, the highest router ID wins, so 3.3.3.3 is DR and 2.2.2.2, the next highest, is BDR.' } }
+      ] },
+    // ------------------------------------------------------------ night 29 · first hop redundancy
+    { id: 'n29-cousins-cab', title: 'Two cabs, one number', sub: 'first hop redundancy: HSRP, VRRP and GLBP', npc: 'nexthop', day: [29], src: [PS('FHRPs.md')], unlocks: ['fhrp'],
+      beats: [
+        { k: 'SCENE', where: 'The cab rank · Saturday, 03:10',
+          lines: [
+            { who: 'narr', text: 'Hot oil and coolant hiss off Nexthop\'s engine into the rain, and the bonnet stands open like a mouth. He is on his back under the front bumper with a torch. In the next bay a second yellow cab idles, identical to his except for a dent in the door, and a man with Nexthop\'s nose and a better haircut leans on its roof.' },
+            { who: 'nexthop', text: 'My cousin Stan. Same phone number on both our roofs. When a fare rings it, whichever of us is on duty picks up, and tonight that\'s him.' },
+            { who: 'Stan', text: 'Nobody in Watson knows there are two of us. They ring the number, and a cab turns up.' },
+            { who: 'nexthop', text: 'A PC has one default gateway, one address, and if that router dies the PC is stranded, even with a second router sitting right next to it. A [[first hop redundancy protocol]] gives the two routers one shared virtual IP and one virtual MAC. The PCs use the virtual IP as their gateway, and whichever router is active answers ARP for it with the virtual MAC.' },
+            { who: 'Stan', text: 'And when he breaks down, I shout to the whole rank that the number\'s mine now, so nobody\'s left ringing a dead cab.' },
+            { who: 'nexthop', text: 'That shout is a [[gratuitous ARP]], an ARP reply nobody asked for, sent to the broadcast address. Every switch learns the virtual MAC on the new router\'s port straight away.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do the two routers know which one is on duty?', reply: 'Nexthop: "They multicast hellos to each other. In [[HSRP]], Cisco\'s, the one with the highest priority is active and the other is standby. The default priority is 100, and on a tie the highest IP address wins."' },
+            { tone: 'press', say: 'When your cab\'s fixed, do you get the number back?', reply: 'Stan: "Not unless he\'s set to take it. Preemption is off by default on all of them. Without it, I keep the number until my cab dies too." Nexthop, from under the bumper: "standby 1 preempt. I\'m typing it the minute I\'m out of here."' },
+            { tone: 'joke', say: 'Does anyone ever notice it\'s not the same cab?', reply: 'Stan: "One old lady. She said the ride was smoother. I didn\'t tell him."' }
+          ] } },
+        { k: 'SCENE', where: 'Stan\'s cab · the ring road · 03:40',
+          lines: [
+            { who: 'narr', text: 'Stan\'s cab smells of peppermint and new seat covers. The radio is tuned to the rank\'s channel, and Nexthop\'s voice comes over it every few minutes from under his own cab, still talking.' },
+            { who: 'nexthop', text: 'Three of them you need to know. HSRP is Cisco\'s: active and standby, hellos to 224.0.0.2 in version 1 and 224.0.0.102 in version 2. The virtual MAC is 0000.0c07.acXX in version 1, XX the group number, and 0000.0c9f.fXXX in version 2.' },
+            { who: 'Stan', text: '[[VRRP]] is the open one, anybody\'s routers: master and backup instead, hellos to 224.0.0.18, virtual MAC 0000.5e00.01XX.' },
+            { who: 'nexthop', text: 'And [[GLBP]], Cisco\'s again, which actually shares the fares. One active virtual gateway, the AVG, hands out up to four active virtual forwarders, AVFs, each with its own virtual MAC, 0007.b400.XXYY, and answers different PCs\' ARPs with different ones. Hellos to 224.0.0.102.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do I set up HSRP?', reply: 'Stan: "On the LAN interface of both routers: standby 1 ip with the virtual address. On the one you want active, standby 1 priority higher than 100, and standby 1 preempt so it takes the number back after a fault. standby version 2 if you want the newer hellos. show standby brief tells you who\'s active."' },
+            { tone: 'press', say: 'So with HSRP the standby router just sits there?', reply: 'Nexthop: "For that group, yes, idle and listening. You can split the load by hand with two groups, one active on each router for half the VLANs. GLBP does the sharing inside one group."' },
+            { tone: 'care', say: 'Do you two ever work the same night?', reply: 'Stan: "Every Saturday. He drives, I sit in the next bay with the engine warm. Our mum rings the number to check we\'re both alive."' }
+          ] } },
+        { k: 'LORE', title: 'ONE NUMBER ON TWO ROOFS', year: 1998, real: ['cisco', 'ietf'], vibe: 'Da bomb: two routers answering to one address, and the fare never notices the swap.',
+          text: 'Stan: "Cisco wrote up HSRP as RFC 2281 in March 1998, after years of running it on their own routers, and VRRP came out of the IETF as an open standard the same year, RFC 2338. Our uncle painted one phone number on two cabs the year the first one came out, because he read about it in a magazine. He said if the big networks could share an address, two brothers could share a phone."' },
+        { k: 'KIT', text: 'Stan writes it on the back of a fare card and tucks it in your jacket.', real: ['cisco', 'ietf'], kit: [
+          { cmd: 'standby 1 ip 10.29.1.254', what: 'HSRP group 1\'s virtual IP, on the LAN interface of both routers. PCs use it as their gateway' },
+          { cmd: 'standby 1 priority 110 · standby 1 preempt · standby version 2', what: 'active: highest priority (default 100), then highest IP. Preemption is off by default' },
+          { cmd: 'HSRP (Cisco): active/standby · v1 224.0.0.2, 0000.0c07.acXX · v2 224.0.0.102, 0000.0c9f.fXXX', what: 'XX or XXX is the group number' },
+          { cmd: 'VRRP (open): master/backup · 224.0.0.18 · 0000.5e00.01XX', what: 'the standard one' },
+          { cmd: 'GLBP (Cisco): one AVG, up to 4 AVFs · 224.0.0.102 · 0007.b400.XXYY', what: 'load-balances inside one subnet' },
+          { cmd: 'gratuitous ARP', what: 'an unrequested ARP reply, broadcast by the new active router so switches relearn the virtual MAC' },
+          { cmd: 'show standby brief', what: 'group, priority, P for preempt, who is active, who is standby, the virtual IP' } ] },
+        { k: 'SYNC', q: { prompt: 'Stan, at a red light: "Two routers, both at priority 100, no preempt. One\'s 10.29.1.1 and the other\'s 10.29.1.2. Who answers the number?"', opts: ['10.29.1.2, the highest IP address, because the priorities tie', '10.29.1.1, the lowest IP address', 'Both, taking turns', 'Neither, until a priority is set'], a: 0,
+          yes: 'Stan: "Point-two. Same as me: I answer if nobody\'s told me not to."', no: 'Stan: "Point-two. Equal priority, so the highest IP address is active."',
+          why: 'Nexthop: HSRP makes the router with the highest priority active. Both are at the default of 100, so the tie goes to the highest IP address on the interface, 10.29.1.2. The other becomes standby.' } }
       ] }
   ] });
 })();

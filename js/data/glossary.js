@@ -197,5 +197,9 @@ window.GLOSSARY = {
   'ospf area': 'A set of OSPF routers and links that share one LSDB. Every area must connect to the backbone, area 0.',
   'abr': 'Area Border Router: an OSPF router with interfaces in more than one area (recommended: two at most).',
   'asbr': 'Autonomous System Boundary Router: an OSPF router that connects the OSPF network to an outside network, such as the internet.',
-  'designated router': 'The DR: on an OSPF broadcast segment, the router every other router sends its updates to and forms a full adjacency with. Highest interface priority wins (default 1, 0 never stands), then highest router ID. The BDR is its backup.'
+  'designated router': 'The DR: on an OSPF broadcast segment, the router every other router sends its updates to and forms a full adjacency with. Highest interface priority wins (default 1, 0 never stands), then highest router ID. The BDR is its backup.',
+  'first hop redundancy protocol': 'FHRP: two or more routers share one virtual IP and virtual MAC, which hosts use as their default gateway, so the gateway survives a router failure. HSRP, VRRP and GLBP.',
+  'gratuitous arp': 'An ARP reply sent without a request, to the broadcast address. A new active FHRP router sends one so switches learn the virtual MAC on its port.',
+  'vrrp': 'Virtual Router Redundancy Protocol: the open-standard FHRP. Master and backup routers, hellos to 224.0.0.18, virtual MAC 0000.5e00.01XX.',
+  'glbp': 'Gateway Load Balancing Protocol: Cisco\'s FHRP that load-balances inside one subnet. One AVG assigns up to four AVFs, each with its own virtual MAC 0007.b400.XXYY.'
 };

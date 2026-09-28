@@ -362,6 +362,76 @@
         { dev: 'R1', type: ['interface g0/1', 'ip ospf 1 area 1'] }, 'commit',
         { dev: 'R1', type: ['ip ospf network point-to-point'] }, { dev: 'R4', type: ['enable', 'configure terminal', 'interface g0/1', 'ip ospf network point-to-point'] }, 'commit',
         { dev: 'R4', type: ['router ospf 1', 'default-information originate'] }, { dev: 'PC2', type: ['ping 203.0.113.2'] }, 'commit' ],
-      outro: 'Ospef runs a new string across the masking tape and pins it to EDGE, then photographs the whole wall twice. In the morning a note arrives from the next district in the other colour of ink: their side of the map shows Watson for the first time in a year.' }
+      outro: 'Ospef runs a new string across the masking tape and pins it to EDGE, then photographs the whole wall twice. In the morning a note arrives from the next district in the other colour of ink: their side of the map shows Watson for the first time in a year.' },
+
+    // ------------------------------------------------------------------ night 29 · from Lab 29 (HSRP configuration)
+    { id: 'c-n29-one-number', cls: 'C', rep: 15, from: 'nexthop', title: 'One Number, Two Routers', day: [29], requires: ['n29-cousins-cab'], devices: ['R1', 'R2', 'PC1'],
+      brief: 'DISPATCH » The rank\'s dispatch office has two routers and the PCs only know one gateway. Nexthop wants them sharing one virtual address, his router on duty, Stan\'s taking over the moment his fails.\n\nCLIENT (Stan) » "Same number on both roofs. And make sure he gets it back when his cab\'s fixed, or I\'ll never hear the end of it."',
+      net: {
+        devices: {
+          SW1: { kind: 'switch', mac: '0011.2229.0001' }, R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' },
+          PC1: { kind: 'host', ip: '10.29.1.10', mask: '255.255.255.0', gw: '10.29.1.254' }, PC2: { kind: 'host', ip: '10.29.1.11', mask: '255.255.255.0', gw: '10.29.1.254' },
+          SRV: { kind: 'server', ip: '10.29.3.100', mask: '255.255.255.0', gw: '10.29.3.1' }
+        },
+        links: [ { a: 'R1', ap: gi(0), b: 'SW1', bp: gi(1) }, { a: 'R2', ap: gi(0), b: 'SW1', bp: gi(2) }, { a: 'SW1', ap: fa(1), b: 'PC1' }, { a: 'SW1', ap: fa(2), b: 'PC2' },
+          { a: 'R1', ap: gi(1), b: 'R3', bp: gi(1) }, { a: 'R2', ap: gi(1), b: 'R3', bp: gi(2) }, { a: 'R3', ap: gi(0), b: 'SRV' } ],
+        preconfig: {
+          R1: ['interface g0/0', 'ip address 10.29.1.1 255.255.255.0', 'no shutdown', 'interface g0/1', 'ip address 10.29.13.1 255.255.255.252', 'no shutdown', 'router ospf 1', 'network 10.29.0.0 0.0.255.255 area 0', 'passive-interface g0/0'],
+          R2: ['interface g0/0', 'ip address 10.29.1.2 255.255.255.0', 'no shutdown', 'interface g0/1', 'ip address 10.29.23.1 255.255.255.252', 'no shutdown', 'router ospf 1', 'network 10.29.0.0 0.0.255.255 area 0', 'passive-interface g0/0'],
+          R3: ['interface g0/0', 'ip address 10.29.3.1 255.255.255.0', 'no shutdown', 'interface g0/1', 'ip address 10.29.13.2 255.255.255.252', 'no shutdown', 'interface g0/2', 'ip address 10.29.23.2 255.255.255.252', 'no shutdown', 'router ospf 1', 'network 10.29.0.0 0.0.255.255 area 0', 'passive-interface g0/0']
+        }
+      },
+      map: { w: 560, h: 340, nodes: [
+          { id: 'PC1', label: 'dispatch desk', type: 'pc', x: 40, y: 110 }, { id: 'PC2', label: 'the radio desk', type: 'pc', x: 40, y: 240 }, { id: 'SW1', label: 'office switch', type: 'switch', x: 150, y: 175 },
+          { id: 'R1', label: 'R1 · Nexthop\'s router', type: 'router', x: 290, y: 90 }, { id: 'R2', label: 'R2 · Stan\'s router', type: 'router', x: 290, y: 260 },
+          { id: 'R3', label: 'R3 · the city side', type: 'router', x: 430, y: 175 }, { id: 'SRV', label: 'the fare server', type: 'server', x: 525, y: 175 } ],
+        links: [ { a: 'PC1', b: 'SW1' }, { a: 'PC2', b: 'SW1' }, { a: 'SW1', b: 'R1', ap: gi(1), bp: gi(0) }, { a: 'SW1', b: 'R2', ap: gi(2), bp: gi(0) }, { a: 'R1', b: 'R3', ap: gi(1), bp: gi(1) }, { a: 'R2', b: 'R3', ap: gi(1), bp: gi(2) }, { a: 'R3', b: 'SRV' } ] },
+      steps: [
+        { type: 'form', skill: 'fhrp', text: 'Stan, feet up on the dispatch desk: "Before you touch the routers. Which is which?"',
+          fields: [ { key: 'hsrp', label: 'HSRP', options: ['Cisco, active and standby', 'open standard, master and backup', 'Cisco, load-balances with an AVG and AVFs'], answer: 'Cisco, active and standby' },
+            { key: 'vrrp', label: 'VRRP', options: ['Cisco, active and standby', 'open standard, master and backup', 'Cisco, load-balances with an AVG and AVFs'], answer: 'open standard, master and backup' },
+            { key: 'glbp', label: 'GLBP', options: ['Cisco, active and standby', 'open standard, master and backup', 'Cisco, load-balances with an AVG and AVFs'], answer: 'Cisco, load-balances with an AVG and AVFs' },
+            { key: 'pre', label: 'preemption, out of the box', options: ['on', 'off'], answer: 'off' } ],
+          hint: 'Two are Cisco\'s. Only one shares the load inside one group.', ok: 'Stan: "Good. And off, which is why I keep his number."',
+          why: 'Nexthop: HSRP is Cisco\'s, with an active and a standby router. VRRP is the open standard, with a master and a backup. GLBP is Cisco\'s and load-balances inside one subnet: an active virtual gateway hands out up to four active virtual forwarders. None of them preempt by default.' },
+        { type: 'cmd', skill: 'fhrp', text: 'Nexthop: "The PCs already point at 10.29.1.254 and nothing owns it, so dispatch is cut off. Make it HSRP group 1\'s virtual IP on both routers, then ping the fare server at 10.29.3.100 from the dispatch desk."',
+          need: [ { dev: 'PC1', line: /^ping 10\.29\.3\.100$/ } ], check: (d, ctx) => { const n = ctx.net(); const g = Object.values(n.state.hsrp).find(x => x.vip === '10.29.1.254'); return !!g && g.members.length === 2 && n.ping('PC1', '10.29.3.100').ok; },
+          hint: 'R1(config)# interface g0/0\nR1(config-if)# standby 1 ip 10.29.1.254\n(the same on R2)\n\nPC1:\nC:\\> ping 10.29.3.100', ok: 'Nexthop: "Replies. The office has a gateway again, and two routers behind it."',
+          why: 'Nexthop: standby 1 ip 10.29.1.254 on each router\'s LAN interface puts both in HSRP group 1 with that virtual IP. One becomes active and answers ARP for 10.29.1.254 with the virtual MAC, so the PCs\' gateway works, and the other waits as standby.' },
+        { type: 'choice', skill: 'fhrp', text: 'Stan, reading show standby brief over your shoulder: "Look at that. It\'s my router answering. Why?"',
+          opts: ['Both are at priority 100, so the highest IP address wins, and R2 is 10.29.1.2', 'R2 was configured last', 'R2 has the faster link to the city', 'HSRP picks the standby at random'], a: 0,
+          hint: 'Priority first, then the interface IP address.', ok: 'Nexthop: "Point-two beats point-one on a tie. Not for long."',
+          why: 'Nexthop: HSRP makes the router with the highest priority active. Both routers have the default priority of 100, so the tie is broken by the highest IP address on the interface, and R2\'s 10.29.1.2 is higher than R1\'s 10.29.1.1.' },
+        { type: 'cmd', skill: 'fhrp', text: 'Nexthop: "My router is on duty. Priority 110 on R1, and make it take the number back whenever it can."',
+          check: (d, ctx) => { const n = ctx.net(); const s = (ctx.cfg('R1').interfaces[gi(0)] || { standby: {} }).standby['1'] || {}; return n.hsrpActive('10.29.1.254') === 'R1' && s.priority > 100 && !!s.preempt; },
+          hint: 'R1(config)# interface g0/0\nR1(config-if)# standby 1 priority 110\nR1(config-if)# standby 1 preempt', ok: 'Nexthop: "Active, priority 110, and a P in the preempt column."',
+          why: 'Nexthop: standby 1 priority 110 gives R1 a higher priority than R2\'s default of 100. On its own that would not take the active role from a router that already has it, because preemption is off by default. standby 1 preempt lets R1 take over whenever its priority is the highest, so R1 becomes active.' },
+        { type: 'form', skill: 'fhrp', text: 'Stan: "The switch sees a MAC address for the gateway that doesn\'t belong to either of us. What is it, and who else would use what?"',
+          fields: [ { key: 'mac', label: 'HSRP version 1 virtual MAC for group 1', options: ['0000.0c07.ac01', '0000.0c9f.f001', '0000.5e00.0101', '0007.b400.0101'], answer: '0000.0c07.ac01' },
+            { key: 'v1', label: 'HSRP version 1 hellos go to', options: ['224.0.0.2', '224.0.0.102', '224.0.0.18', '224.0.0.5'], answer: '224.0.0.2' },
+            { key: 'v2', label: 'HSRP version 2 hellos go to', options: ['224.0.0.2', '224.0.0.102', '224.0.0.18', '224.0.0.5'], answer: '224.0.0.102' },
+            { key: 'vrrp', label: 'VRRP hellos go to', options: ['224.0.0.2', '224.0.0.102', '224.0.0.18', '224.0.0.5'], answer: '224.0.0.18' } ],
+          hint: 'HSRPv1 MACs start 0000.0c07.ac. VRRP is the odd one out at .18.', ok: 'Stan: "Ac-zero-one. That\'s our number, in MAC."',
+          why: 'Nexthop: The HSRP version 1 virtual MAC is 0000.0c07.acXX with the group number in hex at the end, so group 1 is 0000.0c07.ac01. Version 2 uses 0000.0c9f.fXXX. HSRPv1 hellos go to 224.0.0.2 and HSRPv2 to 224.0.0.102, the same address GLBP uses. VRRP uses 224.0.0.18 and the MAC 0000.5e00.01XX.' },
+        { type: 'cmd', skill: 'fhrp', text: 'Nexthop: "Now break my cab. Shut R1\'s office port and ping the fare server again from dispatch."',
+          need: [ { dev: 'PC1', line: /^ping 10\.29\.3\.100$/ } ], check: (d, ctx) => { const n = ctx.net(); return !n.up('R1', 'g0/0') && n.hsrpActive('10.29.1.254') === 'R2' && n.ping('PC1', '10.29.3.100').ok; },
+          hint: 'R1(config-if)# shutdown\n\nPC1:\nC:\\> ping 10.29.3.100', ok: 'Stan: "My number now. Dispatch never knew."',
+          why: 'Nexthop: With R1\'s office port down, R2 stops hearing R1\'s hellos and takes the active role. It sends a gratuitous ARP so the switch learns the virtual MAC on R2\'s port, and the PCs keep using the same gateway address, 10.29.1.254, without noticing the change.' },
+        { type: 'choice', skill: 'fhrp', text: 'Stan: "Say you\'d never typed preempt. What happens when your port comes back?"',
+          opts: ['R2 stays active until it fails, and R1 waits as standby', 'R1 takes over straight away because 110 is higher', 'Both become active', 'The virtual IP moves to R1\'s real address'], a: 0,
+          hint: 'Preemption is off by default.', ok: 'Nexthop: "And he\'d never give it back. Which is why I typed it."',
+          why: 'Nexthop: Without preemption, a router with a higher priority does not take the active role from a router that already has it. R1 would come back as standby and stay there until R2 failed. With standby 1 preempt, R1 takes the active role back as soon as it returns.' },
+        { type: 'cmd', skill: 'fhrp', text: 'Nexthop: "Cab\'s fixed. Bring my port back, and move both routers to HSRP version 2 while you\'re in there."',
+          check: (d, ctx) => { const n = ctx.net(); const v = r => (ctx.cfg(r).interfaces[gi(0)] || {}).standbyVersion === 2; return n.up('R1', 'g0/0') && n.hsrpActive('10.29.1.254') === 'R1' && v('R1') && v('R2'); },
+          hint: 'R1(config-if)# no shutdown\nR1(config-if)# standby version 2\nR2(config)# interface g0/0\nR2(config-if)# standby version 2', ok: 'Nexthop: "Mine again, version 2 on both. Stan can go home."',
+          why: 'Nexthop: no shutdown brings R1\'s office port back, and because R1 has the higher priority and preempt, it takes the active role back from R2. standby version 2 on both routers\' interfaces switches them to HSRPv2, with hellos to 224.0.0.102 and a virtual MAC of 0000.0c9f.f001 for group 1. Both ends of a group must run the same version.' }
+      ],
+      solution: [ { form: { hsrp: 'Cisco, active and standby', vrrp: 'open standard, master and backup', glbp: 'Cisco, load-balances with an AVG and AVFs', pre: 'off' } }, 'commit',
+        { dev: 'R1', type: ['enable', 'configure terminal', 'interface g0/0', 'standby 1 ip 10.29.1.254'] }, { dev: 'R2', type: ['enable', 'configure terminal', 'interface g0/0', 'standby 1 ip 10.29.1.254'] }, { dev: 'PC1', type: ['ping 10.29.3.100'] }, 'commit',
+        { choose: 0 }, 'commit', { dev: 'R1', type: ['standby 1 priority 110', 'standby 1 preempt'] }, 'commit',
+        { form: { mac: '0000.0c07.ac01', v1: '224.0.0.2', v2: '224.0.0.102', vrrp: '224.0.0.18' } }, 'commit',
+        { dev: 'R1', type: ['shutdown'] }, { dev: 'PC1', type: ['ping 10.29.3.100'] }, 'commit', { choose: 0 }, 'commit',
+        { dev: 'R1', type: ['no shutdown', 'standby version 2'] }, { dev: 'R2', type: ['standby version 2'] }, 'commit' ],
+      outro: 'At dawn Stan drives home with his radio off and Nexthop takes the number back for the morning fares. Their mum rings it at seven to check they are both alive, and it is answered on the first ring.' }
   );
 })();
