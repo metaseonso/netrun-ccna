@@ -1,6 +1,19 @@
 /* jobs/08-lab.js — District 08 · The Lab (under the college): LAN and WAN architectures, virtualisation, wireless, automation. */
 (function(){
   const { gi, fa } = NETKIT;
+  // VRF has no engine model. These read a router's transcript in order (ip vrf forwarding wipes the address, as in IOS)
+  // so the VRF gig can check the config and the shell can print each VRF's table.
+  const LONG = p => p.replace('gigabitethernet', 'GigabitEthernet').replace('fastethernet', 'FastEthernet');
+  const SHORT = p => p.replace('gigabitethernet', 'Gi').replace('fastethernet', 'Fa');
+  const vrfIfaces = d => { const out = {}; (d ? d.lines : []).forEach(r => { if (r.mode !== 'config-if' || !r.ctx.startsWith('interface ')) return; const n = r.ctx.slice(10); const i = out[n] || (out[n] = { vrf: null, ip: null, mask: null, shut: null }); let m;
+    if ((m = r.line.match(/^ip vrf forwarding (\S+)$/))) { i.vrf = m[1]; i.ip = null; i.mask = null; } else if (r.line === 'no ip vrf forwarding') { i.vrf = null; i.ip = null; i.mask = null; }
+    else if ((m = r.line.match(/^ip address (\S+) (\S+)$/))) { i.ip = m[1]; i.mask = m[2]; } else if (r.line === 'no shutdown') i.shut = false; else if (r.line === 'shutdown') i.shut = true; }); return out; };
+  const vrfList = (d, namesOnly) => { const names = []; (d ? d.lines : []).forEach(r => { const m = r.mode === 'config' && r.line.match(/^ip vrf (\S+)$/); if (m && !names.includes(m[1])) names.push(m[1]); }); if (namesOnly) return names;
+    const ifs = vrfIfaces(d); return '  Name                             Default RD            Interfaces\n' + names.map(n => '  ' + n.toUpperCase().padEnd(33) + '<not set>'.padEnd(22) + Object.keys(ifs).filter(k => ifs[k].vrf === n).map(SHORT).join(' ')).join('\n'); };
+  const vrfTable = (d, name) => { const ifs = vrfIfaces(d); const rows = Object.keys(ifs).filter(k => ifs[k].vrf === name && ifs[k].ip && ifs[k].shut === false).sort();
+    const pre = ip => ip.split('.').slice(0, 3).join('.') + '.0'; // the Lab's networks are all /24
+    return (name ? 'Routing Table: ' + name.toUpperCase() + '\n' : '') + 'Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP\n       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area\n\nGateway of last resort is not set\n' +
+      (rows.length ? '\n' + rows.map(k => '      ' + pre(ifs[k].ip) + '/24 is variably subnetted, 2 subnets, 2 masks\nC        ' + pre(ifs[k].ip) + '/24 is directly connected, ' + LONG(k) + '\nL        ' + ifs[k].ip + '/32 is directly connected, ' + LONG(k)).join('\n') : ''); };
   JOBS.push(
     // ------------------------------------------------------------------ night 52 · from Lab 52 (STP and HSRP synchronisation)
     { id: 'a-n52-charting-floor', cls: 'A', rep: 25, from: 'hypervisor', title: 'The Charting Floor', day: [52], requires: ['n52-the-blueprint'], devices: ['DSW1', 'DSW2', 'PC2'], stpView: true,
@@ -129,6 +142,70 @@
         { dev: 'R2', type: ['enable', 'configure terminal', 'interface tunnel 0', 'ip address 172.16.1.2 255.255.255.252', 'tunnel source g0/0', 'tunnel destination 203.0.113.1'] }, 'commit',
         { dev: 'R1', type: ['router ospf 1', 'network 172.16.1.0 0.0.0.3 area 0', 'network 192.168.1.0 0.0.0.255 area 0'] }, { dev: 'R2', type: ['router ospf 1', 'network 172.16.1.0 0.0.0.3 area 0', 'network 192.168.2.0 0.0.0.255 area 0'] }, 'commit',
         { dev: 'PC2', type: ['tracert 192.168.1.100'] }, 'commit', { choose: 0 }, 'commit' ],
-      outro: 'On the last day of the month the phone company switches off the T1, and nobody at either site notices. The fax machine in Kabuki keeps its label. Imani puts Halvorsen\'s letter in the drawer with the other bids.' }
+      outro: 'On the last day of the month the phone company switches off the T1, and nobody at either site notices. The fax machine in Kabuki keeps its label. Imani puts Halvorsen\'s letter in the drawer with the other bids.' },
+
+    // ------------------------------------------------------------------ night 54 · topic gig (virtualisation, cloud, containers, VRF)
+    { id: 'a-n54-community-cloud', cls: 'A', rep: 25, from: 'hypervisor', title: 'Two Tenants, One Address', day: [54], requires: ['n54-little-instances'], devices: ['R1'],
+      brief: 'DISPATCH » The school\'s server moves into the Lab tomorrow, next to the clinic\'s, and both of them use 192.168.1.0/24. The professor wants one router to carry both without either seeing the other. The council wants the Lab described for its file while you are there.\n\nCLIENT (Prof. Hypervisor) » "Every machine in my basement is somebody\'s livelihood. Nothing leaks from one to the other, and nobody renumbers anything the night before term starts."',
+      net: {
+        devices: { R1: { kind: 'router' }, SRVC: { kind: 'server', ip: '192.168.1.10', mask: '255.255.255.0', gw: '192.168.1.1' }, SRVS: { kind: 'server', ip: '192.168.1.10', mask: '255.255.255.0', gw: '192.168.1.1' } },
+        links: [ { a: 'SRVC', b: 'R1', bp: gi(0) }, { a: 'SRVS', b: 'R1', bp: gi(1) } ],
+        preconfig: { R1: ['hostname R1', 'interface g0/0', 'description clinic blade', 'ip address 192.168.1.1 255.255.255.0', 'no shutdown', 'interface g0/1', 'description school blade'] }
+      },
+      shows: { R1: { 'show ip route vrf clinic': d => vrfTable(d, 'clinic'), 'show ip route vrf school': d => vrfTable(d, 'school'), 'show ip route': d => vrfTable(d, null), 'show ip vrf': d => vrfList(d) } },
+      map: { w: 520, h: 250, nodes: [ { id: 'R1', label: 'the Lab router', type: 'router', x: 260, y: 70 }, { id: 'SRVC', label: 'clinic records VM', type: 'server', x: 120, y: 180 }, { id: 'SRVS', label: 'school timetable VM', type: 'server', x: 400, y: 180 } ],
+        links: [ { a: 'R1', b: 'SRVC', tag: '192.168.1.0/24' }, { a: 'R1', b: 'SRVS', tag: '192.168.1.0/24' } ] },
+      steps: [
+        { type: 'form', skill: 'virtualization', text: 'Clerk Adebayo, ledger open on the crate: "For the council\'s file. Which kind of hypervisor is each of these?"',
+          fields: [ { key: 'blade', label: 'Runs straight on the blade\'s hardware', options: ['Type 1', 'Type 2'], answer: 'Type 1' },
+            { key: 'laptop', label: 'Runs as a program on the professor\'s laptop', options: ['Type 1', 'Type 2'], answer: 'Type 2' },
+            { key: 'bare', label: 'Also called bare-metal or native', options: ['Type 1', 'Type 2'], answer: 'Type 1' },
+            { key: 'hosted', label: 'Also called hosted', options: ['Type 1', 'Type 2'], answer: 'Type 2' } ],
+          hint: 'Nothing underneath it: Type 1. An operating system underneath it: Type 2.', ok: 'Clerk Adebayo: "Type 1, Type 2, Type 1, Type 2. Recorded."',
+          why: 'Prof. Hypervisor: A Type 1 hypervisor runs directly on the hardware, so it is called bare-metal or native. A Type 2 hypervisor runs as a program on top of an ordinary operating system, the host OS, so it is called hosted. The systems running inside either kind are guest OSes.' },
+        { type: 'multi', skill: 'virtualization', text: 'Clerk Adebayo: "Halvorsen\'s brochure calls their service a cloud. The council wants to know whether the Lab is one too. Which of these does NIST say a cloud must have?"',
+          opts: ['On-demand self-service', 'Broad network access', 'Resource pooling', 'Rapid elasticity', 'Measured service', 'A large company running it', 'Encryption by default', 'A data centre in another district'], answers: [0, 1, 2, 3, 4],
+          hint: 'Five of them. None of the five is about who owns it or where it is.', ok: 'Clerk Adebayo: "Five. And the Lab has four of them, the professor says, because she sends no bills."',
+          why: 'Prof. Hypervisor: NIST\'s definition from 2011 lists five essential characteristics: on-demand self-service, broad network access, resource pooling, rapid elasticity and measured service. Who runs it, where it is and whether it is encrypted are not part of the definition.' },
+        { type: 'form', skill: 'virtualization', text: 'Prof. Hypervisor: "The school asked what the other offers are. Name the service model for each."',
+          fields: [ { key: 'o365', label: 'Microsoft Office 365 for the school\'s email', options: ['SaaS', 'PaaS', 'IaaS'], answer: 'SaaS' },
+            { key: 'gae', label: 'Google App Engine running the timetable code', options: ['SaaS', 'PaaS', 'IaaS'], answer: 'PaaS' },
+            { key: 'ec2', label: 'Amazon EC2 virtual machines', options: ['SaaS', 'PaaS', 'IaaS'], answer: 'IaaS' },
+            { key: 'gce', label: 'Google Compute Engine virtual machines', options: ['SaaS', 'PaaS', 'IaaS'], answer: 'IaaS' } ],
+          hint: 'A finished program, a place to run your code, or the machines themselves.', ok: 'Prof. Hypervisor: "SaaS, PaaS, IaaS, IaaS. The school is staying here anyway."',
+          why: 'Prof. Hypervisor: SaaS is a finished application you use over the network, like Office 365. PaaS runs your own code on a platform the provider manages, like AWS Lambda or Google App Engine. IaaS rents you the virtual machines, storage and network, like Amazon EC2 or Google Compute Engine, and everything above that is yours.' },
+        { type: 'form', skill: 'virtualization', text: 'Clerk Adebayo: "And the deployment model for each, please."',
+          fields: [ { key: 'hal', label: 'Halvorsen Cloud, sold to anyone who pays', options: ['public', 'private', 'community', 'hybrid'], answer: 'public' },
+            { key: 'lab', label: 'The Lab, shared by the clinic, the school and the courier guild', options: ['public', 'private', 'community', 'hybrid'], answer: 'community' },
+            { key: 'own', label: 'A rack the clinic owns for itself alone', options: ['public', 'private', 'community', 'hybrid'], answer: 'private' },
+            { key: 'mix', label: 'The clinic\'s own rack, plus Halvorsen for the busy weeks', options: ['public', 'private', 'community', 'hybrid'], answer: 'hybrid' } ],
+          hint: 'Anyone, one organisation, a group with the same concerns, or a mix.', ok: 'Clerk Adebayo: "Community. I will underline that one."',
+          why: 'Prof. Hypervisor: A public cloud is open to anyone. A private cloud serves one organisation. A community cloud is shared by a group of organisations with common concerns, like the street\'s clinic, school and guild. A hybrid cloud combines two or more of the others.' },
+        { type: 'form', skill: 'virtualization', text: 'Prof. Hypervisor: "The school asked for its timetable app in a container and the clinic\'s records in a VM. Tell them which wins at each of these."',
+          fields: [ { key: 'boot', label: 'Starts up faster', options: ['a VM', 'a container'], answer: 'a container' },
+            { key: 'res', label: 'Uses more disk, CPU and memory', options: ['a VM', 'a container'], answer: 'a VM' },
+            { key: 'iso', label: 'Is more isolated from its neighbours', options: ['a VM', 'a container'], answer: 'a VM' },
+            { key: 'os', label: 'Runs its own operating system', options: ['a VM', 'a container'], answer: 'a VM' } ],
+          hint: 'A container shares the host\'s operating system. A VM carries a whole one of its own.', ok: 'Prof. Hypervisor: "Container, VM, VM, VM. Both of them asked for the right thing."',
+          why: 'Prof. Hypervisor: A container holds an app and its dependencies but no operating system, and it shares the host OS through a container engine, so it starts quickly and uses little disk, CPU and memory. A VM runs its own full operating system, which costs more resources and boots more slowly but keeps it better isolated from the VMs beside it.' },
+        { type: 'cmd', skill: 'virtualization', text: 'Prof. Hypervisor: "Now the router. Make two VRFs, CLINIC and SCHOOL. Put g0/0 in CLINIC and g0/1 in SCHOOL, and give both of them 192.168.1.1/24. Bring g0/1 up."',
+          check: (d) => { const i = vrfIfaces(d.R1); const c = i[gi(0)], s = i[gi(1)]; const made = vrfList(d.R1, true); return made.includes('clinic') && made.includes('school') && !!c && c.vrf === 'clinic' && c.ip === '192.168.1.1' && c.mask === '255.255.255.0' && !!s && s.vrf === 'school' && s.ip === '192.168.1.1' && s.mask === '255.255.255.0' && s.shut === false; },
+          hint: 'R1(config)# ip vrf CLINIC\nR1(config-vrf)# ip vrf SCHOOL\nR1(config-vrf)# interface g0/0\nR1(config-if)# ip vrf forwarding CLINIC\nR1(config-if)# ip address 192.168.1.1 255.255.255.0\nR1(config-if)# interface g0/1\nR1(config-if)# ip vrf forwarding SCHOOL\nR1(config-if)# ip address 192.168.1.1 255.255.255.0\nR1(config-if)# no shutdown', ok: 'Prof. Hypervisor: "Same address twice on one router, and the router doesn\'t mind at all."',
+          why: 'Prof. Hypervisor: ip vrf CLINIC creates a separate routing table called CLINIC. ip vrf forwarding CLINIC on an interface moves it into that table, and it removes the interface\'s IP address, so the address has to be entered again afterwards. With each interface in its own VRF, both can use 192.168.1.1/24 because they never share a table.' },
+        { type: 'cmd', skill: 'virtualization', text: 'Prof. Hypervisor: "Look at the school\'s table on its own, and then the router\'s ordinary one."',
+          need: [ { dev: 'R1', line: /^(do )?show ip route vrf school$/ }, { dev: 'R1', line: /^(do )?show ip route$/ } ],
+          hint: 'R1# show ip route vrf SCHOOL\nR1# show ip route', ok: 'Prof. Hypervisor: "The school\'s table has its one network. The global table is empty, because nothing is left outside the two VRFs."',
+          why: 'Prof. Hypervisor: show ip route vrf SCHOOL shows only the routes in the SCHOOL VRF. Plain show ip route shows the global routing table, which holds only the interfaces that are in no VRF. To ping inside a VRF you name it too: ping vrf SCHOOL 192.168.1.10.' },
+        { type: 'choice', skill: 'virtualization', text: 'Clerk Adebayo: "Last question for the record. Why couldn\'t the router simply take both networks as they were?"',
+          opts: ['Without VRF, two interfaces on one router cannot be in the same subnet', 'A router can only have one interface in use', 'The school\'s addresses were public addresses', 'Servers in VMs cannot be routed'], a: 0,
+          hint: 'What would the router\'s single table say about 192.168.1.0/24?', ok: 'Clerk Adebayo: "Recorded, with VRF spelled out in full."',
+          why: 'Prof. Hypervisor: A router with one routing table cannot have two interfaces in the same subnet, because it would not know which interface 192.168.1.0/24 lives on. VRF gives each tenant its own routing table, so overlapping subnets are fine. If the two ever need to reach each other, VRF leaking can let chosen routes cross between VRFs.' }
+      ],
+      solution: [ { form: { blade: 'Type 1', laptop: 'Type 2', bare: 'Type 1', hosted: 'Type 2' } }, 'commit', { multi: [0, 1, 2, 3, 4] }, 'commit',
+        { form: { o365: 'SaaS', gae: 'PaaS', ec2: 'IaaS', gce: 'IaaS' } }, 'commit', { form: { hal: 'public', lab: 'community', own: 'private', mix: 'hybrid' } }, 'commit',
+        { form: { boot: 'a container', res: 'a VM', iso: 'a VM', os: 'a VM' } }, 'commit',
+        { dev: 'R1', type: ['enable', 'configure terminal', 'ip vrf CLINIC', 'ip vrf SCHOOL', 'interface g0/0', 'ip vrf forwarding CLINIC', 'ip address 192.168.1.1 255.255.255.0', 'interface g0/1', 'ip vrf forwarding SCHOOL', 'ip address 192.168.1.1 255.255.255.0', 'no shutdown', 'end'] }, 'commit',
+        { dev: 'R1', type: ['show ip route vrf SCHOOL', 'show ip route'] }, 'commit', { choose: 0 }, 'commit' ],
+      outro: 'The school\'s server boots in the Lab the next morning with its old address and the clinic\'s records never notice it arrive. Clerk Adebayo files his page on the Lab under COMMUNITY CLOUD, and the council\'s copy of Halvorsen\'s brochure goes into the same folder, underneath it.' }
   );
 })();

@@ -194,5 +194,13 @@ window.GLOSSARY = {
   'ipsec': 'A suite that encrypts and authenticates IP packets. The usual protocol for site-to-site VPNs. Does not carry broadcast or multicast on its own.',
   'tls': 'Transport Layer Security, the successor to SSL (Secure Sockets Layer). Encrypts a connection; the usual protocol for remote-access VPNs and HTTPS.',
   'gre': 'Generic Routing Encapsulation. Wraps a packet in a GRE header and a new IP header to tunnel it between two routers. No encryption, but carries broadcast and multicast; often run inside IPsec.',
-  'dmvpn': 'Dynamic Multipoint VPN. Cisco\'s way to let spoke routers build IPsec tunnels to each other on demand, a full mesh without configuring every tunnel.'
+  'dmvpn': 'Dynamic Multipoint VPN. Cisco\'s way to let spoke routers build IPsec tunnels to each other on demand, a full mesh without configuring every tunnel.',
+  // ---- night 54 · virtualisation, cloud, containers, VRF
+  'ucs': 'Cisco Unified Computing System. Cisco\'s server platform: blade and rack servers that usually run hypervisors.',
+  'type 1 hypervisor': 'A hypervisor that runs directly on the hardware. Also called bare-metal or native. Examples: VMware ESXi, Microsoft Hyper-V.',
+  'type 2 hypervisor': 'A hypervisor that runs as a program on an operating system (the host OS). Also called hosted. The OSes in its VMs are guest OSes.',
+  'community cloud': 'A cloud shared by a group of organisations with common concerns. The four NIST deployment models: private, community, public, hybrid.',
+  'saas': 'Software as a Service: the provider runs a finished application you use over the network, like Microsoft Office 365.',
+  'paas': 'Platform as a Service: the provider runs a platform for your own code, like AWS Lambda or Google App Engine.',
+  'iaas': 'Infrastructure as a Service: the provider rents you virtual machines, storage and network, like Amazon EC2 or Google Compute Engine.'
 };
