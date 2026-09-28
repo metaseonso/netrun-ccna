@@ -167,7 +167,10 @@
   // ---- the map: one line through the districts, a dot per night, a panel for the district you pick -----
   function stageState(stg){ const s = Game.state, read = stg.levels.filter(l => s.read[l.id]).length, jobs = JOBS.filter(j => jobStage(j) === stg), done = jobs.filter(j => s.jobsDone[j.id]).length;
     return { read, total: stg.levels.length, jobs: jobs.length, done, open: jobs.filter(j => !Game.jobStatus(j).locked.length && !s.jobsDone[j.id]).length, state: read === stg.levels.length && done === jobs.length ? 'cleared' : read || done ? 'lit' : 'new' }; }
-  function mapPos(i, n){ const per = 4, row = Math.floor(i / per), col = i % per, rows = Math.ceil(n / per); const x = 12 + (row % 2 ? per - 1 - col : col) * 25.3; const y = rows > 1 ? 8 + row * ((rows > 2 ? 64 : 50) / (rows - 1)) : 30; return { x, y: y + (col % 2 ? 6 : -4) }; }
+  // stations snake across the map: three a row once there are more than eight (9 districts = a 3×3 grid), four a row below that.
+  // The top row sits low enough for the YOU ARE HERE pulse to fit, the bottom row high enough for a two-line card.
+  function mapPos(i, n){ const per = n > 8 ? 3 : 4, row = Math.floor(i / per), col = i % per, rows = Math.ceil(n / per), c = row % 2 ? per - 1 - col : col;
+    const x = per === 3 ? 17 + c * 33 : 12 + c * 25.3; const y = rows > 1 ? 11 + row * (58 / (rows - 1)) : 30; return { x, y: y + (per === 3 ? (c === 1 ? 5 : 0) : (col % 2 ? 6 : -4)) }; }
   function hereStage(){ const s = Game.state; let best = null, t = 0; STAGES.forEach(stg => stg.levels.forEach(l => { if (s.read[l.id] > t) { t = s.read[l.id]; best = stg; } })); return best || STAGES[0]; }
   // difficulty: picked once before the campaign starts (diffGate); afterwards only lowered, from the account menu (lowerModal)
   const stars = k => '<i class="dicon ' + k + '" aria-label="' + DIFFICULTY[k].name + '">' + icon(k) + '</i>';

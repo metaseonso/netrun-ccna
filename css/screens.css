@@ -108,7 +108,7 @@
 .ctabs button[disabled]{color:var(--ink3);cursor:default;display:inline-flex;align-items:center;gap:6px}
 .mapwrap{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;margin-top:14px}
 @media (max-width:1100px){.mapwrap{grid-template-columns:1fr}}
-.map{position:relative;height:540px;border:1px solid var(--line);overflow:hidden;background-color:var(--bg2);background-image:linear-gradient(rgba(35,48,73,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(35,48,73,.35) 1px,transparent 1px);background-size:40px 40px}
+.map{position:relative;height:auto;min-height:540px;border:1px solid var(--line);overflow:hidden;background-color:var(--bg2);background-image:linear-gradient(rgba(35,48,73,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(35,48,73,.35) 1px,transparent 1px);background-size:40px 40px}
 .mapin{position:absolute;left:0;right:0;top:0;bottom:40px} .map svg{position:absolute;inset:0;width:100%;height:100%}
 .map polyline{fill:none;stroke:var(--cyan);stroke-width:2;stroke-dasharray:6 6;opacity:.55;animation:mdash 1.4s linear infinite} @keyframes mdash{to{stroke-dashoffset:-24}}
 .stn{position:absolute;transform:translate(-50%,-11px);display:flex;flex-direction:column;align-items:center;gap:8px;background:transparent;border:0;color:var(--ink);padding:0}
@@ -294,3 +294,4 @@
 .diffchip .dicon{margin-right:0} .diffchip .dicon .ic{width:18px;height:18px}
 @media (max-width:520px){.diffchip .dicon .ic{width:16px;height:16px}}
 .door-id .ava{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--cyan);display:inline-flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:12px;letter-spacing:.06em;color:var(--cyan)}
+@media (max-width:760px){.map{padding-bottom:0} .mlegend{position:static;height:auto;flex-wrap:wrap;gap:6px 14px;padding:10px 12px;margin:12px -12px 0} .mlegend span{white-space:nowrap}}
