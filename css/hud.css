@@ -12,7 +12,7 @@
 
 /* band 1 · identity */
 .b-id{min-height:54px;border-bottom:1px solid #1a2233}
-.b-id .logo{font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:.16em;color:var(--cyan);text-shadow:0 0 12px rgba(63,246,255,.45);white-space:nowrap}
+.b-id .logo{font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:.16em;color:var(--cyan);text-shadow:0 0 12px rgba(63,246,255,.45);white-space:nowrap;flex-shrink:0;display:flex}
 .b-id .logo .sh{display:none}
 .b-id .logo small{color:var(--mag);font-size:inherit;font-weight:800}
 .b-id .who{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink)}
@@ -102,3 +102,12 @@
   .b-nav .menuwrap:first-child .dropdown{left:0;transform:none}
 }
 @media (prefers-reduced-motion:reduce){.hud2 *,.dropdown,.tipbox{animation:none !important;transition:none !important}}
+
+/* the street reacts */
+.hud2 .meter,.hud2 .credm,.hud2 .repm{position:relative}
+.fdelta{position:absolute;right:0;top:-4px;font-family:var(--disp);font-size:13px;font-weight:800;pointer-events:none;animation:fdelta 1.3s ease-out forwards;text-shadow:0 0 10px currentColor}
+.fdelta.up{color:var(--grn)} .fdelta.down{color:var(--red)} .credm .fdelta.up{color:var(--yel)}
+@keyframes fdelta{0%{opacity:0;transform:translateY(6px)}15%{opacity:1;transform:none}70%{opacity:1}100%{opacity:0;transform:translateY(-18px)}}
+.hud2 .bump .segs i.f,.hud2 .bump .rbar i{filter:brightness(1.6)}
+.hud2 .bump{animation:bump .5s ease-out} @keyframes bump{30%{transform:scale(1.04)}}
+@media (prefers-reduced-motion:reduce){.fdelta{animation:none;opacity:1} .hud2 .bump{animation:none}}
