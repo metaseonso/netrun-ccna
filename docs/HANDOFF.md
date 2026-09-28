@@ -136,6 +136,9 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · `no router ospf|eigrp|rip [id]` removes the routing process from the parsed config and from the running-config,
+  so a wrong EIGRP AS can be replaced (tested).
+
 - 2026-09-28 · EIGRP neighbours need the same AS number (`eigrp-as-mismatch` issue otherwise); `passive-interface` under
   `router eigrp` drops the neighbour on that interface but still advertises its network; a passive RIP interface sends
   no updates. `ctx.net().eigrpNeighbors('R1')` and `show ip eigrp neighbors` (tested).

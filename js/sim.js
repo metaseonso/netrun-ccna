@@ -122,6 +122,7 @@
     const block = ctx => { if (!blocks.has(ctx)) blocks.set(ctx, []); return blocks.get(ctx); };
     const put = (b, line) => { const k = keyOf(line); if (k) { const i = b.findIndex(x => keyOf(x.line) === k); if (i >= 0) b.splice(i, 1); } if (!b.some(x => x.line === line)) b.push({ line }); return b[b.length - 1]; };
     for (const r of dev.lines) { if (!r.mode || !r.mode.startsWith('config')) continue; let line = r.line; if (!line || line.startsWith('do ') || line === 'exit' || line === 'end') continue;
+      if (r.mode === 'config' && /^no router (ospf|eigrp|rip)\b/.test(line)) { for (const k of [...blocks.keys()]) if (k === line.slice(3) || (/^no router rip/.test(line) && k === 'router rip')) blocks.delete(k); continue; } // no router X removes the process
       if (r.mode === 'config' && OPENER.test(line)) { block(line.startsWith('interface ') ? 'interface ' + line.slice(10) : line); continue; }
       const b = block(r.mode === 'config' ? '' : r.ctx);
       if (line === 'service password-encryption') { enc = true; secrets.forEach(x => { x.enc = true; }); put(b, line); continue; }

@@ -75,6 +75,7 @@
         else if ((m = s.match(/^no ip route (\S+) (\S+) (\S+)/))) cfg.routes = cfg.routes.filter(x => !(x.prefix === m[1] && x.mask === m[2] && x.via === m[3]));
         else if ((m = s.match(/^no access-list (\d+)$/))) delete cfg.acls[m[1]];
         else if ((m = s.match(/^no vlan (\d+)$/))) delete cfg.vlans[+m[1]];
+        if ((m = s.match(/^no router (ospf|eigrp|rip)\b(?: (\d+))?/)) && cfg[m[1]] && (!m[2] || m[1] === 'rip' || String(cfg[m[1]].pid != null ? cfg[m[1]].pid : cfg[m[1]].as) === m[2])) cfg[m[1]] = null; // remove the routing process
       }
       // ---------------- vlan config
       if (r.mode === 'config-vlan') { const ids = r.ctx.replace('vlan ', '').split(',').map(x => +x.split('-')[0]); if ((m = s.match(/^name (\S+)$/))) ids.forEach(id => { cfg.vlans[id] = cfg.vlans[id] || { id }; cfg.vlans[id].name = m[1]; }); }

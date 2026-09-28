@@ -132,6 +132,11 @@ module.exports.run = function({ out }){
     d.R2.exec('router eigrp 100'); d.R2.exec('passive-interface g0/1'); A = Net.api(Net.build(net, d)); ok(A.eigrpNeighbors('R3').length === 0 && !A.route('R1', '10.9.3.0/24'), 'eigrp: a passive link interface drops the neighbour');
     d = devs({ R1: ['en', 'conf t'].concat(ifs.R1, ['router rip', 'version 2', 'network 10.0.0.0', 'no auto-summary']), R2: ['en', 'conf t'].concat(ifs.R2, ['router rip', 'version 2', 'network 10.0.0.0', 'passive-interface g0/0']) }); A = Net.api(Net.build(net, d));
     ok(!A.route('R1', '10.9.23.0/30') && A.route('R2', '10.9.1.0/24') && A.route('R2', '10.9.1.0/24').proto === 'R', 'rip: a passive interface sends no updates but still hears them');
+    // no router eigrp <as> removes the process, so the right AS can be configured in its place
+    d = devs({ R1: ['en', 'conf t'].concat(ifs.R1, eig(100)), R2: ['en', 'conf t'].concat(ifs.R2, eig(100)), R3: ['en', 'conf t'].concat(ifs.R3, eig(10)) });
+    d.R3.exec('no router eigrp 10'); ok(NetConfig.parse(d.R3).eigrp === null, 'config: no router eigrp 10 removes the process');
+    ['router eigrp 100', 'network 10.0.0.0', 'no auto-summary'].forEach(l => d.R3.exec(l)); A = Net.api(Net.build(net, d)); ok(A.route('R1', '10.9.3.0/24') && A.route('R1', '10.9.3.0/24').proto === 'D', 'eigrp: re-created in AS 100, the depot LAN arrives as D');
+    d.R3.exec('do show running-config'); const rc = d.R3.out[d.R3.out.length - 1].s; ok(/router eigrp 100/.test(rc) && !/router eigrp 10\n/.test(rc), 'shell: the removed process is gone from the running-config');
   }
   return { pass, fails };
 };
