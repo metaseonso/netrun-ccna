@@ -202,5 +202,44 @@
           yes: 'Cider: "Yes. The broadcast for that block is 172.20.217.255."', no: 'Cider: "Yes, it can. A /23 spans two third-octet values, so .255 on the first one is in the middle."',
           why: 'Cider: 172.20.216.0/23 runs from 172.20.216.0 to 172.20.217.255. 172.20.216.255 is in the middle of that range, so it is an ordinary host address. Only the first address, the network, and the last, the broadcast, are reserved.' } }
       ] },
+    // ------------------------------------------------------------ night 15 · subnetting, part 3: VLSM
+    { id: 'n15-the-new-wing', title: 'Every piece its own size', sub: 'VLSM', npc: 'cider', day: [15], src: [PS('Subnetting_VLSM_Part3.md')], unlocks: ['vlsm'],
+      beats: [
+        { k: 'SCENE', where: 'The Watson clinic · the new wing, still being built · late afternoon',
+          lines: [
+            { who: 'narr', text: 'The new wing smells of wet plaster and paint, and a radio somewhere on the floor above is playing to nobody. Cable hangs from open ceiling tiles in coloured bundles. A nurse in blue scrubs with her hair tied back leads you and Cider past rooms with no doors yet, reading names off a clipboard.' },
+            { who: 'Imani', text: 'I\'m Imani, from the wards. The council says this wing opens on Opening Night, and if it opens with a network that falls over, Halvorsen gets to say the street can\'t look after a clinic. I was here the last time the network went down. I\'d like not to be here for the next one.' },
+            { who: 'Imani', text: 'The wards need a hundred and ten machines, the pharmacy fifty, admin twenty-five and imaging ten. The builders gave us 192.168.15.0/24 and a link to the old building.' },
+            { who: 'cider', text: 'If I cut that /24 into equal pieces big enough for the wards, I get two /25s and nothing left for anyone else. So I cut every piece to its own size, the biggest first. That\'s [[VLSM]], variable length subnet masking.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why the biggest first?', reply: 'Cider: "Because a big subnet has to start on a boundary of its own size. A /25 can only start at .0 or .128. If I put the small pieces down first, they end up scattered across both halves, and there\'s no clean /25 left for the wards."' },
+            { tone: 'press', say: 'How do you size each one?', reply: 'Cider: "The smallest prefix whose hosts cover the need. A hundred and ten needs seven host bits, 126 hosts, so a /25. Fifty needs six, 62, a /26. Twenty-five needs five, 30, a /27. Ten needs four, 14, a /28. The link to the old building needs two addresses, a /30."' },
+            { tone: 'care', say: 'Imani, what happened the last time?', reply: 'Imani: "The whole clinic went to paper for nine hours. I carried charts up three floors all night, and one patient\'s records never came back." She taps the clipboard. "The man who kept the switches back then tells it better, when anyone can get him to."' }
+          ] } },
+        { k: 'SCENE', where: 'The new wing · the comms cupboard',
+          lines: [
+            { who: 'cider', text: 'The wards get 192.168.15.0/25, .0 to .127. The pharmacy takes the next free /26 boundary, .128 to .191. Admin gets the /27 at .192, running to .223. Imaging gets the /28 at .224, to .239. The link gets the /30 at .240: .241 for this router, .242 for the old building\'s.' },
+            { who: 'cider', text: 'Every router port gets the first usable address of its piece. That leaves .244 to .255 in the drawer, twelve addresses, for whatever the builders forgot.' },
+            { who: 'Imani', text: 'And the old building just needs to know about all of it?' },
+            { who: 'cider', text: 'The old building\'s router already has one route for the whole /24, pointing at this wing. It doesn\'t need to know how I cut it. This wing\'s router needs a default route back out, and that\'s the whole of it.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Could the old router have one route for all five pieces?', reply: 'Cider: "It already does: 192.168.15.0/24 covers every piece I cut from it. That\'s the point of cutting from one block. Outside the wing, it\'s one network. Inside, the router knows every piece as a connected route."' },
+            { tone: 'press', say: 'What if the wards grow to two hundred?', reply: 'Cider: "Then they need a /24 of their own and this plan is dead. I\'d rather hear that now than on Opening Night." Imani writes 110, FIRM on the clipboard and underlines it twice.' },
+            { tone: 'quiet', say: '(Watch Cider mark the pieces on the cupboard door.)', reply: 'She draws the /24 as one long bar in grease pencil and cuts it: half, then a quarter, an eighth, a sixteenth, a sliver. The gaps at the end she leaves blank.' }
+          ] } },
+        { k: 'LORE', title: 'EVERY PIECE ITS OWN SIZE', year: 1987, real: ['ietf'], vibe: 'Gnarly. Pieces of every size from one block, and the routers had to learn to keep up.',
+          text: 'Cider, capping the grease pencil: "RFC 950 in 1985 let you cut a network, but every piece had to be the same size. In June 1987 RFC 1009, the requirements for internet gateways, said a network could be cut with masks of different lengths. It took years for routers and their protocols to handle it well. Now the clinic\'s new wing can have one size of piece for its wards and another for its X-ray machine."' },
+        { k: 'KIT', text: 'Cider draws the cut on the back of Imani\'s clipboard.', kit: [
+          { cmd: 'sort by size, largest first · smallest prefix that fits each', what: 'the VLSM rule' },
+          { cmd: 'wards 110 → /25 .0 · pharmacy 50 → /26 .128 · admin 25 → /27 .192 · imaging 10 → /28 .224 · link → /30 .240', what: '192.168.15.0/24, cut' },
+          { cmd: 'each piece starts on a boundary of its own size', what: 'why the big ones go first' },
+          { cmd: 'router port = first usable of its piece', what: '.1 · .129 · .193 · .225 · .241' },
+          { cmd: 'outside, one route for the whole /24', what: 'inside, every piece is a connected route' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani, checking her clipboard: "Admin has twenty-five people. Why a /27 and not a /28?"', opts: ['A /28 only has 14 usable hosts; a /27 has 30', 'A /28 is only for links', 'A /27 is the smallest subnet allowed', 'Admin needs room to double'], a: 0,
+          yes: 'Cider: "Fourteen won\'t hold twenty-five. Thirty will."', no: 'Cider: "A /28 holds fourteen hosts. Twenty-five needs the next size up, a /27, with thirty."',
+          why: 'Cider: A /28 has 4 host bits: 2^4 − 2 = 14 usable hosts, too few for 25. A /27 has 5 host bits: 2^5 − 2 = 30, the smallest subnet that fits 25 hosts.' } }
+      ] },
   ] });
 })();
