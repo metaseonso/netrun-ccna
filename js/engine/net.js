@@ -287,23 +287,43 @@
     const ospfRouters = S.routers.filter(r => S.cfg[r].ospf);
     const inOspf = (r, o) => { const c = S.cfg[r].ospf; const i = S.ifaces[r][o.iface]; if (i.cfg.ospfArea != null) return { area: i.cfg.ospfArea }; for (const n of c.networks) if (wildMatch(o.ip, n.addr, n.wild)) return { area: n.area }; return null; };
     const isPassive = (r, iface) => { const c = S.cfg[r].ospf; if (c.passiveDefault) return !c.noPassive.has(iface); return c.passive.has(iface); };
-    const cost = (r, iface) => { const i = S.ifaces[r][iface]; if (i.cfg.ospfCost) return i.cfg.ospfCost; const ref = (S.cfg[r].ospf.refBw || 100) * 1000; return Math.max(1, Math.floor(ref / (BW[i.kind] || 100000))); };
+    const cost = (r, iface) => { const i = S.ifaces[r][iface]; if (i.cfg.ospfCost) return i.cfg.ospfCost; if (i.kind === 'lo') return 1; const ref = (S.cfg[r].ospf.refBw || 100) * 1000; return Math.max(1, Math.floor(ref / (BW[i.kind] || 100000))); };
     const routerIdOf = r => { const c = S.cfg[r].ospf; if (c.routerId) return c.routerId; const los = S.l3.filter(o => o.dev === r && o.kind === 'iface' && o.iface.startsWith('loopback')).map(o => o.ip).sort((a, b) => IP.ip2n(b) - IP.ip2n(a)); if (los.length) return los[0]; const all = S.l3.filter(o => o.dev === r && o.kind === 'iface').map(o => o.ip).sort((a, b) => IP.ip2n(b) - IP.ip2n(a)); return all[0] || '0.0.0.0'; };
     const adj = {}; ospfRouters.forEach(r => { adj[r] = []; S.ospf.routers[r] = { id: routerIdOf(r), ifaces: [] }; });
     for (const r of ospfRouters) for (const o of S.l3) { if (o.dev !== r || o.kind !== 'iface') continue; const m = inOspf(r, o); if (!m) continue; S.ospf.routers[r].ifaces.push({ iface: o.iface, area: m.area, passive: isPassive(r, o.iface), cost: cost(r, o.iface), net: netOf(o.ip, o.mask), len: mlen(o.mask) });
       if (isPassive(r, o.iface)) continue; for (const p of S.owners[o.seg] || []) { if (p.kind !== 'iface' || p.dev === r || !ospfRouters.includes(p.dev)) continue; const pm = inOspf(p.dev, p); if (!pm || isPassive(p.dev, p.iface)) continue; if (pm.area !== m.area) { S.issues.push({ kind: 'ospf-area-mismatch', where: r + ' ' + short(o.iface) + ' area ' + m.area + ' / ' + p.dev + ' ' + short(p.iface) + ' area ' + pm.area }); continue; } if (mlen(o.mask) !== mlen(p.mask)) { S.issues.push({ kind: 'ospf-mask-mismatch', where: r + '/' + p.dev }); continue; }
         adj[r].push({ to: p.dev, via: p.ip, iface: o.iface, cost: cost(r, o.iface) }); (S.ospf.neighbors[r] = S.ospf.neighbors[r] || []).push({ id: routerIdOf(p.dev), ip: p.ip, iface: o.iface, state: 'FULL', dev: p.dev }); } }
+    // OSPF neighbours also need matching hello and dead timers and different router IDs; then a DR and BDR on every broadcast segment
+    const tmr = (r, i) => { const c = S.ifaces[r][i].cfg; const h = c.ospfHello || (c.ospfNetwork === 'non-broadcast' ? 30 : 10); return [h, c.ospfDead || h * 4]; };
+    for (const r of ospfRouters) adj[r] = adj[r].filter(e => { const pi = (S.l3.find(o => o.dev === e.to && o.ip === e.via) || {}).iface; const a = tmr(r, e.iface), b = pi ? tmr(e.to, pi) : a; const bad = a[0] !== b[0] || a[1] !== b[1] ? 'ospf-timer-mismatch' : S.ospf.routers[r].id === S.ospf.routers[e.to].id ? 'ospf-duplicate-router-id' : null; if (!bad) return true;
+      const w = [r, e.to].sort().join('/'); if (!S.issues.some(x => x.kind === bad && x.where === w)) S.issues.push({ kind: bad, where: w }); S.ospf.neighbors[r] = (S.ospf.neighbors[r] || []).filter(n => !(n.dev === e.to && n.iface === e.iface)); return false; });
+    S.ospf.dr = {}; const segR = {}; const pri = (r, i) => { const c = S.ifaces[r][i].cfg; return c.ospfPriority != null ? c.ospfPriority : 1; };
+    for (const r of ospfRouters) for (const i of S.ospf.routers[r].ifaces) { if (i.passive || S.ifaces[r][i.iface].cfg.ospfNetwork === 'point-to-point') continue; const o = S.l3.find(x => x.dev === r && x.iface === i.iface); if (!o || !(S.ospf.neighbors[r] || []).some(n => n.iface === i.iface)) continue; (segR[o.seg] = segR[o.seg] || []).push({ dev: r, iface: i.iface, ip: o.ip, pri: pri(r, i.iface), id: S.ospf.routers[r].id }); }
+    for (const g in segR) { const c = segR[g].filter(x => x.pri > 0).sort((a, b) => b.pri - a.pri || IP.ip2n(b.id) - IP.ip2n(a.id)); S.ospf.dr[g] = { dr: c[0] || null, bdr: c[1] || null, members: segR[g] }; }
+    S.ospf.roleOf = (dev, iface) => { const o = S.l3.find(x => x.dev === dev && x.iface === iface); if (!o) return null; if (S.ifaces[dev][iface].cfg.ospfNetwork === 'point-to-point') return 'P2P'; const g = S.ospf.dr[o.seg]; if (!g) return 'DR'; return g.dr && g.dr.dev === dev ? 'DR' : g.bdr && g.bdr.dev === dev ? 'BDR' : 'DROTHER'; };
+    for (const r of ospfRouters) (S.ospf.neighbors[r] || []).forEach(n => { const pif = (S.l3.find(o => o.dev === n.dev && o.ip === n.ip) || {}).iface; const mine = S.ospf.roleOf(r, n.iface), theirs = pif ? S.ospf.roleOf(n.dev, pif) : null; n.role = theirs === 'P2P' ? '-' : theirs; n.pri = pif ? pri(n.dev, pif) : 1; n.state = mine === 'DROTHER' && theirs === 'DROTHER' ? '2WAY' : 'FULL'; });
     for (const r of ospfRouters) { // dijkstra
       const dist = { [r]: 0 }, first = {}, done = new Set(); const pq = [[0, r, null]];
       while (pq.length) { pq.sort((a, b) => a[0] - b[0]); const [d, u, f] = pq.shift(); if (done.has(u)) continue; done.add(u); if (f) first[u] = f;
         for (const e of adj[u]) { const nd = d + e.cost; if (dist[e.to] == null || nd < dist[e.to]) { dist[e.to] = nd; pq.push([nd, e.to, f || { via: e.via, iface: e.iface }]); } else if (nd === dist[e.to] && !done.has(e.to) && f) { (first[e.to + '#ecmp'] = first[e.to + '#ecmp'] || []).push(f); } } }
       for (const t in dist) { if (t === r) continue; const f = first[t]; if (!f) continue; for (const ni of S.ospf.routers[t].ifaces) { const own = S.ospf.routers[r].ifaces.find(x => x.net === ni.net && x.len === ni.len); if (own) continue; add(r, { prefix: ni.net, len: ni.len, via: f.via, iface: f.iface, proto: 'O', ad: 110, metric: dist[t] + ni.cost }); }
         if (S.cfg[t].ospf.defaultOriginate && S.cfg[t].routes.some(x => x.prefix === '0.0.0.0')) add(r, { prefix: '0.0.0.0', len: 0, via: f.via, iface: f.iface, proto: 'O*E2', ad: 110, metric: 1 }); } }
+    // OSPF ECMP: a neighbour whose own shortest distance to a router, plus the link to it, equals the best distance is another first hop
+    const spf = src => { const dd = { [src]: 0 }, dn = new Set(); const q = [[0, src]]; while (q.length) { q.sort((a, b) => a[0] - b[0]); const [dv, u] = q.shift(); if (dn.has(u)) continue; dn.add(u); for (const e of adj[u]) { const nd = dv + e.cost; if (dd[e.to] == null || nd < dd[e.to]) { dd[e.to] = nd; q.push([nd, e.to]); } } } return dd; };
+    for (const r of ospfRouters) { const dr = spf(r); const nbr = adj[r].map(e => ({ e, d: spf(e.to) })); for (const t in dr) { if (t === r) continue; const hops = nbr.filter(x => x.d[t] != null && x.e.cost + x.d[t] === dr[t]); if (hops.length < 2) continue;
+      for (const h of hops) { for (const ni of S.ospf.routers[t].ifaces) { if (S.ospf.routers[r].ifaces.some(x => x.net === ni.net && x.len === ni.len)) continue; add(r, { prefix: ni.net, len: ni.len, via: h.e.via, iface: h.e.iface, proto: 'O', ad: 110, metric: dr[t] + ni.cost }); }
+        if (S.cfg[t].ospf.defaultOriginate && S.cfg[t].routes.some(x => x.prefix === '0.0.0.0')) add(r, { prefix: '0.0.0.0', len: 0, via: h.e.via, iface: h.e.iface, proto: 'O*E2', ad: 110, metric: 1 }); } } }
+    // OSPF interarea routes: a network in an area this router has no interface in shows as O IA
+    for (const r of ospfRouters) { const mine = new Set(S.ospf.routers[r].ifaces.map(i => i.area)); (cands[r] || []).forEach(e => { if (e.proto !== 'O') return; let area = null; for (const t in S.ospf.routers) { const f = S.ospf.routers[t].ifaces.find(i => i.net === e.prefix && i.len === e.len); if (f) { area = f.area; break; } } if (area != null && !mine.has(area)) e.proto = 'O IA'; }); }
     // RIP / EIGRP: hop-based over shared network statements
     for (const proto of ['rip', 'eigrp']) { const rs = S.routers.filter(r => S.cfg[r][proto]); if (!rs.length) continue;
       const enabled = (r, o) => { const c = S.cfg[r][proto]; return c.networks.some(n => { const a = typeof n === 'string' ? n : n.addr; const w = typeof n === 'string' ? null : n.wild; if (w) return wildMatch(o.ip, a, w); const cls = IP.ip2n(a) >>> 24; const len = cls < 128 ? 8 : cls < 192 ? 16 : 24; return inSubnet(o.ip, a, len); }); };
       const adj2 = {}; rs.forEach(r => adj2[r] = []);
       for (const r of rs) for (const o of S.l3) { if (o.dev !== r || o.kind !== 'iface' || !enabled(r, o)) continue; for (const p of S.owners[o.seg] || []) if (p.kind === 'iface' && p.dev !== r && rs.includes(p.dev) && enabled(p.dev, p)) adj2[r].push({ to: p.dev, via: p.ip, iface: o.iface, cost: proto === 'rip' ? 1 : Math.floor(256 * (10000000 / (BW[S.ifaces[r][o.iface].kind] || 100000) + 100)) }); }
+      // neighbours need the same EIGRP AS number and no passive interface on either end (EIGRP); a passive RIP interface sends no updates
+      const pIf = e => (S.l3.find(o => o.dev === e.to && o.ip === e.via) || {}).iface; const pas = (r, i) => !!(S.cfg[r][proto].passive && S.cfg[r][proto].passive.has(i));
+      for (const r of rs) adj2[r] = adj2[r].filter(e => { const pi = pIf(e); if (proto === 'rip') return !pas(e.to, pi); if (S.cfg[r].eigrp.as !== S.cfg[e.to].eigrp.as) { const pr = [r, e.to].sort(); const w = pr.join('/') + ' AS ' + pr.map(x => S.cfg[x].eigrp.as).join('/'); if (!S.issues.some(x => x.kind === 'eigrp-as-mismatch' && x.where === w)) S.issues.push({ kind: 'eigrp-as-mismatch', where: w }); return false; } return !pas(r, e.iface) && !pas(e.to, pi); });
+      if (proto === 'eigrp') { S.eigrpNeighbors = {}; for (const r of rs) S.eigrpNeighbors[r] = adj2[r].map(e => ({ dev: e.to, ip: e.via, iface: e.iface })); }
       for (const r of rs) { const dist = { [r]: 0 }, first = {}, done = new Set(); const pq = [[0, r, null]];
         while (pq.length) { pq.sort((a, b) => a[0] - b[0]); const [d, u, f] = pq.shift(); if (done.has(u)) continue; done.add(u); if (f) first[u] = f; for (const e of adj2[u]) { const nd = d + e.cost; if (dist[e.to] == null || nd < dist[e.to]) { dist[e.to] = nd; pq.push([nd, e.to, f || { via: e.via, iface: e.iface }]); } } }
         for (const t in dist) { if (t === r) continue; const f = first[t]; if (!f) continue; if (proto === 'rip' && dist[t] > 15) continue; for (const o of S.l3) { if (o.dev !== t || o.kind !== 'iface' || !enabled(t, o)) continue; const pre = netOf(o.ip, o.mask), len = mlen(o.mask); if (S.l3.some(x => x.dev === r && x.kind === 'iface' && netOf(x.ip, x.mask) === pre)) continue; add(r, { prefix: pre, len, via: f.via, iface: f.iface, proto: proto === 'rip' ? 'R' : 'D', ad: proto === 'rip' ? 120 : 90, metric: proto === 'rip' ? dist[t] : dist[t] + 2816 }); } } } }
@@ -319,8 +339,10 @@
     for (const r of S.routers) { const t6 = []; for (const p in S.ifaces[r]) { const i = S.ifaces[r][p]; if (!i.up) continue; for (const a of i.cfg.ipv6) { const addr = a.eui64 ? eui64(a.addr, synthMac(r + p)) : a.addr; t6.push({ prefix: v6net(addr, a.prefix), len: a.prefix, via: null, iface: p, proto: 'C', ad: 0 }); } }
       for (const st of S.cfg[r].routes6) { const [pre, len] = st.prefix.split('/'); t6.push({ prefix: IP.ipv6compress(pre), len: +len, via: IP.validIp(st.via) ? null : (st.via.includes(':') ? st.via : null), iface: st.via.includes(':') ? null : (Sim.canonIf(st.via) || st.via), proto: st.prefix.startsWith('::/0') || pre === '::' ? 'S' : 'S', ad: 1 }); }
       S.tables6[r] = t6; }
+    // IPv6 static routes: a fully specified route carries its next hop, and any static route may carry an AD
+    for (const r of S.routers) (S.cfg[r].routes6 || []).forEach(st => { const [pre, len] = st.prefix.split('/'); const e = (S.tables6[r] || []).find(x => x.proto === 'S' && x.prefix === IP.ipv6compress(pre) && x.len === +len && !x._done && (st.nh ? x.iface === (Sim.canonIf(st.via) || st.via) : true)); if (!e) return; e._done = true; if (st.nh) e.via = IP.ipv6compress(st.nh.toLowerCase()); e.ad = st.ad || 1; });
   }
-  function eui64(prefixAddr, mac){ const h = mac.replace(/[.:]/g, ''); const b = parseInt(h.slice(0, 2), 16) ^ 2; const id = b.toString(16).padStart(2, '0') + h.slice(2, 4) + ':' + h.slice(4, 6) + 'ff:fe' + h.slice(6, 8) + ':' + h.slice(8, 12); const p = prefixAddr.replace(/::$/, ''); return IP.ipv6compress(p + ':' + id); }
+  function eui64(prefixAddr, mac){ const h = mac.replace(/[.:]/g, ''); const b = (parseInt(h.slice(0, 2), 16) ^ 2).toString(16).padStart(2, '0'); const id = [b + h.slice(2, 4), h.slice(4, 6) + 'ff', 'fe' + h.slice(6, 8), h.slice(8, 12)]; return IP.ipv6compress(expand6(prefixAddr).split(':').slice(0, 4).concat(id).join(':')); } // the /64 prefix, then the MAC split in two with FFFE in the middle and the 7th bit flipped
   function v6net(addr, len){ const full = expand6(addr); const bits = BigInt('0x' + full.replace(/:/g, '')); const mask = len === 0 ? 0n : ((1n << 128n) - 1n) << BigInt(128 - len); const net = bits & mask; const hex = net.toString(16).padStart(32, '0'); return IP.ipv6compress(hex.match(/.{4}/g).join(':')); }
   function expand6(a){ let h = a.toLowerCase().split('::'); let parts; if (h.length === 2) { const l = h[0] ? h[0].split(':') : [], r = h[1] ? h[1].split(':') : []; parts = l.concat(new Array(8 - l.length - r.length).fill('0'), r); } else parts = h[0].split(':'); return parts.map(x => x.padStart(4, '0')).join(':'); }
 
@@ -494,6 +516,47 @@
   }
   function deliverRouter(S, c, pkt, path, natTbl, hops, srcSeen){ const r = c.dev; const ii = S.ifaces[r][c.inIf]; if (ii && ii.cfg.aclIn) { const v = aclEval(S, r, ii.cfg.aclIn, pkt); if (v.action === 'deny') return { ok: false, reason: 'denied by ACL ' + ii.cfg.aclIn + ' inbound on ' + r, hops }; } path.push({ dev: r, act: 'deliver (local)' }); return { ok: true, at: { kind: 'router', dev: r, inIf: null }, dstDev: r, dstIp: pkt.dst, hops, srcSeen }; }
 
+  // ---------------------------------------------------------------- IPv6 forwarding (ping6)
+  // Hosts carry ip6, prefix6 (default 64) and gw6 (a global or link-local router address) in job.net. Routers use their IPv6
+  // interface addresses (EUI-64 and link-local included) and S.tables6. A router forwards IPv6 only with ipv6 unicast-routing.
+  const n6 = a => IP.ipv6compress(String(a).toLowerCase());
+  function owners6(S){ const D = S.net.devices, O = {}; const put = (seg, o) => (O[seg] = O[seg] || []).push(o);
+    for (const r of S.routers) for (const p in S.ifaces[r]) { const i = S.ifaces[r][p]; if (!i.up || !(i.cfg.ipv6.length || i.cfg.ipv6Enable)) continue; const seg = S.uf.find(S.ifNode(r, p)); const mac = synthMac(r + p);
+      i.cfg.ipv6.forEach(a => put(seg, { dev: r, iface: p, kind: 'iface', addr: n6(a.eui64 ? eui64(a.addr, mac) : a.addr), global: true })); put(seg, { dev: r, iface: p, kind: 'iface', addr: n6(i.cfg.ipv6LinkLocal || eui64('fe80::', mac)), global: false }); }
+    for (const n in D) { const d = D[n]; if (!['host', 'server'].includes(d.kind) || !d.ip6) continue; const h = S.hosts[n]; if (!h || !h.up) continue; put(h.seg, { dev: n, iface: 'eth0', kind: 'host', addr: n6(d.ip6), global: true }); put(h.seg, { dev: n, iface: 'eth0', kind: 'host', addr: n6(eui64('fe80::', h.mac)), global: false }); }
+    return O; }
+  function lookup6(S, r, dst){ let best = null; for (const e of S.tables6[r] || []) { if (v6net(dst, e.len) !== v6net(e.prefix, e.len)) continue; if (!best || e.len > best.len || (e.len === best.len && (e.ad || 0) < (best.ad || 0))) best = e; } return best; }
+  function fwd6(S, O, cur, dst, trail){ const D = S.net.devices; const all = Object.values(O).flat(); const on = (seg, a) => (O[seg] || []).find(o => o.addr === a); const seen = new Set(); let src = null;
+    for (let hop = 0; hop < 32; hop++) {
+      if (cur.kind === 'host') { const d = D[cur.dev], h = S.hosts[cur.dev]; const pl = d.prefix6 || 64; let nh;
+        if (v6net(dst, pl) === v6net(n6(d.ip6), pl)) nh = dst; else { if (!d.gw6) return { ok: false, reason: cur.dev + ' has no IPv6 default gateway' }; nh = n6(d.gw6); }
+        const t = on(h.seg, nh); if (!t) return { ok: false, reason: cur.dev + ': nothing answers neighbour discovery for ' + nh };
+        if (t.kind === 'host') { if (t.addr === dst) return { ok: true, at: { kind: 'host', dev: t.dev }, src }; return { ok: false, reason: 'gateway ' + nh + ' is not a router' }; }
+        cur = { kind: 'router', dev: t.dev, inIf: t.iface }; continue; }
+      const r = cur.dev; const key = r + '|' + dst; if (seen.has(key)) return { ok: false, reason: 'routing loop at ' + r }; seen.add(key);
+      if (trail && cur.inIf) { const g = all.find(o => o.dev === r && o.iface === cur.inIf && o.global); trail.push(g ? g.addr : r); }
+      if (all.some(o => o.dev === r && o.addr === dst)) return { ok: true, at: { kind: 'router', dev: r }, src };
+      if (!cur.origin && !S.cfg[r].ipv6Routing) return { ok: false, reason: r + ' does not route IPv6 (no ipv6 unicast-routing)' };
+      const e = lookup6(S, r, dst); if (!e) return { ok: false, reason: r + ' has no IPv6 route to ' + dst };
+      let iface = e.iface, nh = e.via;
+      if (!iface && nh) { if (/^fe80/.test(nh)) return { ok: false, reason: r + ': a link-local next hop needs an exit interface too' }; const c = (S.tables6[r] || []).filter(x => x.proto === 'C' && v6net(nh, x.len) === x.prefix).sort((a, b) => b.len - a.len)[0]; if (!c) return { ok: false, reason: r + ': next hop ' + nh + ' is not on a connected network' }; iface = c.iface; }
+      const oi = S.ifaces[r][iface]; if (!oi || !oi.up) return { ok: false, reason: r + ' egress ' + short(iface || '?') + ' is down' };
+      if (!nh) { if (e.proto === 'C') nh = dst; else if (kindOf(iface) !== 'se') return { ok: false, reason: r + ': a static route that names only ' + short(iface) + ' has no next hop to find on Ethernet' }; }
+      if (cur.origin && !src) { const g = all.find(o => o.dev === r && o.iface === iface && o.global); src = g ? g.addr : null; }
+      const seg = S.uf.find(S.ifNode(r, iface)); const t = nh ? on(seg, nh) : (O[seg] || []).find(o => o.dev !== r);
+      if (!t) return { ok: false, reason: r + ': nothing answers neighbour discovery for ' + (nh || 'the far end') + ' on ' + short(iface) };
+      if (t.kind === 'host') { if (t.addr === dst) return { ok: true, at: { kind: 'host', dev: t.dev }, src }; return { ok: false, reason: r + ': next hop ' + t.addr + ' is a host' }; }
+      cur = { kind: 'router', dev: t.dev, inIf: t.iface }; }
+    return { ok: false, reason: 'hop limit exceeded' }; }
+  function ping6(S, from, dst){ const D = S.net.devices; const trail = []; const fail = reason => ({ ok: false, reason, trail });
+    if (!/:/.test(String(dst))) return fail('not an IPv6 address: ' + dst); dst = n6(dst); const O = owners6(S); let cur, src = null;
+    if (D[from] && ['host', 'server'].includes(D[from].kind)) { const h = S.hosts[from]; if (!h || !h.up) return fail(from + ' has no link'); if (!D[from].ip6) return fail(from + ' has no IPv6 address'); src = n6(D[from].ip6); cur = { kind: 'host', dev: from }; }
+    else if (S.routers.includes(from)) cur = { kind: 'router', dev: from, origin: true }; else return fail(from + ' cannot send IPv6');
+    const res = fwd6(S, O, cur, dst, trail); if (!res.ok) return fail(res.reason); if (trail[trail.length - 1] !== dst) trail.push(dst);
+    src = src || res.src; if (!src) return fail('no IPv6 source address to reply to');
+    const back = fwd6(S, O, Object.assign({ origin: true }, res.at), src, null); if (!back.ok) return fail('reply failed: ' + back.reason);
+    return { ok: true, reason: 'reply from ' + res.at.dev, trail, dst: res.at.dev }; }
+
   // ---------------------------------------------------------------- public helpers for checks
   function api(S){
     return {
@@ -513,7 +576,9 @@
       neighbors: d => S.neighbors[d] || [], macTable: d => S.learn ? learnedRows(S, d) : (S.macTable[d] || []), arp: d => arpRows(S, d), bundles: S.bundles,
       ntp: d => ntpSync(S, d), resolve: (d, name) => resolve(S, d, name),
       snmp: (nms, ip, community, write) => snmpPoll(S, nms, ip, community, write), snmpTraps: d => snmpTraps(S, d), syslog: d => syslogHosts(S, d),
-      ssh: (from, ip, user) => remoteLogin(S, from, ip, 'ssh', user), telnet: (from, ip) => remoteLogin(S, from, ip, 'telnet')
+      ssh: (from, ip, user) => remoteLogin(S, from, ip, 'ssh', user), telnet: (from, ip) => remoteLogin(S, from, ip, 'telnet'),
+      eigrpNeighbors: r => (S.eigrpNeighbors || {})[r] || [],
+      ping6: (from, to) => ping6(S, from, to), owners6: () => owners6(S)
     };
   }
 
@@ -545,4 +610,5 @@
     const out = t.map((ip, i) => row(i + 1, ip)); if (!r.ok) out.push(style === 'pc' ? '  ' + String(t.length + 1).padStart(2) + '     *        *        *     Request timed out.' : '  ' + (t.length + 1) + '  *  *  * '); return out; }
   window.Net = { build, api, ping, traceLines, learnFrom, forget, arpRows, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
   Net.ntpSync = ntpSync; Net.resolve = resolve; Net.remoteLogin = remoteLogin;
+  window.Net.ping6 = ping6; window.Net.lookup6 = lookup6;
 })();

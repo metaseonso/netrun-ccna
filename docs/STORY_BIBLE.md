@@ -175,7 +175,13 @@ Rules and numbers live there, never in a character's mouth.
 | Vesper Kade | polished and patient, never raises her voice, speaks for Halvorsen as if it were the weather, knows people's names before they say them |
 | Imani (walk-on) | a ward nurse: direct, tired, protective of patients, remembers the night the clinic went to paper |
 | Ma Tsai, Tomas, Hanna, Voss (walk-ons) | shopkeepers and a landlord: short, concrete, about their own business and what it costs them |
-| Hollis (walk-on) | the Kabuki market pharmacist: careful, counts pills and change aloud, worries about the card reader more than the money |
+| Pell (walk-on) | the Kabuki market pharmacist: careful, counts pills and change aloud, worries about the card reader more than the money |
+| Ospef | careful and exact, won't act on hearsay, talks about Dijkstra the way other people talk about saints |
+| Stan (Nexthop's cousin) | easy and unbothered, Nexthop's shorter sentences, takes over without making a fuss about it |
+| Syn | quick and exact, counts everything twice, says what she's doing as she does it |
+| Ack (Syn's twin) | dry, finishes Syn's sentences, answers the question you didn't ask yet |
+| Hollis, Tobiah (walk-ons) | Hollis: the cab co-op's dispatcher, forty years on the radio, card-table dry. Tobiah: the tram yard foreman, practical, on a speakerphone over the yard noise |
+| Sixx | unhurried and tall in the voice, amused by anyone still counting in dotted decimal, says long numbers slowly and exactly |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that

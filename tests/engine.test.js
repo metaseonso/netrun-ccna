@@ -504,5 +504,105 @@ module.exports.run = function({ out }){
     d.SW1.exec('int f0/5'); d.SW1.exec('switchport mode access'); d.SW1.exec('switchport port-security'); d.SW1.exec('switchport port-security mac-address sticky'); d.SW1._netState = () => Net.build(net, d);
     const run2 = (() => { const n = d.SW1.out.length; d.SW1.exec('do show running-config'); return d.SW1.out.slice(n).map(o => o.s).join('\n'); })(); ok(/interface FastEthernet0\/5\n switchport mode access\n switchport port-security\n switchport port-security mac-address sticky\n switchport port-security mac-address sticky 0050\.7966\.0005/.test(run2), 'running-config lists the sticky address a port learned');
   }
+  // 35. EIGRP: neighbours need the same AS, passive interfaces make no neighbours but still advertise, show ip eigrp neighbors; RIP passive sends no updates
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' }, PC1: { kind: 'host', ip: '10.9.1.10', mask: '255.255.255.0', gw: '10.9.1.1' }, PC3: { kind: 'host', ip: '10.9.3.10', mask: '255.255.255.0', gw: '10.9.3.1' } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/0' }, { a: 'R2', ap: 'gigabitethernet0/1', b: 'R3', bp: 'gigabitethernet0/0' }, { a: 'R3', ap: 'gigabitethernet0/1', b: 'PC3' } ] };
+    const ifs = { R1: ['int g0/0', 'ip add 10.9.1.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.9.12.1 255.255.255.252', 'no shut'], R2: ['int g0/0', 'ip add 10.9.12.2 255.255.255.252', 'no shut', 'int g0/1', 'ip add 10.9.23.1 255.255.255.252', 'no shut'], R3: ['int g0/0', 'ip add 10.9.23.2 255.255.255.252', 'no shut', 'int g0/1', 'ip add 10.9.3.1 255.255.255.0', 'no shut'] };
+    const eig = (as, extra) => ['router eigrp ' + as, 'network 10.0.0.0', 'no auto-summary'].concat(extra || []);
+    let d = devs({ R1: ['en', 'conf t'].concat(ifs.R1, eig(100, ['passive-interface g0/0'])), R2: ['en', 'conf t'].concat(ifs.R2, eig(100)), R3: ['en', 'conf t'].concat(ifs.R3, eig(10)) });
+    let A = Net.api(Net.build(net, d)); ok(A.eigrpNeighbors('R2').length === 1 && A.eigrpNeighbors('R2')[0].dev === 'R1', 'eigrp: AS 100 and AS 10 do not become neighbours (' + JSON.stringify(A.eigrpNeighbors('R2')) + ')');
+    ok(A.issues.some(i => i.kind === 'eigrp-as-mismatch'), 'eigrp: AS mismatch reported'); ok(!A.route('R1', '10.9.3.0/24'), 'eigrp: no route across the mismatch');
+    ok(A.route('R2', '10.9.1.0/24') && A.route('R2', '10.9.1.0/24').proto === 'D' && A.route('R2', '10.9.1.0/24').ad === 90, 'eigrp: a passive LAN is still advertised as D, AD 90');
+    ok(/10\.9\.12\.1/.test(Show.render(d.R2, 'show ip eigrp neighbors', A.state)) && /AS\(100\)/.test(Show.render(d.R2, 'show ip eigrp neighbors', A.state)), 'show ip eigrp neighbors lists the neighbour and the AS');
+    d = devs({ R1: ['en', 'conf t'].concat(ifs.R1, eig(100)), R2: ['en', 'conf t'].concat(ifs.R2, eig(100)), R3: ['en', 'conf t'].concat(ifs.R3, eig(100)) }); A = Net.api(Net.build(net, d));
+    ok(A.route('R1', '10.9.3.0/24') && A.route('R1', '10.9.3.0/24').proto === 'D' && A.ping('PC1', '10.9.3.10').ok, 'eigrp: matching AS numbers route end to end');
+    d.R2.exec('router eigrp 100'); d.R2.exec('passive-interface g0/1'); A = Net.api(Net.build(net, d)); ok(A.eigrpNeighbors('R3').length === 0 && !A.route('R1', '10.9.3.0/24'), 'eigrp: a passive link interface drops the neighbour');
+    d = devs({ R1: ['en', 'conf t'].concat(ifs.R1, ['router rip', 'version 2', 'network 10.0.0.0', 'no auto-summary']), R2: ['en', 'conf t'].concat(ifs.R2, ['router rip', 'version 2', 'network 10.0.0.0', 'passive-interface g0/0']) }); A = Net.api(Net.build(net, d));
+    ok(!A.route('R1', '10.9.23.0/30') && A.route('R2', '10.9.1.0/24') && A.route('R2', '10.9.1.0/24').proto === 'R', 'rip: a passive interface sends no updates but still hears them');
+    // no router eigrp <as> removes the process, so the right AS can be configured in its place
+    d = devs({ R1: ['en', 'conf t'].concat(ifs.R1, eig(100)), R2: ['en', 'conf t'].concat(ifs.R2, eig(100)), R3: ['en', 'conf t'].concat(ifs.R3, eig(10)) });
+    d.R3.exec('no router eigrp 10'); ok(NetConfig.parse(d.R3).eigrp === null, 'config: no router eigrp 10 removes the process');
+    ['router eigrp 100', 'network 10.0.0.0', 'no auto-summary'].forEach(l => d.R3.exec(l)); A = Net.api(Net.build(net, d)); ok(A.route('R1', '10.9.3.0/24') && A.route('R1', '10.9.3.0/24').proto === 'D', 'eigrp: re-created in AS 100, the depot LAN arrives as D');
+    d.R3.exec('do show running-config'); const rc = d.R3.out[d.R3.out.length - 1].s; ok(/router eigrp 100/.test(rc) && !/router eigrp 10\n/.test(rc), 'shell: the removed process is gone from the running-config');
+  }
+  // 36. OSPF cost: reference bandwidth, a loopback always costs 1, ip ospf N area N on an interface
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' } }, links: [ { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/1', 'ip add 10.8.12.1 255.255.255.252', 'no shut', 'router ospf 1', 'network 10.8.12.0 0.0.0.3 area 0', 'auto-cost reference-bandwidth 100000'],
+      R2: ['en', 'conf t', 'int lo0', 'ip add 2.2.2.2 255.255.255.255', 'ip ospf 1 area 0', 'int g0/1', 'ip add 10.8.12.2 255.255.255.252', 'no shut', 'router ospf 1', 'network 10.8.12.0 0.0.0.3 area 0', 'auto-cost reference-bandwidth 100000'] });
+    const A = Net.api(Net.build(net, d)); const r = A.route('R1', '2.2.2.2/32');
+    ok(r && r.proto === 'O' && r.metric === 101, 'ospf: gigabit costs 100 at reference 100000, a loopback costs 1, enabled with ip ospf 1 area 0 (' + JSON.stringify(r) + ')');
+  }
+  // 37. OSPF ECMP: two equal-cost paths both go in the table
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' }, R4: { kind: 'router' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' }, { a: 'R1', ap: 'gigabitethernet0/2', b: 'R3', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/2', b: 'R4', bp: 'gigabitethernet0/1' }, { a: 'R3', ap: 'gigabitethernet0/2', b: 'R4', bp: 'gigabitethernet0/2' } ] };
+    const o = ['router ospf 1', 'network 10.0.0.0 0.255.255.255 area 0'];
+    const d = devs({ R1: ['en', 'conf t', 'int g0/1', 'ip add 10.7.12.1 255.255.255.252', 'no shut', 'int g0/2', 'ip add 10.7.13.1 255.255.255.252', 'no shut', 'int lo0', 'ip add 10.7.1.1 255.255.255.0'].concat(o),
+      R2: ['en', 'conf t', 'int g0/1', 'ip add 10.7.12.2 255.255.255.252', 'no shut', 'int g0/2', 'ip add 10.7.24.1 255.255.255.252', 'no shut'].concat(o), R3: ['en', 'conf t', 'int g0/1', 'ip add 10.7.13.2 255.255.255.252', 'no shut', 'int g0/2', 'ip add 10.7.34.1 255.255.255.252', 'no shut'].concat(o),
+      R4: ['en', 'conf t', 'int g0/1', 'ip add 10.7.24.2 255.255.255.252', 'no shut', 'int g0/2', 'ip add 10.7.34.2 255.255.255.252', 'no shut'].concat(o) });
+    let A = Net.api(Net.build(net, d)); const rs = A.routes('R4').filter(e => e.prefix === '10.7.1.0');
+    ok(rs.length === 2 && rs.every(e => e.proto === 'O' && e.metric === 3) && new Set(rs.map(e => e.via)).size === 2, 'ospf: equal-cost paths both go in the table (' + JSON.stringify(rs) + ')');
+    d.R4.exec('int g0/1'); d.R4.exec('ip ospf cost 10'); A = Net.api(Net.build(net, d)); const r1 = A.routes('R4').filter(e => e.prefix === '10.7.1.0');
+    ok(r1.length === 1 && r1[0].via === '10.7.34.1', 'ospf: ip ospf cost breaks the tie (' + JSON.stringify(r1) + ')');
+  }
+  // 38. OSPF on a shared segment: DR and BDR by priority then router ID, DROthers stay 2WAY, point-to-point has no DR, timers and router IDs must match
+  {
+    const net = { devices: { SW: { kind: 'switch', mac: '0011.2233.0001' }, R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' }, R4: { kind: 'router' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/0', b: 'SW', bp: 'gigabitethernet0/2' }, { a: 'R3', ap: 'gigabitethernet0/0', b: 'SW', bp: 'gigabitethernet0/3' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R4', bp: 'gigabitethernet0/1' } ] };
+    const base = (n, ip, extra) => ['en', 'conf t', 'int g0/0', 'ip add 10.6.0.' + ip + ' 255.255.255.0', 'no shut'].concat(extra || [], ['router ospf 1', 'router-id ' + n + '.' + n + '.' + n + '.' + n, 'network 10.6.0.0 0.0.255.255 area 0']);
+    const d = devs({ R1: base(1, 1, ['int g0/1', 'ip add 10.6.14.1 255.255.255.252', 'no shut']), R2: base(2, 2), R3: base(3, 3), R4: ['en', 'conf t', 'int g0/1', 'ip add 10.6.14.2 255.255.255.252', 'no shut', 'router ospf 1', 'router-id 4.4.4.4', 'network 10.6.0.0 0.0.255.255 area 0'] });
+    let A = Net.api(Net.build(net, d)); const st = r => A.ospfNeighbors(r).map(n => n.id + ':' + n.state + '/' + n.role).sort().join(' ');
+    ok(st('R1') === '2.2.2.2:FULL/BDR 3.3.3.3:FULL/DR 4.4.4.4:FULL/DR', 'ospf dr: highest router ID is DR, next is BDR (' + st('R1') + ')');
+    d.R1.exec('int g0/0'); d.R1.exec('ip ospf priority 255'); A = Net.api(Net.build(net, d));
+    ok(/3\.3\.3\.3:FULL\/BDR/.test(st('R2')) && /1\.1\.1\.1:FULL\/DR/.test(st('R2')) && st('R2').split(' ').length === 2, 'ospf dr: priority 255 makes R1 the DR (' + st('R2') + ')');
+    d.R2.exec('int g0/0'); d.R2.exec('ip ospf priority 0'); d.R3.exec('int g0/0'); d.R3.exec('ip ospf priority 0'); d.R1.exec('ip ospf priority 1'); A = Net.api(Net.build(net, d));
+    ok(/3\.3\.3\.3:2WAY\/DROTHER/.test(st('R2')) && /1\.1\.1\.1:FULL\/DR/.test(st('R2')), 'ospf dr: priority 0 never stands, two DROthers stay 2WAY (' + st('R2') + ')');
+    ok(/FULL\/DROTHER/.test(Show.render(d.R1, 'show ip ospf neighbor', A.state)) && /DR/.test(Show.render(d.R1, 'show ip ospf interface brief', A.state)), 'show ip ospf neighbor and show ip ospf interface brief show the roles');
+    d.R1.exec('int g0/1'); d.R1.exec('ip ospf network point-to-point'); d.R4.exec('int g0/1'); d.R4.exec('ip ospf network point-to-point'); A = Net.api(Net.build(net, d));
+    ok(/4\.4\.4\.4:FULL\/-/.test(st('R1')), 'ospf: point-to-point network type has no DR (' + st('R1') + ')');
+    d.R4.exec('ip ospf hello-interval 5'); A = Net.api(Net.build(net, d)); ok(!A.ospfNeighbors('R1').some(n => n.dev === 'R4') && A.issues.some(i => i.kind === 'ospf-timer-mismatch'), 'ospf: a hello timer mismatch stops the adjacency');
+    d.R4.exec('no ip ospf hello-interval'); A = Net.api(Net.build(net, d)); ok(A.ospfNeighbors('R1').some(n => n.dev === 'R4'), 'ospf: resetting the hello timer brings the neighbour back');
+    d.R4.exec('router ospf 1'); d.R4.exec('router-id 1.1.1.1'); A = Net.api(Net.build(net, d)); ok(!A.ospfNeighbors('R1').some(n => n.dev === 'R4') && A.issues.some(i => i.kind === 'ospf-duplicate-router-id'), 'ospf: duplicate router IDs never become neighbours');
+  }
+  // 39. OSPF interarea routes show as O IA on routers with no interface in that area
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' } }, links: [ { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/2', b: 'R3', bp: 'gigabitethernet0/2' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/1', 'ip add 10.5.12.1 255.255.255.252', 'no shut', 'router ospf 1', 'network 10.5.12.0 0.0.0.3 area 0'],
+      R2: ['en', 'conf t', 'int g0/1', 'ip add 10.5.12.2 255.255.255.252', 'no shut', 'int g0/2', 'ip add 10.5.23.1 255.255.255.252', 'no shut', 'router ospf 1', 'network 10.5.12.0 0.0.0.3 area 0', 'network 10.5.23.0 0.0.0.3 area 1'],
+      R3: ['en', 'conf t', 'int g0/2', 'ip add 10.5.23.2 255.255.255.252', 'no shut', 'int lo0', 'ip add 10.5.3.1 255.255.255.0', 'router ospf 1', 'network 10.5.0.0 0.0.255.255 area 1'] });
+    const A = Net.api(Net.build(net, d)); const a = A.route('R1', '10.5.3.0/24'), b = A.route('R2', '10.5.3.0/24');
+    ok(a && a.proto === 'O IA' && b && b.proto === 'O', 'ospf: O IA across the ABR, O inside the area (' + (a && a.proto) + ', ' + (b && b.proto) + ')');
+  }
+  // 40. IPv6: EUI-64 is the /64 plus FFFE, pings between hosts across routers, unicast-routing, recursive, fully specified, directly attached and default static routes
+  {
+    ok(Net.eui64('2001:db8:1::', '0200.1234.5678') === '2001:db8:1::12ff:fe34:5678' && Net.eui64('FE80::', '0200.1234.5678') === 'fe80::12ff:fe34:5678', 'ipv6: EUI-64 keeps the /64 and flips the 7th bit (' + Net.eui64('2001:db8:1::', '0200.1234.5678') + ', ' + Net.eui64('FE80::', '0200.1234.5678') + ')');
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' },
+        PC1: { kind: 'host', ip: '10.4.1.10', mask: '255.255.255.0', gw: '10.4.1.1', ip6: '2001:db8:1::10', gw6: '2001:db8:1::1' }, PC2: { kind: 'host', ip: '10.4.2.10', mask: '255.255.255.0', gw: '10.4.2.1', ip6: '2001:db8:2::10', gw6: 'fe80::2' } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/0', b: 'PC2' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ipv6 address 2001:db8:1::1/64', 'no shut', 'int g0/1', 'ipv6 address 2001:db8:12::1/64', 'ipv6 address fe80::1 link-local', 'no shut'],
+      R2: ['en', 'conf t', 'int g0/0', 'ipv6 address 2001:db8:2::1/64', 'ipv6 address fe80::2 link-local', 'no shut', 'int g0/1', 'ipv6 address 2001:db8:12::2/64', 'ipv6 address fe80::2 link-local', 'no shut'] });
+    let A = Net.api(Net.build(net, d)); let p = A.ping6('PC1', '2001:db8:1::1'); ok(p.ok, 'ipv6: a host reaches its gateway (' + p.reason + ')');
+    ok(A.ping6('PC2', '2001:db8:2::1').ok, 'ipv6: a link-local default gateway works');
+    p = A.ping6('PC1', '2001:db8:2::10'); ok(!p.ok, 'ipv6: nothing forwards yet (' + p.reason + ')');
+    d.R1.exec('ipv6 route 2001:db8:2::/64 2001:db8:12::2'); d.R2.exec('ipv6 route 2001:db8:1::/64 2001:db8:12::1'); A = Net.api(Net.build(net, d));
+    p = A.ping6('PC1', '2001:db8:2::10'); ok(!p.ok && /unicast-routing/.test(p.reason), 'ipv6: routers do not forward without ipv6 unicast-routing (' + p.reason + ')');
+    d.R1.exec('ipv6 unicast-routing'); d.R2.exec('ipv6 unicast-routing'); A = Net.api(Net.build(net, d)); p = A.ping6('PC1', '2001:db8:2::10'); ok(p.ok && JSON.stringify(p.trail) === JSON.stringify(['2001:db8:1::1', '2001:db8:12::2', '2001:db8:2::10']), 'ipv6: recursive static routes, end to end (' + p.reason + ' ' + JSON.stringify(p.trail) + ')');
+    ok(/S\s+2001:db8:2::\/64/.test(Show.render(d.R1, 'show ipv6 route', A.state)), 'show ipv6 route lists the static route');
+    d.R1.exec('no ipv6 route 2001:db8:2::/64 2001:db8:12::2'); d.R1.exec('ipv6 route 2001:db8:2::/64 g0/1'); A = Net.api(Net.build(net, d)); p = A.ping6('PC1', '2001:db8:2::10'); ok(!p.ok && /names only/.test(p.reason), 'ipv6: a directly attached static route on Ethernet fails (' + p.reason + ')');
+    d.R1.exec('no ipv6 route 2001:db8:2::/64 gigabitethernet0/1'); d.R1.exec('ipv6 route 2001:db8:2::/64 g0/1 fe80::2'); A = Net.api(Net.build(net, d)); ok(A.ping6('PC1', '2001:db8:2::10').ok, 'ipv6: a fully specified route with a link-local next hop works');
+    d.R1.exec('no ipv6 route 2001:db8:2::/64 gigabitethernet0/1'); d.R1.exec('ipv6 route ::/0 2001:db8:12::2'); A = Net.api(Net.build(net, d)); ok(A.ping6('PC1', '2001:db8:2::10').ok, 'ipv6: a default route ::/0 works');
+    const pc = new Sim.Device('PC1', { kind: 'host', netState: () => A.state }); pc.exec('ping 2001:db8:2::10'); ok(/Received = 4/.test(pc.out.map(o => o.s).join('\n')), 'ipv6: the PC shell pings an IPv6 address');
+    d.R1.exec('end'); d.R1.exec('ping 2001:db8:2::10'); ok(/!!!!!/.test(d.R1.out[d.R1.out.length - 1].s), 'ipv6: the router shell pings an IPv6 address (' + d.R1.out[d.R1.out.length - 1].s + ')');
+  }
+  // 41. show spanning-tree names the root of the switch's own part of the tree, not a rogue cut off by BPDU Guard
+  {
+    const net = { devices: { SW1: { kind: 'switch', mac: '0019.e8a1.1c01' }, SW2: { kind: 'switch', mac: '0c11.7a3b.9902' }, ROGUE: { kind: 'rogue', role: 'stp', priority: 0, mac: '0050.7966.6833' } },
+      links: [ { a: 'SW1', ap: 'gigabitethernet0/1', b: 'SW2', bp: 'gigabitethernet0/1' }, { a: 'SW2', ap: 'fastethernet0/7', b: 'ROGUE', bp: 'fastethernet0/1' } ] };
+    const d = devs({ SW1: ['en', 'conf t'], SW2: ['en', 'conf t', 'int f0/7', 'switchport mode access', 'spanning-tree portfast', 'spanning-tree bpduguard enable'] });
+    const A = Net.api(Net.build(net, d)); const out = Show.render(d.SW2, 'show spanning-tree', A.state);
+    ok(/Address\s+0019\.e8a1\.1c01/.test(out.split('Bridge ID')[0]) && /BPDUGUARD_ERRDISABLE/.test(out), 'stp: the Root ID is SW1, not the err-disabled rogue (' + out.split('\n').slice(2, 4).join(' / ') + ')');
+  }
   return { pass, fails };
 };

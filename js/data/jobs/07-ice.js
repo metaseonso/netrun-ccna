@@ -220,7 +220,7 @@
 
     // ------------------------------------------------------------------ night 49 · from Lab 49 (port security)
     { id: 'b-n49-slot-22', cls: 'B', rep: 20, from: 'ace', title: 'Slot 22', day: [49], requires: ['n49-two-doors'], devices: ['SW1'],
-      brief: 'DISPATCH » Market switch floor. A box behind the noodle stall is wearing the pharmacy reader\'s face and flooding Mac\'s table. Ace wants every door taught its faces, and the box to hit one.\n\nCLIENT (Hollis, the market pharmacy) » "Forty card payments went somewhere else last night. I have been writing receipts by hand since eleven."',
+      brief: 'DISPATCH » Market switch floor. A box behind the noodle stall is wearing the pharmacy reader\'s face and flooding Mac\'s table. Ace wants every door taught its faces, and the box to hit one.\n\nCLIENT (Pell, the market pharmacy) » "Forty card payments went somewhere else last night. I have been writing receipts by hand since eleven."',
       shows: { SW1: { 'show logging': 'Syslog logging: enabled (0 messages dropped, 0 flushes, 0 overruns)\n    Console logging: level debugging, 212 messages logged\n    Buffer logging:  level debugging, 212 messages logged\n\nLog Buffer (8192 bytes):\n' +
         '*Sep 28 22:20:14.512: %SW_MATM-4-MACFLAP_NOTIF: Host 0060.2f11.4a01 in vlan 1 is flapping between port Fa0/14 and port Fa0/22\n' +
         '*Sep 28 22:20:31.077: %SW_MATM-4-MACFLAP_NOTIF: Host 0060.2f11.4a01 in vlan 1 is flapping between port Fa0/22 and port Fa0/14\n' +
@@ -256,7 +256,7 @@
         { type: 'cmd', skill: 'port-security', text: 'Ace: "Now the pharmacy counter. Slot 14 learns the reader\'s face and writes it down for good. The till has to keep taking cards while you do it."',
           check: (d, ctx) => { const n = ctx.net(); const p = n.portsec('SW1', 'f0/14'); return !!(p && p.enabled && p.sticky && p.learned.includes('0060.2f11.4a01')) && n.ping('TILL', '192.168.49.1').ok; },
           hint: 'SW1(config)# interface f0/14\nSW1(config-if)# switchport mode access\nSW1(config-if)# switchport port-security\nSW1(config-if)# switchport port-security mac-address sticky',
-          ok: 'Hollis, from the top of the stairs: "The reader just beeped. That was a card going through."',
+          ok: 'Pell, from the top of the stairs: "The reader just beeped. That was a card going through."',
           why: 'Ace: switchport port-security mac-address sticky makes the port learn the MAC addresses it sees, up to its maximum, and writes them into the running-config as sticky secure addresses. The reader\'s 0060.2f11.4a01 is now the one face slot 14 accepts, so a copy of it anywhere else is the only way left to use it.' },
         { type: 'form', skill: 'port-security', text: 'Mac, pencil ready over the ledger: "Write me the three modes the way I\'ll need them at two in the morning."',
           fields: [ { key: 'pr', label: 'Drops the stranger\'s frames. No log, no count', options: ['shutdown', 'restrict', 'protect'], answer: 'protect' },
@@ -289,7 +289,7 @@
         { dev: 'SW1', type: ['interface f0/7', 'switchport mode access', 'switchport port-security', 'switchport port-security maximum 2', 'switchport port-security violation restrict'] }, 'commit',
         { dev: 'SW1', type: ['do show port-security interface f0/22'] }, 'commit',
         { dev: 'SW1', type: ['interface f0/22', 'shutdown', 'no shutdown', 'exit', 'errdisable recovery cause psecure-violation', 'errdisable recovery interval 180'] }, 'commit' ],
-      outro: 'By one in the morning the pharmacy reader has taken eleven payments, and every one of them has landed at the pharmacy. Hollis tears up the handwritten receipts except the first, which she pins over the till. Mac draws a small dog in the margin next to slot 22. Ace keeps the evidence bag and writes the box\'s serial number in her own book.' },
+      outro: 'By one in the morning the pharmacy reader has taken eleven payments, and every one of them has landed at the pharmacy. Pell tears up the handwritten receipts except the first, which she pins over the till. Mac draws a small dog in the margin next to slot 22. Ace keeps the evidence bag and writes the box\'s serial number in her own book.' },
 
     // ------------------------------------------------------------------ night 50 · from Lab 50 (DHCP snooping)
     { id: 'b-n50-the-repeater', cls: 'B', rep: 20, from: 'ace', title: 'The Repeater in the Ceiling', day: [50], requires: ['n50-a-gateway-nobody-owns'], devices: ['SW1', 'SW2', 'WARD1'],

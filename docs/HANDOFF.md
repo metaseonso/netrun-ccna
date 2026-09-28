@@ -129,7 +129,7 @@ Definition of done for a day:
 
 - OSPF: single process, areas honoured for adjacency, no DR/BDR, no LSA types, cost from bandwidth or `ip ospf cost`.
 - RIP/EIGRP: adjacency and hop-style metrics only; enough for `show ip route` codes and reachability.
-- IPv6: interface addresses, link-local/EUI-64, connected + static routes; no OSPFv3, no ping6 through the forwarding engine yet.
+- IPv6: interface addresses, link-local/EUI-64, connected + static routes, ping6 end to end (`ctx.net().ping6`); no OSPFv3, no SLAAC or DHCPv6 on hosts.
 - NAT: static, dynamic pool, PAT overload; translation table is built from pings sent in the console.
 - Wireless: no radio model. Use `form`, `choice`, `order` steps for WLC configuration days.
 - QoS, SNMP, syslog, NTP, CDP/LLDP, FTP/TFTP: config is parsed and shown; no traffic effect. Use `need` + `show`.
@@ -141,6 +141,31 @@ Definition of done for a day:
   `service` item adds its `effect.chrome` (capped at 100) instead of always filling; the tune-up still fills. New item
   `patch`, Marrow's sealant and tape: 50 creds for 35 chrome, so a runner short of the tune-up can still dive. Tested in
   tests/game.test.js.
+- 2026-09-28 · `show spanning-tree` names the root of the switch's own part of the tree; a rogue cut off by BPDU Guard no longer shows as the Root ID (tested).
+
+- 2026-09-28 · IPv6 forwarding: `ctx.net().ping6(from, to)`, and `ping`/`traceroute` to an IPv6 address on routers and PCs.
+  Hosts take `ip6`, `prefix6` (default 64) and `gw6` (global or link-local) in `job.net`; `ipconfig` shows them. Routers
+  forward IPv6 only with `ipv6 unicast-routing`; recursive, fully specified (`ipv6 route P g0/1 fe80::2`), default and
+  floating (AD) static routes; a static route naming only an Ethernet exit interface fails, as on real IOS; `no ipv6 route`.
+  EUI-64 fixed (it dropped a group: now the /64 prefix plus the 64-bit interface ID) (tested).
+
+- 2026-09-28 · OSPF interarea routes show as `O IA` on routers with no interface in the destination's area (tested).
+
+- 2026-09-28 · OSPF DR and BDR on every broadcast segment (`ip ospf priority`, then the router ID; priority 0 never stands),
+  DROthers stay 2WAY with each other, `ip ospf network point-to-point` has no DR; hello and dead timers
+  (`ip ospf hello-interval|dead-interval`) and unique router IDs are neighbour requirements (`ospf-timer-mismatch`,
+  `ospf-duplicate-router-id`). `show ip ospf neighbor` shows the real state and role, new `show ip ospf interface brief` (tested).
+
+- 2026-09-28 · OSPF ECMP: equal-cost paths all go in the routing table, each with its own next hop (tested).
+
+- 2026-09-28 · An OSPF loopback always costs 1, whatever the reference bandwidth (tested).
+
+- 2026-09-28 · `no router ospf|eigrp|rip [id]` removes the routing process from the parsed config and from the running-config,
+  so a wrong EIGRP AS can be replaced (tested).
+
+- 2026-09-28 · EIGRP neighbours need the same AS number (`eigrp-as-mismatch` issue otherwise); `passive-interface` under
+  `router eigrp` drops the neighbour on that interface but still advertises its network; a passive RIP interface sends
+  no updates. `ctx.net().eigrpNeighbors('R1')` and `show ip eigrp neighbors` (tested).
 - 2026-09-28 · VTP: `vtp mode server|client|transparent`, `vtp domain`, `vtp version`, `vtp password`; every VLAN change on a
   server or client raises its revision (a net device may set `vtpRevision` to play a spare switch from someone's lab); servers
   and clients in one domain joined by trunks take the VLAN database with the highest revision, transparent switches keep

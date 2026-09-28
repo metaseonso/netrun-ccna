@@ -88,6 +88,7 @@ Lines are normalized: lower-case, abbreviations expanded, interface names canoni
 ```js
 const n = ctx.net();
 n.ping('PC1', '10.0.2.10').ok            // end-to-end, both directions, ACLs and NAT applied; .reason and .path explain failures
+n.ping6('PC1', '2001:db8:2::10').ok       // IPv6 end to end: hosts need ip6/gw6 in net.devices, routers ipv6 unicast-routing
 n.tcp('PC1', '10.0.1.5', 443).ok          // same with a TCP port (extended ACL tests)
 n.route('R1', '10.0.2.0/24')              // { proto:'S'|'O'|'C'|..., via, iface, ad, metric } or null
 n.routes('R1')                            // full table

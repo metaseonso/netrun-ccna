@@ -126,6 +126,9 @@
         else if ((m = s.match(/^no ip route (\S+) (\S+)(?: (\S+))?/))) cfg.routes = cfg.routes.filter(x => !(x.prefix === m[1] && x.mask === m[2] && (!m[3] || x.via === m[3] || x.exit === m[3])));
         else if ((m = s.match(/^no access-list (\d+)$/))) delete cfg.acls[m[1]];
         else if ((m = s.match(/^no vlan (\d+)$/))) { if (cfg.vlans[+m[1]] && cfg.vtp.mode !== 'client') { delete cfg.vlans[+m[1]]; vtpChange(cfg); } }
+        if ((m = s.match(/^no router (ospf|eigrp|rip)\b(?: (\d+))?/)) && cfg[m[1]] && (!m[2] || m[1] === 'rip' || String(cfg[m[1]].pid != null ? cfg[m[1]].pid : cfg[m[1]].as) === m[2])) cfg[m[1]] = null; // remove the routing process
+        if ((m = s.match(/^ipv6 route (\S+) (\S+) (\S+)(?: (\d+))?$/))) { if (/^\d+$/.test(m[3]) && !m[4]) cfg.routes6.push({ prefix: m[1], via: m[2], ad: +m[3] }); else cfg.routes6.push({ prefix: m[1], via: m[2], nh: m[3], ad: m[4] ? +m[4] : 1 }); } // fully specified (exit interface + next hop), or an AD
+        if ((m = s.match(/^no ipv6 route (\S+) (\S+)/))) cfg.routes6 = cfg.routes6.filter(x => !(x.prefix === m[1] && x.via === m[2]));
       }
       // ---------------- vlan config
       if (r.mode === 'config-vlan') { const ids = r.ctx.replace('vlan ', '').split(',').map(x => +x.split('-')[0]); if ((m = s.match(/^name (\S+)$/)) && cfg.vtp.mode !== 'client') { vtpChange(cfg); const shown = r.raw ? r.raw.replace(/^\s*\S+\s+/, '') : m[1]; ids.forEach(id => { cfg.vlans[id] = cfg.vlans[id] || { id }; cfg.vlans[id].name = m[1]; cfg.vlans[id].shown = shown; }); } }
@@ -175,6 +178,8 @@
           else if ((m = s.match(/^tunnel source (\S+)$/))) i.tunnelSource = m[1];
           else if ((m = s.match(/^tunnel destination (\S+)$/))) i.tunnelDest = m[1];
           else if ((m = s.match(/^tunnel mode (.+)$/))) i.tunnelMode = m[1];
+          if ((m = s.match(/^ip ospf (priority|hello-interval|dead-interval) (\d+)$/))) i[{ priority: 'ospfPriority', 'hello-interval': 'ospfHello', 'dead-interval': 'ospfDead' }[m[1]]] = +m[2];
+          if (/^no ip ospf (hello|dead)-interval/.test(s)) { i.ospfHello = null; i.ospfDead = null; } if (s === 'no ip ospf network') i.ospfNetwork = null;
         }
       }
       // ---------------- line config
@@ -208,6 +213,7 @@
           else if ((m = s.match(/^maximum-paths (\d+)$/))) o.maxPaths = +m[1]; }
         if (proto === 'rip') { const o = cfg.rip || (cfg.rip = { networks: [], v2: false, noAuto: false, passive: new Set() }); if ((m = s.match(/^network (\S+)$/))) o.networks.push(m[1]); else if (s === 'version 2') o.v2 = true; else if (s === 'no auto-summary') o.noAuto = true; else if ((m = s.match(/^passive-interface (\S+)$/))) o.passive.add(m[1]); }
         if (proto === 'eigrp') { const o = cfg.eigrp || (cfg.eigrp = { as: +pid, networks: [], noAuto: false, routerId: null }); if ((m = s.match(/^network (\S+)(?: (\S+))?$/))) o.networks.push({ addr: m[1], wild: m[2] || null }); else if (s === 'no auto-summary') o.noAuto = true; else if ((m = s.match(/^eigrp router-id (\S+)$/))) o.routerId = m[1]; }
+        if (proto === 'eigrp' && (m = s.match(/^passive-interface (\S+)$/))) (cfg.eigrp.passive = cfg.eigrp.passive || new Set()).add(m[1].replace(/\s+/g, '')); // EIGRP passive: no hellos, no neighbours, the network is still advertised
       }
       // ---------------- QoS (MQC): class-maps, policy-maps and their classes, service-policy and trust on interfaces
       const Q = cfg.qos || (cfg.qos = { classMaps: {}, policyMaps: {} });

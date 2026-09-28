@@ -26,7 +26,7 @@
     json: { name: 'JSON', owner: 'ECMA International', icon: 'json', what: 'The data format with matching braces.' },
     vocaltec: { name: 'VocalTec', owner: 'VocalTec Communications (later magicJack VocalTec)', what: 'Sold InternetPhone in February 1995, the first commercial program for talking over the internet.' },
     mit: { name: 'MIT', owner: 'Massachusetts Institute of Technology', what: 'Where Abhay Bhushan wrote the first file transfer protocol, RFC 114, in 1971.' },
-    dec: { name: 'Digital Equipment Corporation', owner: 'Hewlett Packard Enterprise', what: 'Built the first packet-filtering gateways in 1988.' },
+    dec: { name: 'Digital Equipment Corporation', owner: 'Hewlett Packard Enterprise', what: 'Where Radia Perlman designed the spanning tree algorithm in 1985, and where the first packet-filtering gateways were built in 1988.' },
     sri: { name: 'SRI International', owner: 'SRI International', what: 'Ran the ARPANET\'s Network Information Center, which kept HOSTS.TXT until DNS replaced it.' },
     belllabs: { name: 'Bell Labs', owner: 'Nokia Bell Labs', what: 'Where Charles Clos worked out switching networks that never block, in 1953.' },
     ibm: { name: 'IBM', owner: 'International Business Machines', what: 'Ran the first virtual machines on CP-40 in 1967.' },
