@@ -241,12 +241,6 @@
 .door2 .door-warn{margin:0;max-width:none}
 .door2 .footer{display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:18px;border-top:1px solid var(--line);font-size:11px;color:var(--ink2);text-align:center}
 .door2 .footer a{color:var(--ink2);text-decoration:underline;text-decoration-color:var(--line)} .door2 .footer a:hover{color:var(--cyan)}
-.maker{display:inline-flex;align-items:center;gap:14px;margin-top:6px;padding:4px 0;background:transparent;border:0;color:var(--ink2);font:inherit;cursor:pointer}
-.maker img{width:44px;height:44px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 1px var(--line),0 0 0 4px var(--bg),0 0 0 5px rgba(63,246,255,.35);transition:box-shadow .2s}
-.maker:hover img{box-shadow:0 0 0 1px var(--line),0 0 0 4px var(--bg),0 0 0 5px var(--cyan)}
-.maker span{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding-left:14px;border-left:1px solid var(--line);text-align:left}
-.maker b{font-family:var(--disp);font-size:10px;letter-spacing:.2em;color:var(--ink);font-weight:600}
-.maker em{font-style:italic;font-size:12px;color:var(--ink2)}
 @media (max-width:860px){.dgrid{grid-template-columns:1fr}   .login{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .login .btn{grid-column:1 / -1;height:44px} .login.one{grid-template-columns:minmax(0,1fr) auto} .login.one .btn{grid-column:auto}
   .doorwhat li{grid-template-columns:22px 1fr} .doorwhat li span{grid-column:2}}
 
@@ -278,9 +272,6 @@
 @media (max-width:760px){.hstats{grid-template-columns:repeat(2,minmax(0,1fr))} .hstats .ps:nth-child(2){border-right:0} .hstats .ps:nth-child(-n+2){border-bottom:1px solid #1a2233} .hsee{display:none}}
 @media (prefers-reduced-motion:reduce){.htrack.loop .hrow{animation:none} .hlive i{animation:none}}
 /* the maker's contact card */
-.modal.contact{border-color:var(--cyan)} .cth{display:flex;gap:14px;align-items:center;margin-bottom:14px} .cth img{border-radius:50%;box-shadow:0 0 0 1px var(--line),0 0 0 4px var(--panel),0 0 0 5px rgba(63,246,255,.4)}
-.modal.contact h3{margin:0 0 4px;color:var(--ink)} .cmail{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);background:var(--bg);margin-bottom:12px} .cmail code{color:var(--cyan)}
-.modal.contact textarea{width:100%;box-sizing:border-box;padding:10px 12px;margin-bottom:12px;background:var(--bg);border:1px solid var(--line);color:var(--ink);font:13px/1.5 var(--mono);resize:vertical} .modal.contact textarea:focus{outline:none;border-color:var(--cyan)}
 
 /* a card's picture in a crew call */
 .cardimg{display:block;max-width:220px;max-height:140px;margin:8px 0;padding:6px;background:#fff;border-radius:6px}
