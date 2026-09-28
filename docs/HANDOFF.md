@@ -124,6 +124,10 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Difficulty is picked once before the campaign (`diffGate` replaces every screen until `state.diffPicked`);
+  after that `Game.setDifficulty` only lowers it, never raises it. Lowering lives in the account menu (LOWER DIFFICULTY,
+  with a warning that it can't be undone and the higher license is gone); the HUD shows the stars with a help tip.
+  Records already under way skip the pick and keep Normal. Tested in tests/game.test.js.
 - 2026-09-28 · The license card grows with the setting: Easy prints the word, Normal adds a stamp and a holographic sheen,
   Cyberpsycho a glowing double frame, a glitching title, a sliding hazard stripe and circuit traces
   (SMIL animation; the PNG export freezes a frame). The card prints in any deck skin the runner switched on during the run
