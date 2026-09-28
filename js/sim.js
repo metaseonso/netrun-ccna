@@ -70,13 +70,15 @@
     this.kind = (opts && opts.kind) || 'ios'; // 'ios' | 'host'
     this.banner = (opts && opts.banner) || null;
     this._netState = (opts && opts.netState) || null; // () => Net state, supplied by the game
+    this.startup = null;  // the saved config text, set by write memory
+    this.pending = null;  // 'enable' while the box waits for the enable password
     if (this.banner) this.out.push({ t:'sys', s: this.banner });
   }
   // apply a starting configuration silently (scenario setup); recorded as pre lines, shown in running-config
   Device.prototype.preload = function(lines){ const keepOut = this.out.length; lines = (lines || []).slice(); if (this.kind !== 'host') { const first = normalize(lines[0] || ''); if (first !== 'enable' && first !== 'configure terminal') lines = ['enable', 'configure terminal'].concat(lines); }
-    lines.forEach(l => this.exec(l, this._all, true)); this.out.length = keepOut; this.lines.forEach(r => { if (r.pre === undefined) r.pre = true; }); this.mode = 'user'; this.ctx = ''; this.stack = []; };
+    lines.forEach(l => this.exec(l, this._all, true)); this.out.length = keepOut; this.lines.forEach(r => { if (r.pre === undefined) r.pre = true; }); this.mode = 'user'; this.ctx = ''; this.stack = []; this.pending = null; if (this.kind !== 'host' && lines.length > 2) this.startup = configText(this); };
   Device.prototype.prompt = function(){
-    const h = this.host; if (this.kind === 'host') return h + '>';
+    const h = this.host; if (this.kind === 'host') return h + '>'; if (this.pending) return 'Password:';
     switch (this.mode) {
       case 'user': return h + '>'; case 'priv': return h + '#'; case 'config': return h + '(config)#';
       case 'config-if': return h + '(config-if)#'; case 'config-subif': return h + '(config-subif)#'; case 'config-if-range': return h + '(config-if-range)#';
@@ -103,29 +105,99 @@
     return null;
   }
 
-  function runningConfig(dev){
-    const o = ['Building configuration...', '', 'Current configuration:', '!', 'hostname ' + dev.host, '!'];
-    let lastCtx = null;
-    dev.lines.filter(l => l.mode !== 'user' && l.mode !== 'priv').forEach(l => {
-      if (l.ctx !== lastCtx) { if (l.ctx) o.push(l.ctx); lastCtx = l.ctx; }
-      if (l.line !== l.ctx) o.push((l.ctx ? ' ' : '') + l.line);
-    });
-    o.push('!', 'end'); return o.join('\n');
-  }
+  // ---- running-config, startup-config, help ---------------------------------------
+  // Cisco type 7 (service password-encryption) is a reversible Vigenère over this key; type 5 is an MD5 hash (shown as a stable stand-in here).
+  const XLAT = 'dsfd;kfoA,.iyewrkldJKDHSUBsgvca69834ncxv9873254k;fg87';
+  function type7(pw){ let h = 0; for (const c of pw) h = (h * 31 + c.charCodeAt(0)) >>> 0; const salt = h % 16; let out = String(salt).padStart(2, '0');
+    for (let i = 0; i < pw.length; i++) out += (pw.charCodeAt(i) ^ XLAT.charCodeAt((salt + i) % XLAT.length)).toString(16).toUpperCase().padStart(2, '0'); return out; }
+  function type5(pw){ const A = './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'; let h = 2166136261; const pick = n => { let o = ''; for (let i = 0; i < n; i++) { for (const c of pw + i) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; o += A[h % 64]; } return o; }; const salt = pick(4); return '$1$' + salt + '$' + pick(22); }
+  const OPENER = /^(interface |router |line |ip access-list (standard|extended) |vlan [\d,\-]+$|ip dhcp pool |ip vrf )/;
+  // settings that replace themselves inside a block (the last one typed wins); "no X" removes X
+  const SINGLE = [/^hostname /, /^enable secret /, /^enable password /, /^ip domain[- ]name /, /^banner motd /, /^spanning-tree mode /, /^ip default-gateway /, /^service password-encryption$/,
+    /^ip address (?!.* secondary$)/, /^description /, /^speed /, /^duplex /, /^switchport mode /, /^switchport access vlan /, /^switchport trunk native vlan /, /^switchport trunk encapsulation /, /^switchport trunk allowed vlan (?!add )/,
+    /^encapsulation dot1q /, /^router-id /, /^password /, /^login( local)?$/, /^transport input /, /^exec-timeout /, /^ip ospf cost /, /^name /, /^network (?=\S+ \S+$)/, /^default-router /, /^dns-server /, /^standby \d+ priority /];
+  const keyOf = line => { const r = SINGLE.find(x => x.test(line)); return r ? r.source : null; };
+  function configText(dev){
+    const S = dev._netState ? dev._netState() : null; const blocks = new Map([['', []]]); let enc = false; const secrets = [];
+    const block = ctx => { if (!blocks.has(ctx)) blocks.set(ctx, []); return blocks.get(ctx); };
+    const put = (b, line) => { const k = keyOf(line); if (k) { const i = b.findIndex(x => keyOf(x.line) === k); if (i >= 0) b.splice(i, 1); } if (!b.some(x => x.line === line)) b.push({ line }); return b[b.length - 1]; };
+    for (const r of dev.lines) { if (!r.mode || !r.mode.startsWith('config')) continue; let line = r.line; if (!line || line.startsWith('do ') || line === 'exit' || line === 'end') continue;
+      if (r.mode === 'config' && OPENER.test(line)) { block(line.startsWith('interface ') ? 'interface ' + line.slice(10) : line); continue; }
+      const b = block(r.mode === 'config' ? '' : r.ctx);
+      if (line === 'service password-encryption') { enc = true; secrets.forEach(x => { x.enc = true; }); put(b, line); continue; }
+      if (line === 'no service password-encryption') { enc = false; const i = b.findIndex(x => x.line === 'service password-encryption'); if (i >= 0) b.splice(i, 1); continue; }
+      if (line === 'no shutdown') { const i = b.findIndex(x => x.line === 'shutdown'); if (i >= 0) b.splice(i, 1); b.noShut = true; continue; }
+      if (line === 'shutdown') b.noShut = false;
+      if (line.startsWith('no ')) { const what = line.slice(3); const i = b.findIndex(x => x.line === what || x.line.startsWith(what + ' ') || keyOf(x.line) && keyOf(x.line) === keyOf(what)); if (i >= 0) b.splice(i, 1); else if (what === 'ip address') { const j = b.findIndex(x => /^ip address /.test(x.line)); if (j >= 0) b.splice(j, 1); } continue; }
+      const e = put(b, line); if (/^enable password |^password |^username \S+ password /.test(line)) { e.enc = enc; secrets.push(e); } }
+    const show = x => { let m; const l = x.line;
+      if ((m = l.match(/^enable secret (?:\d+ )?(\S+)$/))) return 'enable secret 5 ' + type5(m[1]);
+      if ((m = l.match(/^username (\S+) (?:privilege (\d+) )?secret (?:\d+ )?(\S+)$/))) return 'username ' + m[1] + (m[2] ? ' privilege ' + m[2] : '') + ' secret 5 ' + type5(m[3]);
+      if ((m = l.match(/^(enable password|password|username \S+ password) (?:\d+ )?(\S+)$/))) return m[1] + (x.enc ? ' 7 ' + type7(m[2]) : ' ' + m[2]);
+      if ((m = l.match(/^hostname /))) return 'hostname ' + dev.host; return l; };
+    const G = blocks.get(''); const o = ['version 15.1', (G.some(x => x.line === 'service password-encryption') ? '' : 'no ') + 'service password-encryption', '!', 'hostname ' + dev.host, '!'];
+    const top = G.filter(x => /^enable (secret|password) /.test(x.line)); if (top.length) o.push(...top.sort((a, b) => a.line.localeCompare(b.line) * -1).map(show), '!');
+    const late = x => /^(ip route |ipv6 route |access-list |banner |ip nat )/.test(x.line);
+    const rest = G.filter(x => !/^(hostname |enable (secret|password) |service password-encryption$)/.test(x.line) && !late(x)); if (rest.length) o.push(...rest.map(show), '!');
+    // interfaces: every port the box has in this network, in the order IOS lists them, then any the player created
+    const ifs = []; const seen = new Set(); const addIf = n => { if (!seen.has(n)) { seen.add(n); ifs.push(n); } };
+    const kind = S && S.net && S.net.devices[dev.name] ? S.net.devices[dev.name].kind : null;
+    if (S && S.ifaces && S.ifaces[dev.name]) Object.keys(S.ifaces[dev.name]).filter(n => !n.includes('.') && !n.startsWith('vlan')).sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).forEach(addIf);
+    [...blocks.keys()].filter(k => k.startsWith('interface ') && !k.startsWith('interface range ')).map(k => k.slice(10)).sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).forEach(addIf);
+    const ranged = [...blocks.keys()].filter(k => k.startsWith('interface range ')); const rangeLines = n => { const out = []; ranged.forEach(k => { const members = window.Stp ? Stp.expandRange(k.replace('interface range ', '')) : []; if (members.includes(n)) blocks.get(k).forEach(x => out.push(x)); }); return out; };
+    ifs.forEach(n => { const b = (blocks.get('interface ' + n) || []).concat(rangeLines(n)); const lines = b.map(x => ' ' + show(x)); const noShut = (blocks.get('interface ' + n) || {}).noShut;
+      const physRouter = (kind === 'router') && /^(gigabitethernet|fastethernet|serial|ethernet)\d/.test(n) && !n.includes('.');
+      if (!b.some(x => /^ip address /.test(x.line)) && (kind === 'router' || n.startsWith('vlan') || n.includes('.'))) lines.push(' no ip address');
+      if (physRouter && !noShut && !b.some(x => x.line === 'shutdown')) lines.push(' shutdown');
+      o.push('interface ' + n.replace(/^[a-z-]+/, w => ({ gigabitethernet: 'GigabitEthernet', fastethernet: 'FastEthernet', serial: 'Serial', ethernet: 'Ethernet', loopback: 'Loopback', vlan: 'Vlan', 'port-channel': 'Port-channel', tunnel: 'Tunnel', tengigabitethernet: 'TenGigabitEthernet' }[w] || w)), ...lines, '!'); });
+    [...blocks.keys()].filter(k => k.startsWith('interface ') && !ifs.includes(k.slice(10)) && !k.startsWith('interface range ')).forEach(k => o.push(k, ...blocks.get(k).map(x => ' ' + show(x)), '!'));
+    [...blocks.keys()].filter(k => /^(router |ip dhcp pool |ip vrf |ip access-list |vlan )/.test(k)).forEach(k => o.push(k, ...blocks.get(k).map(x => ' ' + show(x)), '!'));
+    const tail = G.filter(late); tail.filter(x => !x.line.startsWith('banner ')).forEach(x => o.push(show(x))); if (tail.length) o.push('!');
+    const ban = G.find(x => x.line.startsWith('banner motd ')); if (ban) o.push('banner motd ' + ban.line.slice(12), '!');
+    const lineOf = k => (blocks.get(k) || []).map(x => ' ' + show(x)); const con = [...blocks.keys()].find(k => /^line con/.test(k)); const vty = [...blocks.keys()].filter(k => /^line vty/.test(k));
+    o.push('line con 0', ...(con ? lineOf(con) : []), '!', 'line aux 0', '!'); if (vty.length) vty.forEach(k => o.push(k, ...lineOf(k))); else o.push('line vty 0 4', ' login'); o.push('!', 'end');
+    return o.join('\n'); }
+  function runningConfig(dev){ const t = configText(dev); return 'Building configuration...\n\nCurrent configuration : ' + t.length + ' bytes\n!\n' + t; }
+  function startupConfig(dev){ return dev.startup ? 'Using ' + dev.startup.length + ' out of 262136 bytes\n!\n' + dev.startup : 'startup-config is not present'; }
+  const HELP = {
+    user: [['enable', 'Turn on privileged commands'], ['exit', 'Exit from the EXEC'], ['ping', 'Send echo messages'], ['show', 'Show running system information'], ['traceroute', 'Trace route to destination']],
+    priv: [['configure', 'Enter configuration mode'], ['copy', 'Copy from one file to another'], ['disable', 'Turn off privileged commands'], ['enable', 'Turn on privileged commands'], ['exit', 'Exit from the EXEC'], ['ping', 'Send echo messages'], ['show', 'Show running system information'], ['traceroute', 'Trace route to destination'], ['write', 'Write running configuration to memory']],
+    config: [['access-list', 'Add an access list entry'], ['banner', 'Define a login banner'], ['do', 'To run exec commands in config mode'], ['enable', 'Modify enable password parameters'], ['end', 'Exit from configure mode'], ['exit', 'Exit from configure mode'], ['hostname', 'Set system\'s network name'], ['interface', 'Select an interface to configure'], ['ip', 'Global IP configuration subcommands'], ['line', 'Configure a terminal line'], ['no', 'Negate a command or set its defaults'], ['router', 'Enable a routing process'], ['service', 'Modify use of network based services'], ['spanning-tree', 'Spanning Tree Subsystem'], ['username', 'Establish User Name Authentication'], ['vlan', 'VLAN commands']],
+    'config-if': [['channel-group', 'Etherchannel/port bundling configuration'], ['description', 'Interface specific description'], ['duplex', 'Configure duplex operation'], ['exit', 'Exit from interface configuration mode'], ['ip', 'Interface Internet Protocol config commands'], ['ipv6', 'IPv6 interface subcommands'], ['no', 'Negate a command or set its defaults'], ['shutdown', 'Shutdown the selected interface'], ['spanning-tree', 'Spanning Tree Subsystem'], ['speed', 'Configure speed operation'], ['standby', 'HSRP interface configuration commands'], ['switchport', 'Set switching mode characteristics']],
+    'config-line': [['access-class', 'Filter connections based on an IP access list'], ['exec-timeout', 'Set the EXEC timeout'], ['exit', 'Exit from line configuration mode'], ['login', 'Enable password checking'], ['no', 'Negate a command or set its defaults'], ['password', 'Set a password'], ['transport', 'Define transport protocols for line']],
+    'config-router': [['default-information', 'Distribution of default information'], ['exit', 'Exit from routing protocol configuration mode'], ['network', 'Enable routing on an IP network'], ['no', 'Negate a command or set its defaults'], ['passive-interface', 'Suppress routing updates on an interface'], ['router-id', 'router-id for this process']],
+    show: [['arp', 'ARP table'], ['cdp', 'CDP information'], ['clock', 'Display the system clock'], ['interfaces', 'Interface status and configuration'], ['ip', 'IP information'], ['mac', 'MAC configuration'], ['running-config', 'Current operating configuration'], ['spanning-tree', 'Spanning tree topology'], ['startup-config', 'Contents of startup configuration'], ['version', 'System hardware and software status'], ['vlan', 'VTP VLAN status']]
+  };
+  const helpText = rows => rows.map(([c, d]) => '  ' + c.padEnd(16) + d).join('\n');
 
   Device.prototype.exec = function(raw, all, silent){
     const dev = this; if (all) dev._all = all; const S = dev._netState ? dev._netState() : null;
     if (dev.kind === 'host') { dev.out.push({ t:'in', s: dev.prompt() + ' ' + raw.trim() }); const o = window.Show ? Show.host(dev, raw, S) : 'no network'; if (o) dev.out.push({ t: /timed out|not recognized/.test(o) ? 'err' : 'out', s: o }); dev.lines.push({ mode: 'host', ctx: '', line: normalize(raw) }); return; }
+    // the enable password prompt: the typed word is never echoed or recorded
+    if (dev.pending === 'enable') { dev.out.push({ t:'in', s: 'Password: ' }); const c = window.NetConfig ? NetConfig.parse(dev) : {}; const want = c.enableSecret || c.enablePassword;
+      if (want && raw.trim().toLowerCase() === String(want).toLowerCase()) { dev.pending = null; dev.authFails = 0; dev.mode = 'priv'; dev.lines.push({ mode: 'user', ctx: '', line: 'enable', auth: true }); }
+      else if (++dev.authFails >= 3) { dev.pending = null; dev.authFails = 0; dev.out.push({ t:'err', s:'% Bad secrets' }); }
+      return; }
+    // output modifiers: show ... | include X  (also exclude, begin, section)
+    let pipe = null; const pm = raw.match(/\s\|\s*(i|in|inc|incl|inclu|includ|include|e|ex|exc|excl|exclu|exclud|exclude|b|be|beg|begi|begin|s|se|sec|sect|secti|sectio|section)\s+(.+)$/i);
+    if (pm) { pipe = { kind: pm[1][0].toLowerCase(), re: new RegExp(pm[2].trim().replace(/[.*+?^${}()[\]\\]/g, m => m === '.' ? '.' : '\\' + m), 'i') }; raw = raw.slice(0, pm.index); }
     const s = normalize(raw);
-    dev.out.push({ t:'in', s: dev.prompt() + ' ' + raw.trim() });
+    dev.out.push({ t:'in', s: dev.prompt() + ' ' + raw.trim() + (pipe ? ' | ' + pm[1] + ' ' + pm[2] : '') });
     if (!s) return;
+    if (pipe) { const n0 = dev.out.length; dev.exec(raw, all, true); const fresh = dev.out.splice(n0); const kept = fresh.slice(1).map(o => { if (o.t !== 'out') return o; const L = o.s.split('\n'); let out;
+        if (pipe.kind === 'i') out = L.filter(l => pipe.re.test(l)); else if (pipe.kind === 'e') out = L.filter(l => !pipe.re.test(l));
+        else if (pipe.kind === 'b') { const i = L.findIndex(l => pipe.re.test(l)); out = i < 0 ? [] : L.slice(i); }
+        else { out = []; let on = false; L.forEach(l => { if (!/^\s/.test(l)) on = pipe.re.test(l); if (on) out.push(l); }); }
+        return Object.assign({}, o, { s: out.join('\n') }); }); dev.out.push(...kept); return; }
     if (!silent) dev.lines.forEach(r => { if (r.pre === undefined) r.pre = false; });
-    if (s === '?' || s.endsWith(' ?')) { dev.out.push({ t:'sys', s: '  (help: this sim knows the commands your NPC taught you. Try the abbreviations too.)' }); return; }
+    if (s === '?' || s === 'do ?') { const rows = HELP[s === 'do ?' ? 'priv' : dev.mode] || HELP[dev.mode.startsWith('config-') ? 'config-if' : 'config']; dev.out.push({ t:'out', s: 'Exec commands:'.replace('Exec', dev.mode.startsWith('config') && s !== 'do ?' ? 'Configure' : 'Exec') + '\n' + helpText(rows) }); return; }
+    if (/^(do )?show \?$/.test(s)) { dev.out.push({ t:'out', s: helpText(HELP.show) }); return; }
+    if (s.endsWith(' ?')) { dev.out.push({ t:'sys', s: '  (this shell lists the commands for each mode with a bare ?. Abbreviations work: sh run, conf t, int g0/0.)' }); return; }
     const rec = { mode: dev.mode, ctx: dev.ctx, line: s };
     const doCmd = s.startsWith('do ') ? s.slice(3) : null;
     const showish = doCmd || (dev.mode === 'user' || dev.mode === 'priv' ? s : null);
 
-    if (s === 'enable') { dev.lines.push(rec); if (dev.mode === 'user') dev.mode = 'priv'; return; }
+    if (s === 'enable') { if (dev.mode === 'user') { const c = window.NetConfig ? NetConfig.parse(dev) : {}; if ((c.enableSecret || c.enablePassword) && !silent) { dev.pending = 'enable'; dev.authFails = 0; return; } dev.lines.push(rec); dev.mode = 'priv'; } return; }
     if (s === 'disable') { dev.mode = 'user'; dev.stack = []; dev.ctx = ''; return; }
     if (s === 'configure terminal') { if (dev.mode === 'user') { dev.out.push({ t:'err', s:'% Invalid input detected. (You are in user EXEC mode — you need privileged mode first.)' }); return; }
       dev.lines.push(rec); dev.mode = 'config'; dev.ctx = ''; dev.stack = [['priv','']]; dev.out.push({ t:'sys', s:'Enter configuration commands, one per line.  End with CNTL/Z.' }); return; }
@@ -133,9 +205,10 @@
     if (s === 'exit' || s === 'quit') { if (dev.mode === 'config') { dev.mode = 'priv'; dev.ctx=''; dev.stack=[]; } else if (dev.mode === 'priv' || dev.mode === 'user') { dev.out.push({ t:'sys', s:'(session stays open in the sim)' }); } else dev.leave(); return; }
     if (showish) {
       const q = showish;
+      if (q === 'show startup-config' || q === 'show start') { dev.out.push({ t:'out', s: startupConfig(dev) }); rec.line = doCmd ? 'do show startup-config' : 'show startup-config'; dev.lines.push(rec); return; }
       if (q === 'show running-config' || q === 'show run' || q === 'show configuration') { dev.out.push({ t:'out', s: runningConfig(dev) }); dev.lines.push(rec); return; }
       if (q.startsWith('show ')) { let r = matchShow(dev, q); if (!r && window.Show && S) { const o = Show.render(dev, q, S); if (o != null) r = { key: q, out: o }; } if (r) rec.line = doCmd ? 'do ' + r.key : r.key; dev.out.push({ t: r ? 'out' : 'err', s: r ? r.out : ('% This sim has no output for "' + q + '" on ' + dev.host + '.') }); dev.lines.push(rec); return; }
-      if (q === 'write memory' || q === 'copy running-config startup-config') { dev.out.push({ t:'out', s:'Building configuration...\n[OK]' }); dev.lines.push(rec); return; }
+      if (q === 'write memory' || q === 'copy running-config startup-config') { dev.lines.push(rec); dev.startup = configText(dev); dev.out.push({ t:'out', s:'Building configuration...\n[OK]' }); return; }
       if (q.startsWith('ping ') || q.startsWith('traceroute ')) { const ip = q.split(' ')[1]; dev.lines.push(rec);
         if (S && window.Net) { const r = Net.ping(S, dev.name, ip); dev._lastPing = r; if (r.nat && r.nat.length) { dev._natSeen = dev._natSeen || []; r.nat.forEach(t => { if (!dev._natSeen.some(x => x.inside === t.inside && x.global === t.global && x.port === t.port)) dev._natSeen.push(t); }); (dev._all && Object.values(dev._all) || []).forEach(o => { if (o !== dev && r.path.some(p => p.dev === o.name)) { o._natSeen = o._natSeen || []; r.nat.forEach(t => { if (!o._natSeen.some(x => x.inside === t.inside && x.global === t.global && x.port === t.port)) o._natSeen.push(t); }); } }); }
           if (q.startsWith('ping ')) dev.out.push({ t: r.ok ? 'out' : 'err', s: 'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos to ' + ip + ', timeout is 2 seconds:\n' + (r.ok ? '!!!!!\nSuccess rate is 100 percent (5/5), round-trip min/avg/max = 1/1/2 ms' : '.....\nSuccess rate is 0 percent (0/5)\n  [why: ' + r.reason + ']') });

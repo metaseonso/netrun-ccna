@@ -136,6 +136,13 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
+  hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
+  password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a
+  password or secret is set (the secret wins; typed passwords are never recorded); `write` / `copy run start` saves to
+  `show startup-config` (a gig's preconfig counts as saved); `| include | exclude | begin | section`; `?` lists each mode's
+  commands. Tested in `tests/engine.test.js` (section 9).
+
 - 2026-09-28 · Traceroute prints the forward path only, one line per hop with the ingress address of each router, then the
   target (`Net.ping(...).trail`, `Net.traceLines`); PC `tracert` and IOS `traceroute` share it. Tested in `tests/engine.test.js`.
   `tools/play.js <night|a-b|all>` plays nights headless through the Game API (talks, calls, jack-in cost, golden run, pay, fixer, CODEX).

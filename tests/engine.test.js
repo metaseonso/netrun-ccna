@@ -98,5 +98,23 @@ module.exports.run = function({ out }){
     const d = dev('R9', 'ios', ['en', 'conf t', 'ho R9', 'int g0/0', 'ip add 1.1.1.1 255.255.255.0', 'no shut', 'ip access-list standard ONLY', '10 permit host 1.1.1.5', 'exit', 'ip route 0.0.0.0 0.0.0.0 1.1.1.254']); const c = NetConfig.parse(d);
     ok(c.hostname === 'R9', 'config: hostname'); ok(c.interfaces['gigabitethernet0/0'] && c.interfaces['gigabitethernet0/0'].ip === '1.1.1.1', 'config: interface ip via abbreviations'); ok(c.acls.only && c.acls.only.entries[0].src === '1.1.1.5', 'config: named ACL entry (names are lowercased by the console)'); ok(c.routes.length === 1 && c.routes[0].via === '1.1.1.254', 'config: static route');
   }
+  // 9. the shell: running-config from the config (last one wins, no removes), password encryption, the enable prompt, startup-config, pipes, help
+  {
+    const d = new Sim.Device('R1', { kind: 'ios' }); const run = () => { const n = d.out.length; d.exec('do show running-config'); return d.out.slice(n).map(o => o.s).join('\n'); };
+    const last = () => d.out[d.out.length - 1].s;
+    d.exec('?'); ok(/enable\s+Turn on privileged commands/.test(last()), 'shell: ? lists the user EXEC commands');
+    d.exec('enable'); d.exec('show startup-config'); ok(/startup-config is not present/.test(last()), 'shell: no startup-config before a save');
+    d.exec('configure terminal'); d.exec('hostname NB-R1'); d.exec('hostname KB-R1'); d.exec('enable password noodles');
+    let t = run(); ok((t.match(/hostname/g) || []).length === 1 && /hostname KB-R1/.test(t), 'shell: hostname appears once, the last one typed');
+    ok(/enable password noodles/.test(t) && /no service password-encryption/.test(t), 'shell: enable password in plain text before encryption');
+    d.exec('service password-encryption'); t = run(); ok(/enable password 7 [0-9A-F]{4,}/.test(t) && !/noodles/.test(t), 'shell: service password-encryption shows type 7');
+    d.exec('no service password-encryption'); t = run(); ok(/enable password 7 /.test(t) && /no service password-encryption/.test(t), 'shell: removing encryption does not decrypt existing passwords');
+    d.exec('enable secret broth'); t = run(); ok(/enable secret 5 \$1\$/.test(t) && !/broth/.test(t), 'shell: enable secret shows as type 5');
+    d.exec('do show running-config | include enable'); ok(last().split('\n').every(l => /enable/.test(l)) && last().split('\n').length === 2, 'shell: | include filters the lines (' + last() + ')');
+    d.exec('end'); d.exec('disable'); d.exec('enable'); ok(d.pending === 'enable' && d.prompt() === 'Password:', 'shell: enable asks for the password once one is set');
+    d.exec('noodles'); ok(d.mode === 'user', 'shell: the enable password is ignored when a secret exists'); d.exec('broth'); ok(d.mode === 'priv', 'shell: the secret opens privileged EXEC');
+    ok(!d.lines.some(r => r.line === 'broth' || r.line === 'noodles'), 'shell: typed passwords are not recorded');
+    d.exec('copy running-config startup-config'); d.exec('show startup-config'); ok(/hostname KB-R1/.test(last()) && /Using \d+ out of/.test(last()), 'shell: write saves the running-config to startup');
+  }
   return { pass, fails };
 };
