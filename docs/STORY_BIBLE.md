@@ -157,6 +157,8 @@ Rules and numbers live there, never in a character's mouth.
 | Marrow | dry and fond, talks through food, never asks where the creds came from |
 | Dispatch | clipped like a radio with a bad battery, no pleasantries, sends a better gig instead of praise |
 | The Kid (crew) | types in bursts, caps when scared, lowercase when relieved, apologises twice |
+| Prof. Hypervisor | cheerful and a little scattered, thinks out loud, calls every machine a little instance, talks to the cat |
+| Clerk Adebayo | formal and exact, says what the record needs, reads the minutes back word for word |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that

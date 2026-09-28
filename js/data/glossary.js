@@ -173,5 +173,16 @@ window.GLOSSARY = {
   'ietf': 'Internet Engineering Task Force. Writes the standards used on the internet (IP, TCP, UDP, OSPF, DHCP) and publishes them as RFCs.',
   'rfc': 'Request for Comments: a numbered document in which the IETF publishes an internet standard. IPv4 is RFC 791.',
   'adjacent-layer interaction': 'A layer working with the layers directly above and below it on the same host: it serves the layer above and uses the layer below.',
-  'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.'
+  'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.',
+  // ---- night 52 · LAN architectures
+  'access layer': 'The layer of a campus LAN where end hosts connect. QoS marking, PoE and port security are usually done here.',
+  'distribution layer': 'The layer of a campus LAN that aggregates the access layer switches (also called the aggregation layer). Usually the border between Layer 2 and Layer 3.',
+  'core layer': 'The layer of a large campus LAN that connects the distribution layers together. Built for speed and reliability.',
+  'two-tier architecture': 'A campus LAN with an access layer and a distribution layer but no separate core. Also called a collapsed core.',
+  'collapsed core': 'Another name for a two-tier campus LAN: the core layer\'s job is folded into the distribution layer.',
+  'east-west traffic': 'Traffic between servers inside a data centre. Spine-leaf is built for it. North-south traffic enters or leaves the data centre.',
+  'full mesh': 'A topology in which every device connects to every other device.',
+  'partial mesh': 'A topology in which some devices connect to each other, but not all of them.',
+  'star topology': 'A topology in which several devices all connect to one central device.',
+  'soho': 'Small Office/Home Office. A small network where one home router (a wireless router) does the routing, switching, Wi-Fi and firewall.'
 };

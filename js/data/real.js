@@ -21,6 +21,7 @@
     aws: { name: 'Amazon Web Services', owner: 'Amazon.com, Inc.', icon: 'amazonwebservices', what: 'Opened the public cloud in 2006.' },
     gcp: { name: 'Google Cloud', owner: 'Google LLC', icon: 'googlecloud', what: 'A public cloud.' },
     wireshark: { name: 'Wireshark', owner: 'the Wireshark Foundation', icon: 'wireshark', what: 'Shows every packet on the wire.' },
-    json: { name: 'JSON', owner: 'ECMA International', icon: 'json', what: 'The data format with matching braces.' }
+    json: { name: 'JSON', owner: 'ECMA International', icon: 'json', what: 'The data format with matching braces.' },
+    belllabs: { name: 'Bell Labs', owner: 'Nokia Bell Labs', what: 'Where Charles Clos worked out switching networks that never block, in 1953.' }
   };
 })();
