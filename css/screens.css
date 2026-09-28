@@ -191,16 +191,6 @@
 .intro p.lede{font-size:15px;line-height:1.7;color:var(--ink)}
 .doorwhat{list-style:none;padding:0;margin:14px auto;max-width:640px;display:flex;flex-direction:column;gap:6px;text-align:left;font-size:13px;color:var(--ink2)} .doorwhat b{display:inline-block;width:110px;font-family:var(--disp);font-size:11px;letter-spacing:.14em;color:var(--cyan)}
 
-/* the door footer and the maker's mark */
-.intro .footer{display:flex;flex-direction:column;align-items:center;gap:14px;font-size:11px;color:var(--ink2)}
-.intro .footer a{color:var(--ink2);text-decoration:underline;text-decoration-color:var(--line)} .intro .footer a:hover{color:var(--cyan)}
-.maker{display:inline-flex;align-items:center;gap:10px;padding:6px 12px 6px 8px;border:1px solid var(--line);background:var(--bg2);text-decoration:none !important;transition:border-color .15s}
-.maker:hover{border-color:#b23a34}
-.maker img{object-fit:cover;object-position:top;border-radius:4px} .maker .seal{border-radius:0;opacity:.9}
-.maker span{display:flex;flex-direction:column;gap:2px;text-align:left}
-.maker b{font-family:var(--disp);font-size:10px;letter-spacing:.18em;color:var(--ink);font-weight:600}
-.maker em{font-style:normal;font-size:11px;color:var(--ink2)}
-
 /* the end: license, companion */
 .done h2{font-size:26px}
 .lcard{max-width:860px;margin:14px auto} .lcard svg{width:100%;height:auto;display:block;filter:drop-shadow(0 20px 40px rgba(0,0,0,.6))}
@@ -225,10 +215,45 @@
   body.printing .cact li{color:#000;border-color:#ddd} body.printing .cact .box{border-color:#000} body.printing .cact li.ok .box{color:#000} body.printing .chead2 h3,body.printing .cact .nn{color:#000}
 }
 
-/* public numbers on the door */
-.pubstats{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:22px auto 18px;max-width:760px}
-.pubstats .ps{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:120px;padding:10px 12px;border:1px solid var(--line);background:var(--bg2)}
-.pubstats .ps b{font-family:var(--disp);font-size:20px;color:var(--cyan);font-weight:600} .pubstats .ps span{font-size:9px;letter-spacing:.18em;color:var(--ink2)}
-.pubstats .ps:nth-child(4) b{color:var(--mag)} .pubstats .ps:nth-child(2) b{color:var(--yel)}
-.halllink{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 16px;text-decoration:none}
+
+/* the door: story left, sign-in card right, live numbers, footer */
+.intro.door2{max-width:1100px;margin:0 auto;padding:clamp(28px,6vh,64px) 16px 28px;text-align:left}
+.dhero{text-align:center;margin-bottom:clamp(24px,5vh,44px)}
+.dgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(20px,4vw,48px);align-items:center}
+.door2 .lede{margin:0 0 22px;max-width:none;font-size:15px;line-height:1.8;color:var(--ink)}
+.doorwhat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.doorwhat li{display:grid;grid-template-columns:22px 110px 1fr;gap:12px;align-items:baseline;font-size:13px;color:var(--ink2)}
+.doorwhat li .ic{color:var(--cyan);align-self:center} .doorwhat b{font-family:var(--disp);font-size:11px;letter-spacing:.14em;color:var(--cyan);font-weight:600}
+.dcard{display:flex;flex-direction:column;gap:12px;padding:24px;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--bg2));box-shadow:0 20px 50px rgba(0,0,0,.45),inset 0 1px 0 rgba(63,246,255,.08)}
+.dcard h2{margin:0 0 4px;font-family:var(--disp);font-size:14px;letter-spacing:.24em;color:var(--ink)}
+.dcard p{margin:0;max-width:none;text-align:left}
+.dcard .btn.wide{width:100%;height:46px;font-family:var(--disp);letter-spacing:.16em}
+.dcard .hint{font-size:11px;color:var(--ink2)}
+.dcard .or{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.dcard .or::before,.dcard .or::after{content:"";flex:1;height:1px;background:var(--line)}
+.login{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px} .login.one{grid-template-columns:minmax(0,1fr) auto}
+.door2 .login input{width:100%;min-width:0;text-align:left;padding:11px 12px;border-color:var(--line)} .door2 .login input:focus{outline:none;border-color:var(--cyan)}
+.login .btn{height:auto;padding:0 16px}
+.chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px} .btn.sm{height:30px;padding:0 10px;font-size:11px}
+.door-id{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);background:var(--bg);margin:0}
+.door-id img{width:34px;height:34px;border-radius:50%;border:1px solid var(--cyan)} .door-id span{flex:1;display:flex;flex-direction:column}
+.door-id b{color:var(--ink)} .door-id em{font-style:normal;font-size:11px;color:var(--ink2)}
+.door2 .door-warn{margin:0;max-width:none}
+.pubstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:10px;align-items:stretch;margin:clamp(28px,5vh,44px) 0 22px}
+.pubstats .ps{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:12px 14px;border:1px solid var(--line);background:var(--bg2)}
+.pubstats .ps b{font-family:var(--disp);font-size:22px;color:var(--cyan);font-weight:600} .pubstats .ps span{font-size:9px;letter-spacing:.18em;color:var(--ink2)}
+.pubstats .ps:nth-child(2) b{color:var(--yel)} .pubstats .ps:nth-child(4) b{color:var(--mag)}
+.halllink{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;text-decoration:none;font-family:var(--disp);letter-spacing:.14em}
 .halllink .ic{color:var(--mag)}
+.door2 .footer{display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:18px;border-top:1px solid var(--line);font-size:11px;color:var(--ink2);text-align:center}
+.door2 .footer a{color:var(--ink2);text-decoration:underline;text-decoration-color:var(--line)} .door2 .footer a:hover{color:var(--cyan)}
+.maker{display:inline-flex;align-items:center;gap:14px;margin-top:6px;padding:4px 0;text-decoration:none !important;color:var(--ink2)}
+.maker img{width:44px;height:44px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 1px var(--line),0 0 0 4px var(--bg),0 0 0 5px rgba(63,246,255,.35);transition:box-shadow .2s}
+.maker:hover img{box-shadow:0 0 0 1px var(--line),0 0 0 4px var(--bg),0 0 0 5px var(--cyan)}
+.maker span{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding-left:14px;border-left:1px solid var(--line);text-align:left}
+.maker b{font-family:var(--disp);font-size:10px;letter-spacing:.2em;color:var(--ink);font-weight:600}
+.maker em{font-style:italic;font-size:12px;color:var(--ink2)}
+@media (max-width:860px){.dgrid{grid-template-columns:1fr} .pubstats{grid-template-columns:repeat(2,minmax(0,1fr))} .halllink{grid-column:1 / -1;height:46px}
+  .login{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .login .btn{grid-column:1 / -1;height:44px} .login.one{grid-template-columns:minmax(0,1fr) auto} .login.one .btn{grid-column:auto}
+  .doorwhat li{grid-template-columns:22px 1fr} .doorwhat li span{grid-column:2}}
+.pubstats:has(> .halllink:only-child){display:flex;justify-content:center} .pubstats > .halllink:only-child{height:46px}
