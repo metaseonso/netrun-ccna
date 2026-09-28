@@ -116,6 +116,52 @@
         { k: 'SYNC', q: { prompt: 'Mac, pencil behind his ear: "If I put slot 22 on protect instead, and the box keeps throwing faces all night, does the violation counter go up?"', opts: ['No. Protect drops them without a log or a count', 'Yes, once per face', 'Yes, and then the port err-disables', 'Only if sticky learning is on'], a: 0,
           yes: 'Ace: "No. You would never know it was there."', no: 'Ace: "No. Protect drops quietly. Restrict is the one that drops and counts."',
           why: 'Ace: In protect mode the port drops frames from unknown MAC addresses and does nothing else: no log or SNMP message and no violation count. Restrict drops, logs and counts. Shutdown err-disables the port, logs and counts.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 50 · DHCP snooping
+    { id: 'n50-a-gateway-nobody-owns', title: 'A gateway nobody owns', sub: 'DHCP snooping', npc: 'ace', day: [50], src: [PS('DHCP_Snooping.md')], unlocks: ['dhcp-snooping'],
+      beats: [
+        { k: 'SCENE', where: 'The Watson clinic · the nurses\' station · ten past seven in the morning',
+          lines: [
+            { who: 'narr', text: 'The ward smells of toast from the breakfast trolley and the sharp green of floor cleaner. The day shift is taking over, and half the screens along the nurses\' station show the same grey box: the chart could not be saved. A nurse is copying a drug round onto the back of a printout by hand. Imani stands in the middle of it with her arms folded, and Ace kneels by the nearest PC with Sticky pressed against her leg.' },
+            { who: 'Imani', text: 'They were fine at midnight. The day shift switched them on at seven and every one that came up is like this. The ones the night shift never turned off still work.' },
+            { who: 'ace', text: 'Look at its lease. The address is from the clinic\'s range, and the gateway is 192.168.44.254. Nothing in this building owns .254. The router is .1.' },
+            { who: 'ace', text: 'When a PC starts, it shouts a DHCP Discover to everyone, and it takes the first Offer that comes back. Something on this network answered before the router did, and it handed out a gateway that leads nowhere, or leads to itself. A box that does this is a rogue DHCP server.' },
+            { who: 'you', text: 'How do we stop the ward listening to it?' },
+            { who: 'ace', text: '[[DHCP snooping]] on the switches. Once it is on, every port is untrusted unless you say so. You trust the ports that lead to the real server, the uplinks, and nothing else. A server message that arrives on an untrusted port gets thrown away before it reaches a single PC.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Which messages count as server messages?', reply: 'Ace: "OFFER, ACK and NAK come from servers. On an untrusted port they are dropped with no further checks. DISCOVER, REQUEST, RELEASE and DECLINE come from clients, so on an untrusted port the switch inspects them instead: the source MAC in the frame has to match the MAC inside the message, and a RELEASE or DECLINE has to come from the port where that lease lives."' },
+            { tone: 'press', say: 'Why not find the box and pull it out?', reply: 'Ace: "We will, and then the next one arrives in somebody\'s handbag. Snooping also writes down every lease that goes through it properly: the MAC, the IP, the lease time, the VLAN and the port. That is the DHCP snooping binding table, and tomorrow it is the thing that catches the next trick."' },
+            { tone: 'care', say: 'Imani, has anything been lost?', reply: 'Imani: "Nothing yet. The charts are sitting on the PCs waiting to be saved, and the drug round is on paper. The night of the loop we lost nine hours of it and a patient\'s records never came back. I am not doing that again."' }
+          ] } },
+        { k: 'SCENE', where: 'The Watson clinic · the new wing · above reception · a quarter to eight',
+          lines: [
+            { who: 'narr', text: 'The new wing still smells of fresh paint and the plastic on the chairs in reception. Ace is up a stepladder with her head through a ceiling tile, and a torch beam moves around in the dark up there. Dust drifts down onto Sticky, who sneezes and does not move from the foot of the ladder.' },
+            { who: 'ace', text: 'Here. White plastic, a sticker that says wireless repeater, and a cable running down inside the wall to the corridor switch, which a repeater would never need.' },
+            { who: 'narr', text: 'She photographs the serial number twice, then climbs down without touching it.' },
+            { who: 'ace', text: 'On each switch, ip dhcp snooping switches it on and ip dhcp snooping vlan 1 says which VLANs it watches. You need both, or it watches nothing. Then ip dhcp snooping trust on each uplink.' },
+            { who: 'ace', text: 'There is one trap. A snooping switch writes a note into every client request by default, [[option 82]], the relay agent information: which switch, which port. The clinic\'s router hands out the leases itself, and a Cisco router that gets a request carrying option 82 but no relay address drops it. So on these switches you turn the note off with no ip dhcp snooping information option. A switch that receives option 82 on an untrusted port drops it too.' },
+            { who: 'you', text: 'And if the box just floods the switch with Discovers?' },
+            { who: 'ace', text: 'That was DHCP exhaustion on my map. ip dhcp snooping limit rate 10 on the access ports. A PC that is booting sends a handful of messages, so ten a second is plenty. Go over the limit and the port goes err-disabled, and errdisable recovery cause dhcp-rate-limit brings it back on its own.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why does option 82 exist at all?', reply: 'Ace: "For big buildings where the server is far away. The relay agent, the switch or router nearest the client, writes down where the request came in, and the server can hand out addresses by floor or by port. When the server is a router on the same network, the note only gets the request thrown away."' },
+            { tone: 'press', say: 'You know whose box this is.', reply: 'Ace wipes the dust off her hands one finger at a time. "I know who had keys to this wing on Tuesday. That is a list with more than one name on it, and I will not shorten it by guessing."' },
+            { tone: 'joke', say: 'Could we just trust every port and save time?', reply: 'Ace: "Then the switch believes every server it hears, which is what it was doing at seven this morning. Trust goes on the ports that face the real server, and every other port stays untrusted so the snooping can do its job."' }
+          ] } },
+        { k: 'LORE', title: 'A NOTE IN THE MARGIN', year: 2001, real: ['ietf'], vibe: 'Da bomb. The box in the middle started writing on your mail.',
+          text: 'Ace, folding the stepladder: "In January 2001 the IETF published RFC 3046, the DHCP Relay Agent Information Option, written by Michael Patrick. Option 82. Cable companies wanted to know which street a modem was on before they gave it an address, so the box in the middle got to write a note on every request saying where it came from. That note is what our router choked on this morning. I keep it because somebody designed it for a building a hundred times this size, and it still turned up in ours."' },
+        { k: 'KIT', text: 'Ace writes it on the back of the photo she took of the serial number.', real: ['cisco'], kit: [
+          { cmd: 'ip dhcp snooping · ip dhcp snooping vlan 1', what: 'on for the switch and on for the VLAN. Both are needed' },
+          { cmd: 'interface g0/1 → ip dhcp snooping trust', what: 'the uplinks toward the real server. Every port is untrusted by default' },
+          { cmd: 'untrusted port: OFFER, ACK, NAK dropped · DISCOVER, REQUEST, RELEASE, DECLINE inspected', what: 'server messages and client messages' },
+          { cmd: 'no ip dhcp snooping information option', what: 'stop adding option 82, the relay agent information. A Cisco DHCP server drops it with no relay address' },
+          { cmd: 'ip dhcp snooping limit rate 10 · errdisable recovery cause dhcp-rate-limit', what: 'over the rate: err-disabled' },
+          { cmd: 'show ip dhcp snooping · show ip dhcp snooping binding', what: 'the settings and trusted ports · every good lease: MAC, IP, lease, VLAN, port' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani, watching the screens come back one by one: "So when you switch this snooping on, is the port my PC plugs into trusted or not?"', opts: ['Untrusted, like every port until someone trusts it', 'Trusted, because it is an access port', 'Trusted only after the PC gets a lease', 'Neither until the VLAN is added'], a: 0,
+          yes: 'Ace: "Untrusted. Only the uplinks get trusted."', no: 'Ace: "Untrusted. Every port starts untrusted, and I trust the uplinks by hand."',
+          why: 'Ace: When DHCP snooping is enabled, every interface is untrusted by default. You configure ip dhcp snooping trust only on the ports that lead toward the legitimate DHCP server, usually the uplinks. Server messages arriving on untrusted ports are discarded.' } }
       ] }
   ] });
 })();

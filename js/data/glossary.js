@@ -246,5 +246,6 @@ window.GLOSSARY = {
   'dictionary attack': 'A password attack that runs through a list of common words and passwords.',
   'brute force attack': 'A password attack that tries every possible combination of letters, numbers and special characters.',
   'mfa': 'Multi-factor authentication: at least two kinds of proof from something you know (password, PIN), something you have (badge, phone) and something you are (fingerprint, face).',
-  'digital certificate': 'An electronic document, signed by a certificate authority, that proves the identity of a site or device, for example a website using HTTPS.'
+  'digital certificate': 'An electronic document, signed by a certificate authority, that proves the identity of a site or device, for example a website using HTTPS.',
+  'option 82': 'The DHCP Relay Agent Information Option (RFC 3046). A DHCP snooping switch adds it to client messages by default; a Cisco DHCP server drops a request carrying it with giaddr 0, and switches drop it on untrusted ports. Turn it off with no ip dhcp snooping information option.'
 };
