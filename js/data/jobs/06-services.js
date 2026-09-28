@@ -250,6 +250,68 @@
         { dev: 'SW1', type: ['interface range f0/1 - 3', 'switchport mode access', 'switchport access vlan 10', 'switchport voice vlan 11', 'end'] }, 'commit',
         { dev: 'SW1', type: ['show interfaces f0/1 switchport'] }, 'commit', { choose: 0 }, 'commit', { form: { af: '15', at: '30', bt3: '60', bt4: '100', ilp: '7' } }, 'commit',
         { dev: 'SW1', type: ['configure terminal', 'interface range f0/1 - 2', 'power inline police', 'end'] }, 'commit', { choose: 0 }, 'commit' ],
-      outro: 'The phones sit in their own VLAN now, and bed four\'s rings through on the first try. At seven the pharmacy call still loses a word here and there while the charts go up. Imani writes "better" on the whiteboard and underlines nothing. Dispatch\'s next slip says only: Tomorrow. Queues.' }
+      outro: 'The phones sit in their own VLAN now, and bed four\'s rings through on the first try. At seven the pharmacy call still loses a word here and there while the charts go up. Imani writes "better" on the whiteboard and underlines nothing. Dispatch\'s next slip says only: Tomorrow. Queues.' },
+
+    // ------------------------------------------------------------------ night 47 · from Lab 47 (QoS)
+    { id: 'b-n47-who-goes-first', cls: 'B', rep: 20, from: 'dispatch', title: 'Ten Past Seven', day: [47], requires: ['n47-who-goes-first'], devices: ['R1', 'SW1'],
+      brief: 'DISPATCH » Clinic router. Seven o\'clock uploads, ten past seven pharmacy call. Classify, mark, queue. Before ten past.\n\nCLIENT (Imani, the clinic) » "The drug round starts at ten past seven and I phone the pharmacy. Tonight I would like to hear all of the words."',
+      net: {
+        devices: {
+          R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0011.4747.0001' },
+          ISP: { kind: 'cloud', ip: '198.51.100.1', mask: '255.255.255.252', internet: true },
+          PH1: { kind: 'host', ip: '10.47.10.21', mask: '255.255.255.0', gw: '10.47.10.1' }, PH2: { kind: 'host', ip: '10.47.10.22', mask: '255.255.255.0', gw: '10.47.10.1' },
+          PC1: { kind: 'host', ip: '10.47.10.31', mask: '255.255.255.0', gw: '10.47.10.1' }
+        },
+        links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'ISP' },
+          { a: 'SW1', ap: 'fastethernet0/1', b: 'PH1' }, { a: 'SW1', ap: 'fastethernet0/2', b: 'PH2' }, { a: 'SW1', ap: 'fastethernet0/3', b: 'PC1' } ],
+        preconfig: { R1: ['interface gigabitethernet0/0', 'ip address 10.47.10.1 255.255.255.0', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 198.51.100.2 255.255.255.252', 'no shutdown', 'ip route 0.0.0.0 0.0.0.0 198.51.100.1'] }
+      },
+      map: { w: 540, h: 330, nodes: [
+          { id: 'ISP', label: 'the provider (polices the clinic\'s rate)', type: 'cloud', x: 270, y: 34 }, { id: 'R1', label: 'clinic router', type: 'router', x: 270, y: 112 },
+          { id: 'SW1', label: 'ward switch', type: 'switch', x: 270, y: 196 },
+          { id: 'PH1', label: 'nurses\' station phone', type: 'pc', x: 100, y: 290 }, { id: 'PH2', label: 'pharmacy phone', type: 'pc', x: 270, y: 290 }, { id: 'PC1', label: 'chart PC', type: 'pc', x: 440, y: 290 } ],
+        links: [ { a: 'ISP', b: 'R1', ap: 'gigabitethernet0/1', tag: 'g0/1 out' }, { a: 'R1', b: 'SW1', ap: 'gigabitethernet0/0', tag: 'g0/0 in' }, { a: 'SW1', b: 'PH1', ap: 'fastethernet0/1' }, { a: 'SW1', b: 'PH2', ap: 'fastethernet0/2' }, { a: 'SW1', b: 'PC1', ap: 'fastethernet0/3' } ] },
+      steps: [
+        { type: 'form', skill: 'qos', text: 'Dispatch, on the radio: "Layer 2 first. CoS on the tag, per kind of traffic."',
+          fields: [ { key: 'v', label: 'voice', options: ['0', '3', '4', '5'], answer: '5' }, { key: 'vi', label: 'video', options: ['0', '3', '4', '5'], answer: '4' },
+            { key: 's', label: 'call signalling, critical applications', options: ['0', '3', '4', '5'], answer: '3' }, { key: 'b', label: 'best effort', options: ['0', '3', '4', '5'], answer: '0' } ],
+          hint: 'The higher the number, the less it can wait. Voice is highest of these.', ok: 'Dispatch: "Five, four, three, zero. Layer 3."',
+          why: 'Dispatch: PCP, also called CoS, is three bits in the 802.1Q tag. 5 is voice, 4 is video, 3 is call signalling and other critical applications, and 0 is best effort.' },
+        { type: 'calc', skill: 'qos', text: 'Dispatch: "DSCP values. Numbers, not names."',
+          fields: [ { key: 'ef', label: 'EF', check: v => String(v).trim() === '46' }, { key: 'af41', label: 'AF41', check: v => String(v).trim() === '34' },
+            { key: 'af21', label: 'AF21', check: v => String(v).trim() === '18' }, { key: 'cs3', label: 'CS3', check: v => String(v).trim() === '24' } ],
+          answer: 'EF 46 · AF41 34 · AF21 18 · CS3 24', hint: 'AFxy is 8x plus 2y. CSx is 8x. EF is 46.', ok: 'Dispatch: "Right. Classes."',
+          why: 'Dispatch: EF is 46. For assured forwarding, AFxy is 8 times x plus 2 times y, so AF41 is 32 plus 2, 34, and AF21 is 16 plus 2, 18. A class selector is 8 times its number, so CS3 is 24.' },
+        { type: 'cmd', skill: 'qos', text: 'Dispatch: "Two class-maps on R1. VOICE matches DSCP EF, the phones already mark it. CHARTS matches HTTPS by NBAR."',
+          check: (d, ctx) => { const q = ctx.cfg('R1').qos.classMaps; return !!(q.voice && q.voice.matches.includes('dscp ef') && q.charts && q.charts.matches.includes('protocol https')); },
+          hint: 'R1(config)# class-map match-any VOICE\nR1(config-cmap)# match dscp ef\nR1(config-cmap)# class-map match-any CHARTS\nR1(config-cmap)# match protocol https', ok: 'Dispatch: "Two classes and a default. Mark the charts."',
+          why: 'Dispatch: A class-map classifies traffic. match dscp ef catches packets already marked EF by the phones, and match protocol https uses NBAR to recognise HTTPS. Anything that matches no class falls into class-default.' },
+        { type: 'cmd', skill: 'qos', text: 'Dispatch: "Policy MARK-IN. Class CHARTS gets DSCP AF21, high priority data. Apply it inbound on g0/0, where the ward comes in."',
+          check: (d, ctx) => { const c = ctx.cfg('R1'); const p = c.qos.policyMaps['mark-in']; const i = c.interfaces['gigabitethernet0/0']; return !!(p && p.classes.charts && p.classes.charts.setDscp === 'af21' && i && i.servicePolicy && i.servicePolicy.input === 'mark-in'); },
+          hint: 'R1(config)# policy-map MARK-IN\nR1(config-pmap)# class CHARTS\nR1(config-pmap-c)# set dscp af21\nR1(config-pmap-c)# interface g0/0\nR1(config-if)# service-policy input MARK-IN', ok: 'Dispatch: "Charts come in marked. Now who goes first on the way out."',
+          why: 'Dispatch: A policy-map says what to do with each class. set dscp af21 marks the chart uploads as high priority data, the RFC 4594 choice. service-policy input MARK-IN applies it to traffic arriving on g0/0 from the ward, so it is marked before it queues.' },
+        { type: 'cmd', skill: 'qos', text: 'Dispatch: "Policy WAN-OUT. VOICE gets priority, 20 percent. CHARTS gets at least 40 percent. class-default gets fair-queue. Outbound on g0/1."',
+          check: (d, ctx) => { const c = ctx.cfg('R1'); const p = c.qos.policyMaps['wan-out']; const i = c.interfaces['gigabitethernet0/1']; return !!(p && p.classes.voice && p.classes.voice.priority && p.classes.voice.priority.percent === 20 && p.classes.charts && p.classes.charts.bandwidth && p.classes.charts.bandwidth.percent === 40 && p.classes['class-default'] && p.classes['class-default'].fairQueue && i && i.servicePolicy && i.servicePolicy.output === 'wan-out'); },
+          hint: 'R1(config)# policy-map WAN-OUT\nR1(config-pmap)# class VOICE\nR1(config-pmap-c)# priority percent 20\nR1(config-pmap-c)# class CHARTS\nR1(config-pmap-c)# bandwidth percent 40\nR1(config-pmap-c)# class class-default\nR1(config-pmap-c)# fair-queue\nR1(config-pmap-c)# interface g0/1\nR1(config-if)# service-policy output WAN-OUT', ok: 'Dispatch: "Voice first. Charts guaranteed. Rest takes turns."',
+          why: 'Dispatch: priority percent 20 puts voice in the LLQ, a strict priority queue that is always emptied first, up to a fifth of the link. bandwidth percent 40 gives the charts a CBWFQ queue with at least 40 percent. fair-queue shares what is left fairly. service-policy output WAN-OUT applies it where the queue builds, on the way out to the provider.' },
+        { type: 'cmd', skill: 'qos', text: 'Dispatch: "Read it back from the interface."',
+          need: [ { dev: 'R1', line: /^(do )?show policy-map interfaces? gigabitethernet0\/1$/ } ], hint: 'R1# show policy-map interface g0/1', ok: 'Dispatch: "Three classes on g0/1, output. Copy."',
+          why: 'Dispatch: show policy-map interface g0/1 lists the policy on that interface, direction first, then every class with what it matches and what it does: strict priority for voice, the bandwidth guarantee for charts, fair-queue for the rest.' },
+        { type: 'cmd', skill: 'qos', text: 'Dispatch: "Trust boundary. SW1, the two phone ports, f0/1 and f0/2. Trust CoS, but only when a Cisco phone is there."',
+          check: (d, ctx) => { const i = ctx.cfg('SW1').interfaces; return ['fastethernet0/1', 'fastethernet0/2'].every(p => i[p] && i[p].qosTrust === 'cos' && i[p].qosTrustDevice === 'cisco-phone'); },
+          hint: 'SW1(config)# interface range f0/1 - 2\nSW1(config-if-range)# mls qos trust device cisco-phone\nSW1(config-if-range)# mls qos trust cos', ok: 'Dispatch: "Phones believed. PCs not."',
+          why: 'Dispatch: The trust boundary is where the network starts believing marks. mls qos trust cos tells the port to keep the CoS the phone puts on its voice, and mls qos trust device cisco-phone only trusts it while CDP sees a Cisco phone there, so a PC plugged straight into the port cannot mark itself as voice.' },
+        { type: 'choice', skill: 'qos', text: 'Imani, taking her hand off the mouthpiece: "The provider cuts the clinic off at its rate and drops the rest. Should we do the same to ourselves first?"',
+          opts: ['No. Shape to the rate, so the extra waits in our queues where our policy decides, instead of being dropped by theirs', 'Yes. Police at the rate, so the provider never drops anything', 'Neither. The LLQ already slows the uploads', 'Yes. Tail drop is better than queuing'], a: 0,
+          hint: 'One of them drops over the rate. The other holds it and sends it later.', ok: 'Dispatch: "Shape. Tell the pharmacy go ahead."',
+          why: 'Dispatch: The provider polices: anything over the rate is dropped, whatever it is. If the clinic shapes its own output to that rate, the extra is buffered and sent a little later, and it waits in the clinic\'s queues, where voice goes first. Policing the clinic\'s own traffic would drop packets too, and TCP would send them again.' }
+      ],
+      solution: [ { form: { v: '5', vi: '4', s: '3', b: '0' } }, 'commit', { calc: { ef: '46', af41: '34', af21: '18', cs3: '24' } }, 'commit',
+        { dev: 'R1', type: ['enable', 'configure terminal', 'class-map match-any VOICE', 'match dscp ef', 'class-map match-any CHARTS', 'match protocol https'] }, 'commit',
+        { dev: 'R1', type: ['policy-map MARK-IN', 'class CHARTS', 'set dscp af21', 'interface g0/0', 'service-policy input MARK-IN'] }, 'commit',
+        { dev: 'R1', type: ['policy-map WAN-OUT', 'class VOICE', 'priority percent 20', 'class CHARTS', 'bandwidth percent 40', 'class class-default', 'fair-queue', 'interface g0/1', 'service-policy output WAN-OUT', 'end'] }, 'commit',
+        { dev: 'R1', type: ['show policy-map interface g0/1'] }, 'commit',
+        { dev: 'SW1', type: ['enable', 'configure terminal', 'interface range f0/1 - 2', 'mls qos trust device cisco-phone', 'mls qos trust cos', 'end'] }, 'commit', { choose: 0 }, 'commit' ],
+      outro: 'At ten past seven the charts are still going up, and Imani reads the drug round to the pharmacy without once saying pardon. When she hangs up she rubs out "better" on the whiteboard and writes the time instead. Dispatch sends the next slip before you are out of the building: the gate, Ace Elle, tomorrow night.' }
   );
 })();

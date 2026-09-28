@@ -193,6 +193,53 @@
         { k: 'SYNC', q: { prompt: 'Imani, still holding the handset: "So the phone and my PC share one socket. Which one tags its traffic?"', opts: ['The phone, with the voice VLAN', 'The PC, with the access VLAN', 'Both of them', 'Neither. The switch tags everything'], a: 0,
           yes: 'Dispatch: "Phone. Next."', no: 'Dispatch: "Phone tags. PC does not."',
           why: 'Dispatch: With switchport voice vlan on the port, the phone tags its voice frames with the voice VLAN. The PC behind the phone sends untagged frames as usual, and the switch puts them in the access VLAN. The port stays an access port.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 47 · QoS, part 2
+    { id: 'n47-who-goes-first', title: 'Who goes first', sub: 'QoS, part 2', npc: 'dispatch', day: [47], src: [PS('QoS_Part2.md')], unlocks: ['qos'],
+      beats: [
+        { k: 'SCENE', where: 'Dispatch\'s booth · the job board · eleven at night',
+          lines: [
+            { who: 'narr', text: 'Rain drums on the booth\'s tin roof and the radios hiss under it. One set on the top shelf has a red strip of tape across its dial. When it crackles, Dispatch lifts the fader on it before the others, every time, without looking.' },
+            { who: 'dispatch', text: 'That one is the clinic line, and it goes first. A router can do the same. Three jobs: classify, mark, queue.' },
+            { who: 'dispatch', text: 'Classify first. Decide what a packet is, by access list, by NBAR, or by the mark already on it. NBAR is network based application recognition. Reads the traffic and names the application.' },
+            { who: 'dispatch', text: 'Marks go in two places. Layer 2, the 802.1Q tag has three bits for it. PCP, or CoS. 0 is best effort, 3 is call signalling and critical, 4 is video, 5 is voice. Layer 3, the IP header. Used to be IP precedence, three bits. Now [[DSCP]], six bits.' },
+            { who: 'you', text: 'Six bits is sixty-four values. Which ones matter?' },
+            { who: 'dispatch', text: 'DF, default forwarding, 0. Best effort. EF, expedited forwarding, 46. Voice. AF, assured forwarding, AF11 to AF43: class times eight, plus drop precedence times two. CS, class selector, class times eight. RFC 4594 says voice EF, interactive video AF4x, streaming video AF3x, high priority data AF2x, best effort DF.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What does the second digit in AF mean?', reply: 'Dispatch: "Drop precedence. AF41, AF42, AF43, same class, same queue. When the queue fills, AF43 goes first, AF41 last. AF41 is 34, AF42 is 36, AF43 is 38. Class 3 is 26, 28, 30. Class 2 is 18, 20, 22. Class 1 is 10, 12, 14."' },
+            { tone: 'press', say: 'Anyone can mark their own packets EF.', reply: 'Dispatch: "Right. So you choose where you start believing marks. [[Trust boundary]]. Clinic phones mark voice CoS 5 and call signalling CoS 3, so the boundary sits at the phone. Switch trusts the phone, not the PC behind it. PC marks EF, switch wipes it."' },
+            { tone: 'quiet', say: '(Watch the red-taped radio.)', reply: 'It crackles twice in a minute, and twice the other radios dip under it. Nobody else in the queue is dropped. They wait a second longer, and then they are heard.' }
+          ] } },
+        { k: 'SCENE', where: 'The Watson clinic · the comms room · ten to seven in the evening',
+          lines: [
+            { who: 'narr', text: 'The comms room is warm and the router\'s fans are already louder than they were an hour ago. Upstairs the day shift is starting to save its charts. Imani leans in the doorway with a handset in one hand and her other hand over the mouthpiece.' },
+            { who: 'Imani', text: 'The pharmacy is on the line. Tell me when to start talking.' },
+            { who: 'dispatch', text: 'Queuing next. The router gives every class its own queue. CBWFQ, class-based weighted fair queuing. Takes turns round the queues by weight. Every class gets its minimum bandwidth. Voice cannot wait its turn, so voice goes in LLQ. Low latency queuing. A strict priority queue. Always emptied first.' },
+            { who: 'dispatch', text: 'Provider polices the clinic at its rate. [[Policing]] drops what goes over. [[Shaping]] holds it in a queue and sends it later. Drop at the provider, TCP backs off, uploads crawl. Shape your own side, you choose what waits.' },
+            { who: 'you', text: 'And if voice takes the whole link?' },
+            { who: 'dispatch', text: 'priority percent 20. Voice gets up to a fifth of the link, ahead of everything, and anything over that is policed so the charts still get their share.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How does the router know a chart upload from a web page?', reply: 'Dispatch: "NBAR. match protocol https in a class-map. Both are HTTPS, so both land in that class. Good enough. Charts are the busiest HTTPS on the ward at seven. Mark them AF21, high priority data."' },
+            { tone: 'care', say: 'Imani, what time do you usually call the pharmacy?', reply: 'Imani: "Ten past seven, every night, when the drug round starts. It is the worst possible minute for the phones, and it is the one minute I cannot move."' },
+            { tone: 'press', say: 'Why not police the uploads ourselves?', reply: 'Dispatch: "Policing drops. Nurse uploads a chart, packets dropped, TCP sends them again, chart takes longer. Shaping waits instead. Police the traffic you would rather drop, and shape the traffic you only need to slow down."' }
+          ] } },
+        { k: 'LORE', title: 'SIX BITS OF WHO GOES FIRST', year: 1998, real: ['ietf'], vibe: 'All that. The internet stopped treating every packet the same.',
+          text: 'Dispatch, peeling the red tape off the dial and pressing it back down: "December 1998. RFC 2474. Nichols, Blake, Baker, Black. Took the old type of service byte in the IP header. Six bits of it became DSCP. Every packet since can say how much waiting it will stand. Kept it because a radio booth has worked that way since before either of us."' },
+        { k: 'KIT', text: 'Dispatch hands over the job slip for tonight, written on both sides.', kit: [
+          { cmd: 'PCP/CoS (3 bits, in the 802.1Q tag): 0 best effort · 3 critical, call signalling · 4 video · 5 voice', what: 'Layer 2 marks' },
+          { cmd: 'DSCP (6 bits): DF 0 · EF 46 · AFxy = 8x + 2y · CSx = 8x', what: 'Layer 3 marks. IP precedence was the old 3 bits' },
+          { cmd: 'RFC 4594: voice EF · interactive video AF4x · streaming video AF3x · high priority data AF2x · best effort DF', what: 'who gets which mark' },
+          { cmd: 'class-map match-any VOICE → match dscp ef', what: 'classify by the mark on it (or match protocol https: NBAR)' },
+          { cmd: 'policy-map WAN-OUT → class VOICE → priority percent 20 → class CHARTS → bandwidth percent 40', what: 'LLQ for voice, CBWFQ minimums for the rest' },
+          { cmd: 'interface g0/1 → service-policy output WAN-OUT', what: 'apply it in one direction on one interface' },
+          { cmd: 'mls qos trust device cisco-phone · mls qos trust cos', what: 'the trust boundary at the phone' },
+          { cmd: 'shape average · police', what: 'shaping: traffic over the rate waits in a queue · policing: traffic over the rate is dropped' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani, hand still over the mouthpiece: "So what does my phone put on its voice, the thing that says it goes first?"', opts: ['DSCP EF, 46', 'DSCP AF41, 34', 'CoS 3', 'DSCP DF, 0'], a: 0,
+          yes: 'Dispatch: "EF. Tell the pharmacy to hold one minute."', no: 'Dispatch: "EF, 46. Voice."',
+          why: 'Dispatch: IP phones mark their voice DSCP EF, expedited forwarding, value 46, and CoS 5 on the tag. CoS 3 is what they put on call signalling. AF41 is interactive video, and DF, 0, is best effort.' } }
       ] }
   ] });
 })();

@@ -181,5 +181,9 @@ window.GLOSSARY = {
   'bandwidth': 'QoS: the overall capacity of a link, in bits per second.',
   'delay': 'QoS: the time traffic takes to go from source to destination (one-way delay). Interactive voice wants 150 ms or less.',
   'jitter': 'QoS: the variation in one-way delay between packets of the same flow. Interactive voice wants 30 ms or less.',
-  'tail drop': 'When a queue is full, new packets arriving are dropped. It can cause TCP global synchronization; RED and WRED drop some packets early to avoid it.'
+  'tail drop': 'When a queue is full, new packets arriving are dropped. It can cause TCP global synchronization; RED and WRED drop some packets early to avoid it.',
+  'dscp': 'Differentiated Services Code Point: 6 bits in the IP header for QoS marks (RFC 2474, replacing 3-bit IP precedence). DF 0, EF 46 (voice), AFxy = 8x + 2y (AF41 34), CSx = 8x.',
+  'trust boundary': 'The point in the network where QoS marks start being believed. With an IP phone on the port it sits at the phone: the switch trusts the phone\'s marks, not the PC\'s.',
+  'policing': 'QoS: traffic over the configured rate is dropped (or re-marked).',
+  'shaping': 'QoS: traffic over the configured rate is buffered in a queue and sent later, smoothing it to the rate.'
 };
