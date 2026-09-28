@@ -8,12 +8,12 @@
       "cls": "A",
       "maker": true,
       "stats": {
-        "nights": "ALL 63",
-        "gigs": "ALL",
-        "clean": "MAKER",
-        "hours": "—",
-        "saved": "—",
-        "flatlines": "—"
+        "nights": "CREATOR",
+        "gigs": "CREATOR",
+        "clean": "CREATOR",
+        "hours": "CREATOR",
+        "saved": "CREATOR",
+        "flatlines": "CREATOR"
       },
       "line": "The maker. Built for Sohee, and for every runner after her."
     }
