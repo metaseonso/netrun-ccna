@@ -229,5 +229,10 @@ window.GLOSSARY = {
   'gcmp': 'Galois/Counter Mode Protocol. Used by WPA3: AES counter mode for encryption, GMAC as the MIC.',
   // ---- night 58 · wireless configuration
   'service port': 'The WLC port used for out-of-band management. Connects to a switch access port. The service port interface is bound to it.',
-  'dynamic interface': 'A WLC interface that maps a WLAN to a VLAN. The other WLC interfaces: management (CAPWAP), virtual (DHCP relay, web authentication), redundancy management, service port.'
+  'dynamic interface': 'A WLC interface that maps a WLAN to a VLAN. The other WLC interfaces: management (CAPWAP), virtual (DHCP relay, web authentication), redundancy management, service port.',
+  // ---- night 59 · network automation and AI
+  'asic': 'Application-Specific Integrated Circuit. A chip built for one job; switches use ASICs to forward frames in hardware (the data plane). TCAM holds routing and ACL lookups; the MAC table is in CAM.',
+  'northbound interface': 'The interface between an SDN controller and the applications and scripts that use it, usually a REST API.',
+  'southbound interface': 'The interface between an SDN controller and the network devices it controls: OpenFlow, OpFlex, onePK, NETCONF.',
+  'machine learning': 'A subset of AI in which computers learn from data instead of being explicitly programmed. Supervised (labelled data), unsupervised (unlabelled), reinforcement (rewards and penalties), deep (many-layered neural networks).'
 };

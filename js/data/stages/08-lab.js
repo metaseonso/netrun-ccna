@@ -301,6 +301,48 @@
         { k: 'SYNC', q: { prompt: 'Imani, reading over Beacon\'s shoulder: "You left the phones\' WLAN on the default QoS. What is the default, and is that right?"', opts: ['Silver, best effort. The phones need Platinum', 'Platinum. It is right', 'Gold. It is right', 'Bronze. The phones need Silver'], a: 0,
           yes: 'Beacon: "Silver, and no, it isn\'t. Platinum for the phones. Good catch."', no: 'Beacon: "Silver is the default, best effort. The phones need Platinum, which is voice."',
           why: 'Beacon: A WLAN\'s QoS is Silver (best effort) unless you change it. Platinum is voice, Gold is video and Bronze is background, so a WLAN carrying phones should be set to Platinum.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 59 · network automation and AI
+    { id: 'n59-a-thousand-boxes', title: 'A thousand boxes', sub: 'network automation and AI', npc: 'ansible', day: [59], src: [PS('Network_Automation.md')], unlocks: ['automation'],
+      beats: [
+        { k: 'SCENE', where: 'The Lab · Ansible\'s bench · eleven at night',
+          lines: [
+            { who: 'narr', text: 'A cold draught falls from the vent above Ansible\'s bench and carries the smell of solder and machine oil. Forty second-hand switches sit stacked in a wire shelf, every one with a cable to the same laptop, their lights blinking out of step. A palm-sized drone hovers at shoulder height and turns to look at you. The man at the bench is bald, with a green visor pushed up on his forehead, and he finishes typing before he looks up.' },
+            { who: 'ansible', text: 'Good. Sit. Halvorsen shows the council their controller next week. It runs four thousand boxes with nobody touching them, they say. I want the council to see the street can run its own the same way. First you need to know what you are automating.' },
+            { who: 'ansible', text: 'Every box on that shelf does three kinds of work. The [[data plane]] forwards the traffic itself, frame in, frame out, which is why people also call it the forwarding plane. The [[control plane]] decides how that forwarding happens: OSPF, spanning tree, ARP, building the tables. The [[management plane]] is how people and tools talk to the box: SSH, SNMP, syslog.' },
+            { who: 'ansible', text: 'The data plane has to be fast, so a switch does it in hardware. An [[ASIC]], an application-specific integrated circuit, is a chip built to do one job. The MAC address table sits in CAM, content-addressable memory, which is why people call it the CAM table, and the routing lookups sit in TCAM, ternary CAM.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Which plane does your laptop touch?', reply: 'Ansible: "Management. My playbook logs in to each box over SSH and tells it what its configuration should be. The box\'s control plane then does its own work, and the data plane never knows I was there. That is also why a switch that refuses SSH refuses me."' },
+            { tone: 'press', say: 'Why automate at all, if it works by hand?', reply: 'Ansible: "Forty boxes, one change each, is forty chances to type a wrong number at four in the morning. A play is written once, read by a second person, and run the same way on every box. Human error, inconsistent configuration and slow changes are what automation takes away."' },
+            { tone: 'joke', say: 'Does the drone have a control plane?', reply: 'The drone tilts, as if it heard. Ansible: "It has all three. The rotors are its data plane, the flight controller deciding where to go is its control plane, and the app on my phone is its management plane. It is a better student than most."' }
+          ] } },
+        { k: 'SCENE', where: 'The Lab · Ansible\'s bench · a tablet propped against the shelf', real: ['cisco'],
+          lines: [
+            { who: 'narr', text: 'Ansible props a tablet against the shelf and plays Halvorsen\'s demo with the sound off. On the screen a map of Watson glows, every building a dot, and a line of text crawls under it: ONE CONTROLLER. NO STAFF. NO SURPRISES.' },
+            { who: 'ansible', text: '[[SDN]], software-defined networking, pulls the control plane out of each box and puts it in one application, the controller. Applications and scripts talk to the controller through its [[northbound interface]], usually a REST API. The controller talks to the boxes through its [[southbound interface]], with OpenFlow, OpFlex, onePK or NETCONF.' },
+            { who: 'ansible', text: 'Their controller is Cisco Catalyst Center with their logo on it. It uses AI in four places. AI Network Analytics learns what normal looks like and suggests changes. The Machine Reasoning Engine, the MRE, finds the root cause of a fault and can fix it. AI Endpoint Analytics works out what every device on the network is, and AI-enhanced RRM keeps tuning the Wi-Fi radios.' },
+            { who: 'ansible', text: '[[Machine learning]] is the part of AI that learns from data instead of being programmed rule by rule. Supervised learning trains on labelled examples, unsupervised finds patterns in unlabelled data, and reinforcement learning is rewarded or penalised for what it does. Deep learning uses neural networks with many layers. Predictive AI forecasts from history, and generative AI makes something new from the patterns it learned.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Can the street have a controller too?', reply: 'Ansible: "It can have its own, running in the Lab, with its own REST API. The question for the council is not whether the boxes can be run from one place. It is whose place."' },
+            { tone: 'press', say: 'What if their AI decides wrong?', reply: 'Ansible: "Then it is wrong on four thousand boxes at once, and nobody in Watson has the password to stop it. An automated change goes out as fast as a good one. That is why every play I write is read by a person before it runs."' },
+            { tone: 'quiet', say: '(Watch the demo to the end.)', reply: 'The demo ends on the Exchange, lit up in Halvorsen\'s colours. Ansible stops it before the logo comes up. "REST. Representational State Transfer. That is what their northbound interface speaks, and it is what ours will speak."' }
+          ] } },
+        { k: 'LORE', title: 'A SUMMER TO TEACH MACHINES', year: 1955, vibe: 'Crazy, man. Ten scientists, one summer, and machines that think.',
+          text: 'Ansible, with the drone settled on his shoulder: "On the thirty-first of August 1955, John McCarthy, Marvin Minsky, Nathaniel Rochester and Claude Shannon wrote a proposal for a summer research project at Dartmouth College, and they named its subject artificial intelligence. The workshop ran the next summer. They thought ten people and two months would go a long way. I keep it because every promise about a machine that needs no people started with a proposal that sure of itself."' },
+        { k: 'KIT', text: 'Ansible prints it from the laptop and the drone carries it over.', real: ['cisco'], kit: [
+          { cmd: 'data (forwarding) · control · management', what: 'the three planes: forward the traffic · decide how (OSPF, STP, ARP) · talk to the box (SSH, SNMP, syslog)' },
+          { cmd: 'ASIC · CAM (the MAC table) · TCAM', what: 'data plane hardware' },
+          { cmd: 'SDN: the control plane centralised in a controller', what: 'SDA is software-defined architecture. API = application programming interface' },
+          { cmd: 'NBI: REST to apps · SBI: OpenFlow, OpFlex, onePK, NETCONF to devices', what: 'the controller\'s two interfaces' },
+          { cmd: 'supervised · unsupervised · reinforcement · deep', what: 'machine learning: labelled data · unlabelled data · rewards and penalties · many-layered neural networks' },
+          { cmd: 'predictive · generative', what: 'forecast from history · create new content' },
+          { cmd: 'AI Network Analytics · Machine Reasoning Engine (MRE) · AI Endpoint Analytics · AI-enhanced RRM', what: 'Catalyst Center: baselines · root cause and fixes · identify devices · tune the radios' } ] },
+        { k: 'SYNC', q: { prompt: 'Clerk Adebayo, reading the demo\'s small print: "Their controller \'talks to every device over NETCONF\'. Is that its northbound or its southbound interface?"', opts: ['Southbound', 'Northbound', 'Both', 'Neither: NETCONF is a data plane protocol'], a: 0,
+          yes: 'Ansible: "Southbound. Down to the boxes."', no: 'Ansible: "Southbound. NETCONF runs between the controller and the devices."',
+          why: 'Ansible: The southbound interface (SBI) connects the SDN controller to the network devices it controls, using protocols such as OpenFlow, OpFlex, onePK and NETCONF. The northbound interface (NBI) connects the controller to applications and scripts, usually with a REST API.' } }
       ] }
   ] });
 })();

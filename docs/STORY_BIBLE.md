@@ -160,6 +160,7 @@ Rules and numbers live there, never in a character's mouth.
 | Prof. Hypervisor | cheerful and a little scattered, thinks out loud, calls every machine a little instance, talks to the cat |
 | Clerk Adebayo | formal and exact, says what the record needs, reads the minutes back word for word |
 | Beacon | loud and warm, talks like she is still on air, takes channel 6 personally, always knows how many are listening |
+| Ansible | calm and spare, short sentences in the order he would run them, finishes typing before he looks up |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that
