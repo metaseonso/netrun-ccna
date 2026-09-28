@@ -16,8 +16,16 @@ when one value is filled in: `googleClientId` in `config/platform.js`.
   unbound local handle binds as it is opened, a handle already in the account's Drive binds on sign-in, and the
   handle in use when the player presses SIGN IN in the HUD binds at once.
 - A bound handle cannot be opened with a passcode. SIGN OUT sends a bound handle back to the door.
-- On sign-in, only this account's newer local records are pushed up, and newer Drive records are pulled down, so
-  the same handles show on the door on any device. Other handles on a shared deck stay on the deck. Saves go up at most every 15 seconds, and at once on LOG OUT
+- **A Google record lives only in the player's Drive.** Never in localStorage. While playing it is in memory;
+  `save()` marks it dirty and `flush()` writes it to Drive a few seconds later, at once on a sync, LOG OUT,
+  SIGN OUT and a hidden tab. If the token has run out, the write waits and the HUD's RECONNECT pushes it. Closing
+  the tab with an unsaved record makes the browser ask first. The browser keeps only the identity (`auth.js`) and
+  the last handle's name (`netrunner-ccna-last-google`); SIGN OUT removes both.
+- On sign-in the game makes one small Drive call to check the folder, then lists handle names. A record loads only
+  when the player picks it. Records older builds kept in the browser for this account are moved up and deleted
+  locally. Handle-only records on a shared deck stay on the deck.
+- **The Drive box.** Google shows the drive.appdata permission as a checkbox, unticked, and no site can tick it.
+  The door explains it before sign-in. If it is not ticked, the door says so and offers ALLOW DRIVE. Saves go up at most every 15 seconds, and at once on LOG OUT
   or when the tab is hidden.
 - Google tokens last one hour. The name stays in the HUD; when the token is gone a **RECONNECT** button pulses.
   One click renews it (the popup needs a click, browsers block it otherwise). Background saves never open popups.
