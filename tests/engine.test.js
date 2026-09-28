@@ -377,5 +377,21 @@ module.exports.run = function({ out }){
     ok(d.R1.out.some(o => /The name for the keys will be: R1\.watson\.net/.test(o.s)), 'shell: crypto key generate rsa names the keys after hostname.domain (ip domain name)');
     const pc = new Sim.Device('ADM', { kind: 'host', netState: () => A.state }); pc.exec('ssh -l shell 10.0.1.1'); ok(/Open/.test(pc.out[pc.out.length - 1].s) && /SSH 2 session to R1/.test(pc.out[pc.out.length - 1].s), 'pc: ssh -l opens a session'); pc.exec('telnet 10.0.1.1'); ok(/refused/.test(pc.out[pc.out.length - 1].s), 'pc: telnet is refused');
   }
+  // 27. multilayer switching: SVIs start shut down and need their VLAN and a live port (autostate), ip routing, routed ports (no switchport), default interface
+  {
+    const net = { devices: { MLS: { kind: 'switch' }, R1: { kind: 'router' }, PC1: { kind: 'host', ip: '10.18.10.10', mask: '255.255.255.0', gw: '10.18.10.1' }, PC2: { kind: 'host', ip: '10.18.20.10', mask: '255.255.255.0', gw: '10.18.20.1' }, SRV: { kind: 'host', ip: '10.18.99.5', mask: '255.255.255.0', gw: '10.18.99.1' } },
+      links: [ { a: 'MLS', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'MLS', ap: 'fastethernet0/2', b: 'PC2' }, { a: 'MLS', ap: 'gigabitethernet0/1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'SRV' } ] };
+    const base = ['en', 'conf t', 'vlan 10', 'vlan 20', 'int f0/1', 'switchport mode access', 'switchport access vlan 10', 'int f0/2', 'switchport mode access', 'switchport access vlan 20', 'int vlan 10', 'ip address 10.18.10.1 255.255.255.0', 'int vlan 20', 'ip address 10.18.20.1 255.255.255.0'];
+    const r1 = ['en', 'conf t', 'int g0/0', 'ip add 10.18.0.2 255.255.255.252', 'no shut', 'int g0/1', 'ip add 10.18.99.1 255.255.255.0', 'no shut', 'ip route 10.18.0.0 255.255.0.0 10.18.0.1'];
+    let d = devs({ MLS: base, R1: r1 }); let A = Net.api(Net.build(net, d));
+    ok(!A.up('MLS', 'vlan10') && !A.ping('PC1', '10.18.10.1').ok, 'mls: an SVI starts shut down');
+    d = devs({ MLS: base.concat(['int vlan 10', 'no shut', 'int vlan 20', 'no shut']), R1: r1 }); A = Net.api(Net.build(net, d));
+    ok(A.ping('PC1', '10.18.10.1').ok && !A.ping('PC1', '10.18.20.10').ok, 'mls: SVIs up, but no routing between them without ip routing');
+    d = devs({ MLS: base.concat(['int vlan 10', 'no shut', 'int vlan 20', 'no shut', 'exit', 'ip routing', 'int g0/1', 'no switchport', 'ip address 10.18.0.1 255.255.255.252', 'exit', 'ip route 0.0.0.0 0.0.0.0 10.18.0.2']), R1: r1 }); A = Net.api(Net.build(net, d));
+    ok(A.ping('PC1', '10.18.20.10').ok, 'mls: ip routing routes between SVIs');
+    ok(A.ping('PC2', '10.18.99.5').ok && A.route('MLS', '10.18.0.0/30') && A.route('MLS', '10.18.0.0/30').iface === 'gigabitethernet0/1', 'mls: a routed port (no switchport) with an address reaches the router (' + A.ping('PC2', '10.18.99.5').reason + ')');
+    d = devs({ MLS: base.concat(['vlan 30', 'int vlan 30', 'ip address 10.18.30.1 255.255.255.0', 'no shut']), R1: r1 }); A = Net.api(Net.build(net, d)); ok(!A.up('MLS', 'vlan30'), 'mls: an SVI whose VLAN has no live port stays down (autostate)');
+    d = devs({ MLS: base.concat(['int g0/1', 'no switchport', 'ip address 10.18.0.1 255.255.255.252', 'exit', 'default interface g0/1']), R1: r1 }); ok(!NetConfig.parse(d.MLS).interfaces['gigabitethernet0/1'], 'mls: default interface puts a port back to its factory settings');
+  }
   return { pass, fails };
 };

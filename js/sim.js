@@ -7,7 +7,7 @@
     ho:'hostname', host:'hostname', hostn:'hostname', no:'no', ip:'ip', ipv6:'ipv6', sw:'switchport', swi:'switchport', switch:'switchport', span:'spanning-tree', spanning:'spanning-tree',
     desc:'description', shut:'shutdown', router:'router', rou:'router', vlan:'vlan', name:'name', access:'access-list', acc:'access-list', line:'line', lin:'line', login:'login', log:'logging', logg:'logging',
     transport:'transport', trans:'transport', crypto:'crypto', cry:'crypto', username:'username', user:'username', enc:'encapsulation', encap:'encapsulation', encapsulation:'encapsulation',
-    network:'network', net:'network', passive:'passive-interface', pass:'passive-interface', default:'default-information', standby:'standby', stand:'standby', channel:'channel-group', chan:'channel-group',
+    network:'network', net:'network', passive:'passive-interface', pass:'passive-interface', standby:'standby', stand:'standby', channel:'channel-group', chan:'channel-group',
     ntp:'ntp', snmp:'snmp-server', snmp:'snmp-server', service:'service', do:'do', copy:'copy', banner:'banner', clock:'clock', permit:'permit', deny:'deny', remark:'remark', dhcp:'dhcp',
     dns:'dns-server', 'dns-server':'dns-server', 'default-router':'default-router', lease:'lease', domain:'domain-name', errdisable:'errdisable', arp:'arp' };
   const SECOND = { t:'terminal', term:'terminal', terminal:'terminal', run:'running-config', 'running':'running-config', start:'startup-config', startup:'startup-config', br:'brief', bri:'brief',

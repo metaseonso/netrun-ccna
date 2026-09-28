@@ -45,7 +45,7 @@
       S.ifaces[n] = {};
       for (const p of names) { const c = cfg.interfaces[p] || NetConfig.iface(NetConfig.blank(), p); const cabled = !!portsOf[n][p]; const kind = kindOf(p); const par = parentOf(p);
         let admin; if (c.shutdown === true) admin = false; else if (c.shutdown === false) admin = true; else admin = !!par || !(isRouter && (kind === 'gi' || kind === 'fa' || kind === 'se' || kind === 'e')); // router physical ports start shut
-        if (kind === 'vlan' && n && isSwitch && c.shutdown == null && p === 'vlan1') admin = false;
+        if (kind === 'vlan' && isSwitch && c.shutdown == null) admin = false; // SVIs start shut down, like real IOS
         let up = admin && (par ? true : (kind === 'lo' || kind === 'vlan' || kind === 'po' ? true : cabled));
         S.ifaces[n][p] = { name: p, kind, cfg: c, cabled, admin, up, errdisabled: false, parent: par, peer: cabled ? portsOf[n][p].peer : null, peerPort: cabled ? portsOf[n][p].peerPort : null, mode: null, vlan: null, allowed: null, native: 1, trunk: false, bundle: null }; }
       // subinterfaces need the parent up
@@ -66,10 +66,12 @@
 
     // ---- switch port modes, trunks, bundles
     const isSw = n => D[n].kind === 'switch' || D[n].kind === 'l3switch';
-    for (const n in D) if (isSw(n)) for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' || i.kind === 'lo' || i.parent) continue; const c = i.cfg;
+    // a switch port is a Layer 2 switchport unless no switchport made it a routed port
+    const l2 = (n, p) => isSw(n) && !(S.ifaces[n][p] && S.ifaces[n][p].cfg.routed); S.l2port = l2;
+    for (const n in D) if (isSw(n)) for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' || i.kind === 'lo' || i.parent || i.cfg.routed) continue; const c = i.cfg;
       i.mode = c.mode || 'dynamic auto'; i.vlan = c.accessVlan || 1; i.native = c.native || 1; i.allowed = c.allowed; }
     // trunk decision per switch-switch or switch-router link
-    S.links.forEach(L => { if (!isSw(L.a) && !isSw(L.b)) return; const ends = [[L.a, L.ap], [L.b, L.bp]].filter(([n]) => isSw(n));
+    S.links.forEach(L => { if (!l2(L.a, L.ap) && !l2(L.b, L.bp)) return; const ends = [[L.a, L.ap], [L.b, L.bp]].filter(([n, p]) => l2(n, p));
       const modes = ends.map(([n, p]) => S.ifaces[n][p].mode);
       let trunk;
       if (ends.length === 2) { const [m1, m2] = modes; const on = m => m === 'trunk', acc = m => m === 'access', des = m => m === 'dynamic desirable';
@@ -88,7 +90,7 @@
     // ---- STP per VLAN on the switch subgraph
     const switches = Object.keys(D).filter(isSw); const rogueStp = Object.keys(D).filter(n => D[n].kind === 'rogue' && D[n].role === 'stp');
     if (switches.length) { const topo = { defaultMode: net.stpMode || 'rapid-pvst', switches: {} };
-      switches.forEach(n => { const ports = {}; for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' || i.kind === 'lo' || i.parent) continue; if (!i.cabled || !i.up) continue; const L = portsOf[n][p]; if (L.link.bundleMember) continue; if (isSw(i.peer) || rogueStp.includes(i.peer)) ports[p] = { to: i.peer, peer: i.peerPort }; else ports[p] = { host: i.peer, access: !i.trunk }; } topo.switches[n] = { mac: D[n].mac || synthMac(n), ports }; });
+      switches.forEach(n => { const ports = {}; for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' || i.kind === 'lo' || i.parent || i.cfg.routed) continue; if (!i.cabled || !i.up) continue; const L = portsOf[n][p]; if (L.link.bundleMember) continue; if (isSw(i.peer) || rogueStp.includes(i.peer)) ports[p] = { to: i.peer, peer: i.peerPort }; else ports[p] = { host: i.peer, access: !i.trunk }; } topo.switches[n] = { mac: D[n].mac || synthMac(n), ports }; });
       rogueStp.forEach(n => { const ports = {}; for (const p in portsOf[n]) ports[p] = { to: portsOf[n][p].peer, peer: portsOf[n][p].peerPort }; topo.switches[n] = { mac: D[n].mac || '0000.0c9f.f0' + String(Object.keys(topo.switches).length).padStart(2, '0'), rogue: true, fixed: { priority: D[n].priority != null ? D[n].priority : 0, mode: 'pvst', ports: {} }, ports, removed: !!D[n].removed }; });
       S.stpTopo = topo; S.stpVlans = new Set([1]); switches.forEach(n => Object.keys(S.cfg[n].vlans).forEach(v => S.stpVlans.add(+v)));
       S.stpVlans.forEach(v => { try { S.stp[v] = Stp.compute(topo, v, devices); } catch (e) { S.issues.push({ kind: 'stp-error', where: String(e) }); } });
@@ -105,25 +107,30 @@
       if (violations > 0) { if (ps.violation === 'shutdown') { i.errdisabled = true; i.up = false; st.status = 'Secure-shutdown'; } else st.status = 'Secure-up'; }
       S.portsec[n + '|' + p] = st; }
 
+    // ---- SVI autostate: an SVI's line protocol is up only when its VLAN exists and at least one switchport carrying that VLAN is up
+    for (const n in D) if (isSw(n)) for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind !== 'vlan' || !i.admin) continue; const v = +p.replace('vlan', '');
+      const exists = v === 1 || !!S.cfg[n].vlans[v]; const carrier = Object.values(S.ifaces[n]).some(q => q.kind !== 'vlan' && !q.parent && !q.cfg.routed && q.up && q.cabled && (q.trunk ? (!q.allowed || q.allowed.has(v)) : q.vlan === v));
+      i.up = exists && carrier; }
     // ---- L2 segments (union-find over (switch,vlan) nodes, host ports, router ifaces, clouds)
     const uf = UF(); const node = (n, v) => n + '@' + v; const hostNode = n => 'H:' + n; const ifNode = (n, p) => 'I:' + n + '|' + p;
     const blockedIn = (v, n, p) => { const st = S.stp[v] || S.stp[1]; if (!st || !st.switches[n]) return false; const pp = st.switches[n].ports[p]; return !!(pp && (pp.state === 'BLK' || pp.errdisabled)); };
     const carries = (i, v) => i.trunk ? (!i.allowed || i.allowed.has(v)) : i.vlan === v;
     S.links.forEach(L => { const a = S.ifaces[L.a] && S.ifaces[L.a][L.ap], b = S.ifaces[L.b] && S.ifaces[L.b][L.bp]; if (!a || !b || !a.up || !b.up) return; if (L.bundleMember) return;
       const ka = D[L.a].kind, kb = D[L.b].kind;
-      if (isSw(L.a) && isSw(L.b)) { // switch-switch
+      const l3 = (n, p) => D[n].kind === 'router' || D[n].kind === 'l3switch' && !l2(n, p) || (isSw(n) && !l2(n, p));
+      if (l2(L.a, L.ap) && l2(L.b, L.bp)) { // switch-switch
         const vl = new Set([1]); [L.a, L.b].forEach(n => Object.keys(S.cfg[n].vlans).forEach(v => vl.add(+v))); [a, b].forEach(i => { vl.add(i.vlan); vl.add(i.native); });
         vl.forEach(v => { if (blockedIn(v, L.a, L.ap) || blockedIn(v, L.b, L.bp)) return;
           if (a.trunk && b.trunk) { if (carries(a, v) && carries(b, v)) { const va = v === a.native ? a.native : v, vb = v === b.native ? b.native : v; uf.union(node(L.a, v), node(L.b, v)); if (a.native !== b.native && (v === a.native || v === b.native)) { uf.union(node(L.a, a.native), node(L.b, b.native)); } } }
           else if (!a.trunk && !b.trunk) { if (a.vlan === v) uf.union(node(L.a, a.vlan), node(L.b, b.vlan)); }
           else { const t = a.trunk ? a : b, acc = a.trunk ? b : a, tn = a.trunk ? L.a : L.b, an = a.trunk ? L.b : L.a; if (v === t.native) uf.union(node(tn, t.native), node(an, acc.vlan)); } }); }
-      else if (isSw(L.a) || isSw(L.b)) { const sw = isSw(L.a) ? L.a : L.b, swp = isSw(L.a) ? L.ap : L.bp, oth = isSw(L.a) ? L.b : L.a, othp = isSw(L.a) ? L.bp : L.ap; const si = S.ifaces[sw][swp]; const ok = D[oth].kind;
-        if (ok === 'router' || ok === 'l3switch') { // router port and its subinterfaces
+      else if (l2(L.a, L.ap) || l2(L.b, L.bp)) { const sa = l2(L.a, L.ap); const sw = sa ? L.a : L.b, swp = sa ? L.ap : L.bp, oth = sa ? L.b : L.a, othp = sa ? L.bp : L.ap; const si = S.ifaces[sw][swp]; const ok = D[oth].kind;
+        if (ok === 'router' || ok === 'l3switch' || l3(oth, othp)) { // router port and its subinterfaces
           const base = S.ifaces[oth][othp]; if (si.trunk) { uf.union(node(sw, si.native), ifNode(oth, othp)); for (const p in S.ifaces[oth]) { const sub = S.ifaces[oth][p]; if (sub.parent === othp && sub.up && sub.cfg.dot1q != null) { if (!blockedIn(sub.cfg.dot1q, sw, swp) && carries(si, sub.cfg.dot1q)) uf.union(node(sw, sub.cfg.dot1q === si.native ? si.native : sub.cfg.dot1q), ifNode(oth, p)); } } }
           else { if (!blockedIn(si.vlan, sw, swp)) uf.union(node(sw, si.vlan), ifNode(oth, othp)); } }
         else { const v = si.trunk ? si.native : (D[oth].voice && si.cfg.voiceVlan ? si.cfg.voiceVlan : si.vlan); if (!blockedIn(v, sw, swp)) uf.union(node(sw, v), hostNode(oth)); } } // an IP phone (host with voice: true) tags into the port's voice VLAN when it has one
       else { // no switch: point to point
-        const na = (ka === 'router' || ka === 'l3switch') ? ifNode(L.a, L.ap) : hostNode(L.a), nb = (kb === 'router' || kb === 'l3switch') ? ifNode(L.b, L.bp) : hostNode(L.b); uf.union(na, nb); } });
+        const na = (ka === 'router' || ka === 'l3switch' || l3(L.a, L.ap)) ? ifNode(L.a, L.ap) : hostNode(L.a), nb = (kb === 'router' || kb === 'l3switch' || l3(L.b, L.bp)) ? ifNode(L.b, L.bp) : hostNode(L.b); uf.union(na, nb); } });
     // SVIs join their VLAN node
     for (const n of switches) for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' && i.up && i.cfg.ip) { const v = +p.replace('vlan', ''); uf.union(node(n, v), ifNode(n, p)); } }
     S.uf = uf; S.node = node; S.hostNode = hostNode; S.ifNode = ifNode;
@@ -132,7 +139,7 @@
     // ---- L3 interfaces and owners per segment
     const addOwner = (seg, o) => (S.owners[seg] = S.owners[seg] || []).push(o);
     for (const n in D) { const d = D[n];
-      if (d.kind === 'router' || d.kind === 'l3switch' || d.kind === 'switch') { for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (!i.cfg.ip || !i.up) continue; if (d.kind === 'switch' && i.kind !== 'vlan') continue; const seg = segId(ifNode(n, p)); const o = { dev: n, iface: p, ip: i.cfg.ip, mask: i.cfg.mask, seg, kind: 'iface', mac: synthMac(n + p) }; S.l3.push(o); addOwner(seg, o); i.cfg.secondary.forEach(sc => addOwner(seg, { dev: n, iface: p, ip: sc.ip, mask: sc.mask, seg, kind: 'iface' })); } }
+      if (d.kind === 'router' || d.kind === 'l3switch' || d.kind === 'switch') { for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (!i.cfg.ip || !i.up) continue; if (d.kind === 'switch' && i.kind !== 'vlan' && !i.cfg.routed) continue; const seg = segId(ifNode(n, p)); const o = { dev: n, iface: p, ip: i.cfg.ip, mask: i.cfg.mask, seg, kind: 'iface', mac: synthMac(n + p) }; S.l3.push(o); addOwner(seg, o); i.cfg.secondary.forEach(sc => addOwner(seg, { dev: n, iface: p, ip: sc.ip, mask: sc.mask, seg, kind: 'iface' })); } }
       if (d.kind === 'cloud') { const seg = segId(hostNode(n)); const o = { dev: n, iface: 'eth0', ip: d.ip, mask: d.mask || '255.255.255.252', seg, kind: 'cloud', internet: !!d.internet, serves: d.serves || [] }; S.l3.push(o); addOwner(seg, o); S.hosts[n] = { ip: d.ip, mask: o.mask, gw: null, seg, kind: 'cloud', up: true }; }
     }
     S.routers = Object.keys(D).filter(n => D[n].kind === 'router' || D[n].kind === 'l3switch' || (D[n].kind === 'switch' && S.cfg[n].ipRouting));
@@ -391,6 +398,7 @@
       // is it for me?
       const mine = S.l3.find(o => o.dev === r && o.kind === 'iface' && o.ip === pkt.dst) || Object.values(S.hsrp).find(g => g.vip === pkt.dst && g.active.dev === r);
       if (mine) { path.push({ dev: r, act: 'deliver (local)' }); return { ok: true, at: { kind: 'router', dev: r, inIf: null }, dstDev: r, dstIp: pkt.dst, hops, srcSeen }; }
+      if (cur.inIf && (D[r].kind === 'switch' || D[r].kind === 'l3switch') && !S.routers.includes(r)) { path.push({ dev: r, act: 'not routing' }); return { ok: false, reason: r + ' does not route between its interfaces (no ip routing)', hops }; } // a switch only routes with ip routing
       const rt = lookup(S, r, pkt.dst); if (!rt) { path.push({ dev: r, act: 'no route to ' + pkt.dst }); return { ok: false, reason: r + ' has no route to ' + pkt.dst, hops }; }
       const outIf = rt.iface; const oi = S.ifaces[r][outIf]; if (!oi || !oi.up) return { ok: false, reason: r + ' egress ' + short(outIf) + ' is down', hops };
       // NAT outbound

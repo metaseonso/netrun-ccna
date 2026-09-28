@@ -53,6 +53,8 @@
         else if ((m = s.match(/^banner motd (.*)$/))) cfg.banner = m[1];
         else if ((m = s.match(/^ip default-gateway (\S+)$/))) cfg.defaultGateway = m[1];
         else if (s === 'ip routing') cfg.ipRouting = true;
+        else if (s === 'no ip routing') cfg.ipRouting = false;
+        else if ((m = s.match(/^default interface (\S+)$/))) { const nm = (window.Sim && Sim.canonIf(m[1])) || m[1]; delete cfg.interfaces[nm]; } // back to factory settings; later lines apply again
         else if (s === 'ipv6 unicast-routing') cfg.ipv6Routing = true;
         else if ((m = s.match(/^vlan ([\d,\-]+)$/))) m[1].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let i = a; i <= (b || a); i++) cfg.vlans[i] = cfg.vlans[i] || { id: i, name: 'VLAN' + String(i).padStart(4, '0') }; });
         else if ((m = s.match(/^ip route (\S+) (\S+) (\S+)(?: (\S+))?(?: (\d+))?$/))) { // next hop, exit interface, or exit interface then next hop; an AD may follow
@@ -124,6 +126,7 @@
           if ((m = s.match(/^ip address (\S+) (\S+)( secondary)?$/))) { if (m[3]) i.secondary.push({ ip: m[1], mask: m[2] }); else { i.ip = m[1]; i.mask = m[2]; } }
           else if (s === 'no ip address') { i.ip = null; i.mask = null; }
           else if (s === 'shutdown') i.shutdown = true; else if (s === 'no shutdown') i.shutdown = false;
+          else if (s === 'no switchport') i.routed = true; else if (s === 'switchport') i.routed = false; // a routed port on a multilayer switch
           else if ((m = s.match(/^description (.*)$/))) { i.desc = m[1]; i.descShown = r.raw ? r.raw.replace(/^\s*\S+\s+/, '') : m[1]; } // checks compare lower case; the shell shows it as typed
           else if ((m = s.match(/^switchport mode (access|trunk|dynamic (?:auto|desirable))$/))) i.mode = m[1];
           else if ((m = s.match(/^switchport access vlan (\d+)$/))) i.accessVlan = +m[1];
