@@ -59,8 +59,8 @@ window.GLOSSARY = {
   'native vlan': 'The VLAN whose frames cross a trunk untagged; untagged frames received on a trunk are put in it. VLAN 1 by default. Must match on both ends; best changed to an unused VLAN.',
   'router on a stick': 'Inter-VLAN routing over one router interface: the switch port is a trunk and the router has one subinterface per VLAN (encapsulation dot1q N, plus an IP address).',
   'svi': 'Switch virtual interface (interface vlan N): a virtual interface for a VLAN that can take an IP address, used as that VLAN\'s gateway on a multilayer switch. Starts shut down; up only when its VLAN exists and has a live port.',
-  'dtp': 'Dynamic Trunking Protocol. Cisco ports negotiating trunk vs access by themselves. Turn it off: "switchport nonegotiate".',
-  'vtp': 'VLAN Trunking Protocol. One switch pushes its VLAN list to others. Powerful, dangerous, usually left transparent or off.',
+  'dtp': 'Dynamic Trunking Protocol (Cisco): lets switch ports negotiate trunking. dynamic desirable asks, dynamic auto only answers; auto + auto stays access. Disable with switchport mode access or switchport nonegotiate.',
+  'vtp': 'VLAN Trunking Protocol (Cisco): shares the VLAN database between switches in one VTP domain over trunks. Versions 1, 2 and 3; default version 1, server mode. The highest revision in the domain wins.',
   'etherchannel': 'Bundle several links into one logical link. More bandwidth, no STP blocking. LACP (open) or PAgP (Cisco).',
   'forward delay': 'STP timer, 15 seconds by default. A port spends one Forward Delay in Listening and another in Learning before it forwards. Set by the root bridge for the whole tree.',
   'hello': 'STP Hello timer, 2 seconds by default. How often the root bridge sends a BPDU. Other switches relay it out their designated ports.',
@@ -231,5 +231,9 @@ window.GLOSSARY = {
   'oid': 'Object ID. The dotted number that names one variable in an SNMP MIB, such as a port\'s input counter.',
   'fqdn': 'Fully Qualified Domain Name: a host\'s name with its domain, hostname.domainname (R1.watson.net). crypto key generate rsa names the RSA key pair after it.',
   'multilayer switch': 'A Layer 3 switch: switches frames inside VLANs and routes packets between them in hardware, using SVIs and routed ports. Needs ip routing.',
-  'routed port': 'A switch port made into a Layer 3 interface with no switchport: it leaves all VLANs, does not trunk or run spanning tree, and takes an IP address like a router interface.'
+  'routed port': 'A switch port made into a Layer 3 interface with no switchport: it leaves all VLANs, does not trunk or run spanning tree, and takes an IP address like a router interface.',
+  'vtp server': 'VTP mode that can create, change and delete VLANs, advertises them, and syncs to a higher revision. Keeps its VLANs in NVRAM. The default mode.',
+  'vtp client': 'VTP mode that cannot create, change or delete VLANs; it copies the database of the highest revision in its domain. In versions 1 and 2 it does not keep VLANs in NVRAM.',
+  'vtp transparent': 'VTP mode that keeps its own VLAN database, can change it locally, does not sync to others, and forwards their advertisements. Its revision is always 0.',
+  'revision number': 'VTP\'s change counter: a server raises it on every VLAN change. Switches in a domain sync to the highest revision. Reset it to 0 by changing the domain or setting transparent mode.'
 };

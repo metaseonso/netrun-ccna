@@ -250,6 +250,48 @@
           yes: 'Vee Lan: "Both. SVIs start shut, and the switch won\'t route until it\'s told to."', no: 'Vee Lan: "SVIs start shut down, and a switch won\'t route between them without ip routing."',
           why: 'Vee Lan: An SVI is administratively down until no shutdown is entered on it. Even with the SVIs up, a multilayer switch only routes between them after ip routing is enabled in global configuration. Without it, the SVIs are just management addresses.' } }
       ] },
+    // ------------------------------------------------------------ night 19 · DTP and VTP (and Vesper's first test)
+    { id: 'n19-the-spare-switch', title: 'The spare switch', sub: 'DTP and VTP', npc: 'veelan', day: [19], src: [PS('VLAN_Part3.md'), PS('DTP_VTP.md')], unlocks: ['dtp-vtp'],
+      beats: [
+        { k: 'SCENE', where: 'The Kabuki market · the stall hall · Friday, eight in the evening',
+          lines: [
+            { who: 'narr', text: 'The stall hall at the Friday rush is loud with sizzling pans and shouted orders, and hot enough that the steam from the dumpling baskets hangs under the lights. Every till in the row has gone dark. Traders are taking cash and writing prices on their palms. In the service corridor, on the shelf beside the hall switch, sits a small grey switch that you have never seen before, cabled into the hall switch\'s spare port, its lights blinking green.' },
+            { who: 'veelan', text: 'Every VLAN on this floor is gone. Office, stalls, cameras, all of it, on both switches, in the same second. The ports that were in them are inactive, and the only thing left is VLAN 1.' },
+            { who: 'veelan', text: 'That\'s [[VTP]], the VLAN trunking protocol. Our switches share one VTP domain, MARKET. The hall switch is the [[VTP server]]: I make a VLAN on it and it tells the others over the trunks. The office switch is a [[VTP client]]: it can\'t make VLANs of its own and copies whatever the server says.' },
+            { who: 'veelan', text: 'Every change on a server raises its [[revision number]]. When two switches in the same domain disagree, the one with the higher revision wins, and everyone copies it. That little grey box came from someone\'s lab with the domain name MARKET and a revision of fifty-seven, and an empty VLAN list. Ours was nine.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Is there a mode that doesn\'t copy anyone?', reply: 'Vee Lan: "[[VTP transparent]]. A transparent switch keeps its own VLANs, lets you add and delete them locally, and passes other switches\' adverts along without taking them. Its revision stays at zero. Servers and transparent switches keep their VLANs in NVRAM. A client on version 1 or 2 doesn\'t, and learns them again after a reboot."' },
+            { tone: 'press', say: 'How do you make a spare switch safe before you plug it in?', reply: 'Vee Lan: "Knock its revision back to zero. Change its domain to a name nobody uses, or set it to transparent, and the revision resets. Then it can\'t win anything. Whoever plugged this one in either didn\'t know that or knew it very well."' },
+            { tone: 'quiet', say: '(Put your hand on the grey switch. It is warm.)', reply: 'It has been running for a while. The asset tag on its side has been scraped off with something sharp, and the only marking left is a strip of label tape that reads TEST-03.' }
+          ] } },
+        { k: 'SCENE', where: 'The service corridor · the hall switch',
+          lines: [
+            { who: 'veelan', text: 'VTP only travels over trunks, and that spare port was never meant to be one. It was left at the default, dynamic auto. The grey box was set to [[DTP]], the dynamic trunking protocol, in dynamic desirable mode, so it asked to trunk, and our port said yes.' },
+            { who: 'veelan', text: 'Desirable asks, auto only answers. Desirable and auto make a trunk, desirable and desirable make a trunk, and auto and auto both wait for the other and stay access. A port set to trunk trunks with anything dynamic, and a port set to access never trunks at all.' },
+            { who: 'veelan', text: 'So every port that isn\'t a trunk gets switchport mode access. Every trunk gets switchport mode trunk and switchport nonegotiate, which stops it sending DTP at all.' },
+            { who: 'narr', text: 'Footsteps in the corridor, unhurried, over the noise from the hall. A woman in a charcoal coat stops at the end of it, silver bob, a thin silver pin on her lapel. You last saw her paying for your noodles at the Seven Bowls.' },
+            { who: 'vesper', text: 'Vesper Kade. I look after Halvorsen Consolidated\'s interests in Watson. I heard the market\'s tills were down on a Friday, and I wanted to see for myself how long it takes the street to fix its own network. A managed service would have had them back in minutes.' },
+            { who: 'veelan', text: 'Old Root had an apprentice who talked like that, before she left the street.' },
+            { who: 'vesper', text: 'Good evening, Vee.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Why would Halvorsen care about a market\'s tills?', reply: 'Vesper: "Because the council votes on the Watson Exchange on Opening Night, and every outage on this street is a reason to vote for a network that doesn\'t have them." She looks at the grey switch without touching it. "Somebody should find out whose that is."' },
+            { tone: 'press', say: 'You got here very quickly.', reply: 'Vesper: "I was two stalls down, buying dumplings." She holds up a paper bag as if it answers the question, and nobody in the corridor says anything else.' },
+            { tone: 'care', say: 'Vee, do you want me to deal with her?', reply: 'Vee Lan doesn\'t look away from the rack. "Deal with the VLANs. She can watch, if she likes watching." Vesper smiles as though that was the answer she wanted.' }
+          ] } },
+        { k: 'LORE', title: 'THE COFFEE POT ON THE NETWORK', year: 1991, vibe: 'Excellent! Somebody plugged in a camera, and the whole lab could see the coffee pot.',
+          text: 'Vee Lan, after Vesper has gone: "In 1991 at the Cambridge University computer lab, somebody pointed a camera at the coffee pot in the Trojan Room and put the picture on the network, so nobody walked up three flights to an empty pot. It was a joke that ran for ten years. I think about that pot every time I find a box on a shelf that nobody here plugged in."' },
+        { k: 'KIT', text: 'Vee Lan writes on the scraped side of the grey switch.', kit: [
+          { cmd: 'VTP server: creates VLANs, advertises · client: copies, cannot create · transparent: keeps its own, forwards adverts, revision 0', what: 'default: server, version 1. Version 3 carries VLANs 1006–4094' },
+          { cmd: 'higher revision in the same domain wins', what: 'reset a spare to 0: new domain name, or transparent' },
+          { cmd: 'show vtp status', what: 'domain, mode, revision, VLAN count' },
+          { cmd: 'desirable + auto or desirable = trunk · auto + auto = access · trunk + dynamic = trunk · anything + access = access', what: 'DTP. Newer switches default to dynamic auto' },
+          { cmd: 'switchport mode access · switchport mode trunk + switchport nonegotiate', what: 'turn DTP off. DTP frames ride the native VLAN (802.1Q)' } ] },
+        { k: 'SYNC', q: { prompt: 'Mac, staring at the grey box: "Our port was dynamic auto. If the spare had been dynamic auto too, what would have happened?"', opts: ['Nothing. Two auto ports stay access, so no trunk and no VTP', 'The same wipe', 'A trunk, because auto always trunks with auto', 'The ports would go err-disabled'], a: 0,
+          yes: 'Vee Lan: "Nothing. Two ports waiting for the other to ask."', no: 'Vee Lan: "Auto only answers, it never asks. Two of them stay access, and VTP only crosses trunks."',
+          why: 'Vee Lan: Dynamic auto never starts DTP negotiation; it only accepts an offer. Two dynamic auto ports both wait and the link stays an access link. VTP advertisements only travel over trunks, so the spare switch could not have overwritten the VLANs.' } }
+      ] },
     // ------------------------------------------------------------ night 36 · CDP and LLDP
     { id: 'n36-next-door', title: 'Everyone next door', sub: 'CDP and LLDP', npc: 'mac', day: [36], src: [PS('CDP_and_LLDP.md')], unlocks: ['cdp-lldp'],
       beats: [
