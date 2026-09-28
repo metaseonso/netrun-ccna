@@ -8,9 +8,9 @@
   const LEVEL_AT = [0, 1, 3, 6];
   const P = () => window.PLATFORM || {};
 
-  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null, owner: null, codex: {}, completedAt: null, license: null });
+  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0, owed: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null, owner: null, codex: {}, completedAt: null, license: null });
   // fill in keys added since a record was written (same VERSION only; older records are dropped in load())
-  function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); out.body = Object.assign({ food: 100, chrome: 100, tab: 0 }, out.body || {}); out.meta = Object.assign({ deaths: 0, syncs: 0, lastSync: 0 }, out.meta || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
+  function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); out.body = Object.assign({ food: 100, chrome: 100, tab: 0, owed: 0 }, out.body || {}); out.meta = Object.assign({ deaths: 0, syncs: 0, lastSync: 0 }, out.meta || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
   const usable = s => !!s && (s.v || 0) >= VERSION;
   let state = fresh();
   function load(h){ const s = Storage.local.loadSync(h); if (s && !usable(s)) { Storage.local.remove(h); console.info('record from an earlier build dropped:', h); } return usable(s) ? migrate(s) : Object.assign(fresh(), { handle: h }); }
@@ -169,13 +169,14 @@
       run.result = { rep: 0, creds: 0, hintedCount, fails, ms, leveled: [], promoted: null, repeat: !!prev, recruit: null, outsourced: true }; return { ok: true, finished: true, result: run.result }; }
     let rep = repOf(job); if (prev) rep = Math.round(rep * 0.4); rep = Math.max(Math.round(repOf(job) * 0.2), Math.round(rep * Math.max(0.3, 1 - 0.1 * hintedCount)));
     const creds = Math.round(pay(job) * (prev ? 0.4 : 1)); addCreds(creds, 'gig ' + job.id);
+    const settled = Math.min(state.body.owed || 0, creds); if (settled) { addCreds(-settled, 'marrow tab'); state.body.owed -= settled; log('Marrow took ' + settled + ' creds off the tab'); } if (!state.body.owed) state.body.tab = 0;
     const before = classFor(state.rep).id; state.jobsDone[job.id] = { times: (prev ? prev.times : 0) + 1, last: Date.now(), best: Math.max(prev ? prev.best : 0, run.done.filter(d => d.clean).length), bestMs: Math.min(prev && prev.bestMs || Infinity, ms) };
     if (job.id === window.FINALE && !state.completedAt) { state.completedAt = Date.now(); log('Opening Night. The Watson Exchange held.'); ev('complete', { job: job.id }); }
     const promoted = addRep(rep, 'gig ' + job.id, before); // a rite clears the gate, so the class is re-read after the gig is on the books
     const leveled = run.done.filter(d => d.leveled).map(d => d.leveled); ev('job_finish', { job: job.id, ms, fails, hints: hintedCount, rep });
     log('Gig done: ' + job.title + ' (+' + rep + ' rep, ' + Math.round(ms / 1000) + 's' + (hintedCount ? ', ' + hintedCount + ' hinted' : ', clean') + (fails ? ', ' + fails + ' failed attempts' : '') + ')');
     let recruit = null; if (!state.roster.list.length) { recruit = Protege.recruit(state.roster, 'first gig'); log(Protege.fill((PROTEGE_LINES.recruit || [])[1] || '{name} joined your crew.', recruit)); }
-    sync('gig · ' + job.title); run.result = { rep, creds, hintedCount, fails, ms, leveled, promoted, repeat: !!prev, recruit }; return { ok: true, finished: true, result: run.result }; }
+    sync('gig · ' + job.title); run.result = { rep, creds, settled, hintedCount, fails, ms, leveled, promoted, repeat: !!prev, recruit }; return { ok: true, finished: true, result: run.result }; }
   // ---- the fixer: a subcontractor who sells the whole gig's notes for the gig's pay ---------------
   // the run that hires one pays nothing, greenlights nothing and sharpens nothing. the notes stay in the codex for good,
   // readable in that dive only through the fixer's button, and after it only outside a dive. rites are watched: no fixers.
@@ -206,9 +207,12 @@
   const shop = {
     items(){ return window.SHOP || []; },
     price(item){ return Math.round(item.price * (1 + 0.5 * classRank(classFor(state.rep).id))); },
+    // Marrow's tab: a broke runner who is low gets food (hunger 30 or under) or the patch (chrome 30 or under) on credit, up to
+    // 2 + classRank items at once. The next pay settles it, and the tab opens again, so nobody is ever stuck outside a dive.
+    onTab(it){ const low = (it.kind === 'food' && state.body.food <= 30) || (it.kind === 'service' && (it.effect.chrome || 100) < 100 && state.body.chrome <= 30); return low && state.creds < shop.price(it) && state.body.tab < 2 + classRank(classFor(state.rep).id); },
     owned(id){ const it = shop.items().find(x => x.id === id); if (!it) return 0; if (it.kind === 'bd') return state.bd.includes(id) ? 1 : 0; if (it.kind === 'skin') return state.perks.skins.includes(id) ? 1 : 0; return state.inventory[id] || 0; },
     buy(id){ const it = shop.items().find(x => x.id === id); if (!it) return { ok: false, why: 'no such item' }; let price = shop.price(it); if ((it.kind === 'bd' || it.kind === 'skin') && shop.owned(id)) return { ok: false, why: 'you already have it' }; if (it.kind === 'service' && state.body.chrome >= body.max) return { ok: false, why: 'nothing to fix. the ripperdoc sends you home.' };
-      let onTheHouse = false; if (state.creds < price) { if (it.kind === 'food' && state.body.food <= 30 && state.body.tab < classRank(classFor(state.rep).id) + 1) { onTheHouse = true; price = 0; state.body.tab++; } else return { ok: false, why: 'not enough creds. ' + (price - state.creds) + ' short.' }; }
+      let onTheHouse = false; if (state.creds < price) { if (shop.onTab(it)) { onTheHouse = true; state.body.tab++; state.body.owed = (state.body.owed || 0) + price; price = 0; } else return { ok: false, why: 'not enough creds. ' + (price - state.creds) + ' short.' }; }
       if (price) addCreds(-price, 'bought ' + it.id); if (it.kind === 'gift' || it.kind === 'food' || it.kind === 'perk') state.inventory[id] = (state.inventory[id] || 0) + 1; if (it.kind === 'service') state.body.chrome = Math.min(body.max, state.body.chrome + (it.effect.chrome || body.max)); if (it.kind === 'bd') state.bd.push(id); if (it.kind === 'skin') { state.perks.skins.push(id); state.perks.theme = it.effect.theme; }
       ev('buy', { item: id, price, tab: onTheHouse }); log((onTheHouse ? 'Marrow put it on the tab: ' : 'Bought ') + it.name + (onTheHouse ? '' : ' from Marrow (' + price + ' creds)')); save(); return { ok: true, item: it, price, onTheHouse }; },
     give(itemId, protegeId){ const it = shop.items().find(x => x.id === itemId); const p = state.roster.list.find(x => x.id === protegeId); if (!it || !p || !(state.inventory[itemId] > 0) || p.status !== 'active') return { ok: false }; state.inventory[itemId]--; const line = Protege.give(p, it); ev('gift', { item: itemId, protege: protegeId }); log('Gave ' + it.name + ' to ' + p.name); state.dmLog.unshift({ t: Date.now(), protege: p.id, name: p.name, letter: true, text: line }); save(); return { ok: true, line }; },

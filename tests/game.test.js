@@ -61,6 +61,14 @@ module.exports.run = function({ out }){
     Game.state.body.chrome = 10; Game.shop.buy('tuneup'); ok(Game.state.body.chrome === 100, 'stall: the tune-up fills chrome to 100');
     const riteD = JOBS.find(j => j.rite && j.cls === 'D'); if (riteD) { Game.state.rep = CLASSES[1].min; Game.state.jobsDone = { [riteD.id]: 1 };
       ok(Game.shop.price(tune) === Math.round(tune.price * 1.5), 'stall: class C pays one and a half times (' + Game.shop.price(tune) + ')'); }
+    // Marrow's tab: broke and low, the patch goes on credit; the next pay settles it and the tab opens again
+    Game.state.rep = 0; Game.state.jobsDone = {}; Game.state.creds = 0; Game.state.body.chrome = 20; Game.state.body.tab = 0; Game.state.body.owed = 0;
+    r = Game.shop.buy('patch'); ok(r.ok && r.onTheHouse && Game.state.body.chrome === 55 && Game.state.body.owed === patch.price, 'tab: a broke runner at 20 chrome gets the patch on the tab (' + JSON.stringify(r) + ')');
+    Game.state.body.chrome = 50; r = Game.shop.buy('patch'); ok(!r.ok, 'tab: no credit above 30 chrome');
+    Game.state.body.food = 10; r = Game.shop.buy('protein'); ok(r.ok && r.onTheHouse && Game.state.body.tab === 2, 'tab: food goes on it too (' + Game.state.body.tab + ')');
+    Game.state.body.chrome = 20; r = Game.shop.buy('patch'); ok(!r.ok, 'tab: class D holds two items at once');
+    Game.state.body.food = 100; Game.state.body.chrome = 100; const owed = Game.state.body.owed; const g = JOBS.find(j => j.solution && !j.rite && j.cls === 'D');
+    Game.startJob(g.id); const res = Game.finishJob().result; const cut = Math.min(owed, res.creds); ok(res.settled === cut && Game.state.body.owed === owed - cut && Game.state.body.tab === (owed > cut ? 2 : 0) && Game.state.creds === res.creds - cut, 'tab: the next pay settles it (' + JSON.stringify({ settled: res.settled, owed: Game.state.body.owed, creds: Game.state.creds }) + ')');
     Object.assign(Game.state, keep);
   }
   return { pass, fails };

@@ -93,5 +93,6 @@ Days with a ✅ are built. Everything else: write the level(s), import the deck,
 - Extend protégé lines and add a few recurring named protégés with arcs (optional, after the campaign).
 - Sign-in: code complete. **Your first message to the owner walks them through `docs/AUTH_PLAN.md` live** until SIGN IN WITH GOOGLE works on the live site.
 - Before Day 22: the HUD and menu clarity pass (icons for every nav item, three bands, meters readable on a phone). See `docs/HANDOFF.md`, first hour, step 4.
-- Survival tuning after three classes are written: gig `food` / `chrome` costs, stall prices, Marrow's tab.
+- Survival tuning: done 2026-09-28 (stall prices × (1 + 0.5 × classRank), Marrow's patch, a repayable tab). Re-run the
+  simulation if gig pay or costs change.
 - Arcs 00, 02–04 stay locked. The engine is arc-agnostic; a new arc is a new set of stage files with `arc: 'ice'` etc.
