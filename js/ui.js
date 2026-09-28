@@ -176,12 +176,12 @@
   function diffGate(){ return '<div class="panel diffpick"><h3>DIFFICULTY</h3>' + diffCards(DIFFICULTY_ORDER) +
     '<p class="muted">Pick one to start. It can be lowered later from the account menu. It can\'t be raised.</p></div>'; }
   function diffChip(){ const s = Game.state; if (!s.diffPicked) return ''; const d = DIFFICULTY[s.difficulty];
-    return '<span class="diffchip ' + s.difficulty + '"' + tipAttr('Difficulty: ' + d.name + '. ' + (DIFFICULTY_ORDER.indexOf(s.difficulty) > 0 ? 'Lower it from the account menu, top right. Once lowered, it can\'t be raised, and the license shows the lower difficulty.' : 'This is the lowest difficulty.')) + '>' + stars(s.difficulty) + icon('help', 'sm') + '</span>'; }
+    return '<span class="diffchip ' + s.difficulty + '"' + tipAttr('Difficulty: ' + d.name + '. ' + (DIFFICULTY_ORDER.indexOf(s.difficulty) > 0 ? 'Lowering difficulty is available in the account drop-down, top right.' : 'This is the lowest difficulty.')) + '>' + stars(s.difficulty) + icon('help', 'sm') + '</span>'; }
   function lowerModal(){ const s = Game.state; if (!cur.lowerOpen || !s.diffPicked) return ''; const lower = DIFFICULTY_ORDER.slice(0, DIFFICULTY_ORDER.indexOf(s.difficulty));
-    return '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ldh"><h3 id="ldh">' + icon('warn') + 'LOWER DIFFICULTY</h3>' +
-      '<ul class="warns"><li>' + icon('warn') + '<span>This can\'t be undone. Difficulty can\'t be raised again.</span></li>' +
-      '<li>' + icon('warn') + '<span>The ' + DIFFICULTY[s.difficulty].name + ' license is no longer available. The license shows the difficulty you finish on.</span></li></ul>' +
-      diffCards(lower) + '<div class="row"><button class="btn ghost" id="lowerno">KEEP ' + DIFFICULTY[s.difficulty].name + '</button></div></div></div>'; }
+    return '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ldh"><h3 id="ldh">' + icon('warn') + 'ARE YOU SURE?</h3>' +
+      '<ul class="warns"><li>' + icon('warn') + '<span>If you go down, you can\'t go back up.</span></li>' +
+      '<li>' + icon('warn') + '<span>You no longer qualify for the ' + DIFFICULTY[s.difficulty].name + ' netrunner license on completion.</span></li></ul>' +
+      diffCards(lower) + '<div class="row"><button class="btn ghost" id="lowerno">NO, KEEP ' + DIFFICULTY[s.difficulty].name + '</button></div></div></div>'; }
   function home(){ const s = Game.state, dm = Game.dm.pending(), here = hereStage(); if (!cur.stage) cur.stage = here.id; const sel = STAGES.find(x => x.id === cur.stage) || here;
     const pos = STAGES.map((stg, i) => mapPos(i, STAGES.length)); const st = STAGES.map(stageState); const lit = STAGES.reduce((a, stg) => a + stg.levels.filter(l => s.read[l.id]).length, 0), all = STAGES.reduce((a, stg) => a + stg.levels.length, 0);
     const alerts = (dm ? '<div class="alert m">' + icon('call') + '<span>A call is waiting from <b>' + esc(dm.open.split(':')[0]) + '</b>.</span><button class="btn mag" data-v="crew">PICK UP</button></div>' : '') +
