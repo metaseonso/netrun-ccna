@@ -134,6 +134,50 @@
         { k: 'SYNC', q: { prompt: 'Dora, testing herself out loud: "Two of the four come from the client. Which two?"', opts: ['Offer and Ack', 'Discover and Request', 'Discover and Ack', 'Request and Offer'], a: 1,
           yes: 'Dora: "Discover and Request. The client asks twice, the server answers twice."', no: 'Denise: "Discover and Request. The server sends the Offer and the Ack."',
           why: 'Denise: The client sends Discover, looking for any server, and Request, taking one offer. The server sends Offer, proposing an address, and Ack, confirming it. Discover and Request are broadcasts; Offer and Ack can be broadcast or unicast.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 40 · SNMP
+    { id: 'n40-every-box', title: 'Every box at once', sub: 'SNMP', npc: 'denise', day: [40], src: [PS('SNMP.md')], unlocks: ['snmp'],
+      beats: [
+        { k: 'SCENE', where: 'The exchange hall · the switchboard room · one in the morning',
+          lines: [
+            { who: 'narr', text: 'Cold air falls from a vent above the desk, and a server fan whines somewhere under it. Denise has a fourth screen tonight, bolted to the switchboard with two brackets and a lot of tape. It shows a map of the district in green dots, one for every router and switch, each with a tiny graph beside it that ticks along like a heartbeat.' },
+            { who: 'denise', text: 'This is how I watch every box at once without logging into any of them. The program on this screen is the manager, and the machine it runs on is the [[NMS]], the network management station. Every box on the map runs an agent that answers it. That\'s [[SNMP]], the Simple Network Management Protocol.' },
+            { who: 'denise', text: 'Each agent keeps its numbers in a [[MIB]], a management information base: CPU, memory, every port\'s counters, the hostname, the uptime. Every one of those variables has an [[OID]], an object identifier, a long dotted number that says exactly which value you mean.' },
+            { who: 'you', text: 'So the NMS asks, and the box answers?' },
+            { who: 'denise', text: 'Mostly. The manager sends Get for one or more values, GetNext to walk to the next one, and GetBulk to take a whole run of them at once, which is GetNext done efficiently. The agent answers every one of those with a Response. And the manager can send Set, which changes a value on the box.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Does the box ever speak first?', reply: 'Denise: "When something happens, a port going down, a fan dying, it sends a notification without being asked. A Trap is sent and forgotten. An Inform has to be acknowledged by the manager, so the box knows it arrived. The agents listen on UDP port 161, and the manager listens for notifications on UDP port 162."' },
+            { tone: 'press', say: 'Set can change the box? From here?', reply: 'Denise: "With the right community string, yes. A community is a password that comes in two kinds: ro, read-only, and rw, read-write. An rw community is as good as the enable secret, and in version 2c it crosses the wire in plain text."' },
+            { tone: 'care', say: 'You built this map yourself?', reply: 'Denise: "Over six years, one dot at a time. Every dot is somebody who called me at three in the morning because the box was down and nobody had noticed. Now I notice first."' }
+          ] } },
+        { k: 'SCENE', where: 'The switchboard room · the clinic router\'s dot', real: ['ietf'],
+          lines: [
+            { who: 'denise', text: 'Three versions matter. v1 was first. v2c is the one everyone runs, with GetBulk and Informs added and still only a community string for a password. v3 adds real authentication and encryption, and it\'s the only one I\'d call secure.' },
+            { who: 'narr', text: 'She clicks the clinic router\'s dot. A window opens with its details. Under communities there are two lines: nightwatch, read-only, which is hers, and one more, read-write, called rootcellar.' },
+            { who: 'denise', text: 'Rootcellar. Old Root used that string on the clinic\'s first routers, twenty years ago, back when his own apprentices were running the cables. It was never supposed to leave the clinic. My backup from August doesn\'t have it on this router, or on the market\'s.' },
+            { who: 'narr', text: 'Ace is in the doorway with Sticky. She reads the window over Denise\'s shoulder and says nothing at all. Then she turns her clipboard face down on the desk.' },
+            { who: 'denise', text: 'Somebody who knew that string could have changed the gate\'s list at dawn without ever opening a shell. With Set.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How do we shut it?', reply: 'Denise: "no snmp-server community rootcellar on every box it\'s on. Then a read-only community with an access list, snmp-server community nightwatch ro 40, so only my NMS may ask at all. The notifications go to snmp-server host, and snmp-server enable traps turns them on."' },
+            { tone: 'press', say: 'Ace, who else knew that string?', reply: 'Ace turns the clipboard over again, looks at it, and turns it back. "Old Root. The people he trained. Some of them are dead and some of them left." She goes back out to the hall without another word, and Sticky follows her.' },
+            { tone: 'quiet', say: '(Look at the other dots.)', reply: 'The map is all green. The market router\'s window shows the same second community, rootcellar, read-write. The gate router\'s shows only nightwatch; Denise fixed that one herself an hour before you came in.' }
+          ] } },
+        { k: 'LORE', title: 'THE STOPGAP THAT STAYED', year: 1988, real: ['ietf'], vibe: 'Most excellent. One screen watching every box on the net.',
+          text: 'Denise, closing the window: "In August 1988 Jeffrey Case, Mark Fedor, Martin Schoffstall and James Davin published the Simple Network Management Protocol as RFC 1067. The IETF meant it as a short-term fix while a much bigger management system, from the OSI people, was finished. Nearly everyone kept the short-term fix. It\'s still the thing that tells me which box to worry about first."' },
+        { k: 'KIT', text: 'Denise sticks a note to the bottom of the fourth screen.', kit: [
+          { cmd: 'NMS (manager) · managed devices (agent) · MIB · OID', what: 'who asks, who answers, where the values live, the name of each value' },
+          { cmd: 'Get · GetNext · GetBulk · Set · Response · Trap · Inform', what: 'read, read, read · write · response · notification (unacknowledged) · notification (acknowledged)' },
+          { cmd: 'agent UDP 161 · manager UDP 162 · v1 · v2c · v3', what: 'v2c is common, communities in plain text; v3 authenticates and encrypts' },
+          { cmd: 'snmp-server community nightwatch ro 40 · no snmp-server community rootcellar', what: 'a read-only string, only for the hosts ACL 40 permits · remove one' },
+          { cmd: 'snmp-server contact TEXT · snmp-server location TEXT', what: 'who to call and where the box is' },
+          { cmd: 'snmp-server host 10.37.9.50 version 2c nightwatch · snmp-server enable traps', what: 'where the notifications go, and switching them on' },
+          { cmd: 'show snmp · show snmp community · show snmp host', what: 'the agent, the strings, the notification hosts' } ] },
+        { k: 'SYNC', q: { prompt: 'Dora, eating an orange at the lease desk: "If the router tells the NMS a port went down and wants to know the NMS heard it, what does it send?"', opts: ['A Trap', 'A Response', 'An Inform', 'A GetNext'], a: 2,
+          yes: 'Denise: "An Inform. It waits for the acknowledgement."', no: 'Denise: "An Inform. A Trap is sent and never acknowledged."',
+          why: 'Denise: Both Trap and Inform are notifications the agent sends without being asked. A Trap is not acknowledged, so the agent never knows if it arrived. An Inform is acknowledged by the manager. A Response answers a Get, GetNext, GetBulk or Set, and GetNext comes from the manager.' } }
       ] }
   ] });
 })();

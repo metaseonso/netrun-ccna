@@ -176,5 +176,8 @@ window.GLOSSARY = {
   'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.',
   'access control entry': 'ACE. One line of an ACL: permit or deny, and what to match. A router checks the ACEs top to bottom and acts on the first match; the entries below it are ignored.',
   'icmp': 'Internet Control Message Protocol, IP protocol number 1. Carries ping (echo request and reply) and error messages such as unreachable and TTL exceeded. It has no ports.',
-  'stratum': 'An NTP server\'s distance from a reference clock. Reference clocks (atomic, GPS) are stratum 0, servers wired to them stratum 1, and each server that learns time from another adds one. Lower is preferred; above 15 is unreliable and 16 means unsynchronised.'
+  'stratum': 'An NTP server\'s distance from a reference clock. Reference clocks (atomic, GPS) are stratum 0, servers wired to them stratum 1, and each server that learns time from another adds one. Lower is preferred; above 15 is unreliable and 16 means unsynchronised.',
+  'nms': 'Network Management Station. The server that runs the SNMP manager software: it polls managed devices (UDP 161) and receives their Traps and Informs (UDP 162).',
+  'mib': 'Management Information Base. The structure of variables an SNMP agent keeps about its device (CPU, interfaces, counters), each identified by an OID.',
+  'oid': 'Object ID. The dotted number that names one variable in an SNMP MIB, such as a port\'s input counter.'
 };
