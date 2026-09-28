@@ -128,13 +128,19 @@ Definition of done for a day:
 
 - OSPF: single process, areas honoured for adjacency, no DR/BDR, no LSA types, cost from bandwidth or `ip ospf cost`.
 - RIP/EIGRP: adjacency and hop-style metrics only; enough for `show ip route` codes and reachability.
-- IPv6: interface addresses, link-local/EUI-64, connected + static routes; no OSPFv3, no ping6 through the forwarding engine yet.
+- IPv6: interface addresses, link-local/EUI-64, connected + static routes, ping6 end to end (`ctx.net().ping6`); no OSPFv3, no SLAAC or DHCPv6 on hosts.
 - NAT: static, dynamic pool, PAT overload; translation table is built from pings sent in the console.
 - Wireless: no radio model. Use `form`, `choice`, `order` steps for WLC configuration days.
 - QoS, SNMP, syslog, NTP, CDP/LLDP, FTP/TFTP: config is parsed and shown; no traffic effect. Use `need` + `show`.
 - Automation days: use `text` steps with a validator (JSON.parse, regex) and `order` steps.
 
 ## CHANGELOG (append engine changes here)
+
+- 2026-09-28 · IPv6 forwarding: `ctx.net().ping6(from, to)`, and `ping`/`traceroute` to an IPv6 address on routers and PCs.
+  Hosts take `ip6`, `prefix6` (default 64) and `gw6` (global or link-local) in `job.net`; `ipconfig` shows them. Routers
+  forward IPv6 only with `ipv6 unicast-routing`; recursive, fully specified (`ipv6 route P g0/1 fe80::2`), default and
+  floating (AD) static routes; a static route naming only an Ethernet exit interface fails, as on real IOS; `no ipv6 route`.
+  EUI-64 fixed (it dropped a group: now the /64 prefix plus the 64-bit interface ID) (tested).
 
 - 2026-09-28 · OSPF interarea routes show as `O IA` on routers with no interface in the destination's area (tested).
 

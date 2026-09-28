@@ -238,8 +238,10 @@
     for (const r of S.routers) { const t6 = []; for (const p in S.ifaces[r]) { const i = S.ifaces[r][p]; if (!i.up) continue; for (const a of i.cfg.ipv6) { const addr = a.eui64 ? eui64(a.addr, synthMac(r + p)) : a.addr; t6.push({ prefix: v6net(addr, a.prefix), len: a.prefix, via: null, iface: p, proto: 'C', ad: 0 }); } }
       for (const st of S.cfg[r].routes6) { const [pre, len] = st.prefix.split('/'); t6.push({ prefix: IP.ipv6compress(pre), len: +len, via: IP.validIp(st.via) ? null : (st.via.includes(':') ? st.via : null), iface: st.via.includes(':') ? null : (Sim.canonIf(st.via) || st.via), proto: st.prefix.startsWith('::/0') || pre === '::' ? 'S' : 'S', ad: 1 }); }
       S.tables6[r] = t6; }
+    // IPv6 static routes: a fully specified route carries its next hop, and any static route may carry an AD
+    for (const r of S.routers) (S.cfg[r].routes6 || []).forEach(st => { const [pre, len] = st.prefix.split('/'); const e = (S.tables6[r] || []).find(x => x.proto === 'S' && x.prefix === IP.ipv6compress(pre) && x.len === +len && !x._done && (st.nh ? x.iface === (Sim.canonIf(st.via) || st.via) : true)); if (!e) return; e._done = true; if (st.nh) e.via = IP.ipv6compress(st.nh.toLowerCase()); e.ad = st.ad || 1; });
   }
-  function eui64(prefixAddr, mac){ const h = mac.replace(/[.:]/g, ''); const b = parseInt(h.slice(0, 2), 16) ^ 2; const id = b.toString(16).padStart(2, '0') + h.slice(2, 4) + ':' + h.slice(4, 6) + 'ff:fe' + h.slice(6, 8) + ':' + h.slice(8, 12); const p = prefixAddr.replace(/::$/, ''); return IP.ipv6compress(p + ':' + id); }
+  function eui64(prefixAddr, mac){ const h = mac.replace(/[.:]/g, ''); const b = (parseInt(h.slice(0, 2), 16) ^ 2).toString(16).padStart(2, '0'); const id = [b + h.slice(2, 4), h.slice(4, 6) + 'ff', 'fe' + h.slice(6, 8), h.slice(8, 12)]; return IP.ipv6compress(expand6(prefixAddr).split(':').slice(0, 4).concat(id).join(':')); } // the /64 prefix, then the MAC split in two with FFFE in the middle and the 7th bit flipped
   function v6net(addr, len){ const full = expand6(addr); const bits = BigInt('0x' + full.replace(/:/g, '')); const mask = len === 0 ? 0n : ((1n << 128n) - 1n) << BigInt(128 - len); const net = bits & mask; const hex = net.toString(16).padStart(32, '0'); return IP.ipv6compress(hex.match(/.{4}/g).join(':')); }
   function expand6(a){ let h = a.toLowerCase().split('::'); let parts; if (h.length === 2) { const l = h[0] ? h[0].split(':') : [], r = h[1] ? h[1].split(':') : []; parts = l.concat(new Array(8 - l.length - r.length).fill('0'), r); } else parts = h[0].split(':'); return parts.map(x => x.padStart(4, '0')).join(':'); }
 
@@ -317,6 +319,47 @@
   }
   function deliverRouter(S, c, pkt, path, natTbl, hops, srcSeen){ const r = c.dev; const ii = S.ifaces[r][c.inIf]; if (ii && ii.cfg.aclIn) { const v = aclEval(S, r, ii.cfg.aclIn, pkt); if (v.action === 'deny') return { ok: false, reason: 'denied by ACL ' + ii.cfg.aclIn + ' inbound on ' + r, hops }; } path.push({ dev: r, act: 'deliver (local)' }); return { ok: true, at: { kind: 'router', dev: r, inIf: null }, dstDev: r, dstIp: pkt.dst, hops, srcSeen }; }
 
+  // ---------------------------------------------------------------- IPv6 forwarding (ping6)
+  // Hosts carry ip6, prefix6 (default 64) and gw6 (a global or link-local router address) in job.net. Routers use their IPv6
+  // interface addresses (EUI-64 and link-local included) and S.tables6. A router forwards IPv6 only with ipv6 unicast-routing.
+  const n6 = a => IP.ipv6compress(String(a).toLowerCase());
+  function owners6(S){ const D = S.net.devices, O = {}; const put = (seg, o) => (O[seg] = O[seg] || []).push(o);
+    for (const r of S.routers) for (const p in S.ifaces[r]) { const i = S.ifaces[r][p]; if (!i.up || !(i.cfg.ipv6.length || i.cfg.ipv6Enable)) continue; const seg = S.uf.find(S.ifNode(r, p)); const mac = synthMac(r + p);
+      i.cfg.ipv6.forEach(a => put(seg, { dev: r, iface: p, kind: 'iface', addr: n6(a.eui64 ? eui64(a.addr, mac) : a.addr), global: true })); put(seg, { dev: r, iface: p, kind: 'iface', addr: n6(i.cfg.ipv6LinkLocal || eui64('fe80::', mac)), global: false }); }
+    for (const n in D) { const d = D[n]; if (!['host', 'server'].includes(d.kind) || !d.ip6) continue; const h = S.hosts[n]; if (!h || !h.up) continue; put(h.seg, { dev: n, iface: 'eth0', kind: 'host', addr: n6(d.ip6), global: true }); put(h.seg, { dev: n, iface: 'eth0', kind: 'host', addr: n6(eui64('fe80::', h.mac)), global: false }); }
+    return O; }
+  function lookup6(S, r, dst){ let best = null; for (const e of S.tables6[r] || []) { if (v6net(dst, e.len) !== v6net(e.prefix, e.len)) continue; if (!best || e.len > best.len || (e.len === best.len && (e.ad || 0) < (best.ad || 0))) best = e; } return best; }
+  function fwd6(S, O, cur, dst, trail){ const D = S.net.devices; const all = Object.values(O).flat(); const on = (seg, a) => (O[seg] || []).find(o => o.addr === a); const seen = new Set(); let src = null;
+    for (let hop = 0; hop < 32; hop++) {
+      if (cur.kind === 'host') { const d = D[cur.dev], h = S.hosts[cur.dev]; const pl = d.prefix6 || 64; let nh;
+        if (v6net(dst, pl) === v6net(n6(d.ip6), pl)) nh = dst; else { if (!d.gw6) return { ok: false, reason: cur.dev + ' has no IPv6 default gateway' }; nh = n6(d.gw6); }
+        const t = on(h.seg, nh); if (!t) return { ok: false, reason: cur.dev + ': nothing answers neighbour discovery for ' + nh };
+        if (t.kind === 'host') { if (t.addr === dst) return { ok: true, at: { kind: 'host', dev: t.dev }, src }; return { ok: false, reason: 'gateway ' + nh + ' is not a router' }; }
+        cur = { kind: 'router', dev: t.dev, inIf: t.iface }; continue; }
+      const r = cur.dev; const key = r + '|' + dst; if (seen.has(key)) return { ok: false, reason: 'routing loop at ' + r }; seen.add(key);
+      if (trail && cur.inIf) { const g = all.find(o => o.dev === r && o.iface === cur.inIf && o.global); trail.push(g ? g.addr : r); }
+      if (all.some(o => o.dev === r && o.addr === dst)) return { ok: true, at: { kind: 'router', dev: r }, src };
+      if (!cur.origin && !S.cfg[r].ipv6Routing) return { ok: false, reason: r + ' does not route IPv6 (no ipv6 unicast-routing)' };
+      const e = lookup6(S, r, dst); if (!e) return { ok: false, reason: r + ' has no IPv6 route to ' + dst };
+      let iface = e.iface, nh = e.via;
+      if (!iface && nh) { if (/^fe80/.test(nh)) return { ok: false, reason: r + ': a link-local next hop needs an exit interface too' }; const c = (S.tables6[r] || []).filter(x => x.proto === 'C' && v6net(nh, x.len) === x.prefix).sort((a, b) => b.len - a.len)[0]; if (!c) return { ok: false, reason: r + ': next hop ' + nh + ' is not on a connected network' }; iface = c.iface; }
+      const oi = S.ifaces[r][iface]; if (!oi || !oi.up) return { ok: false, reason: r + ' egress ' + short(iface || '?') + ' is down' };
+      if (!nh) { if (e.proto === 'C') nh = dst; else if (kindOf(iface) !== 'se') return { ok: false, reason: r + ': a static route that names only ' + short(iface) + ' has no next hop to find on Ethernet' }; }
+      if (cur.origin && !src) { const g = all.find(o => o.dev === r && o.iface === iface && o.global); src = g ? g.addr : null; }
+      const seg = S.uf.find(S.ifNode(r, iface)); const t = nh ? on(seg, nh) : (O[seg] || []).find(o => o.dev !== r);
+      if (!t) return { ok: false, reason: r + ': nothing answers neighbour discovery for ' + (nh || 'the far end') + ' on ' + short(iface) };
+      if (t.kind === 'host') { if (t.addr === dst) return { ok: true, at: { kind: 'host', dev: t.dev }, src }; return { ok: false, reason: r + ': next hop ' + t.addr + ' is a host' }; }
+      cur = { kind: 'router', dev: t.dev, inIf: t.iface }; }
+    return { ok: false, reason: 'hop limit exceeded' }; }
+  function ping6(S, from, dst){ const D = S.net.devices; const trail = []; const fail = reason => ({ ok: false, reason, trail });
+    if (!/:/.test(String(dst))) return fail('not an IPv6 address: ' + dst); dst = n6(dst); const O = owners6(S); let cur, src = null;
+    if (D[from] && ['host', 'server'].includes(D[from].kind)) { const h = S.hosts[from]; if (!h || !h.up) return fail(from + ' has no link'); if (!D[from].ip6) return fail(from + ' has no IPv6 address'); src = n6(D[from].ip6); cur = { kind: 'host', dev: from }; }
+    else if (S.routers.includes(from)) cur = { kind: 'router', dev: from, origin: true }; else return fail(from + ' cannot send IPv6');
+    const res = fwd6(S, O, cur, dst, trail); if (!res.ok) return fail(res.reason); if (trail[trail.length - 1] !== dst) trail.push(dst);
+    src = src || res.src; if (!src) return fail('no IPv6 source address to reply to');
+    const back = fwd6(S, O, Object.assign({ origin: true }, res.at), src, null); if (!back.ok) return fail('reply failed: ' + back.reason);
+    return { ok: true, reason: 'reply from ' + res.at.dev, trail, dst: res.at.dev }; }
+
   // ---------------------------------------------------------------- public helpers for checks
   function api(S){
     return {
@@ -333,7 +376,8 @@
       acl: (d, id) => S.cfg[d].acls[id] || null, aclTest: (d, id, pkt) => aclEval(S, d, id, pkt),
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),
       neighbors: d => S.neighbors[d] || [], macTable: d => S.macTable[d] || [], bundles: S.bundles,
-      eigrpNeighbors: r => (S.eigrpNeighbors || {})[r] || []
+      eigrpNeighbors: r => (S.eigrpNeighbors || {})[r] || [],
+      ping6: (from, to) => ping6(S, from, to), owners6: () => owners6(S)
     };
   }
 
@@ -341,4 +385,5 @@
   function traceLines(r, style){ const t = r.trail || []; const row = (i, ip) => style === 'pc' ? '  ' + String(i).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + i + ' ' + ip + ' 0 msec 0 msec 0 msec';
     const out = t.map((ip, i) => row(i + 1, ip)); if (!r.ok) out.push(style === 'pc' ? '  ' + String(t.length + 1).padStart(2) + '     *        *        *     Request timed out.' : '  ' + (t.length + 1) + '  *  *  * '); return out; }
   window.Net = { build, api, ping, traceLines, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
+  window.Net.ping6 = ping6; window.Net.lookup6 = lookup6;
 })();

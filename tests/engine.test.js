@@ -187,5 +187,26 @@ module.exports.run = function({ out }){
     const A = Net.api(Net.build(net, d)); const a = A.route('R1', '10.5.3.0/24'), b = A.route('R2', '10.5.3.0/24');
     ok(a && a.proto === 'O IA' && b && b.proto === 'O', 'ospf: O IA across the ABR, O inside the area (' + (a && a.proto) + ', ' + (b && b.proto) + ')');
   }
+  // 15. IPv6: EUI-64 is the /64 plus FFFE, pings between hosts across routers, unicast-routing, recursive, fully specified, directly attached and default static routes
+  {
+    ok(Net.eui64('2001:db8:1::', '0200.1234.5678') === '2001:db8:1::12ff:fe34:5678' && Net.eui64('FE80::', '0200.1234.5678') === 'fe80::12ff:fe34:5678', 'ipv6: EUI-64 keeps the /64 and flips the 7th bit (' + Net.eui64('2001:db8:1::', '0200.1234.5678') + ', ' + Net.eui64('FE80::', '0200.1234.5678') + ')');
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' },
+        PC1: { kind: 'host', ip: '10.4.1.10', mask: '255.255.255.0', gw: '10.4.1.1', ip6: '2001:db8:1::10', gw6: '2001:db8:1::1' }, PC2: { kind: 'host', ip: '10.4.2.10', mask: '255.255.255.0', gw: '10.4.2.1', ip6: '2001:db8:2::10', gw6: 'fe80::2' } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/0', b: 'PC2' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ipv6 address 2001:db8:1::1/64', 'no shut', 'int g0/1', 'ipv6 address 2001:db8:12::1/64', 'ipv6 address fe80::1 link-local', 'no shut'],
+      R2: ['en', 'conf t', 'int g0/0', 'ipv6 address 2001:db8:2::1/64', 'ipv6 address fe80::2 link-local', 'no shut', 'int g0/1', 'ipv6 address 2001:db8:12::2/64', 'ipv6 address fe80::2 link-local', 'no shut'] });
+    let A = Net.api(Net.build(net, d)); let p = A.ping6('PC1', '2001:db8:1::1'); ok(p.ok, 'ipv6: a host reaches its gateway (' + p.reason + ')');
+    ok(A.ping6('PC2', '2001:db8:2::1').ok, 'ipv6: a link-local default gateway works');
+    p = A.ping6('PC1', '2001:db8:2::10'); ok(!p.ok, 'ipv6: nothing forwards yet (' + p.reason + ')');
+    d.R1.exec('ipv6 route 2001:db8:2::/64 2001:db8:12::2'); d.R2.exec('ipv6 route 2001:db8:1::/64 2001:db8:12::1'); A = Net.api(Net.build(net, d));
+    p = A.ping6('PC1', '2001:db8:2::10'); ok(!p.ok && /unicast-routing/.test(p.reason), 'ipv6: routers do not forward without ipv6 unicast-routing (' + p.reason + ')');
+    d.R1.exec('ipv6 unicast-routing'); d.R2.exec('ipv6 unicast-routing'); A = Net.api(Net.build(net, d)); p = A.ping6('PC1', '2001:db8:2::10'); ok(p.ok && JSON.stringify(p.trail) === JSON.stringify(['2001:db8:1::1', '2001:db8:12::2', '2001:db8:2::10']), 'ipv6: recursive static routes, end to end (' + p.reason + ' ' + JSON.stringify(p.trail) + ')');
+    ok(/S\s+2001:db8:2::\/64/.test(Show.render(d.R1, 'show ipv6 route', A.state)), 'show ipv6 route lists the static route');
+    d.R1.exec('no ipv6 route 2001:db8:2::/64 2001:db8:12::2'); d.R1.exec('ipv6 route 2001:db8:2::/64 g0/1'); A = Net.api(Net.build(net, d)); p = A.ping6('PC1', '2001:db8:2::10'); ok(!p.ok && /names only/.test(p.reason), 'ipv6: a directly attached static route on Ethernet fails (' + p.reason + ')');
+    d.R1.exec('no ipv6 route 2001:db8:2::/64 gigabitethernet0/1'); d.R1.exec('ipv6 route 2001:db8:2::/64 g0/1 fe80::2'); A = Net.api(Net.build(net, d)); ok(A.ping6('PC1', '2001:db8:2::10').ok, 'ipv6: a fully specified route with a link-local next hop works');
+    d.R1.exec('no ipv6 route 2001:db8:2::/64 gigabitethernet0/1'); d.R1.exec('ipv6 route ::/0 2001:db8:12::2'); A = Net.api(Net.build(net, d)); ok(A.ping6('PC1', '2001:db8:2::10').ok, 'ipv6: a default route ::/0 works');
+    const pc = new Sim.Device('PC1', { kind: 'host', netState: () => A.state }); pc.exec('ping 2001:db8:2::10'); ok(/Received = 4/.test(pc.out.map(o => o.s).join('\n')), 'ipv6: the PC shell pings an IPv6 address');
+    d.R1.exec('end'); d.R1.exec('ping 2001:db8:2::10'); ok(/!!!!!/.test(d.R1.out[d.R1.out.length - 1].s), 'ipv6: the router shell pings an IPv6 address (' + d.R1.out[d.R1.out.length - 1].s + ')');
+  }
   return { pass, fails };
 };
