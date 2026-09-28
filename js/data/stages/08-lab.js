@@ -465,6 +465,47 @@
         { k: 'SYNC', q: { prompt: 'Clerk Adebayo, reading the whiteboard photo: "In Halvorsen\'s SD-Access plan, which protocol carries the actual traffic between the switches?"', opts: ['VXLAN', 'LISP', 'Cisco TrustSec', 'OpenFlow'], a: 0,
           yes: 'Ansible: "VXLAN. The data plane."', no: 'Ansible: "VXLAN is the data plane. LISP is the control plane, TrustSec the policy."',
           why: 'Ansible: In SD-Access, VXLAN provides the data plane, tunnelling traffic across the underlay. LISP provides the control plane, tracking where endpoints are, and Cisco TrustSec provides policy control.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 63 · Ansible, Puppet, Chef and Terraform
+    { id: 'n63-the-streets-play', title: 'The street\'s own play', sub: 'Ansible, Puppet, Chef and Terraform', npc: 'ansible', day: [63], src: [PS('Ansible_Puppet_Chef.md')], unlocks: ['config-mgmt'],
+      beats: [
+        { k: 'SCENE', where: 'The Lab · Ansible\'s bench · the night before Opening Night', real: ['puppet', 'chef'],
+          lines: [
+            { who: 'narr', text: 'The Lab is quieter than you have ever heard it. Half the racks have been switched off to save power for tomorrow, and the cold draught from the vent carries the smell of coffee gone stale in its pot. On Ansible\'s bench the forty switches still blink, and a sheet of Halvorsen\'s bid lies beside the laptop with one word circled: AGENT.' },
+            { who: 'ansible', text: 'Tomorrow night we rebuild the Exchange, and most of what goes onto its boxes will go on from a play I wrote. Halvorsen would do it differently. Their bid puts a [[Puppet]] agent on every box in Watson, and [[Chef]] on the servers.' },
+            { who: 'ansible', text: 'Puppet and Chef are agent-based. A small program runs on every managed device and pulls its configuration from a server over HTTPS. A Puppet agent reaches the Puppet master on TCP 8140, and a Chef server sends configurations to its clients on TCP 10002. Both are written in Ruby.' },
+            { who: 'ansible', text: '[[Ansible]] is agentless. It is written in Python, and it runs on one control node, my laptop, and pushes the configuration out to every device over SSH. Nothing to install on the switches, which is lucky, because most switches have nowhere to install it.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What does each one write its instructions in?', reply: 'Ansible: "Ansible writes playbooks, in YAML, with templates in Jinja2. Puppet writes manifests, in its own language, Puppet DSL. Chef writes recipes, collected into cookbooks and run-lists, in a language built on Ruby. People read YAML without training. That is why I chose it."' },
+            { tone: 'press', say: 'Isn\'t an agent on every box more reliable?', reply: 'Ansible: "It pulls on a schedule, so a box that drifts gets pulled back. But every agent is software on the device that someone has to install, patch and trust. Puppet can manage a device with no agent through an external agent, a proxy, and that is how it would reach our switches. Their bid does not say who runs the proxy."' },
+            { tone: 'quiet', say: '(Watch the forty lights for a while.)', reply: 'The drone settles on the shelf and dims its own light. After a minute Ansible says, "Every one of those was configured by hand, once, by somebody in this building. The play only remembers what they did."' }
+          ] } },
+        { k: 'SCENE', where: 'The Lab · the blade chassis', real: ['terraform'],
+          lines: [
+            { who: 'narr', text: 'Prof. Hypervisor calls you over to the blade chassis, where the laptop on her crate shows a short file in a language you have not seen, all braces and equals signs. Ansible follows, carrying his coffee.' },
+            { who: 'hypervisor', text: 'Ansible configures boxes that already exist. This builds the boxes in the first place: tonight it made four more little instances for the controller. It\'s [[Terraform]], and all of this is [[infrastructure as code]], IaC, the network and servers described in files you can read, check and run again.' },
+            { who: 'hypervisor', text: 'Ansible, Puppet and Chef are mainly configuration management tools, and they treat infrastructure as mutable: they change what\'s already there. Terraform is mainly a provisioning tool, and it treats infrastructure as immutable: if something needs to change, it builds a new one and removes the old.' },
+            { who: 'ansible', text: 'The other split is how you describe the job. Procedural means explicit steps in order, and that is Ansible and Chef. Declarative means you describe the end state and the tool works out the steps, and that is Puppet and Terraform.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How does Terraform actually run?', reply: 'Prof. Hypervisor: "Three steps: Write, Plan, Apply. You write the configuration files in HCL, the HashiCorp Configuration Language. Terraform Core, which is written in Go, compares them with its state file, the record of what it already built, and plans the changes. Then it applies them through providers, the plugins for each platform. It\'s push and agentless, like Ansible."' },
+            { tone: 'press', say: 'Why rebuild instead of just changing it?', reply: 'Prof. Hypervisor: "Because a server that has been patched by hand for five years is different from its twin in ways nobody wrote down. Rebuild it from the file every time and you know exactly what it is. That\'s immutable infrastructure."' },
+            { tone: 'care', say: 'Will you two sleep before tomorrow?', reply: 'Prof. Hypervisor laughs. "The cat will. Ansible never does." Ansible drinks his cold coffee. "I will sleep when the play has run once on every box in the Exchange and nobody has had to touch a keyboard."' }
+          ] } },
+        { k: 'LORE', title: 'THE INSTANT MESSENGER', year: 2012, real: ['ansible', 'redhat'], vibe: 'YOLO. One laptop, a thousand servers, no agents anywhere.',
+          text: 'Ansible, turning his mug in his hands: "In February 2012 Michael DeHaan released the first version of Ansible. He named it after the ansible in Ursula K. Le Guin\'s 1966 novel Rocannon\'s World, a device that talks across any distance instantly. Red Hat bought it in October 2015. I took the name when I started running forty switches from one laptop. I keep this one because the machine in the book was never the point. The point was that somebody on the far side answered."' },
+        { k: 'KIT', text: 'Ansible prints it and hands it to you. The drone does not come; it is saving its battery for tomorrow.', real: ['ansible', 'puppet', 'chef', 'terraform'], kit: [
+          { cmd: 'Ansible: agentless · Python · SSH · push · playbooks (YAML, Jinja2 templates) · control node', what: 'configuration management, procedural' },
+          { cmd: 'Puppet: agent-based · Ruby · HTTPS, TCP 8140 · pull · manifests (Puppet DSL) · Puppet master', what: 'configuration management, declarative' },
+          { cmd: 'Chef: agent-based · Ruby · HTTPS, TCP 10002 · pull · recipes, run-lists (Ruby-based DSL)', what: 'configuration management, procedural' },
+          { cmd: 'Terraform: agentless · push · Core in Go · HCL configuration files · state file · providers', what: 'provisioning, declarative. Write, Plan, Apply' },
+          { cmd: 'mutable (change in place) · immutable (replace)', what: 'configuration management · provisioning. All four are infrastructure as code (IaC)' },
+          { cmd: '---\n- name: ...\n  hosts: ...\n  tasks:\n    - name: ...\n      cisco.ios.ios_config:\n        lines:\n          - ...', what: 'the shape of a play' } ] },
+        { k: 'SYNC', q: { prompt: 'Clerk Adebayo, reading the circled word: "Halvorsen\'s bid needs an agent on every box, and the street\'s plan needs none. Which of these tools needs no agent?"', opts: ['Ansible', 'Puppet', 'Chef', 'All three need agents'], a: 0,
+          yes: 'Ansible: "Ansible. It only needs SSH, which the boxes already speak."', no: 'Ansible: "Ansible. Puppet and Chef run an agent on each device; Ansible pushes over SSH."',
+          why: 'Ansible: Ansible is agentless: it connects from a control node to each device over SSH and pushes the configuration. Puppet and Chef are agent-based: an agent on each managed device pulls its configuration from a server over HTTPS.' } }
       ] }
   ] });
 })();

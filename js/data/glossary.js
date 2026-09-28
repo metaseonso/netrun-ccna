@@ -249,5 +249,8 @@ window.GLOSSARY = {
   'fabric': 'In SDN, the combination of the overlay and the underlay.',
   'vxlan': 'Virtual Extensible LAN. Tunnels Layer 2 frames across a Layer 3 underlay; the data plane of Cisco SD-Access.',
   'lisp': 'Locator ID Separation Protocol. Tracks where each endpoint is; the control plane of Cisco SD-Access.',
-  'intent-based networking': 'IBN. You state the desired outcome and the controller works out and applies the device configuration to achieve it.'
+  'intent-based networking': 'IBN. You state the desired outcome and the controller works out and applies the device configuration to achieve it.',
+  // ---- night 63 · Ansible, Puppet, Chef and Terraform
+  'terraform': 'HashiCorp\'s provisioning tool. Agentless, push, declarative, immutable. Terraform Core is written in Go; configuration files are written in HCL; a state file tracks what is deployed; providers are the platforms it builds on. Workflow: Write, Plan, Apply.',
+  'infrastructure as code': 'IaC. Managing infrastructure through files that describe it, which can be read, reviewed and run again. Ansible, Puppet, Chef and Terraform are IaC tools.'
 };
