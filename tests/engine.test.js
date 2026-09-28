@@ -172,5 +172,22 @@ module.exports.run = function({ out }){
     const c = NetConfig.parse(d.SW1).interfaces['fastethernet0/1']; ok(c.voiceVlan === 11 && c.powerPolice === 'errdisable', 'config: voice vlan and power inline police parsed');
     const t = Show.render(d.SW1, 'show interfaces f0/1 switchport', A.state); ok(/Access Mode VLAN: 10 \(data\)/.test(t) && /Voice VLAN: 11 \(voice\)/.test(t) && /Administrative Mode: static access/.test(t), 'show interfaces switchport shows the access and voice VLANs (' + t + ')');
   }
+  // 13. QoS (MQC): class-map and policy-map sub-modes, the parsed policy, service-policy and trust, running-config nesting, the show commands
+  {
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.4700.0001' } }, links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'class-map match-any VOICE', 'match dscp ef', 'class-map match-any WEB', 'match protocol https', 'policy-map MARK', 'class WEB', 'set dscp af31', 'exit', 'exit',
+      'policy-map WAN-OUT', 'class VOICE', 'priority percent 20', 'class class-default', 'fair-queue', 'police 8000000 conform-action transmit exceed-action drop', 'exit', 'exit', 'int g0/0', 'service-policy output WAN-OUT', 'service-policy input MARK', 'end'],
+      SW1: ['en', 'conf t', 'int f0/1', 'mls qos trust device cisco-phone', 'mls qos trust cos'] });
+    ok(d.R1.mode === 'priv', 'qos: the sub-modes unwind with exit and end');
+    const q = NetConfig.parse(d.R1).qos; const wan = q.policyMaps['wan-out'];
+    ok(q.classMaps.voice && q.classMaps.voice.type === 'match-any' && q.classMaps.voice.matches[0] === 'dscp ef' && q.classMaps.web.matches[0] === 'protocol https', 'qos: class-maps and their matches are parsed');
+    ok(wan && wan.order.join(',') === 'voice,class-default' && wan.classes.voice.priority.percent === 20 && wan.classes['class-default'].fairQueue && wan.classes['class-default'].police.bps === 8000000 && q.policyMaps.mark.classes.web.setDscp === 'af31', 'qos: policy-maps, classes, priority, fair-queue, police, set dscp');
+    const i = NetConfig.parse(d.R1).interfaces['gigabitethernet0/0']; ok(i.servicePolicy.output === 'wan-out' && i.servicePolicy.input === 'mark', 'qos: service-policy input and output on the interface');
+    const s = NetConfig.parse(d.SW1).interfaces['fastethernet0/1']; ok(s.qosTrustDevice === 'cisco-phone' && s.qosTrust === 'cos', 'qos: mls qos trust and trust device on a switch port');
+    const S = Net.build(net, d); const run = (() => { const n = d.R1.out.length; d.R1.exec('show running-config'); return d.R1.out.slice(n).map(o => o.s).join('\n'); })();
+    ok(/policy-map wan-out\n class voice\n  priority percent 20\n class class-default\n  fair-queue/.test(run) && /class-map match-any voice\n match dscp ef/.test(run), 'running-config nests classes under their policy-map (' + run.slice(run.indexOf('class-map'), run.indexOf('class-map') + 200) + ')');
+    ok(/Match dscp ef \(46\)/.test(Show.render(d.R1, 'show class-map', S)) && /Strict Priority, 20% of the link/.test(Show.render(d.R1, 'show policy-map', S)), 'show class-map and show policy-map render');
+    const pi = Show.render(d.R1, 'show policy-map interface g0/0', S); ok(/Service-policy output: wan-out/.test(pi) && /Service-policy input: mark/.test(pi) && /set dscp af31 \(26\)/.test(pi), 'show policy-map interface lists both directions and the AF31 value (' + pi + ')');
+  }
   return { pass, fails };
 };

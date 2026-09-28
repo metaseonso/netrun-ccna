@@ -112,7 +112,7 @@
   function type7(pw){ let h = 0; for (const c of pw) h = (h * 31 + c.charCodeAt(0)) >>> 0; const salt = h % 16; let out = String(salt).padStart(2, '0');
     for (let i = 0; i < pw.length; i++) out += (pw.charCodeAt(i) ^ XLAT.charCodeAt((salt + i) % XLAT.length)).toString(16).toUpperCase().padStart(2, '0'); return out; }
   function type5(pw){ const A = './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'; let h = 2166136261; const pick = n => { let o = ''; for (let i = 0; i < n; i++) { for (const c of pw + i) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; o += A[h % 64]; } return o; }; const salt = pick(4); return '$1$' + salt + '$' + pick(22); }
-  const OPENER = /^(interface |router |line |ip access-list (standard|extended) |vlan [\d,\-]+$|ip dhcp pool |ip vrf )/;
+  const OPENER = /^(interface |router |line |ip access-list (standard|extended) |vlan [\d,\-]+$|ip dhcp pool |ip vrf |class-map |policy-map |arp access-list )/;
   // settings that replace themselves inside a block (the last one typed wins); "no X" removes X
   const SINGLE = [/^hostname /, /^enable secret /, /^enable password /, /^ip domain[- ]name /, /^banner motd /, /^spanning-tree mode /, /^ip default-gateway /, /^service password-encryption$/,
     /^ip address (?!.* secondary$)/, /^description /, /^speed /, /^duplex /, /^switchport mode /, /^switchport access vlan /, /^switchport trunk native vlan /, /^switchport trunk encapsulation /, /^switchport trunk allowed vlan (?!add )/,
@@ -140,6 +140,10 @@
     const top = G.filter(x => /^enable (secret|password) /.test(x.line)); if (top.length) o.push(...top.sort((a, b) => a.line.localeCompare(b.line) * -1).map(show), '!');
     const late = x => /^(ip route |ipv6 route |access-list |banner |ip nat )/.test(x.line);
     const rest = G.filter(x => !/^(hostname |enable (secret|password) |service password-encryption$)/.test(x.line) && !late(x)); if (rest.length) o.push(...rest.map(show), '!');
+    // class-maps, then policy-maps with each class's actions nested under it, then ARP ACLs, where IOS prints them: before the interfaces
+    [...blocks.keys()].filter(k => /^class-map /.test(k)).forEach(k => o.push(k, ...blocks.get(k).map(x => ' ' + show(x)), '!'));
+    [...blocks.keys()].filter(k => /^policy-map \S+$/.test(k)).forEach(k => { o.push(k); blocks.get(k).forEach(x => { o.push(' ' + show(x)); const c = x.line.match(/^class (\S+)$/); if (c) (blocks.get(k + ' class ' + c[1]) || []).forEach(y => o.push('  ' + show(y))); }); o.push('!'); });
+    [...blocks.keys()].filter(k => /^arp access-list /.test(k)).forEach(k => o.push(k, ...blocks.get(k).map(x => ' ' + show(x)), '!'));
     // interfaces: every port the box has in this network, in the order IOS lists them, then any the player created
     const ifs = []; const seen = new Set(); const addIf = n => { if (!seen.has(n)) { seen.add(n); ifs.push(n); } };
     const kind = S && S.net && S.net.devices[dev.name] ? S.net.devices[dev.name].kind : null;
@@ -275,6 +279,10 @@
     if ((m = s.match(/^ip access-list (standard|extended) (\S+)$/))) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter(m[1] === 'standard' ? 'config-std-nacl' : 'config-ext-nacl', s); return; }
     if ((m = s.match(/^vlan ([\d,\-]+)$/)) && dev.mode.startsWith('config')) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter('config-vlan', s); return; }
     if ((m = s.match(/^ip dhcp pool (\S+)$/))) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter('config-dhcp', s); return; }
+    // QoS (MQC) and ARP ACL sub-modes: class-map, policy-map and its class, arp access-list
+    if ((m = s.match(/^class-map(?: (?:match-any|match-all))? (\S+)$/)) || (m = s.match(/^policy-map (\S+)$/)) || (m = s.match(/^arp access-list (\S+)$/))) { if (dev.mode !== 'config') { dev.mode = 'config'; dev.ctx = ''; dev.stack = [['priv', '']]; rec.mode = 'config'; rec.ctx = ''; }
+      dev.enter(s.startsWith('class-map') ? 'config-cmap' : s.startsWith('policy-map') ? 'config-pmap' : 'config-arp-nacl', s); return; }
+    if ((m = s.match(/^class (\S+)$/)) && (dev.mode === 'config-pmap' || dev.mode === 'config-pmap-c')) { if (dev.mode === 'config-pmap-c') { dev.leave(); rec.mode = dev.mode; rec.ctx = dev.ctx; } dev.enter('config-pmap-c', dev.ctx + ' class ' + m[1]); return; }
     if ((m = s.match(/^ip vrf (\S+)$/))) { if (dev.mode !== 'config') { dev.leave(); rec.mode = 'config'; rec.ctx = ''; } dev.enter('config-vrf', s); return; }
     if (s.startsWith('crypto key generate rsa')) { dev.out.push({ t:'out', s:'The name for the keys will be: ' + dev.host + '.' + (dev.domain || 'example.com') + '\n% Generating RSA keys ...[OK]' }); return; }
     if ((m = s.match(/^ip domain-name (\S+)$/))) { dev.domain = m[1]; return; }

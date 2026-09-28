@@ -155,7 +155,23 @@
         if (proto === 'rip') { const o = cfg.rip || (cfg.rip = { networks: [], v2: false, noAuto: false, passive: new Set() }); if ((m = s.match(/^network (\S+)$/))) o.networks.push(m[1]); else if (s === 'version 2') o.v2 = true; else if (s === 'no auto-summary') o.noAuto = true; else if ((m = s.match(/^passive-interface (\S+)$/))) o.passive.add(m[1]); }
         if (proto === 'eigrp') { const o = cfg.eigrp || (cfg.eigrp = { as: +pid, networks: [], noAuto: false, routerId: null }); if ((m = s.match(/^network (\S+)(?: (\S+))?$/))) o.networks.push({ addr: m[1], wild: m[2] || null }); else if (s === 'no auto-summary') o.noAuto = true; else if ((m = s.match(/^eigrp router-id (\S+)$/))) o.routerId = m[1]; }
       }
+      // ---------------- QoS (MQC): class-maps, policy-maps and their classes, service-policy and trust on interfaces
+      const Q = cfg.qos || (cfg.qos = { classMaps: {}, policyMaps: {} });
+      if (r.mode === 'config' && (m = s.match(/^class-map(?: (match-any|match-all))? (\S+)$/))) Q.classMaps[m[2]] = Q.classMaps[m[2]] || { name: m[2], type: m[1] || 'match-all', matches: [] };
+      if (r.mode === 'config' && (m = s.match(/^policy-map (\S+)$/))) Q.policyMaps[m[1]] = Q.policyMaps[m[1]] || { name: m[1], classes: {}, order: [] };
+      if (r.mode === 'config-cmap') { const name = r.ctx.split(' ').pop(); const c = Q.classMaps[name] || (Q.classMaps[name] = { name, type: 'match-all', matches: [] });
+        if ((m = s.match(/^match (.+)$/))) c.matches.push(m[1]); else if ((m = s.match(/^no match (.+)$/))) c.matches = c.matches.filter(x => x !== m[1]); }
+      if (r.mode === 'config-pmap' && (m = s.match(/^class (\S+)$/))) { const pm = Q.policyMaps[r.ctx.split(' ')[1]]; if (pm && !pm.classes[m[1]]) { pm.classes[m[1]] = { name: m[1] }; pm.order.push(m[1]); } }
+      if (r.mode === 'config-pmap-c') { const [, pname, , cname] = r.ctx.split(' '); const pm = Q.policyMaps[pname] || (Q.policyMaps[pname] = { name: pname, classes: {}, order: [] }); const c = pm.classes[cname] || (pm.classes[cname] = { name: cname }); if (!pm.order.includes(cname)) pm.order.push(cname);
+        if ((m = s.match(/^set (?:ip )?dscp (\S+)$/))) c.setDscp = m[1]; else if ((m = s.match(/^set cos (\d)$/))) c.setCos = +m[1];
+        else if ((m = s.match(/^priority (?:percent (\d+)|(\d+))/))) c.priority = m[1] ? { percent: +m[1] } : { kbps: +m[2] };
+        else if ((m = s.match(/^bandwidth (?:remaining )?(?:percent (\d+)|(\d+))$/))) c.bandwidth = m[1] ? { percent: +m[1] } : { kbps: +m[2] };
+        else if ((m = s.match(/^police (?:cir )?(\d+)/))) c.police = { bps: +m[1], raw: s }; else if ((m = s.match(/^shape average (\d+)/))) c.shape = { bps: +m[1] };
+        else if (s === 'fair-queue') c.fairQueue = true; else if (/^random-detect/.test(s)) c.wred = s; }
+      if ((r.mode === 'config-if' || r.mode === 'config-if-range' || r.mode === 'config-subif') && ((m = s.match(/^service-policy (input|output) (\S+)$/)) || (m = s.match(/^mls qos trust (cos|dscp|device cisco-phone)$/)))) for (const n of ifacesOf(r.ctx)) { const i = iface(cfg, n);
+        if (s.startsWith('service-policy')) (i.servicePolicy = i.servicePolicy || {})[m[1]] = m[2]; else if (m[1] === 'device cisco-phone') i.qosTrustDevice = 'cisco-phone'; else i.qosTrust = m[1]; }
     }
+    if (!cfg.qos) cfg.qos = { classMaps: {}, policyMaps: {} };
     cfg.hostname = dev.host;
     cfg.stp = Stp.readConfig(dev, 1);
     return cfg;

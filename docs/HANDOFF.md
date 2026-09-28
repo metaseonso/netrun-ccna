@@ -158,6 +158,13 @@ Definition of done for a day:
   (`cfg.interfaces[p].voiceVlan`, `.powerPolice`); a host with `voice: true` (an IP phone) joins its port's voice VLAN when
   the port has one, else the access VLAN; `show interfaces X switchport` shows the mode, the access VLAN and the voice VLAN.
   Tested.
+- 2026-09-28 · QoS (MQC) in the shell: `class-map [match-any|match-all] N` (config-cmap), `policy-map N` (config-pmap) and
+  `class N` inside it (config-pmap-c), plus `arp access-list N` (config-arp-nacl), are real sub-modes; running-config prints
+  class-maps and policy-maps (classes nested) before the interfaces. Parsed into `cfg.qos.classMaps` (matches) and
+  `cfg.qos.policyMaps` (`order`, `classes[n]`: `setDscp`, `setCos`, `priority`, `bandwidth`, `police`, `shape`,
+  `fairQueue`, `wred`); `service-policy input|output N` and `mls qos trust cos|dscp|device cisco-phone` on interfaces.
+  `show class-map`, `show policy-map`, `show policy-map interface [X]` (DSCP names shown with their values; counters stay
+  at zero, there is no traffic model). Tested.
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
