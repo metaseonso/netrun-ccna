@@ -392,6 +392,7 @@ module.exports.run = function({ out }){
     ok(A.ping('PC2', '10.18.99.5').ok && A.route('MLS', '10.18.0.0/30') && A.route('MLS', '10.18.0.0/30').iface === 'gigabitethernet0/1', 'mls: a routed port (no switchport) with an address reaches the router (' + A.ping('PC2', '10.18.99.5').reason + ')');
     d = devs({ MLS: base.concat(['vlan 30', 'int vlan 30', 'ip address 10.18.30.1 255.255.255.0', 'no shut']), R1: r1 }); A = Net.api(Net.build(net, d)); ok(!A.up('MLS', 'vlan30'), 'mls: an SVI whose VLAN has no live port stays down (autostate)');
     d = devs({ MLS: base.concat(['int g0/1', 'no switchport', 'ip address 10.18.0.1 255.255.255.252', 'exit', 'default interface g0/1']), R1: r1 }); ok(!NetConfig.parse(d.MLS).interfaces['gigabitethernet0/1'], 'mls: default interface puts a port back to its factory settings');
+    const rr = dev('R9', 'ios', ['en', 'conf t', 'int g0/0.10', 'encapsulation dot1q 10', 'ip address 10.9.10.1 255.255.255.0', 'no interface g0/0.10']); ok(!NetConfig.parse(rr).interfaces['gigabitethernet0/0.10'], 'mls: no interface deletes a subinterface, even typed from inside it'); rr.exec('do show running-config'); ok(!/GigabitEthernet0\/0\.10/.test(rr.out[rr.out.length - 1].s), 'mls: the deleted subinterface leaves the running-config');
   }
   return { pass, fails };
 };

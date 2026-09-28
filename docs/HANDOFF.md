@@ -140,7 +140,7 @@ Definition of done for a day:
   the VLAN exists and a switchport carrying it is up (autostate); a `switch` routes between its interfaces only with `ip
   routing` (without it, it still answers on its own SVIs); `no switchport` makes a routed port with its own address (it leaves
   VLANs, trunking and spanning tree); `default interface X` resets a port; `default` is no longer expanded to
-  `default-information`. Tested in `tests/engine.test.js` (section 27).
+  `default-information`; `no interface X` deletes a subinterface, SVI or loopback. Tested in `tests/engine.test.js` (section 27).
 
 - 2026-09-28 · The shell keeps the case you typed for VLAN names and interface descriptions (`show vlan brief`, `show interfaces
   description`, `show interfaces`, running-config), while the parsed config keeps them lower case for checks (`name`, `desc`;

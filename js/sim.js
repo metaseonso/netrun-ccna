@@ -125,6 +125,7 @@
     const block = ctx => { if (!blocks.has(ctx)) blocks.set(ctx, []); return blocks.get(ctx); };
     const put = (b, line) => { const k = keyOf(line); if (k) { const i = b.findIndex(x => keyOf(x.line) === k); if (i >= 0) b.splice(i, 1); } if (!b.some(x => x.line === line)) b.push({ line }); return b[b.length - 1]; };
     for (const r of dev.lines) { if (!r.mode || !r.mode.startsWith('config')) continue; let line = r.line; if (!line || line.startsWith('do ') || line === 'exit' || line === 'end') continue;
+      { const dm = line.match(/^(no|default) interface (\S+)$/); if (r.mode === 'config' && dm) { blocks.delete('interface ' + (canonIf(dm[2]) || dm[2])); continue; } }
       if (r.mode === 'config' && OPENER.test(line)) { block(line.startsWith('interface ') ? 'interface ' + line.slice(10) : line); continue; }
       const b = block(r.mode === 'config' ? '' : r.ctx);
       if (line === 'service password-encryption') { enc = true; secrets.forEach(x => { x.enc = true; }); put(b, line); continue; }
@@ -278,7 +279,7 @@
     // ---- config-mode grammar ----
     if (dev.mode === 'user' || dev.mode === 'priv') { dev.out.push({ t:'err', s:'% Invalid input detected. (That looks like a config command — enter global config mode first.)' }); return; }
     // a global command typed inside a sub-mode: IOS accepts it and drops back to global config
-    const GLOBAL_ONLY = /^(no )?(ip route|ipv6 route|ip access-list|access-list|hostname|ip dhcp (pool|excluded-address|snooping vlan|snooping$)|ip nat (inside source|pool|outside source)|router |vlan [\d,\-]+$|spanning-tree (mode|vlan [\d,\-]+ (root|priority)|portfast default|portfast bpduguard default)|ip domain-name|ip domain name|crypto key|username|enable (secret|password)|ipv6 unicast-routing|ntp server|logging (host|\d)|snmp-server|ip arp inspection vlan|service |banner|line |ip default-gateway|cdp run|lldp run|errdisable|ip routing|ip name-server|ip ssh|interface )/;
+    const GLOBAL_ONLY = /^(no interface |default interface )|^(no )?(ip route|ipv6 route|ip access-list|access-list|hostname|ip dhcp (pool|excluded-address|snooping vlan|snooping$)|ip nat (inside source|pool|outside source)|router |vlan [\d,\-]+$|spanning-tree (mode|vlan [\d,\-]+ (root|priority)|portfast default|portfast bpduguard default)|ip domain-name|ip domain name|crypto key|username|enable (secret|password)|ipv6 unicast-routing|ntp server|logging (host|\d)|snmp-server|ip arp inspection vlan|service |banner|line |ip default-gateway|cdp run|lldp run|errdisable|ip routing|ip name-server|ip ssh|interface )/;
     if (dev.mode !== 'config' && GLOBAL_ONLY.test(s)) { dev.mode = 'config'; dev.ctx = ''; dev.stack = [['priv', '']]; rec.mode = 'config'; rec.ctx = ''; }
     dev.lines.push(rec);
     let m;
