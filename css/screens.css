@@ -294,3 +294,4 @@
 .diff:hover{border-color:var(--cyan)} .diff.on{border-color:var(--cyan);box-shadow:0 0 16px rgba(63,246,255,.18)} .diff.cyberpsycho.on{border-color:var(--mag);box-shadow:0 0 16px rgba(255,63,164,.2)}
 .diff[disabled]{opacity:.45;cursor:default}
 .lthemes{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:center;margin:12px 0} .lthemes .btn.on{border-color:var(--cyan);color:var(--cyan)}
+.diff .stars{font-style:normal;font-size:24px;line-height:1;vertical-align:-2px;margin-left:10px;letter-spacing:3px;color:var(--yel)} .diff .stars s{text-decoration:none;color:var(--ink3);opacity:.6}

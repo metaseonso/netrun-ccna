@@ -198,8 +198,8 @@
     const gs = JOBS.filter(j => (j.day || []).includes(n)); return ls.every(l => state.read[l.id]) && gs.every(j => state.jobsDone[j.id]); }
   // the setting: easier at any time; harder only before the first gig is cleared, so a hard record means a hard run
   function setDifficulty(id){ const D = window.DIFFICULTY || {}, order = window.DIFFICULTY_ORDER || []; if (!D[id]) return { ok: false, why: 'no such setting' };
-    const harder = order.indexOf(id) > order.indexOf(state.difficulty); if (harder && Object.keys(state.jobsDone).length) return { ok: false, why: 'A harder setting is only open before your first gig.' };
-    const was = state.difficulty; state.difficulty = id; state.diffPicked = true; if (was !== id) { ev('difficulty', { from: was, to: id }); log('Setting: ' + D[id].name); } save(); return { ok: true, difficulty: id }; }
+    const harder = order.indexOf(id) > order.indexOf(state.difficulty); if (harder && Object.keys(state.jobsDone).length) return { ok: false, why: 'Harder is only open before your first gig.' };
+    const was = state.difficulty; state.difficulty = id; state.diffPicked = true; if (was !== id) { ev('difficulty', { from: was, to: id }); log('Difficulty: ' + D[id].name); } save(); return { ok: true, difficulty: id }; }
   // the colours a license can be printed in: the default deck and every skin the runner switched on during the run
   function cardThemes(){ return ['default', ...(state.perks.used || []).filter(t => t && t !== 'default')]; }
   function licenseRecord(theme){ const st = state.stats || {}, steps = st.steps || {}; const nights = (window.SYLLABUS || []).filter(x => nightDone(x.night)).length;

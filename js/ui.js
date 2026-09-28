@@ -170,11 +170,11 @@
   // how hard the street is: asked once, on the map, before the first gig; changed later from the DECK
   function diffCards(pick){ const s = Game.state, D = window.DIFFICULTY || {}, done = Object.keys(s.jobsDone).length, order = window.DIFFICULTY_ORDER || [];
     return '<div class="diffs">' + order.map(k => { const d = D[k], on = s.difficulty === k && !pick, locked = !pick && done && order.indexOf(k) > order.indexOf(s.difficulty);
-      return '<button class="diff ' + k + (on ? ' on' : '') + '" data-diff="' + k + '"' + (locked ? ' disabled' + tipAttr('A harder setting is only open before your first gig.') : '') + '><b>' + d.name + '</b><span>' + esc(d.blurb) + '</span>' +
+      return '<button class="diff ' + k + (on ? ' on' : '') + '" data-diff="' + k + '"' + (locked ? ' disabled' + tipAttr('Harder is only open before your first gig.') : '') + '><b>' + d.name + ' <i class="stars" aria-label="' + (order.indexOf(k) + 1) + ' of 3 stars">' + '★'.repeat(order.indexOf(k) + 1) + '<s>' + '★'.repeat(order.length - order.indexOf(k) - 1) + '</s></i></b><span>' + esc(d.blurb) + '</span>' +
         '<em>Gigs pay C ' + d.pay[1] + ' · B ' + d.pay[2] + ' · A ' + d.pay[3] + '</em><em>A wrong commit burns ' + d.wear + ' chrome</em></button>'; }).join('') + '</div>'; }
   function diffPicker(){ const s = Game.state; if (s.diffPicked || Object.keys(s.jobsDone).length) return '';
-    return '<div class="panel diffpick"><h3>HOW HARD IS THE STREET?</h3>' + diffCards(true) +
-      '<p class="muted">Class D gigs pay 60 and the rites pay the same on every setting. You can move to an easier setting at any time from the DECK, and to a harder one only before your first gig. Your license shows the setting you finished on.</p></div>'; }
+    return '<div class="panel diffpick"><h3>DIFFICULTY</h3>' + diffCards(true) +
+      '<p class="muted">Change it later on the DECK: easier at any time, harder only before your first gig. Your license shows it.</p></div>'; }
   function home(){ const s = Game.state, dm = Game.dm.pending(), here = hereStage(); if (!cur.stage) cur.stage = here.id; const sel = STAGES.find(x => x.id === cur.stage) || here;
     const pos = STAGES.map((stg, i) => mapPos(i, STAGES.length)); const st = STAGES.map(stageState); const lit = STAGES.reduce((a, stg) => a + stg.levels.filter(l => s.read[l.id]).length, 0), all = STAGES.reduce((a, stg) => a + stg.levels.length, 0);
     const alerts = (dm ? '<div class="alert m">' + icon('call') + '<span>A call is waiting from <b>' + esc(dm.open.split(':')[0]) + '</b>.</span><button class="btn mag" data-v="crew">PICK UP</button></div>' : '') +
@@ -342,7 +342,7 @@
   // ---- deck, stall, codex, record, crew, journal --------------------------------------------
   function deck(){ const s = Game.state; return '<div class="panel"><h2 data-tip="A quickhack slots when someone teaches it. It sharpens when you use it on a dive with no help: 1 clean use for SYNCED, 3 for WIRED, 6 for BURNED-IN.">DECK</h2><div class="deck" style="margin-top:12px">' +
       Object.keys(SKILLS).map(k => { const sk = s.skills[k]; const lv = sk ? sk.level : 0; const next = Game.LEVEL_AT[lv + 1]; const pct = sk ? (next ? Math.round(((sk.clean - Game.LEVEL_AT[lv]) / (next - Game.LEVEL_AT[lv])) * 100) : 100) : 0; return '<div class="skill l' + lv + '"><div class="n">' + esc(SKILLS[k]) + '</div><div class="lv">' + (sk && sk.slotted ? Game.LEVEL_NAMES[lv] : 'NOT SLOTTED') + (sk ? ' · ' + sk.clean + ' clean / ' + sk.uses + ' uses' : '') + '</div><div class="bar"><i style="width:' + pct + '%"></i></div></div>'; }).join('') + '</div>' +
-      '<h3>SETTING</h3>' + diffCards(false) +
+      '<h3>DIFFICULTY</h3>' + diffCards(false) +
       (s.perks.skins.length ? '<h3>DECK SKIN</h3><div class="row">' + ['', ...s.perks.skins.map(id => SHOP.find(x => x.id === id).effect.theme)].map(t => '<button class="btn ghost" data-theme="' + t + '"' + ((s.perks.theme || '') === t ? ' style="border-color:var(--cyan);color:var(--cyan)"' : '') + '>' + (t || 'default') + '</button>').join('') + '</div>' : '') +
       '<h3>YOUR RECORD</h3><div class="muted">the deck syncs your record on its own after every talk and every gig. there is no chip and no manual save. if you flatline, you go back to the last sync.' + (s.meta.lastSync ? ' last sync · ' + Math.max(1, Math.round((Date.now() - s.meta.lastSync) / 60000)) + ' min ago.' : '') + '</div><div class="row" style="margin-top:8px"><button class="btn ghost" id="wipe" style="border-color:var(--red);color:var(--red)">WIPE THIS HANDLE</button></div></div>'; }
   // ---- marrow's stall: shelves on the left, what each thing does to you, what you carry ----------------
@@ -541,7 +541,7 @@
       const res = Game.commit(); sfx(res.ok ? 'ok' : 'fail'); if (res.ok) { toast(res.finished ? (r.job.rite ? 'RITE COMPLETE' : 'DIVE COMPLETE') : 'FLOOR CLEARED', 'grn'); if (r.feedback && r.feedback.leveled) toast('SHARPER · ' + SKILLS[r.feedback.leveled.skill] + ' → ' + Game.LEVEL_NAMES[r.feedback.leveled.level], 'mag'); if (res.result && res.result.promoted) toast('THE BOARD CALLS YOU CLASS ' + res.result.promoted, 'yel'); } return render(); }
     if (t.dataset.shelf) { cur.shelf = t.dataset.shelf; cur.shopMsg = null; return render(); }
     if (t.dataset.ltheme) { cur.ltheme = t.dataset.ltheme; return render(); }
-    if (t.dataset.diff) { const r = Game.setDifficulty(t.dataset.diff); toast(r.ok ? 'SETTING · ' + DIFFICULTY[t.dataset.diff].name : r.why, r.ok ? 'grn' : 'mag'); return render(); }
+    if (t.dataset.diff) { const r = Game.setDifficulty(t.dataset.diff); toast(r.ok ? 'DIFFICULTY · ' + DIFFICULTY[t.dataset.diff].name : r.why, r.ok ? 'grn' : 'mag'); return render(); }
     if (t.dataset.mstage) { cur.stage = t.dataset.mstage; return render(); } if (t.dataset.bjump) { const v = t.dataset.bjump; if (v.startsWith('stage:')) { cur.boardStage = v.slice(6); cur.boardShow = 'all'; cur.job = null; } else { cur.job = v; cur.boardShow = 'all'; cur.boardStage = null; } view = 'jobs'; return render(); }
     if (t.dataset.bshow) { cur.boardShow = t.dataset.bshow; cur.job = null; return render(); } if (t.dataset.bcls) { cur.boardCls = cur.boardCls === t.dataset.bcls ? null : t.dataset.bcls; cur.job = null; return render(); } if (t.dataset.bstage != null && t.hasAttribute('data-bstage')) { cur.boardStage = t.dataset.bstage || null; cur.job = null; return render(); }
     if (t.dataset.bfold) { const k = t.dataset.bfold, f = cur.boardFold || (cur.boardFold = {}); f[k] = t.getAttribute('aria-expanded') === 'true'; return render(); }
