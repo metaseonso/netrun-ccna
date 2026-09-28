@@ -165,7 +165,7 @@
   // ---- the map: one line through the districts, a dot per night, a panel for the district you pick -----
   function stageState(stg){ const s = Game.state, read = stg.levels.filter(l => s.read[l.id]).length, jobs = JOBS.filter(j => jobStage(j) === stg), done = jobs.filter(j => s.jobsDone[j.id]).length;
     return { read, total: stg.levels.length, jobs: jobs.length, done, open: jobs.filter(j => !Game.jobStatus(j).locked.length && !s.jobsDone[j.id]).length, state: read === stg.levels.length && done === jobs.length ? 'cleared' : read || done ? 'lit' : 'new' }; }
-  function mapPos(i, n){ const per = 4, row = Math.floor(i / per), col = i % per, rows = Math.ceil(n / per); const x = 12 + (row % 2 ? per - 1 - col : col) * 25.3; const y = rows > 1 ? 10 + row * (50 / (rows - 1)) : 30; return { x, y: y + (col % 2 ? 6 : -4) }; }
+  function mapPos(i, n){ const per = 4, row = Math.floor(i / per), col = i % per, rows = Math.ceil(n / per); const x = 12 + (row % 2 ? per - 1 - col : col) * 25.3; const y = rows > 1 ? 8 + row * ((rows > 2 ? 64 : 50) / (rows - 1)) : 30; return { x, y: y + (col % 2 ? 6 : -4) }; }
   function hereStage(){ const s = Game.state; let best = null, t = 0; STAGES.forEach(stg => stg.levels.forEach(l => { if (s.read[l.id] > t) { t = s.read[l.id]; best = stg; } })); return best || STAGES[0]; }
   function home(){ const s = Game.state, dm = Game.dm.pending(), here = hereStage(); if (!cur.stage) cur.stage = here.id; const sel = STAGES.find(x => x.id === cur.stage) || here;
     const pos = STAGES.map((stg, i) => mapPos(i, STAGES.length)); const st = STAGES.map(stageState); const lit = STAGES.reduce((a, stg) => a + stg.levels.filter(l => s.read[l.id]).length, 0), all = STAGES.reduce((a, stg) => a + stg.levels.length, 0);
