@@ -47,6 +47,49 @@
         { k: 'SYNC', q: { prompt: 'Dora, Denise\'s intern, leans over the desk with a pencil: "The market router asks the gate router, and the gate router asks the roof clock, which is wired to the GPS. So what stratum is the market router?"', opts: ['1', '2', '3', '16'], a: 2,
           yes: 'Denise: "Three. One for every hop down from the GPS."', no: 'Denise: "Count the hops. GPS 0, roof 1, gate 2, market 3."',
           why: 'Denise: The GPS reference clock is stratum 0. The roof clock is wired straight to it, so it is stratum 1. The gate router gets its time from the roof clock, stratum 2, and the market router gets its time from the gate, stratum 3. Each server adds one.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 38 · DNS
+    { id: 'n38-names', title: 'A name for every number', sub: 'DNS', npc: 'denise', day: [38], src: [PS('DNS.md')], unlocks: ['dns'],
+      beats: [
+        { k: 'SCENE', where: 'The exchange hall · the switchboard room · a quarter to ten at night',
+          lines: [
+            { who: 'narr', text: 'The coffee is fresher tonight, and the room smells of it. One of Denise\'s three screens shows the clinic\'s front desk on a video call. Imani is on it, still in her scrubs, holding a printout up to the camera: a login page with the clinic\'s logo on it and the clinic\'s name spelled wrong.' },
+            { who: 'Imani', text: 'The desks type records, like they always do, and this comes up asking for our passwords. I only caught it because it says Watson Clinc. Nobody\'s typed a password into it. I don\'t think.' },
+            { who: 'denise', text: 'Nobody types numbers, that\'s the trouble. You type records, and something turns it into an address. That something is [[DNS]], the Domain Name System, and in Watson the something is me: the exchange router answers names for the whole district. If somebody changed my answer, every desk goes wherever I say.' },
+            { who: 'you', text: 'How does a desk know to ask you?' },
+            { who: 'denise', text: 'It\'s told. Either somebody types my address into the PC, or it comes with the lease when the desk gets its address from DHCP, along with the gateway. ipconfig /all on a Windows desk shows you which DNS servers it\'s using.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What does the question actually look like?', reply: 'Denise: "Small. Where is records, please, and the answer comes back as a record. An A record maps a name to an IPv4 address, and an AAAA record maps it to an IPv6 one. It goes over UDP, port 53, because it\'s one question and one answer. If the answer is bigger than 512 bytes, it goes over TCP instead."' },
+            { tone: 'press', say: 'So anyone who can change your answers owns the clinic?', reply: 'Denise: "Anyone who can change them, or anyone who can get a desk to ask somebody else. That\'s why the desks ask me and nobody else, and why I want to know who touched my table."' },
+            { tone: 'care', say: 'Imani, are you all right?', reply: 'Imani: "I\'ve had worse nights. I carried charts up three floors once, you know." She puts the printout down. "This one just feels like somebody wanted us to look stupid."' }
+          ] } },
+        { k: 'SCENE', where: 'The switchboard room · Denise\'s screen', real: ['sri'],
+          lines: [
+            { who: 'denise', text: 'The exchange router can be a small DNS server all by itself. ip dns server switches that on. ip host and a name and an address puts a line in its host table, and it answers from the table first. show hosts reads the table back.' },
+            { who: 'denise', text: 'Anything that isn\'t in my table, I ask a bigger server out on the internet. ip name-server gives the router that server\'s address, and ip domain lookup lets it ask. Lookup is on by default, and plenty of people switch it off, because a router with nobody to ask stops for a few seconds on every mistyped command, trying to look it up as a name.' },
+            { who: 'narr', text: 'She turns the screen toward you. The table has six lines. One of them says records, and the address after it is on the clinic\'s own subnet, 10.37.2.66, where the records server has never lived.' },
+            { who: 'denise', text: 'I didn\'t type that. Nobody\'s logged into this router since I last saved it, as far as the router can tell me, and the router can\'t tell me much.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Can a PC remember an answer?', reply: 'Denise: "It caches them, for as long as the record says. ipconfig /displaydns shows what a Windows desk remembers, and ipconfig /flushdns makes it forget, so the next question goes to the server again. After tonight, every desk at the clinic gets a flush."' },
+            { tone: 'press', say: 'Why can\'t the router tell you who changed it?', reply: 'Denise: "Because everybody logs into it with the same password, from the same shell, and its log lives in its own memory. Ace keeps telling me that. Tonight I believe her."' },
+            { tone: 'quiet', say: '(Read the other five lines of the table.)', reply: 'council, market, gate, printer and the payments server, each with its address, in Denise\'s spelling. When she scrolls to the running-config, the records line is the last of them, typed after everything else.' }
+          ] } },
+        { k: 'LORE', title: 'ONE FILE FOR THE WHOLE WORLD', year: 1983, real: ['sri'], vibe: 'Gag me with a spoon. Every computer on the net downloading the same phone book.',
+          text: 'Denise, scrolling the table: "Before 1983 every computer on the ARPANET kept one text file, HOSTS.TXT, and fetched a fresh copy from the Network Information Center at SRI, where Elizabeth Feinler\'s team kept it by hand. In November 1983 Paul Mockapetris published RFC 882 and RFC 883: a system where nobody keeps the whole list, and every server knows who to ask next. Every computer still keeps a hosts file somewhere, in a folder nobody opens."' },
+        { k: 'KIT', text: 'Denise writes the names on the back of a call sheet.', real: ['sri'], kit: [
+          { cmd: 'A · AAAA', what: 'name to IPv4 · name to IPv6' },
+          { cmd: 'UDP 53 · TCP 53 over 512 bytes', what: 'one question, one answer' },
+          { cmd: 'ip dns server · ip host records 10.37.20.10 · show hosts', what: 'the router answers from its own host table' },
+          { cmd: 'ip name-server 8.8.8.8 · ip domain lookup (old: ip domain-lookup)', what: 'ask a bigger server for the rest. Lookup is on by default' },
+          { cmd: 'ip domain name watson.net (old: ip domain-name)', what: 'the router\'s own domain' },
+          { cmd: 'ipconfig /all · ipconfig /displaydns · ipconfig /flushdns', what: 'which DNS servers a Windows desk uses · its cache · empty the cache' },
+          { cmd: 'nslookup records · ping records · ping 10.37.20.10 -n 10', what: 'ask by name · ping by name · ping ten times' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani, on the call: "So when the desk asks for records and gets 10.37.20.10 back, what kind of answer is that?"', opts: ['An AAAA record', 'An A record', 'A lease', 'A host route'], a: 1,
+          yes: 'Denise: "An A record. A name and an IPv4 address."', no: 'Denise: "An A record. AAAA is the IPv6 one."',
+          why: 'Denise: An A record maps a name to an IPv4 address, like records to 10.37.20.10. An AAAA record maps a name to an IPv6 address. A lease is what DHCP hands out, and a route is how a router forwards, not how a name becomes a number.' } }
       ] }
   ] });
 })();
