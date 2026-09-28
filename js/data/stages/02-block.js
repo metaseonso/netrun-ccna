@@ -84,5 +84,45 @@
           yes: 'Cider: "No. Nobody has turned it on yet."', no: 'Cider: "No. On a router, every port is administratively down until someone types no shutdown."',
           why: 'Cider: Cisco router interfaces are administratively down by default. The Status column of show ip interface brief shows administratively down until no shutdown is entered in interface configuration mode. Cisco switch interfaces are not shut down by default.' } }
       ] },
+    // ------------------------------------------------------------ night 10 · the IPv4 header
+    { id: 'n10-the-tab', title: 'Reading the tab', sub: 'the IPv4 header, TTL and fragments', npc: 'cider', day: [10], src: [PS('IPv4_Header.md')], unlocks: ['ipv4-header'],
+      beats: [
+        { k: 'SCENE', where: 'Cider\'s bar · closing time',
+          lines: [
+            { who: 'narr', text: 'The chairs are up on the tables and the floor smells of bleach and spilled cider. The receipt printer behind the bar chatters out a long curl of paper, and Cider tears it off and lays it along the counter, weighed down at each end with a glass. Tomas from the bakery sits on the one stool still down, flour in his eyebrows.' },
+            { who: 'Tomas', text: 'The mill across the river takes my flour order every night at eleven. For three nights it hasn\'t arrived, and the mill swears they never saw it.' },
+            { who: 'cider', text: 'I had the router print one of your packets. Every packet carries a header in front of its data, and I read a header the way I read a bar tab, line by line, and every line has a fixed number of bits.' },
+            { who: 'cider', text: 'The first four bits are the Version, 4 for IPv4. The next four are the [[IHL]], the header length, counted in four-byte words: 5 means the smallest header, 20 bytes, and 15 means the largest, 60 bytes. Then six bits of [[DSCP]], which says how urgent the packet is, and two bits of [[ECN]], which lets the network warn the two ends about congestion without dropping anything.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What comes after that?', reply: 'Cider: "Sixteen bits of Total Length, the whole packet, header and data, from 20 bytes to 65,535. Then the fragment lines, then TTL, then Protocol, which says what\'s inside: 1 is ICMP, 6 is TCP, 17 is UDP, 89 is OSPF. Then a 16-bit header checksum, and the source and destination addresses, 32 bits each. Options can add up to 40 bytes at the end, and usually add nothing."' },
+            { tone: 'press', say: 'Why is the header length counted in words instead of bytes?', reply: 'Cider: "Because the field is only four bits, so it can only count to 15. Fifteen bytes wouldn\'t hold even the smallest header, and fifteen four-byte words is 60 bytes, which is enough for the biggest header anyone is allowed to write."' },
+            { tone: 'care', say: 'Tomas, what happens without the flour?', reply: 'Tomas: "Tomorrow I bake half a batch. The day after, I bake none." Cider pours him a glass without asking whether he wants one.' }
+          ] } },
+        { k: 'SCENE', where: 'Cider\'s bar · the tab on the counter',
+          lines: [
+            { who: 'cider', text: 'Here\'s your trouble. The [[TTL]], time to live, is eight bits. The sender sets it, 64 is the recommended starting value, and every router that forwards the packet takes one off. A router that brings it to zero drops the packet and sends an ICMP time exceeded message back to the sender.' },
+            { who: 'cider', text: 'On your packet the TTL had fallen by one at every hop between the same two routers, back and forth, the bakery\'s router and mine, until it ran out. Somebody told each router that the mill is behind the other one. Without the TTL, that packet would still be going round.' },
+            { who: 'cider', text: 'The other lines on the tab are for packets that are too big. Every link has an [[MTU]], the biggest packet it carries, usually 1500 bytes. A bigger packet gets cut into [[fragment]]s. They all carry the same Identification number, the Fragment Offset says where each piece goes, and the three Flags bits say the rest: the first is reserved and always 0, [[DF]] means don\'t fragment, and [[MF]] means more fragments follow.' },
+            { who: 'Tomas', text: 'Can you stop the loop tonight?' },
+            { who: 'cider', text: 'I can take the wrong route out of my router. Nexthop drives the roads between districts, and he\'ll want to know who typed it.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How would I see the loop myself?', reply: 'Cider: "tracert from Tomas\'s till. It sends packets with a TTL of 1, then 2, then 3, and every router that drops one tells you its address. In a loop you see the same two addresses taking turns all the way to hop thirty."' },
+            { tone: 'press', say: 'What stops a fragment arriving before the others?', reply: 'Cider: "Nothing, and that\'s fine. The receiver holds the pieces until it has them all, puts them in order by the offset, and knows it has the last one because its MF bit is 0. An unfragmented packet has MF set to 0 as well."' },
+            { tone: 'quiet', say: '(Run a finger down the TTL column of the tab.)', reply: 'The numbers fall one at a time, 63, 62, 61, the same two router addresses alternating beside them, down to a row where the TTL reads 1 and the next row is blank.' }
+          ] } },
+        { k: 'LORE', title: 'THE TTL TRICK', year: 1987, vibe: 'Bodacious. Send a packet out to die one hop further each time and write down who reports it.',
+          text: 'Cider, rolling up the tab: "In 1987 Van Jacobson, at the Lawrence Berkeley lab, wrote a little program called traceroute. He had worked out that if you send a packet with a TTL of 1, the first router kills it and tells you its name, and with a TTL of 2 the second one does. Nobody built a way to map the path; he borrowed the field that was there to kill loops. I still use it every week."' },
+        { k: 'KIT', text: 'Cider writes the tab\'s layout on the back of a menu.', kit: [
+          { cmd: 'Version 4 · IHL 4 · DSCP 6 · ECN 2 · Total Length 16 (bits)', what: 'IHL counts 4-byte words: 5 = 20 B minimum, 15 = 60 B maximum' },
+          { cmd: 'Identification 16 · Flags 3 (0, DF, MF) · Fragment Offset 13', what: 'fragments of one packet share an ID. MTU usually 1500 B' },
+          { cmd: 'TTL 8 · Protocol 8 (1 ICMP · 6 TCP · 17 UDP · 89 OSPF) · Header Checksum 16', what: 'TTL: start 64, minus 1 per router, dropped at 0' },
+          { cmd: 'Source 32 · Destination 32 · Options 0–320 bits (0–40 B)', what: 'the addresses, then anything extra' },
+          { cmd: 'tracert 10.10.0.5 (PC) · traceroute (Cisco)', what: 'uses TTL 1, 2, 3 ... to list each router on the path' } ] },
+        { k: 'SYNC', q: { prompt: 'Tomas, watching Cider roll the tab up: "So what finally stopped my order going round and round?"', opts: ['The TTL reached 0 and a router dropped it', 'The checksum failed', 'The MTU was too small', 'The DF bit was set'], a: 0,
+          yes: 'Cider: "The TTL. It\'s the only line on the tab that counts down."', no: 'Cider: "The TTL ran out. Every router took one off, and the one that reached zero dropped it."',
+          why: 'Cider: Each router that forwards a packet decreases its TTL by 1. When a router decreases it to 0, it drops the packet and sends an ICMP time exceeded message to the source. That is what ends a routing loop. The checksum, MTU and DF bit have nothing to do with loops.' } }
+      ] },
   ] });
 })();

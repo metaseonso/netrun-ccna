@@ -44,7 +44,7 @@ window.GLOSSARY = {
   'vlsm': 'Variable Length Subnet Masking. Different subnets, different sizes. Slice big first, then small.',
   'wildcard mask': 'Inverse of the subnet mask. 0 bits = must match, 1 bits = don\'t care. 0.0.0.255 covers a /24.',
   'private address': 'RFC 1918 ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Never routed on the public internet.',
-  'ttl': 'Time To Live. Decremented per router hop; packet dies at 0. Stops loops from lasting forever.',
+  'ttl': 'Time to Live: the 8-bit IPv4 header field. The sender sets it (64 recommended), each router decreases it by 1, and a router drops the packet at 0 and sends ICMP time exceeded. It stops routing loops from lasting forever.',
   'mac address': '48-bit hardware address burned into a NIC. First half = vendor (OUI). Written like 00:1A:2B:3C:4D:5E.',
   'mac address table': 'A switch\'s list of MAC addresses and the port (and VLAN) each was learned on, built from the SOURCE address of received frames. Entries learned from traffic are dynamic and age out after 5 minutes.',
   'flooding': 'A switch sending a frame out of every port except the one it arrived on: done for broadcasts and for unknown unicast frames.',
@@ -197,5 +197,12 @@ window.GLOSSARY = {
   'crc': 'Cyclic redundancy check: the math behind the Ethernet FCS. The CRC counter in show interfaces counts frames whose FCS did not match.',
   'late collision': 'A collision detected after the first 64 bytes of a frame. Should never happen on a working link; the usual cause is a duplex mismatch.',
   'collision domain': 'The part of a network where two frames sent at once collide. Everything on a hub shares one; each switch port is its own.',
-  'csma/cd': 'Carrier Sense Multiple Access with Collision Detection: on half-duplex Ethernet, listen before sending, and if a collision happens, stop, send a jam signal and wait a random time before trying again.'
+  'csma/cd': 'Carrier Sense Multiple Access with Collision Detection: on half-duplex Ethernet, listen before sending, and if a collision happens, stop, send a jam signal and wait a random time before trying again.',
+  'ihl': 'Internet Header Length: the 4-bit IPv4 header field giving the header length in 4-byte words. Minimum 5 (20 bytes), maximum 15 (60 bytes).',
+  'dscp': 'Differentiated Services Code Point: the 6-bit IPv4 header field used to mark packets for priority (QoS), for example voice ahead of bulk data.',
+  'ecn': 'Explicit Congestion Notification: the 2-bit IPv4 header field that lets routers signal congestion to the two ends without dropping packets.',
+  'mtu': 'Maximum Transmission Unit: the largest packet a link can carry, usually 1500 bytes on Ethernet. Larger IPv4 packets are fragmented.',
+  'fragment': 'A piece of an IPv4 packet that was too large for a link\'s MTU. Fragments share the Identification value; the Fragment Offset says where each belongs.',
+  'df': 'Don\'t Fragment: bit 1 of the IPv4 Flags field. When set, a router drops a packet that is too big instead of fragmenting it.',
+  'mf': 'More Fragments: bit 2 of the IPv4 Flags field. Set on every fragment except the last; 0 on unfragmented packets.'
 };
