@@ -289,7 +289,7 @@
 .diffpick{margin-bottom:16px} .diffpick h3{margin:0 0 12px;font-family:var(--disp);font-size:14px;letter-spacing:.16em;color:var(--yel)}
 .diffs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin:0 0 10px}
 .diff{display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px 14px;background:var(--panel);border:1px solid var(--line);color:var(--ink);cursor:pointer}
-.diff b{font-family:var(--disp);font-size:15px;letter-spacing:.14em;color:var(--cyan)} .diff.cyberpsycho b{color:var(--mag)}
+.diff b{display:flex;align-items:center;font-family:var(--disp);font-size:15px;letter-spacing:.14em;color:var(--cyan)} .diff.cyberpsycho b{color:var(--mag)}
 .diff span{font-size:13px;color:var(--ink2)} .diff em{font-style:normal;font-size:12px;color:var(--ink)}
 .diff:hover{border-color:var(--cyan)}
 .lthemes{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:center;margin:12px 0} .lthemes .btn.on{border-color:var(--cyan);color:var(--cyan)}
@@ -297,4 +297,8 @@
 .diffchip{display:inline-flex;align-items:center;gap:6px;margin-left:8px;color:var(--ink2);cursor:help} .diffchip .stars{font-style:normal;font-size:16px;letter-spacing:2px;color:var(--yel)} .diffchip .stars s{text-decoration:none;color:var(--ink3);opacity:.6}
 .modal .diffs{margin:12px 0}
 .b-id .who .ava,.b-id .who img{flex:none} .diffchip{flex:none}
-@media (max-width:520px){.b-id .who{min-width:30px} .diffchip{margin-left:0;gap:0} .diffchip .stars{font-size:12px;letter-spacing:0} .diffchip svg{display:none}}
+@media (max-width:520px){.b-id .who{min-width:30px} .diffchip{margin-left:0;gap:0} .diffchip .stars{font-size:12px;letter-spacing:0} .diffchip > svg{display:none}}
+.dicon{display:inline-flex;vertical-align:middle;margin-right:10px} .dicon .ic{width:30px;height:30px;stroke-width:1.8}
+.dicon.easy{color:var(--cyan)} .dicon.normal{color:var(--yel)} .dicon.cyberpsycho{color:var(--mag);filter:drop-shadow(0 0 6px rgba(255,63,164,.55))}
+.diffchip .dicon{margin-right:0} .diffchip .dicon .ic{width:18px;height:18px}
+@media (max-width:520px){.diffchip .dicon .ic{width:16px;height:16px}}

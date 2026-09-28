@@ -35,6 +35,9 @@
     record: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
     journal: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
     hunger: '<path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8 7c0-1.5 1-1.5 1-3M12 7c0-1.5 1-1.5 1-3M16 7c0-1.5 1-1.5 1-3"/>',
+    easy: '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    normal: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    cyberpsycho: '<path d="M12 3a8 8 0 0 0-8 8c0 2.6 1.2 4.4 3 5.5V20h10v-3.5c1.8-1.1 3-2.9 3-5.5a8 8 0 0 0-8-8z"/><circle cx="9" cy="11" r="1.6"/><circle cx="15" cy="11" r="1.6"/><path d="M10 20v-2M14 20v-2M11 15.5h2"/>',
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><path d="M12 17h.01"/>',
     chrome: '<path d="M12 2 20.5 7v10L12 22 3.5 17V7z"/><path d="M13 7l-3 5h4l-3 5"/>',
     rep: '<path d="M5 14l7-7 7 7M5 20l7-7 7 7"/>',
@@ -170,9 +173,9 @@
   function mapPos(i, n){ const per = 4, row = Math.floor(i / per), col = i % per, rows = Math.ceil(n / per); const x = 12 + (row % 2 ? per - 1 - col : col) * 25.3; const y = rows > 1 ? 8 + row * ((rows > 2 ? 64 : 50) / (rows - 1)) : 30; return { x, y: y + (col % 2 ? 6 : -4) }; }
   function hereStage(){ const s = Game.state; let best = null, t = 0; STAGES.forEach(stg => stg.levels.forEach(l => { if (s.read[l.id] > t) { t = s.read[l.id]; best = stg; } })); return best || STAGES[0]; }
   // difficulty: picked once before the campaign starts (diffGate); afterwards only lowered, from the account menu (lowerModal)
-  const stars = k => { const i = DIFFICULTY_ORDER.indexOf(k); return '<i class="stars" aria-label="' + (i + 1) + ' of 3 stars">' + '★'.repeat(i + 1) + '<s>' + '★'.repeat(DIFFICULTY_ORDER.length - i - 1) + '</s></i>'; };
+  const stars = k => '<i class="dicon ' + k + '" aria-label="' + DIFFICULTY[k].name + '">' + icon(k) + '</i>';
   function diffCards(keys){ return '<div class="diffs">' + keys.map(k => { const d = DIFFICULTY[k];
-    return '<button class="diff ' + k + '" data-diff="' + k + '"><b>' + d.name + ' ' + stars(k) + '</b><em>Pay: C ' + d.pay[1] + ' · B ' + d.pay[2] + ' · A ' + d.pay[3] + '</em><em>Wrong commit: −' + d.wear + ' chrome</em></button>'; }).join('') + '</div>'; }
+    return '<button class="diff ' + k + '" data-diff="' + k + '"><b>' + stars(k) + d.name + '</b><em>Pay: C ' + d.pay[1] + ' · B ' + d.pay[2] + ' · A ' + d.pay[3] + '</em><em>Wrong commit: −' + d.wear + ' chrome</em></button>'; }).join('') + '</div>'; }
   function diffGate(){ return '<div class="panel diffpick"><h3>DIFFICULTY</h3>' + diffCards(DIFFICULTY_ORDER) +
     '<p class="muted">Pick one to start. It can be lowered later from the account menu. It can\'t be raised.</p></div>'; }
   function diffChip(){ const s = Game.state; if (!s.diffPicked) return ''; const d = DIFFICULTY[s.difficulty];
