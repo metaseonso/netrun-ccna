@@ -55,7 +55,7 @@
         { k: 'SCENE', where: 'The exchange hall · the switchboard room · a quarter to ten at night',
           lines: [
             { who: 'narr', text: 'The coffee is fresher tonight, and the room smells of it. One of Denise\'s three screens shows the clinic\'s front desk on a video call. Imani is on it, still in her scrubs, holding a printout up to the camera: a login page with the clinic\'s logo on it and the clinic\'s name spelled wrong.' },
-            { who: 'Imani', text: 'The desks type records, like they always do, and this comes up asking for our passwords. I only caught it because it says Watson Clinc. Nobody\'s typed a password into it. I don\'t think.' },
+            { who: 'Imani', text: 'The desks type records, like they always do, and this comes up asking for our passwords. I only caught it because it says Watson Clinc. I don\'t think anybody\'s typed a password into it yet.' },
             { who: 'denise', text: 'Nobody types numbers, that\'s the trouble. You type records, and something turns it into an address. That something is [[DNS]], the Domain Name System, and in Watson the something is me: the exchange router answers names for the whole district. If somebody changed my answer, every desk goes wherever I say.' },
             { who: 'you', text: 'How does a desk know to ask you?' },
             { who: 'denise', text: 'It\'s told. Either somebody types my address into the PC, or it comes with the lease when the desk gets its address from DHCP, along with the gateway. ipconfig /all on a Windows desk shows you which DNS servers it\'s using.' }
@@ -74,7 +74,7 @@
           ],
           choice: { opts: [
             { tone: 'ask', say: 'Can a PC remember an answer?', reply: 'Denise: "It caches them, for as long as the record says. ipconfig /displaydns shows what a Windows desk remembers, and ipconfig /flushdns makes it forget, so the next question goes to the server again. After tonight, every desk at the clinic gets a flush."' },
-            { tone: 'press', say: 'Why can\'t the router tell you who changed it?', reply: 'Denise: "Because everybody logs into it with the same password, from the same shell, and its log lives in its own memory. Ace keeps telling me that. Tonight I believe her."' },
+            { tone: 'press', say: 'Why can\'t the router tell you who changed it?', reply: 'Denise: "Because everybody logs into it with the same password, from the same shell, and its log lives in its own memory. Ace has been telling me that for a year, and tonight I believe her."' },
             { tone: 'quiet', say: '(Read the other five lines of the table.)', reply: 'council, market, gate, printer and the payments server, each with its address, in Denise\'s spelling. When she scrolls to the running-config, the records line is the last of them, typed after everything else.' }
           ] } },
         { k: 'LORE', title: 'ONE FILE FOR THE WHOLE WORLD', year: 1983, real: ['sri'], vibe: 'Gag me with a spoon. Every computer on the net downloading the same phone book.',
@@ -150,7 +150,7 @@
           choice: { opts: [
             { tone: 'ask', say: 'Does the box ever speak first?', reply: 'Denise: "When something happens, a port going down, a fan dying, it sends a notification without being asked. A Trap is sent and forgotten. An Inform has to be acknowledged by the manager, so the box knows it arrived. The agents listen on UDP port 161, and the manager listens for notifications on UDP port 162."' },
             { tone: 'press', say: 'Set can change the box? From here?', reply: 'Denise: "With the right community string, yes. A community is a password that comes in two kinds: ro, read-only, and rw, read-write. An rw community is as good as the enable secret, and in version 2c it crosses the wire in plain text."' },
-            { tone: 'care', say: 'You built this map yourself?', reply: 'Denise: "Over six years, one dot at a time. Every dot is somebody who called me at three in the morning because the box was down and nobody had noticed. Now I notice first."' }
+            { tone: 'care', say: 'You built this map yourself?', reply: 'Denise: "Over six years, one dot at a time. Every dot is somebody who called me at three in the morning because the box was down and nobody had noticed, and these days I notice before they call."' }
           ] } },
         { k: 'SCENE', where: 'The switchboard room · the clinic router\'s dot', real: ['ietf'],
           lines: [
@@ -158,7 +158,7 @@
             { who: 'narr', text: 'She clicks the clinic router\'s dot. A window opens with its details. Under communities there are two lines: nightwatch, read-only, which is hers, and one more, read-write, called rootcellar.' },
             { who: 'denise', text: 'Rootcellar. Old Root used that string on the clinic\'s first routers, twenty years ago, back when his own apprentices were running the cables. It was never supposed to leave the clinic. My backup from August doesn\'t have it on this router, or on the market\'s.' },
             { who: 'narr', text: 'Ace is in the doorway with Sticky. She reads the window over Denise\'s shoulder and says nothing at all. Then she turns her clipboard face down on the desk.' },
-            { who: 'denise', text: 'Somebody who knew that string could have changed the gate\'s list at dawn without ever opening a shell. With Set.' }
+            { who: 'denise', text: 'Somebody who knew that string could have changed the gate\'s list at dawn without ever opening a shell, with one Set.' }
           ],
           choice: { opts: [
             { tone: 'ask', say: 'How do we shut it?', reply: 'Denise: "no snmp-server community rootcellar on every box it\'s on. Then a read-only community with an access list, snmp-server community nightwatch ro 40, so only my NMS may ask at all. The notifications go to snmp-server host, and snmp-server enable traps turns them on."' },
@@ -186,7 +186,7 @@
         { k: 'SCENE', where: 'The exchange hall · the attic · Beacon\'s station, on air',
           lines: [
             { who: 'narr', text: 'The attic stairs are narrow, and the air at the top is hot and smells of warm electronics and cheap incense. A red bulb over the door says ON AIR. Inside, a woman with pink spiky hair leans into a microphone on a boom arm, and on the screen beside her mixing desk, lines of text scroll past, every one with a percent sign in it.' },
-            { who: 'beacon', text: '...and that\'s the market router telling us port seven on the east stalls went down at two minutes past eleven and came back at four minutes past, so whoever kicked that cable, I heard you. This is Beacon on the Watson night band. Stay close.' },
+            { who: 'beacon', text: '...and that\'s the market router telling us port seven on the east stalls went down at two minutes past eleven and came back at four minutes past, so whoever kicked that cable, I heard you. This is Beacon on the Watson night band.' },
             { who: 'narr', text: 'She flips a switch, the red bulb goes dark, and a record starts on its own.' },
             { who: 'beacon', text: 'You\'re Ace\'s runner! Come in, mind the cables, sit on the amp. Every night I read the district\'s logs on air. Every Cisco box writes down what happens to it: a port going down, somebody logging in, somebody changing the config. That\'s [[syslog]].' },
             { who: 'beacon', text: 'By default a box only shows its messages on the console line and keeps them in a buffer in its own memory, and the buffer\'s gone when the power goes. Point the box at a syslog server and it sends every line there too, over UDP port 514. Mine is the grey box under this desk.' },
@@ -425,7 +425,7 @@
             { who: 'dispatch', text: 'Four numbers. [[Bandwidth]], what the link holds. [[Delay]], time one way, source to destination. [[Jitter]], how much that delay changes packet to packet. Loss, packets that never arrive. Voice wants delay 150 milliseconds or less. Jitter 30 or less. Loss one percent or less.' },
             { who: 'dispatch', text: 'Seven o\'clock. Charts upload. Router\'s queue fills. Default is FIFO, first in, first out. Queue full, newest packets dropped. [[Tail drop]]. Voice packets land in the tail and the words drop out.' },
             { who: 'you', text: 'Can the router drop something else instead?' },
-            { who: 'dispatch', text: 'That is tomorrow. Tonight is the VLANs.' }
+            { who: 'dispatch', text: 'Queues are tomorrow night; tonight is the VLANs.' }
           ],
           choice: { opts: [
             { tone: 'ask', say: 'What else goes wrong with tail drop?', reply: 'Dispatch: "Every TCP sender loses packets at the same moment. All of them slow down together and speed up together. Queue empties, fills, empties. TCP global synchronization. RED, random early detection, drops a few packets at random before the queue is full, so senders slow down one at a time. WRED does it by weight. Drops more of what matters less."' },

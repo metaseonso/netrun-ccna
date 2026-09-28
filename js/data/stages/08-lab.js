@@ -256,7 +256,7 @@
           { cmd: 'WPA TKIP · WPA2 CCMP (AES counter mode + CBC-MAC) · WPA3 GCMP (AES counter mode + GMAC)', what: 'encryption and MIC' },
           { cmd: 'Personal (PSK) · Enterprise (802.1X/EAP) · WPA3: SAE, forward secrecy', what: 'the modes' } ] },
         { k: 'SYNC', q: { prompt: 'Beacon, packing up the scanner: "Say someone records the wing\'s WPA3 traffic tonight and steals the passphrase next year. Can they read tonight\'s recording?"', opts: ['No. WPA3 has forward secrecy', 'Yes. The passphrase unlocks everything it ever protected', 'Only if they also steal the WLC', 'Only on the 2.4 GHz band'], a: 0,
-          yes: 'Ace: "No. Tonight stays tonight."', no: 'Ace: "No. Forward secrecy means an old recording stays locked."',
+          yes: 'Ace: "No. With forward secrecy, a key stolen tomorrow can\'t open tonight\'s recording."', no: 'Ace: "No. Forward secrecy means an old recording stays locked."',
           why: 'Ace: WPA3 provides forward secrecy: the keys protecting each session are not derived in a way that a stolen passphrase can recreate later, so traffic captured before the theft cannot be decrypted. SAE also protects the four-way handshake in personal mode.' } }
       ] },
 
@@ -326,7 +326,7 @@
             { who: 'ansible', text: '[[Machine learning]] is the part of AI that learns from data instead of being programmed rule by rule. Supervised learning trains on labelled examples, unsupervised finds patterns in unlabelled data, and reinforcement learning is rewarded or penalised for what it does. Deep learning uses neural networks with many layers. Predictive AI forecasts from history, and generative AI makes something new from the patterns it learned.' }
           ],
           choice: { opts: [
-            { tone: 'ask', say: 'Can the street have a controller too?', reply: 'Ansible: "It can have its own, running in the Lab, with its own REST API. The question for the council is not whether the boxes can be run from one place. It is whose place."' },
+            { tone: 'ask', say: 'Can the street have a controller too?', reply: 'Ansible: "It can have its own, running in the Lab, with its own REST API. The council isn\'t voting on whether the boxes are run from one place; it\'s voting on whose place that is."' },
             { tone: 'press', say: 'What if their AI decides wrong?', reply: 'Ansible: "Then it is wrong on four thousand boxes at once, and nobody in Watson has the password to stop it. An automated change goes out as fast as a good one. That is why every play I write is read by a person before it runs."' },
             { tone: 'quiet', say: '(Watch the demo to the end.)', reply: 'The demo ends on the Exchange, lit up in Halvorsen\'s colours. Ansible stops it before the logo comes up. "REST. Representational State Transfer. That is what their northbound interface speaks, and it is what ours will speak."' }
           ] } },
@@ -439,7 +439,7 @@
           choice: { opts: [
             { tone: 'ask', say: 'What happens if the controller goes down?', reply: 'Ansible: "The boxes keep forwarding, because the data plane still lives in each of them. What stops is change: no new policies, no new devices, until it comes back. That is why the council should care who holds it."' },
             { tone: 'press', say: 'Why not just let Halvorsen run it?', reply: 'Prof. Hypervisor: "Because the controller is where the decisions are. Whoever holds it decides which building talks to which, and what it costs. Ours runs on a blade the clinic paid for, in a basement the street can walk into."' },
-            { tone: 'joke', say: 'Does the drone report to the controller now?', reply: 'Ansible: "It reports to me. I report to nobody. In SDN terms the drone is infrastructure, I am the application, and the controller is Prof. Hypervisor\'s blade. The drone disagrees."' }
+            { tone: 'joke', say: 'Does the drone report to the controller now?', reply: 'Ansible: "It reports to me. I report to nobody. In SDN terms the drone is infrastructure, I am the application, and the controller is Prof. Hypervisor\'s blade, though the drone has never accepted it."' }
           ] } },
         { k: 'SCENE', where: 'The Lab · the whiteboard', real: ['cisco'],
           lines: [

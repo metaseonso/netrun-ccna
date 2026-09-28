@@ -19,7 +19,7 @@
           choice: { opts: [
             { tone: 'ask', say: 'How do you write a line?', reply: 'Ace: "Standard lists get a number from 1 to 99, or 1300 to 1999 when those run out. access-list 10 permit, then an address and a [[wildcard mask]]. A 0 bit in the mask means that bit has to match, a 1 means I don\'t care, so 0.0.0.255 takes the whole /24. The words any and host save typing: any is everyone, host is one address."' },
             { tone: 'press', say: 'Why not stop them at the gate, where they come in?', reply: 'Ace: "Because this list only knows who you are, not where you\'re going. Put it on the market\'s port and that kiosk can\'t reach anything at all: the council\'s page, the noodle bars, my office. I want to stop one knock at one door."' },
-            { tone: 'quiet', say: '(Hold your hand out, low, for the dog.)', reply: 'Sticky sniffs your knuckles once and puts her head back down on her paws. Ace watches, then writes something on the clipboard. "She remembers the first face on a port. Now she\'ll remember yours."' }
+            { tone: 'quiet', say: '(Hold your hand out, low, for the dog.)', reply: 'Sticky sniffs your knuckles once and puts her head back down on her paws. Ace watches, then writes something on the clipboard. "She remembers the first face she meets on a port, and now she has yours."' }
           ] } },
         { k: 'SCENE', where: 'The booth · the router shelf',
           lines: [

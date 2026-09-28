@@ -258,7 +258,7 @@
         { type: 'calc', skill: 'wifi-basics', text: 'Beacon, tuning the station\'s test tone: "Quick sums. How many hertz is 2.4 gigahertz? And my test tone repeats four times a second. What\'s its period?"',
           fields: [ { key: 'hz', label: '2.4 GHz in Hz', check: v => String(v).replace(/[,\s_]/g, '') === '2400000000' },
             { key: 'per', label: 'period of a 4 Hz wave, in seconds', check: v => Math.abs(Number(String(v).replace(/[,\s]/g, '').replace(/s$/, '')) - 0.25) < 1e-9 } ],
-          answer: '2400000000 Hz · 0.25 s', hint: 'Giga is a billion. The period is one second divided by the cycles per second.', ok: 'Beacon: "Two point four billion times a second, and a quarter of a second for my tone. Sums done."',
+          answer: '2400000000 Hz · 0.25 s', hint: 'Giga is a billion. The period is one second divided by the cycles per second.', ok: 'Beacon: "Two point four billion times a second, and a quarter of a second for my tone."',
           why: 'Beacon: Frequency is cycles per second, in hertz. Kilo is a thousand, mega a million, giga a billion, so 2.4 GHz is 2,400,000,000 Hz. The period is the time one cycle takes, which is 1 divided by the frequency: 1 / 4 Hz = 0.25 seconds.' },
         { type: 'form', skill: 'wifi-basics', text: 'Beacon: "The council\'s inspector will ask what the wing\'s Wi-Fi is. Name the service set for each."',
           fields: [ { key: 'adhoc', label: 'Two laptops talking straight to each other, no AP', options: ['IBSS', 'BSS', 'ESS', 'MBSS'], answer: 'IBSS' },
@@ -435,7 +435,7 @@
             { key: 'dhcp', label: 'Relays clients\' DHCP and runs web authentication', options: ['management', 'virtual', 'dynamic', 'redundancy management', 'service port'], answer: 'virtual' },
             { key: 'map', label: 'Maps the staff WLAN to VLAN 10', options: ['management', 'virtual', 'dynamic', 'redundancy management', 'service port'], answer: 'dynamic' },
             { key: 'sb', label: 'Reaches the standby WLC in an HA pair', options: ['management', 'virtual', 'dynamic', 'redundancy management', 'service port'], answer: 'redundancy management' } ],
-          hint: 'The APs manage in, the clients\' helper, the WLAN-to-VLAN map, the spare.', ok: 'Beacon: "Management, virtual, dynamic, redundancy management. You speak controller now."',
+          hint: 'The APs manage in, the clients\' helper, the WLAN-to-VLAN map, the spare.', ok: 'Beacon: "Management, virtual, dynamic, redundancy management, and not one of them is a physical port."',
           why: 'Beacon: The management interface terminates the CAPWAP tunnels. The virtual interface is used with wireless clients for DHCP relay and web authentication. Dynamic interfaces map WLANs to VLANs. The redundancy management interface reaches the standby WLC, and the service port interface is bound to the service port for out-of-band management.' },
         { type: 'choice', skill: 'wlc-config', text: 'Beacon: "SW1 is set to LACP active on the two ports to WLC1, and WLC1 is set to on. What should SW1 be set to?"',
           opts: ['channel-group 1 mode on, because a WLC only supports static LAG', 'channel-group 1 mode passive, so LACP waits for the WLC', 'channel-group 1 mode desirable, so PAgP negotiates it', 'No EtherChannel: a WLC can only use one port'], a: 0,
@@ -443,7 +443,7 @@
           why: 'Beacon: WLCs support only static LAG. They do not run LACP or PAgP, so the switch side must use channel-group mode on. With active, passive, desirable or auto on the switch, the two ends never agree and the ports do not bundle.' },
         { type: 'cmd', skill: 'wlc-config', text: 'Beacon: "Go on, then. Set SW1\'s two ports to WLC1 to mode on, keep them trunking, and let\'s see one bundle."',
           check: (d, ctx) => { const n = ctx.net(); const b = Object.values(n.bundles).find(g => [g.a, g.b].sort().join('|') === 'SW1|WLC1'); return !!b && b.links.length === 2 && n.trunk('SW1', gi(1)) && n.ping('LAP1', '10.0.0.7').ok; },
-          hint: 'SW1(config)# interface range g0/1 - 2\nSW1(config-if-range)# channel-group 1 mode on\nSW1# show etherchannel summary', ok: 'Beacon: "Po1, both ports in it, and LAP1 can reach the management interface over it. That\'s a controller."',
+          hint: 'SW1(config)# interface range g0/1 - 2\nSW1(config-if-range)# channel-group 1 mode on\nSW1# show etherchannel summary', ok: 'Beacon: "Po1, both ports in it, and LAP1 can reach the management interface over it."',
           why: 'Beacon: channel-group 1 mode on bundles the ports without any negotiation, which is the only kind of bundle a WLC accepts. Both ports then carry traffic as Port-channel 1, trunking the WLANs\' VLANs, and the AP reaches the WLC\'s management interface, 10.0.0.7, to build its CAPWAP tunnels.' },
         { type: 'choice', skill: 'wlc-config', text: 'Imani: "The Kabuki office\'s APs are on a different subnet. How do they find WLC1 when they boot?"',
           opts: ['Their DHCP server hands them WLC1\'s address in DHCP option 43', 'They broadcast until WLC1 answers', 'Someone types the address into each AP', 'CAPWAP finds every WLC on the internet'], a: 0,
@@ -542,7 +542,7 @@
 
     // ------------------------------------------------------------------ night 60 · topic gig (write valid JSON, fix a broken file)
     { id: 'a-n60-a-file-that-parses', cls: 'A', rep: 25, from: 'jason', title: 'A File That Parses', day: [60], requires: ['n60-matching-braces'], devices: ['ASW-A1'],
-      brief: 'DISPATCH » The council wants the street\'s own inventory next to Halvorsen\'s, in a file its computers can read. Jason is writing it. Start with the new wing\'s switch, and fix Halvorsen\'s broken file while you\'re there.\n\nCLIENT (Jason) » "A record is only a record if both sides can read it. Theirs cannot be read. Ours will be."',
+      brief: 'DISPATCH » The council wants the street\'s own inventory next to Halvorsen\'s, in a file its computers can read. Jason is writing it. Start with the new wing\'s switch, and fix Halvorsen\'s broken file while you\'re there.\n\nCLIENT (Jason) » "Their file won\'t parse, so the council can\'t read it, and ours is going to parse first time."',
       net: {
         devices: { 'ASW-A1': { kind: 'switch', mac: '0011.2260.0001' } }, links: [],
         preconfig: { 'ASW-A1': ['hostname ASW-A1', 'vlan 10', 'name PCS', 'vlan 20', 'name PHONES', 'vlan 40', 'name WIFI', 'vlan 99', 'name MGMT'] }
@@ -646,7 +646,7 @@
           why: 'Jason: 3xx responses are redirection: the resource is somewhere else, and 301 Moved Permanently gives its new location. 1xx is informational (102 Processing), 4xx is a client error and 5xx is a server error.' },
         { type: 'choice', skill: 'rest-api', text: 'Clerk Adebayo, looking at Jason\'s margin: "You read Halvorsen\'s password straight out of that header. How?"',
           opts: ['Basic authentication only encodes the username and password in Base64, and Base64 is easy to reverse. It is not encryption', 'Jason guessed it', 'The header was encrypted with a weak key', 'Bearer tokens are printed in plain text'], a: 0,
-          hint: 'Encoding and encryption are different things.', ok: 'Clerk Adebayo: "Recorded. Underlined, too."',
+          hint: 'Encoding and encryption are different things.', ok: 'Clerk Adebayo: "Recorded, and underlined for the council."',
           why: 'Jason: Basic authentication puts username:password in the HTTP Authorization header, encoded in Base64. Encoding only changes the format and anyone can reverse it, so Basic authentication is only safe inside an encrypted connection such as HTTPS.' },
         { type: 'cmd', skill: 'acl-extended', text: 'Jason: "So nothing reaches the controller in the clear. On R1, filter what comes in from the council\'s laptops: HTTPS to the controller at 10.0.0.30 is allowed, anything else to the controller is refused, and everything else carries on as before."',
           check: (d, ctx) => { const n = ctx.net(); return n.tcp('PC1', '10.0.0.30', 443).ok && !n.tcp('PC1', '10.0.0.30', 80).ok && !n.ping('PC1', '10.0.0.30').ok && n.ping('PC1', '10.0.0.1').ok; },
@@ -721,7 +721,7 @@
           why: 'Ansible: Intent-Based Networking (IBN) lets you state the desired outcome, such as keeping guests apart from staff, and the controller translates that intent into the configuration of every device and keeps it that way.' },
         { type: 'choice', skill: 'sdn', text: 'Clerk Adebayo: "And if the controller itself fails on Opening Night, does the Exchange go dark?"',
           opts: ['No. Each device keeps forwarding in its own data plane; only changes stop until the controller returns', 'Yes. Every switch stops forwarding without it', 'Yes, but only the wireless', 'No, because Halvorsen would take over automatically'], a: 0,
-          hint: 'Which plane did SDN move, and which one stayed in the boxes?', ok: 'Clerk Adebayo: "Then I will write that down. Twice."',
+          hint: 'Which plane did SDN move, and which one stayed in the boxes?', ok: 'Clerk Adebayo: "Then I will write that down in the ledger."',
           why: 'Ansible: SDN centralises the control plane, but the data plane stays in every device. If the controller fails, the devices keep forwarding with the tables they already have. New changes and policies wait until the controller is back.' }
       ],
       solution: [ { form: { dash: 'application', ctrl: 'control', sw: 'infrastructure' } }, 'commit', { form: { camp: 'SD-Access', dc: 'ACI', wan: 'SD-WAN' } }, 'commit', { form: { u: 'underlay', o: 'overlay', f: 'fabric' } }, 'commit',
@@ -791,7 +791,7 @@
             const tn = find(/^\s+- name: \S/, t + 1); if (tn < 0 || ind(L[tn]) <= ind(L[t]) - 1) return false; const m = find(/^\s+(cisco\.ios\.)?ios_config:$/, tn + 1); if (m < 0 || ind(L[m]) <= ind(L[tn])) return false;
             const ln = find(/^\s+lines:$/, m + 1); if (ln < 0 || ind(L[ln]) <= ind(L[m])) return false; const it = find(/^\s+- ip domain-name watson\.lab$/, ln + 1); return it > 0 && ind(L[it]) >= ind(L[ln]); },
           answer: '---\n- name: Opening Night baseline\n  hosts: access_switches\n  tasks:\n    - name: Set the domain name\n      cisco.ios.ios_config:\n        lines:\n          - ip domain-name watson.lab',
-          hint: '---, then - name:, with hosts: and tasks: indented under it, then the task\'s - name:, the module, lines:, and the line itself, each one indented further.', ok: 'Ansible reads it twice, then runs it against the forty switches on his shelf. Forty green lines. "Ours."',
+          hint: '---, then - name:, with hosts: and tasks: indented under it, then the task\'s - name:, the module, lines:, and the line itself, each one indented further.', ok: 'Ansible reads it twice, then runs it against the forty switches on his shelf. Forty green lines scroll past, and he turns the screen so the clerk can see them.',
           why: 'Ansible: A playbook is YAML: it starts with ---, and a play is a list item, - name:, with hosts: (the group of devices) and tasks: indented beneath it. Each task is another list item with its own - name: and a module, here cisco.ios.ios_config, whose lines: list holds the configuration lines. In YAML the indentation is the structure, so every level must be indented further than the one it belongs to, with spaces, never tabs.' }
       ],
       solution: [ { form: { a: 'agentless', p: 'agent-based', c: 'agent-based', t: 'agentless' } }, 'commit', { form: { ap: 'SSH', am: 'push', pm: 'pull', pport: '8140', cport: '10002' } }, 'commit',

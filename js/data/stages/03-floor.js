@@ -330,7 +330,7 @@
           { cmd: 'LLDP: every 30 s · holdtime 120 s · reinit 2 s · 0180.C200.000E', what: 'lldp timer · lldp holdtime · lldp reinit' },
           { cmd: 'show cdp · show cdp traffic · show cdp interface · show lldp · show lldp neighbors [detail]', what: 'the timers, the counters, the ports, the neighbours' } ] },
         { k: 'SYNC', q: { prompt: 'Vee Lan\'s camera installer comes down the stairs with a box of cameras: "These only speak the open one, LLDP. Your Cisco switches will see them out of the box, yes?"', opts: ['Yes, LLDP is on by default on every Cisco switch', 'Usually not. LLDP is off by default on Cisco boxes until someone types lldp run', 'No, Cisco switches can only run CDP', 'Yes, but only if CDP is turned off first'], a: 1,
-          yes: 'Mac: "Not until somebody tells them to. That\'s tonight\'s job."', no: 'Mac: "Off by default. lldp run, and they\'ll see each other."',
+          yes: 'Mac: "Not until somebody tells them to, and tonight that\'s you."', no: 'Mac: "Off by default. lldp run, and they\'ll see each other."',
           why: 'Mac: CDP is Cisco\'s own and is on by default. LLDP is the IEEE standard, 802.1AB, and on Cisco boxes it is usually off until you type lldp run in global config. A box can run both at once, so there is no need to turn CDP off.' } }
       ] }
   ] });
