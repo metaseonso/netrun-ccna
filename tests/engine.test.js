@@ -403,6 +403,7 @@ module.exports.run = function({ out }){
     const sw3 = ['en', 'conf t', 'vtp domain WATSON', 'vlan 99'];
     let d = devs({ SW1: sw1, SW2: sw2, SW3: sw3 }); let A = Net.api(Net.build(net, d));
     ok(A.vlans('SW2')[10] && A.vtp('SW2').rev === A.vtp('SW1').rev && A.ping('PC1', '10.19.10.2').ok, 'vtp: the client learns VLAN 10 from the server and the PCs meet (' + JSON.stringify(A.vtp('SW2')) + ')');
+    { const x = dev('X', 'ios', ['en', 'conf t', 'vlan 10', 'no vlan 10']); ok(!NetConfig.parse(x).vlans[10] && x.lines.some(r => r.line === 'no vlan 10'), 'vtp: no vlan 10 deletes VLAN 10 (not read as interface Vlan10)'); }
     d.SW2.exec('vlan 30'); ok(/not allowed when device is in CLIENT mode/.test(d.SW2.out[d.SW2.out.length - 1].s), 'vtp: a client cannot create VLANs');
     d.SW2.exec('int g0/2'); d.SW2.exec('no shutdown'); A = Net.api(Net.build(net, d));
     ok(A.vtp('SW1').rev === 40 && !A.vlans('SW1')[10] && A.vlans('SW1')[99] && !A.ping('PC1', '10.19.10.2').ok && /inactive/.test(Show.render(d.SW1, 'show interfaces status', A.state)), 'vtp: a switch with a higher revision wipes the domain and the ports go inactive');

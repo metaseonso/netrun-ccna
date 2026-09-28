@@ -142,6 +142,7 @@ Definition of done for a day:
   their own at revision 0, a switch with no domain joins the one it hears; access ports whose VLAN vanished go `inactive`;
   clients refuse `vlan N`; `switchport access vlan N` creates a missing VLAN like IOS; `show vtp status`; `api.vtp`, `api.vlans`.
   DTP: `switchport nonegotiate` on a trunk leaves a dynamic neighbour as access (a mismatch). Tested (section 28).
+  `no vlan 10` is no longer read as `no vlan10` (interface Vlan10).
 
 - 2026-09-28 · Multilayer switching: SVIs start shut down (all of them, not only VLAN 1) and their line protocol is up only when
   the VLAN exists and a switchport carrying it is up (autostate); a `switch` routes between its interfaces only with `ip
