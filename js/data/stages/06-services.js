@@ -61,6 +61,48 @@
         { k: 'SYNC', q: { prompt: 'Imani, the ward phone against her shoulder: "The file goes over TFTP. Could somebody on the ward read it going past?"', opts: ['Yes. TFTP has no encryption', 'No. UDP port 69 is encrypted', 'Only if they know the TFTP password', 'No. TFTP never leaves the router'], a: 0,
           yes: 'Shell: "Yes. That is why the switch it crosses has no other cables in it tonight."', no: 'Shell: "Yes. TFTP has no password and no encryption."',
           why: 'Shell: TFTP, on UDP port 69, has no login and no encryption. Anyone who can see the traffic can read the file, and anyone who can reach the server can take any file on it. The only protection is keeping everyone else off the network it crosses.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 44 · NAT, part 1
+    { id: 'n44-one-face', title: 'A face the street has seen', sub: 'NAT, part 1', npc: 'nat', day: [44], src: [PS('Network_Address_Translation_Part1.md')], unlocks: ['nat-static'],
+      beats: [
+        { k: 'SCENE', where: 'The exchange hall · Nat\'s mask stall · half past nine',
+          lines: [
+            { who: 'narr', text: 'Nat\'s stall is warm from a heat lamp clamped to the awning, and it smells of lacquer and new rubber. Masks hang in rows on brass hooks, most of them chrome, and a desk fan turns slowly under them so they nod at you as you come up. Nat is painting an eyebrow onto a blank with a brush the width of a hair.' },
+            { who: 'nat', text: 'Dispatch says the clinic wants a face on the street. Sit. Every machine in that building has a private address, 192.168 and something. RFC 1918 set aside three blocks that any building may use: 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16. Because everybody uses them, the internet will not carry them anywhere.' },
+            { who: 'you', text: 'Then how does the clinic reach anything outside?' },
+            { who: 'nat', text: 'It wears a mask. The router on the edge swaps the private source address for a public one on the way out and swaps it back on the way in. That is [[NAT]]. A [[static NAT]] mapping ties one private address to one public address for good, so the street can find it from outside, and that is what the clinic\'s new appointment server needs.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What are the four addresses people talk about?', reply: 'Nat: "Inside is the clinic\'s host, outside is whoever it talks to. Local is how an address looks from inside, global is how it looks from outside. The server\'s 192.168 address is its [[inside local]], its public address is its [[inside global]]. The far end\'s real address is its [[outside global]], and when you only translate the source, its [[outside local]] is the same number."' },
+            { tone: 'press', say: 'A mask is a lie. Why does anyone trust it?', reply: 'Nat, still painting: "Because it was only meant to last a year or two. NAT was written down in 1994 to buy time until everybody moved to a bigger address space. Sixx has been waiting for that move since 1998, and meanwhile every building in Watson wears one of my masks."' },
+            { tone: 'joke', say: 'Do you have one in my size?', reply: 'Nat laughs without looking up. "The clinic\'s provider gave it a /29, eight public addresses from 203.0.113.0 to 203.0.113.7. The first is the network and the last is the broadcast, the provider\'s router has .1 and the clinic\'s router has .2. That leaves four, and I am not wasting one on you."' }
+          ] } },
+        { k: 'SCENE', where: 'The Watson clinic · the comms room · eleven at night', real: ['cisco'],
+          lines: [
+            { who: 'narr', text: 'The comms room hums with fans and carries the dry heat of a rack that runs day and night. The new wing\'s appointment server stands on the floor still half in its shrink-wrap, a sticker on the side reading 192.168.44.10. Nat sets a tackle box of masks on top of it, opens the lid and takes nothing out.' },
+            { who: 'nat', text: 'First the router has to know which side is which. ip nat inside on the interface toward the clinic, ip nat outside on the interface toward the provider. Then the mapping itself: ip nat inside source static, the private address, then the public one.' },
+            { who: 'nat', text: 'show ip nat translations prints the table. A static mapping sits in it all the time, whether anyone is talking or not, and every conversation through the router adds a line with the far end\'s address. clear ip nat translation * wipes the conversations and leaves the static mappings, because those live in the config.' },
+            { who: 'you', text: 'And show ip nat statistics?' },
+            { who: 'nat', text: 'How many translations are live, and which interfaces are inside and outside. It is the first thing I read when somebody says NAT is broken, because half the time one interface has neither.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Who can reach the server once it has a public face?', reply: 'Nat: "Anyone on the internet who knows the address, from the first minute. A static mapping works in both directions, which is why a server gets one and a nurse\'s PC mostly does not need one. Ace will want her list in front of it before long."' },
+            { tone: 'press', say: 'Why not give every PC a static mapping?', reply: 'Nat: "Four public addresses and forty PCs. Static is one to one, so it runs out at four. Come back tomorrow night and I will show you how the rest of them share a face."' },
+            { tone: 'care', say: 'Is the new wing opening soon?', reply: 'Nat: "On Opening Night, the same night the council votes on the Exchange. An appointment page that answers from the street is one small thing the district can point at when Halvorsen says we cannot run our own net."' }
+          ] } },
+        { k: 'LORE', title: 'A SHORT-TERM SOLUTION', year: 1994, real: ['ietf'], vibe: 'All that and a bag of chips. A quick fix nobody planned to keep.',
+          text: 'Nat, closing the tackle box: "In May 1994 Kjeld Egevang and Paul Francis published RFC 1631, the IP Network Address Translator. They called it a short-term solution, something to hold the address space together until a bigger one arrived. It is in every building on this street. I keep this one on the stall because every temporary fix I have ever sold is still out there working."' },
+        { k: 'KIT', text: 'Nat writes the job inside the lid of the tackle box.', kit: [
+          { cmd: 'RFC 1918: 10.0.0.0/8 · 172.16.0.0/12 · 192.168.0.0/16', what: 'private addresses. The internet does not route them' },
+          { cmd: 'interface g0/0 → ip nat inside · interface g0/1 → ip nat outside', what: 'which side is which' },
+          { cmd: 'ip nat inside source static 192.168.44.10 203.0.113.3', what: 'static NAT: inside local to inside global, one to one, both directions' },
+          { cmd: 'show ip nat translations · show ip nat statistics', what: 'the table · the counts and the inside and outside interfaces' },
+          { cmd: 'clear ip nat translation *', what: 'clears the dynamic entries. Static mappings stay' },
+          { cmd: 'inside local · inside global · outside local · outside global', what: 'inside or outside: whose host. Local or global: seen from which side' } ] },
+        { k: 'SYNC', q: { prompt: 'Dora, passing the stall with a stack of lease cards: "The appointment server is 192.168.44.10 inside and 203.0.113.3 on the street. Which one is its inside global?"', opts: ['203.0.113.3', '192.168.44.10', '203.0.113.2', '8.8.8.8'], a: 0,
+          yes: 'Nat: "The street address. She has it."', no: 'Nat: "203.0.113.3. Inside global is the inside host as the outside sees it."',
+          why: 'Nat: Inside means the clinic\'s own host, and global means how it looks from outside, so the inside global is the public address the street sees, 203.0.113.3. The private 192.168.44.10 is its inside local. 203.0.113.2 is the router\'s own outside interface.' } }
       ] }
   ] });
 })();

@@ -58,6 +58,68 @@
         { dev: 'R1', type: ['configure terminal', 'boot system flash:' + IMG, 'end', 'write memory'] }, { dev: 'R2', type: ['configure terminal', 'boot system flash:' + IMG, 'end', 'write memory'] }, 'commit',
         { dev: 'R1', type: ['copy running-config tftp:', '10.43.0.100', ''] }, 'commit',
         { form: { fl: 'disk', nv: 'nvram', tf: 'network', sy: 'opaque' } }, 'commit', { choose: 0 }, 'commit' ],
-      outro: 'At four the routers restart one after the other and both come back on the new image. The ward phones are quiet for four minutes and ten seconds, and Imani writes the time on the whiteboard by the nurses\' station. Shell deletes the FTP login from the server before he goes up the stairs.' }
+      outro: 'At four the routers restart one after the other and both come back on the new image. The ward phones are quiet for four minutes and ten seconds, and Imani writes the time on the whiteboard by the nurses\' station. Shell deletes the FTP login from the server before he goes up the stairs.' },
+
+    // ------------------------------------------------------------------ night 44 · from Lab 44 (static NAT)
+    { id: 'b-n44-a-face-for-the-street', cls: 'B', rep: 20, from: 'nat', title: 'A Face for the Street', day: [44], requires: ['n44-one-face'], devices: ['R1', 'PC1'],
+      brief: 'DISPATCH » Clinic edge router. New appointment server needs a public face. Nurses\' station needs the prescription service outside. Nat has the addresses.\n\nCLIENT (the clinic front desk) » "People keep phoning to book because the page does not open from home. We have two receptionists and forty patients a morning."',
+      net: {
+        devices: {
+          R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0011.4444.0001' },
+          ISP: { kind: 'cloud', ip: '203.0.113.1', mask: '255.255.255.248', internet: true },
+          SRV1: { kind: 'server', ip: '192.168.44.10', mask: '255.255.255.0', gw: '192.168.44.1' },
+          PC1: { kind: 'host', ip: '192.168.44.21', mask: '255.255.255.0', gw: '192.168.44.1' }, PC2: { kind: 'host', ip: '192.168.44.22', mask: '255.255.255.0', gw: '192.168.44.1' }
+        },
+        links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'ISP' },
+          { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'SW1', ap: 'fastethernet0/2', b: 'PC2' }, { a: 'SW1', ap: 'fastethernet0/10', b: 'SRV1' } ],
+        preconfig: { R1: ['interface gigabitethernet0/0', 'ip address 192.168.44.1 255.255.255.0', 'no shutdown', 'interface gigabitethernet0/1', 'ip address 203.0.113.2 255.255.255.248', 'no shutdown', 'ip route 0.0.0.0 0.0.0.0 203.0.113.1'] }
+      },
+      map: { w: 540, h: 330, nodes: [
+          { id: 'ISP', label: 'the provider · 203.0.113.1', type: 'cloud', x: 270, y: 34 }, { id: 'R1', label: 'clinic edge router', type: 'router', x: 270, y: 116 },
+          { id: 'SW1', label: 'comms room switch', type: 'switch', x: 270, y: 200 },
+          { id: 'PC1', label: 'nurses\' station .21', type: 'pc', x: 90, y: 290 }, { id: 'PC2', label: 'records clerk .22', type: 'pc', x: 270, y: 290 }, { id: 'SRV1', label: 'appointment server .10', type: 'server', x: 450, y: 286 } ],
+        links: [ { a: 'ISP', b: 'R1', tag: '203.0.113.0/29' }, { a: 'R1', b: 'SW1', tag: '192.168.44.0/24' }, { a: 'SW1', b: 'PC1' }, { a: 'SW1', b: 'PC2' }, { a: 'SW1', b: 'SRV1' } ] },
+      steps: [
+        { type: 'multi', skill: 'nat-static', text: 'Nat, reading the clinic\'s old address sheet: "Half of these came from a contractor who never heard of RFC 1918. Mark every one the internet would refuse to carry."',
+          opts: ['192.168.44.10', '172.20.1.5', '10.44.0.1', '203.0.113.3', '172.32.0.1', '8.8.8.8'], answers: [0, 1, 2],
+          hint: 'The private blocks are 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16. The 172 block stops at 172.31.', ok: 'Nat: "Three. And 172.32 is somebody\'s real address, so the contractor was wrong about that one too."',
+          why: 'Nat: RFC 1918 reserves 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16 for private use, and the internet does not route them. 172.16.0.0/12 runs from 172.16.0.0 to 172.31.255.255, so 172.20.1.5 is private and 172.32.0.1 is not. 203.0.113.3 and 8.8.8.8 are public.' },
+        { type: 'cmd', skill: 'nat-static', text: 'Nat: "Tell R1 which side is which. G0/0 faces the clinic, g0/1 faces the provider."',
+          check: (d, ctx) => { const c = ctx.cfg('R1'); const i = c.interfaces['gigabitethernet0/0'], o = c.interfaces['gigabitethernet0/1']; return !!(i && i.natInside && o && o.natOutside); },
+          hint: 'R1> enable\nR1# configure terminal\nR1(config)# interface g0/0\nR1(config-if)# ip nat inside\nR1(config-if)# interface g0/1\nR1(config-if)# ip nat outside', ok: 'Nat: "Inside and outside. Now it knows where to put the mask on."',
+          why: 'Nat: NAT only translates traffic that crosses from an ip nat inside interface to an ip nat outside interface, or back. G0/0 faces the clinic\'s private addresses, so it is inside. G0/1 faces the provider, so it is outside.' },
+        { type: 'cmd', skill: 'nat-static', text: 'Nat: "The appointment server, 192.168.44.10, wears 203.0.113.3. I will try it from the provider\'s side when you are done."',
+          check: (d, ctx) => { const r = ctx.net().ping('ISP', '203.0.113.3'); return r.ok && r.dst === 'SRV1'; },
+          hint: 'R1(config)# ip nat inside source static 192.168.44.10 203.0.113.3', ok: 'Nat: "From the street, 203.0.113.3 answers, and it is the server answering. The booking page is open."',
+          why: 'Nat: ip nat inside source static maps one inside local address to one inside global address, for good. Traffic from the internet to 203.0.113.3 reaches R1, R1 changes the destination to 192.168.44.10, and the server\'s answer leaves with its source changed back to 203.0.113.3.' },
+        { type: 'cmd', skill: 'nat-static', text: 'Nat: "The nurses\' station needs the prescription service outside, at 8.8.8.8. Give 192.168.44.21 the mask 203.0.113.4, then ping 8.8.8.8 from its shell."',
+          need: [ { dev: 'PC1', line: /^ping 8\.8\.8\.8$/ } ], check: (d, ctx) => { const r = ctx.net().ping('PC1', '8.8.8.8'); return r.ok && (r.nat || []).some(t => t.global === '203.0.113.4'); },
+          hint: 'R1(config)# ip nat inside source static 192.168.44.21 203.0.113.4\nPC1> ping 8.8.8.8', ok: 'Nat: "Four replies. The prescription service thinks it is talking to 203.0.113.4."',
+          why: 'Nat: With a second static mapping, packets from 192.168.44.21 leave R1 with the source 203.0.113.4, a public address the internet will carry, and the replies to 203.0.113.4 are changed back to 192.168.44.21 on the way in.' },
+        { type: 'cmd', skill: 'nat-static', text: 'Nat: "Now read the table on R1."',
+          need: [ { dev: 'R1', line: /^(do )?show ip nat translations$/ } ], hint: 'R1# show ip nat translations', ok: 'Nat: "Two static lines that are always there, and one line for the ping, with the far end on the right."',
+          why: 'Nat: show ip nat translations lists every translation R1 holds. Static mappings show with dashes where the outside addresses would be, because they exist whether anyone is talking or not. The ping from the nurses\' station adds a line with 8.8.8.8 in both outside columns.' },
+        { type: 'form', skill: 'nat-static', text: 'Nat: "Take the ping\'s line and name every address in it."',
+          fields: [ { key: 'ig', label: '203.0.113.4', options: ['inside local', 'inside global', 'outside local', 'outside global'], answer: 'inside global' },
+            { key: 'il', label: '192.168.44.21', options: ['inside local', 'inside global', 'outside local', 'outside global'], answer: 'inside local' },
+            { key: 'ol', label: '8.8.8.8, third column', options: ['inside local', 'inside global', 'outside local', 'outside global'], answer: 'outside local' },
+            { key: 'og', label: '8.8.8.8, fourth column', options: ['inside local', 'inside global', 'outside local', 'outside global'], answer: 'outside global' } ],
+          hint: 'Inside or outside: whose host. Local or global: seen from which side.', ok: 'Nat: "And the two outside ones are the same because we only changed the source."',
+          why: 'Nat: The nurses\' station is the inside host. Its private 192.168.44.21 is the inside local and its public 203.0.113.4 is the inside global. The prescription service is the outside host, and because R1 only translates source addresses, its outside local and outside global are both 8.8.8.8.' },
+        { type: 'choice', skill: 'nat-static', text: 'The records clerk, leaning into the doorway: "I have no mask. What happens when I try the prescription service?"',
+          opts: ['The packet leaves with 192.168.44.22 as its source and the provider drops it', 'R1 lends the clerk 203.0.113.4 for a moment', 'R1 drops it because the clerk has no mapping', 'It works, because the clerk is on the same switch as the nurses\' station'], a: 0,
+          hint: 'Static NAT only touches the addresses it maps.', ok: 'Nat: "Dropped by the provider. Tomorrow I show you how the clerk gets out."',
+          why: 'Nat: Static NAT only translates the inside local addresses it has a mapping for. The clerk\'s packets leave R1 still carrying 192.168.44.22, a private address, and the provider drops them, so nothing comes back.' },
+        { type: 'cmd', skill: 'nat-static', text: 'Nat: "Last thing. Clear the translations on R1 and look again. Tell me what is left."',
+          need: [ { dev: 'R1', mode: 'priv', line: /^clear ip nat translations? \*$/ } ], check: (d, ctx) => !(d.R1._natSeen || []).length && ctx.cfg('R1').natStatic.length === 2,
+          hint: 'R1# clear ip nat translation *\nR1# show ip nat translations', ok: 'Nat: "The ping\'s line is gone and both static mappings are still there."',
+          why: 'Nat: clear ip nat translation * removes the dynamic entries, the lines made by conversations. Static mappings are part of the config, so they stay in the table until someone removes the ip nat inside source static line.' }
+      ],
+      solution: [ { multi: [0, 1, 2] }, 'commit', { dev: 'R1', type: ['enable', 'configure terminal', 'interface g0/0', 'ip nat inside', 'interface g0/1', 'ip nat outside'] }, 'commit',
+        { dev: 'R1', type: ['exit', 'ip nat inside source static 192.168.44.10 203.0.113.3'] }, 'commit',
+        { dev: 'R1', type: ['ip nat inside source static 192.168.44.21 203.0.113.4', 'end'] }, { dev: 'PC1', type: ['ping 8.8.8.8'] }, 'commit',
+        { dev: 'R1', type: ['show ip nat translations'] }, 'commit', { form: { ig: 'inside global', il: 'inside local', ol: 'outside local', og: 'outside global' } }, 'commit', { choose: 0 }, 'commit',
+        { dev: 'R1', type: ['clear ip nat translation *', 'show ip nat translations'] }, 'commit' ],
+      outro: 'By eight the next morning the booking page has taken nineteen appointments from home, and the front desk phone rings half as often. The nurses\' station sends its first prescription through before the day shift has hung up its coats. The records clerk leaves a note on Nat\'s stall asking when it is her turn.' }
   );
 })();

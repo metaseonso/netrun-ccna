@@ -173,5 +173,7 @@ window.GLOSSARY = {
   'ietf': 'Internet Engineering Task Force. Writes the standards used on the internet (IP, TCP, UDP, OSPF, DHCP) and publishes them as RFCs.',
   'rfc': 'Request for Comments: a numbered document in which the IETF publishes an internet standard. IPv4 is RFC 791.',
   'adjacent-layer interaction': 'A layer working with the layers directly above and below it on the same host: it serves the layer above and uses the layer below.',
-  'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.'
+  'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.',
+  'outside local': 'NAT: the address of the outside host as seen from the inside network. With source NAT only, it is the same as the outside global.',
+  'outside global': 'NAT: the address of the outside host as seen from the outside network, its real public address.'
 };
