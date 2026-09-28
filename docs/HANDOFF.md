@@ -136,6 +136,8 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · `show spanning-tree` names the root of the switch's own part of the tree; a rogue cut off by BPDU Guard no longer shows as the Root ID (tested).
+
 - 2026-09-28 · IPv6 forwarding: `ctx.net().ping6(from, to)`, and `ping`/`traceroute` to an IPv6 address on routers and PCs.
   Hosts take `ip6`, `prefix6` (default 64) and `gw6` (global or link-local) in `job.net`; `ipconfig` shows them. Routers
   forward IPv6 only with `ipv6 unicast-routing`; recursive, fully specified (`ipv6 route P g0/1 fe80::2`), default and

@@ -208,5 +208,13 @@ module.exports.run = function({ out }){
     const pc = new Sim.Device('PC1', { kind: 'host', netState: () => A.state }); pc.exec('ping 2001:db8:2::10'); ok(/Received = 4/.test(pc.out.map(o => o.s).join('\n')), 'ipv6: the PC shell pings an IPv6 address');
     d.R1.exec('end'); d.R1.exec('ping 2001:db8:2::10'); ok(/!!!!!/.test(d.R1.out[d.R1.out.length - 1].s), 'ipv6: the router shell pings an IPv6 address (' + d.R1.out[d.R1.out.length - 1].s + ')');
   }
+  // 16. show spanning-tree names the root of the switch's own part of the tree, not a rogue cut off by BPDU Guard
+  {
+    const net = { devices: { SW1: { kind: 'switch', mac: '0019.e8a1.1c01' }, SW2: { kind: 'switch', mac: '0c11.7a3b.9902' }, ROGUE: { kind: 'rogue', role: 'stp', priority: 0, mac: '0050.7966.6833' } },
+      links: [ { a: 'SW1', ap: 'gigabitethernet0/1', b: 'SW2', bp: 'gigabitethernet0/1' }, { a: 'SW2', ap: 'fastethernet0/7', b: 'ROGUE', bp: 'fastethernet0/1' } ] };
+    const d = devs({ SW1: ['en', 'conf t'], SW2: ['en', 'conf t', 'int f0/7', 'switchport mode access', 'spanning-tree portfast', 'spanning-tree bpduguard enable'] });
+    const A = Net.api(Net.build(net, d)); const out = Show.render(d.SW2, 'show spanning-tree', A.state);
+    ok(/Address\s+0019\.e8a1\.1c01/.test(out.split('Bridge ID')[0]) && /BPDUGUARD_ERRDISABLE/.test(out), 'stp: the Root ID is SW1, not the err-disabled rogue (' + out.split('\n').slice(2, 4).join(' / ') + ')');
+  }
   return { pass, fails };
 };
