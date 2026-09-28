@@ -146,6 +146,53 @@
         { k: 'SYNC', q: { prompt: 'Ma Tsai, wiping the counter: "The card machine, the tablets and my phone all go out on one address. What do you call that?"', opts: ['PAT, or NAT overload', 'Static NAT', 'Dynamic NAT from a pool', 'A private address'], a: 0,
           yes: 'Nat: "Overload. She has been running it for years without knowing the name."', no: 'Nat: "PAT. Many inside addresses, one global address, told apart by port."',
           why: 'Nat: When many inside hosts share one inside global address at the same time, the router tells their conversations apart by source port. That is PAT, port address translation, also called NAT overload. Static NAT and dynamic NAT are both one to one.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 46 · QoS, part 1, and voice VLANs
+    { id: 'n46-pieces-of-a-word', title: 'Pieces of a word', sub: 'voice VLANs, PoE and QoS, part 1', npc: 'dispatch', day: [46], src: [PS('QoS_Part1.md')], unlocks: ['voice-vlan'],
+      beats: [
+        { k: 'SCENE', where: 'Dispatch\'s booth · the job board · a quarter to midnight',
+          lines: [
+            { who: 'narr', text: 'The booth smells of hot electronics and old coffee. Every radio on the shelf is turned down low, and together they hiss like rain on a tin roof. Dispatch sits with a headset pushed back and one hand on a fader, and for once there is no job slip on the counter.' },
+            { who: 'dispatch', text: 'Clinic phones break up every evening. Imani called twice. You learn this one from me, tonight and tomorrow.' },
+            { who: 'dispatch', text: 'Old phones rode the PSTN. Public switched telephone network. Own copper, POTS, plain old telephone service. Clinic went VoIP in the spring. Voice over IP. Same cables as the computers now.' },
+            { who: 'dispatch', text: 'One socket per desk. Phone plugs into the wall, PC plugs into the phone. Switch port gets a [[voice VLAN]]. Phone tags its voice with it. PC sends untagged, lands in the access VLAN. Still an access port.' },
+            { who: 'you', text: 'How does the phone know which VLAN to tag?' },
+            { who: 'dispatch', text: 'Switch tells it. CDP. Same port feeds it power, too. [[PoE]]. Switch is the PSE, power sourcing equipment. Phone is the PD, powered device.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How much power can one port give?', reply: 'Dispatch: "Depends. Cisco inline power, 7 watts, two pairs. PoE, 802.3af, 15 watts, two pairs. PoE+, 802.3at, 30, two pairs. UPoE and UPoE+, both 802.3bt, 60 and 100, all four pairs. Power policing stops a device drawing too much. power inline police, port goes err-disabled and logs it. Add action log, port restarts and logs it."' },
+            { tone: 'press', say: 'Why not give the phones their own switch?', reply: 'Dispatch: "Money. Clinic has one cable to each bed. Two VLANs down one access port, voice tagged, data untagged. The phone does the sorting."' },
+            { tone: 'quiet', say: '(Listen to the radios.)', reply: 'Under the hiss a courier calls in a drop, and a cab calls a fare across Kabuki, and each voice comes through whole. Dispatch taps the fader. "Every one of those waits in a queue somewhere, and mine are set to go first."' }
+          ] } },
+        { k: 'SCENE', where: 'The Watson clinic · the nurses\' station · ten past seven in the evening',
+          lines: [
+            { who: 'narr', text: 'The ward smells of hand gel and the dinner trolley, and monitors chirp one after another down the corridor. Imani holds a handset out to you across the desk. The voice in it arrives in pieces: a word, a gap, half a word.' },
+            { who: 'Imani', text: 'That is the pharmacy downstairs. Every evening, when the day shift uploads its charts, the phones do this. The night of the loop I walked charts up three floors. I would rather not start walking prescriptions down.' },
+            { who: 'narr', text: 'Dispatch, in your ear, over a radio with a bad battery:' },
+            { who: 'dispatch', text: 'Four numbers. [[Bandwidth]], what the link holds. [[Delay]], time one way, source to destination. [[Jitter]], how much that delay changes packet to packet. Loss, packets that never arrive. Voice wants delay 150 milliseconds or less. Jitter 30 or less. Loss one percent or less.' },
+            { who: 'dispatch', text: 'Seven o\'clock. Charts upload. Router\'s queue fills. Default is FIFO, first in, first out. Queue full, newest packets dropped. [[Tail drop]]. Voice packets land in the tail and the words drop out.' },
+            { who: 'you', text: 'Can the router drop something else instead?' },
+            { who: 'dispatch', text: 'That is tomorrow. Tonight is the VLANs.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'What else goes wrong with tail drop?', reply: 'Dispatch: "Every TCP sender loses packets at the same moment. All of them slow down together and speed up together. Queue empties, fills, empties. TCP global synchronization. RED, random early detection, drops a few packets at random before the queue is full, so senders slow down one at a time. WRED does it by weight. Drops more of what matters less."' },
+            { tone: 'care', say: 'Imani, how long has this been happening?', reply: 'Imani: "Since the new phones came in the spring. The old ones had their own copper and never broke up once. Now they share every cable on the ward with the computers."' },
+            { tone: 'press', say: 'Just buy a bigger link.', reply: 'Dispatch: "Bigger link, bigger uploads. Queue still fills at seven. Voice has to go first. That is [[QoS]]."' }
+          ] } },
+        { k: 'LORE', title: 'A VOICE IN PACKETS', year: 1995, real: ['vocaltec'], vibe: 'Phat. Talk to anybody on the planet for the price of a modem call.',
+          text: 'Dispatch, turning a radio down another notch: "February 1995. Small company in Israel, VocalTec. Sold a program called InternetPhone. One PC to another, voice cut into packets, across the internet. Needed a sound card, a microphone and patience. Sounded worse than this radio. Kept it because now it carries every call in the clinic."' },
+        { k: 'KIT', text: 'Dispatch writes it on a job slip, the only one with no job on it.', kit: [
+          { cmd: 'PSTN · POTS · VoIP', what: 'the old phone network, plain old telephone service, voice over IP' },
+          { cmd: 'switchport mode access · switchport access vlan 10 · switchport voice vlan 11', what: 'PC untagged in VLAN 10, the phone tags its voice with VLAN 11. CDP tells the phone' },
+          { cmd: 'show interfaces f0/1 switchport', what: 'Access Mode VLAN and Voice VLAN' },
+          { cmd: 'PoE: the PSE (switch) powers the PD (phone)', what: 'Cisco ILP 7 W · 802.3af 15 W · 802.3at 30 W, two pairs · 802.3bt 60 W and 100 W, four pairs' },
+          { cmd: 'power inline police · power inline police action log', what: 'too much power: err-disable and log · restart and log' },
+          { cmd: 'voice: delay 150 ms or less one way · jitter 30 ms or less · loss 1% or less', what: 'bandwidth, delay, jitter, loss' },
+          { cmd: 'FIFO · tail drop · TCP global synchronization · RED · WRED', what: 'a full queue drops the newest. Random early drops keep senders from moving together' } ] },
+        { k: 'SYNC', q: { prompt: 'Imani, still holding the handset: "So the phone and my PC share one socket. Which one tags its traffic?"', opts: ['The phone, with the voice VLAN', 'The PC, with the access VLAN', 'Both of them', 'Neither. The switch tags everything'], a: 0,
+          yes: 'Dispatch: "Phone. Next."', no: 'Dispatch: "Phone tags. PC does not."',
+          why: 'Dispatch: With switchport voice vlan on the port, the phone tags its voice frames with the voice VLAN. The PC behind the phone sends untagged frames as usual, and the switch puts them in the access VLAN. The port stays an access port.' } }
       ] }
   ] });
 })();

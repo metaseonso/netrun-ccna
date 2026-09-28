@@ -175,5 +175,11 @@ window.GLOSSARY = {
   'adjacent-layer interaction': 'A layer working with the layers directly above and below it on the same host: it serves the layer above and uses the layer below.',
   'same-layer interaction': 'A layer on one host working with the same layer on another host, through the information in that layer\'s header.',
   'outside local': 'NAT: the address of the outside host as seen from the inside network. With source NAT only, it is the same as the outside global.',
-  'outside global': 'NAT: the address of the outside host as seen from the outside network, its real public address.'
+  'outside global': 'NAT: the address of the outside host as seen from the outside network, its real public address.',
+  'voice vlan': 'A second VLAN on an access port for an IP phone: switchport voice vlan N. The phone tags its voice frames with it; the PC behind the phone sends untagged frames in the access VLAN. CDP tells the phone the VLAN.',
+  'poe': 'Power over Ethernet: the switch (PSE, power sourcing equipment) powers a device (PD, powered device) through the cable. 802.3af 15 W, 802.3at 30 W (two pairs), 802.3bt 60 W and 100 W (four pairs); Cisco ILP 7 W.',
+  'bandwidth': 'QoS: the overall capacity of a link, in bits per second.',
+  'delay': 'QoS: the time traffic takes to go from source to destination (one-way delay). Interactive voice wants 150 ms or less.',
+  'jitter': 'QoS: the variation in one-way delay between packets of the same flow. Interactive voice wants 30 ms or less.',
+  'tail drop': 'When a queue is full, new packets arriving are dropped. It can cause TCP global synchronization; RED and WRED drop some packets early to avoid it.'
 };

@@ -22,6 +22,7 @@
     gcp: { name: 'Google Cloud', owner: 'Google LLC', icon: 'googlecloud', what: 'A public cloud.' },
     wireshark: { name: 'Wireshark', owner: 'the Wireshark Foundation', icon: 'wireshark', what: 'Shows every packet on the wire.' },
     json: { name: 'JSON', owner: 'ECMA International', icon: 'json', what: 'The data format with matching braces.' },
+    vocaltec: { name: 'VocalTec', owner: 'VocalTec Communications (later magicJack VocalTec)', what: 'Sold InternetPhone in February 1995, the first commercial program for talking over the internet.' },
     mit: { name: 'MIT', owner: 'Massachusetts Institute of Technology', what: 'Where Abhay Bhushan wrote the first file transfer protocol, RFC 114, in 1971.' }
   };
 })();

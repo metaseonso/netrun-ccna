@@ -187,6 +187,69 @@
         { dev: 'R1', type: ['clear ip nat translation *', 'configure terminal', 'ip nat inside source list 1 pool CLINIC overload', 'end'] }, { dev: 'PC4', type: ['ping 8.8.8.8'] }, 'commit',
         { dev: 'PC2', type: ['ping 8.8.8.8'] }, { dev: 'PC3', type: ['ping 8.8.8.8'] }, { dev: 'R1', type: ['show ip nat translations'] }, 'commit',
         { form: { a: 'static NAT', b: 'dynamic NAT', c: 'PAT', d: 'PAT' } }, 'commit' ],
-      outro: 'The front office sends thirty-one prescriptions before lunch, all of them out through 203.0.113.5 on different ports. The records clerk takes the phone off her desk and puts it in a drawer. On Thursday Nat pays Ma Tsai for the first bowl, and she frames the note.' }
+      outro: 'The front office sends thirty-one prescriptions before lunch, all of them out through 203.0.113.5 on different ports. The records clerk takes the phone off her desk and puts it in a drawer. On Thursday Nat pays Ma Tsai for the first bowl, and she frames the note.' },
+
+    // ------------------------------------------------------------------ night 46 · from Lab 46 (voice VLANs)
+    { id: 'b-n46-ward-phones', cls: 'B', rep: 20, from: 'dispatch', title: 'The Ward Phones', day: [46], requires: ['n46-pieces-of-a-word'], devices: ['SW1', 'PH1', 'PC1'],
+      brief: 'DISPATCH » Clinic ward switch. Phones and PCs share every port. Voice VLAN, power policing. I stay on the radio.\n\nCLIENT (Imani, the clinic) » "Bed four\'s phone and the pharmacy line are the two I need most. If they only work half the time, I need to know which half."',
+      net: {
+        devices: {
+          R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0011.4646.0001' },
+          CM1: { kind: 'server', ip: '10.46.20.10', mask: '255.255.255.0', gw: '10.46.20.1' },
+          PH1: { kind: 'host', voice: true, ip: '10.46.11.21', mask: '255.255.255.0', gw: '10.46.11.1' }, PH2: { kind: 'host', voice: true, ip: '10.46.11.22', mask: '255.255.255.0', gw: '10.46.11.1' },
+          PC1: { kind: 'host', ip: '10.46.10.21', mask: '255.255.255.0', gw: '10.46.10.1' }
+        },
+        links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'CM1' },
+          { a: 'SW1', ap: 'fastethernet0/1', b: 'PH1' }, { a: 'SW1', ap: 'fastethernet0/2', b: 'PH2' }, { a: 'SW1', ap: 'fastethernet0/3', b: 'PC1' } ],
+        preconfig: { R1: ['interface gigabitethernet0/0', 'no shutdown', 'interface gigabitethernet0/0.10', 'encapsulation dot1q 10', 'ip address 10.46.10.1 255.255.255.0', 'interface gigabitethernet0/0.11', 'encapsulation dot1q 11', 'ip address 10.46.11.1 255.255.255.0',
+            'interface gigabitethernet0/1', 'ip address 10.46.20.1 255.255.255.0', 'no shutdown'],
+          SW1: ['interface gigabitethernet0/1', 'switchport mode trunk'] }
+      },
+      map: { w: 540, h: 330, nodes: [
+          { id: 'CM1', label: 'call server 10.46.20.10', type: 'server', x: 440, y: 50 }, { id: 'R1', label: 'clinic router', type: 'router', x: 270, y: 60 },
+          { id: 'SW1', label: 'ward switch', type: 'switch', x: 270, y: 170 },
+          { id: 'PH1', label: 'bed 4 phone, PC behind it', type: 'pc', x: 100, y: 280 }, { id: 'PH2', label: 'pharmacy line, PC behind it', type: 'pc', x: 270, y: 290 }, { id: 'PC1', label: 'nurses\' PC', type: 'pc', x: 440, y: 280 } ],
+        links: [ { a: 'R1', b: 'CM1' }, { a: 'R1', b: 'SW1', tag: 'trunk: 10 data, 11 voice' }, { a: 'SW1', b: 'PH1', ap: 'fastethernet0/1' }, { a: 'SW1', b: 'PH2', ap: 'fastethernet0/2' }, { a: 'SW1', b: 'PC1', ap: 'fastethernet0/3' } ] },
+      steps: [
+        { type: 'calc', skill: 'voice-vlan', text: 'Dispatch, on the radio: "Numbers first. What voice can live with."',
+          fields: [ { key: 'd', label: 'one-way delay, at most (ms)', check: v => Number(String(v).replace(/ms/i, '').trim()) === 150 }, { key: 'j', label: 'jitter, at most (ms)', check: v => Number(String(v).replace(/ms/i, '').trim()) === 30 },
+            { key: 'l', label: 'loss, at most (%)', check: v => Number(String(v).replace(/%/, '').trim()) === 1 } ],
+          answer: '150 ms · 30 ms · 1%', hint: 'A hundred and fifty, thirty, one.', ok: 'Dispatch: "Good. Switch."',
+          why: 'Dispatch: Interactive voice needs one-way delay of 150 milliseconds or less, jitter of 30 milliseconds or less, and loss of 1 percent or less. Past those, people hear gaps and talk over each other.' },
+        { type: 'cmd', skill: 'voice-vlan', text: 'Dispatch: "Two VLANs on SW1. 10 named DATA, 11 named VOICE."',
+          check: (d, ctx) => { const v = ctx.cfg('SW1').vlans; return !!(v[10] && v[10].name === 'data' && v[11] && v[11].name === 'voice'); },
+          hint: 'SW1> enable\nSW1# configure terminal\nSW1(config)# vlan 10\nSW1(config-vlan)# name DATA\nSW1(config-vlan)# vlan 11\nSW1(config-vlan)# name VOICE', ok: 'Dispatch: "Two lanes. Now the ports."',
+          why: 'Dispatch: A voice VLAN is an ordinary VLAN that the phones use. Create both: vlan 10 for the PCs\' data and vlan 11 for voice, each with a name so the next runner can read show vlan brief.' },
+        { type: 'cmd', skill: 'voice-vlan', text: 'Dispatch: "F0/1 to f0/3. Access ports, data in 10, voice in 11. Phones reach the call server at 10.46.20.10 when it is right."',
+          check: (d, ctx) => { const n = ctx.net(); return n.ping('PH1', '10.46.20.10').ok && n.ping('PH2', '10.46.20.10').ok && n.ping('PC1', '10.46.10.1').ok && n.vlanOf('SW1', 'f0/1') === 10; },
+          hint: 'SW1(config)# interface range f0/1 - 3\nSW1(config-if-range)# switchport mode access\nSW1(config-if-range)# switchport access vlan 10\nSW1(config-if-range)# switchport voice vlan 11', ok: 'Imani, from the desk: "Bed four rings. The pharmacy rings."',
+          why: 'Dispatch: switchport mode access and switchport access vlan 10 put the PCs\' untagged frames in VLAN 10. switchport voice vlan 11 adds a second VLAN on the same access port for the phone, which tags its voice with VLAN 11. The phones then reach their gateway, 10.46.11.1, and the call server behind it.' },
+        { type: 'cmd', skill: 'voice-vlan', text: 'Dispatch: "Read f0/1 back to me. Both VLANs."',
+          need: [ { dev: 'SW1', line: /^(do )?show interfaces fastethernet0\/1 sw\S*$/ } ], hint: 'SW1# show interfaces f0/1 switchport', ok: 'Dispatch: "Access Mode VLAN 10. Voice VLAN 11. Copy."',
+          why: 'Dispatch: show interfaces f0/1 switchport lists the port\'s mode and both VLANs: Access Mode VLAN is where the untagged data goes, Voice VLAN is the one the phone tags.' },
+        { type: 'choice', skill: 'voice-vlan', text: 'Imani: "The PC behind bed four\'s phone. What does its traffic look like on the cable to the switch?"',
+          opts: ['Untagged, and the switch puts it in VLAN 10', 'Tagged with VLAN 11, like the phone', 'Tagged with VLAN 10', 'It does not reach the switch. The phone keeps it'], a: 0,
+          hint: 'Only the phone tags.', ok: 'Dispatch: "Untagged. Next."',
+          why: 'Dispatch: The PC knows nothing about VLANs, so it sends untagged frames. The phone passes them through, and the switch puts untagged frames in the access VLAN, 10. Only the phone\'s own voice is tagged, with VLAN 11.' },
+        { type: 'form', skill: 'voice-vlan', text: 'Dispatch: "Phones draw power from the port. Watts, per standard."',
+          fields: [ { key: 'af', label: 'PoE, 802.3af', options: ['7', '15', '30', '60', '100'], answer: '15' }, { key: 'at', label: 'PoE+, 802.3at', options: ['7', '15', '30', '60', '100'], answer: '30' },
+            { key: 'bt3', label: 'UPoE, 802.3bt Type 3', options: ['7', '15', '30', '60', '100'], answer: '60' }, { key: 'bt4', label: 'UPoE+, 802.3bt Type 4', options: ['7', '15', '30', '60', '100'], answer: '100' },
+            { key: 'ilp', label: 'Cisco inline power', options: ['7', '15', '30', '60', '100'], answer: '7' } ],
+          hint: 'Seven, fifteen, thirty, sixty, a hundred.', ok: 'Dispatch: "Phones here are 802.3af. Fifteen each."',
+          why: 'Dispatch: Cisco inline power gives 7 watts. 802.3af PoE gives 15 and 802.3at PoE+ gives 30, both on two pairs. 802.3bt gives 60 as UPoE and 100 as UPoE+, on all four pairs.' },
+        { type: 'cmd', skill: 'voice-vlan', text: 'Dispatch: "Somebody on the ward charges a heater off a phone port, the switch pays. Police the power on the two phone ports. Default action."',
+          check: (d, ctx) => { const i = ctx.cfg('SW1').interfaces; return ['fastethernet0/1', 'fastethernet0/2'].every(p => i[p] && i[p].powerPolice === 'errdisable'); },
+          hint: 'SW1(config)# interface range f0/1 - 2\nSW1(config-if-range)# power inline police', ok: 'Dispatch: "Draw too much, port goes down, log says why."',
+          why: 'Dispatch: power inline police stops a powered device drawing more than it should. With the default action the switch err-disables the port and sends a syslog message. power inline police action log restarts the port instead, and still logs it.' },
+        { type: 'choice', skill: 'voice-vlan', text: 'Imani, as the clock goes past seven: "The chart uploads just started. The pharmacy call is breaking up again, a bit less. Why?"',
+          opts: ['The router\'s queue fills and tail drop throws away the newest packets, voice included', 'The voice VLAN is wrong', 'The phones need more power', 'CDP is using up the link'], a: 0,
+          hint: 'The VLANs sort the traffic. Something else decides what waits and what is dropped.', ok: 'Dispatch: "Queue. Tomorrow."',
+          why: 'Dispatch: The voice VLAN separates the phones from the PCs on the switch, but every packet still waits in the same router queue. FIFO sends them in the order they arrived, and when the queue is full, tail drop throws away whatever arrives next, voice included. Fixing that is QoS: marking voice and letting it go first.' }
+      ],
+      solution: [ { calc: { d: '150', j: '30', l: '1' } }, 'commit', { dev: 'SW1', type: ['enable', 'configure terminal', 'vlan 10', 'name DATA', 'vlan 11', 'name VOICE'] }, 'commit',
+        { dev: 'SW1', type: ['interface range f0/1 - 3', 'switchport mode access', 'switchport access vlan 10', 'switchport voice vlan 11', 'end'] }, 'commit',
+        { dev: 'SW1', type: ['show interfaces f0/1 switchport'] }, 'commit', { choose: 0 }, 'commit', { form: { af: '15', at: '30', bt3: '60', bt4: '100', ilp: '7' } }, 'commit',
+        { dev: 'SW1', type: ['configure terminal', 'interface range f0/1 - 2', 'power inline police', 'end'] }, 'commit', { choose: 0 }, 'commit' ],
+      outro: 'The phones sit in their own VLAN now, and bed four\'s rings through on the first try. At seven the pharmacy call still loses a word here and there while the charts go up. Imani writes "better" on the whiteboard and underlines nothing. Dispatch\'s next slip says only: Tomorrow. Queues.' }
   );
 })();
