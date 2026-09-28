@@ -146,5 +146,18 @@ module.exports.run = function({ out }){
     const A = Net.api(Net.build(net, d)); const r = A.route('R1', '2.2.2.2/32');
     ok(r && r.proto === 'O' && r.metric === 101, 'ospf: gigabit costs 100 at reference 100000, a loopback costs 1, enabled with ip ospf 1 area 0 (' + JSON.stringify(r) + ')');
   }
+  // 12. OSPF ECMP: two equal-cost paths both go in the table
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' }, R4: { kind: 'router' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/1' }, { a: 'R1', ap: 'gigabitethernet0/2', b: 'R3', bp: 'gigabitethernet0/1' }, { a: 'R2', ap: 'gigabitethernet0/2', b: 'R4', bp: 'gigabitethernet0/1' }, { a: 'R3', ap: 'gigabitethernet0/2', b: 'R4', bp: 'gigabitethernet0/2' } ] };
+    const o = ['router ospf 1', 'network 10.0.0.0 0.255.255.255 area 0'];
+    const d = devs({ R1: ['en', 'conf t', 'int g0/1', 'ip add 10.7.12.1 255.255.255.252', 'no shut', 'int g0/2', 'ip add 10.7.13.1 255.255.255.252', 'no shut', 'int lo0', 'ip add 10.7.1.1 255.255.255.0'].concat(o),
+      R2: ['en', 'conf t', 'int g0/1', 'ip add 10.7.12.2 255.255.255.252', 'no shut', 'int g0/2', 'ip add 10.7.24.1 255.255.255.252', 'no shut'].concat(o), R3: ['en', 'conf t', 'int g0/1', 'ip add 10.7.13.2 255.255.255.252', 'no shut', 'int g0/2', 'ip add 10.7.34.1 255.255.255.252', 'no shut'].concat(o),
+      R4: ['en', 'conf t', 'int g0/1', 'ip add 10.7.24.2 255.255.255.252', 'no shut', 'int g0/2', 'ip add 10.7.34.2 255.255.255.252', 'no shut'].concat(o) });
+    let A = Net.api(Net.build(net, d)); const rs = A.routes('R4').filter(e => e.prefix === '10.7.1.0');
+    ok(rs.length === 2 && rs.every(e => e.proto === 'O' && e.metric === 3) && new Set(rs.map(e => e.via)).size === 2, 'ospf: equal-cost paths both go in the table (' + JSON.stringify(rs) + ')');
+    d.R4.exec('int g0/1'); d.R4.exec('ip ospf cost 10'); A = Net.api(Net.build(net, d)); const r1 = A.routes('R4').filter(e => e.prefix === '10.7.1.0');
+    ok(r1.length === 1 && r1[0].via === '10.7.34.1', 'ospf: ip ospf cost breaks the tie (' + JSON.stringify(r1) + ')');
+  }
   return { pass, fails };
 };
