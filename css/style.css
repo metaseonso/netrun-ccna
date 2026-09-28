@@ -152,6 +152,10 @@ code,kbd{font-family:var(--mono);background:#0b0f18;border:1px solid var(--line)
 .intro h1 span{color:var(--mag);text-shadow:0 0 20px rgba(255,63,164,.7)}
 .intro p{color:var(--ink2);max-width:640px;margin:14px auto}
 .intro input{background:#050710;border:1px solid var(--cyan);color:var(--ink);font:inherit;padding:10px 14px;width:min(320px,80vw);text-align:center;letter-spacing:.1em}
+.door-id{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;border:1px solid var(--line);background:var(--panel);padding:8px 12px;margin:10px auto;color:var(--ink2)}
+.door-id img{width:28px;height:28px;border-radius:50%;border:1px solid var(--cyan)}
+.door-id b{color:var(--ink)}
+.door-mine{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .glitch{animation:gl 3s infinite} @keyframes gl{0%,94%,100%{text-shadow:0 0 20px rgba(63,246,255,.7)}95%{text-shadow:-3px 0 var(--mag),3px 0 var(--cyan)}97%{text-shadow:3px 0 var(--mag),-3px 0 var(--cyan)}}
 .footer{margin-top:30px;font-size:11px;color:var(--ink3);text-align:center}
 .footer a{color:var(--ink2)}

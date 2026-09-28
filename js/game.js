@@ -8,7 +8,7 @@
   const LEVEL_AT = [0, 1, 3, 6];
   const P = () => window.PLATFORM || {};
 
-  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null });
+  const fresh = () => ({ v: VERSION, handle: '', rep: 0, creds: 0, read: {}, skills: {}, jobsDone: {}, log: [], created: Date.now(), updated: Date.now(), events: [], stats: null, roster: { seq: 0, list: [] }, cards: {}, dm: null, dmLog: [], dmCount: 0, lastDmAt: 0, recruits: {}, inventory: {}, perks: { theme: null, skins: [] }, bd: [], body: { food: 100, chrome: 100, tab: 0 }, checkpoint: null, dead: null, meta: { deaths: 0, syncs: 0, lastSync: 0 }, pass: null, owner: null });
   // fill in keys added since a record was written (same VERSION only; older records are dropped in load())
   function migrate(s){ const out = Object.assign(fresh(), s || {}); out.v = VERSION; out.perks = Object.assign({ theme: null, skins: [] }, out.perks || {}); out.body = Object.assign({ food: 100, chrome: 100, tab: 0 }, out.body || {}); out.meta = Object.assign({ deaths: 0, syncs: 0, lastSync: 0 }, out.meta || {}); (out.roster.list || []).forEach(p => { p.timerBonus = p.timerBonus || 0; p.insurance = p.insurance || 0; p.milestones = p.milestones || []; p.trustSeen = p.trustSeen || []; }); Telemetry.ensure(out); return out; }
   const usable = s => !!s && (s.v || 0) >= VERSION;
@@ -45,7 +45,7 @@
   function flatline(why){ state.dead = { at: Date.now(), why, food: state.body.food, chrome: state.body.chrome, job: run ? run.job.id : null }; state.meta.deaths++; ev('flatline', { why, job: state.dead.job }); log('FLATLINED. ' + why); run = null; save(); }
   // a sync is the only save the player gets: after a talk, after a gig. no chips, no manual saves. pacing stays ours.
   // telemetry, the journal and the passcode ride outside the snapshot so a reload never erases the record of what happened.
-  const KEEP = ['events', 'log', 'dmLog', 'meta', 'checkpoint', 'pass'];
+  const KEEP = ['events', 'log', 'dmLog', 'meta', 'checkpoint', 'pass', 'owner'];
   function sync(label){ const data = {}; for (const k in state) if (!KEEP.includes(k) && k !== 'dead') data[k] = state[k]; state.checkpoint = { at: Date.now(), label, data: JSON.parse(JSON.stringify(data)) }; state.meta.syncs++; state.meta.lastSync = Date.now(); ev('sync', { label }); save(); }
   function reload(){ const cp = state.checkpoint; const keep = {}; KEEP.forEach(k => { keep[k] = state[k]; }); const h = state.handle; state = cp ? migrate(Object.assign({}, cp.data, keep, { handle: h })) : Object.assign(fresh(), keep, { handle: h }); state.dead = null; run = null; ev('reload', { label: cp ? cp.label : null }); log(cp ? 'Back to the last sync: ' + cp.label : 'No sync on record. Starting over under this handle.'); save(); return !!cp; }
   const levelById = id => { for (const st of STAGES) for (const l of st.levels) if (l.id === id) return l; return null; };
@@ -190,21 +190,42 @@
     netState(){ return run && run.ctx.state ? run.ctx.state() : null }, ping(from, to){ const n = run && run.ctx.net(); return n ? n.ping(from, to) : null }, transcripts(){ return run ? Object.fromEntries(Object.entries(run.devices).map(([n, d]) => [n, d.lines])) : null } };
 
   // ---- profiles -------------------------------------------------------------------
-  function reset(){ const h = state.handle, pass = state.pass; Storage.local.remove(h); state = Object.assign(fresh(), { handle: h, pass }); run = null; save(); }
+  function reset(){ const h = state.handle, pass = state.pass, owner = state.owner; Storage.local.remove(h); state = Object.assign(fresh(), { handle: h, pass, owner }); run = null; save(); }
   // not security, by design: a passcode keeps two people on one deck out of each other's record. it is hashed so it is not stored as typed.
   function hashPass(p){ let h = 0x811c9dc5; for (const c of String(p)) { h ^= c.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, '0') + String(p).length.toString(16); }
   function setHandle(h, pass){ h = (h || '').trim().slice(0, 18); pass = (pass || '').trim(); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' }; const isNew = !Storage.local.listSync().includes(h);
     if (!pass) return { ok: false, why: isNew ? 'pick a passcode too. anything. you need it again after LOG OUT.' : 'passcode for ' + h + '?', field: 'pass' };
-    const s = load(h); if (s.pass && s.pass !== hashPass(pass)) return { ok: false, why: 'that is not the passcode for ' + h, field: 'pass' };
+    const s = load(h); if (s.owner) return { ok: false, why: h + ' is bound to a Google account. SIGN IN WITH GOOGLE to jack in.', field: 'handle' };
+    if (s.pass && s.pass !== hashPass(pass)) return { ok: false, why: 'that is not the passcode for ' + h, field: 'pass' };
     state = s; state.handle = h; if (!state.pass) state.pass = hashPass(pass); save(); if (isNew) log('Handle registered: ' + h); return { ok: true, isNew }; }
+  // signed in with Google: the account is the key. no passcode. a handle binds to the account the first time it is used.
+  const gUser = () => window.Auth && Auth.user && Auth.user();
+  function ownRecord(h){ const u = gUser(), r = Storage.local.loadSync(h); return !!(u && r && r.owner === u.id); }
+  function myHandles(){ return gUser() ? Storage.local.listSync().filter(ownRecord) : []; }
+  function deckHandles(){ return Storage.local.listSync().filter(h => { const r = Storage.local.loadSync(h); return !(r && r.owner); }); }
+  function claimHandle(h, pass){ const u = gUser(); if (!u) return setHandle(h, pass); h = (h || '').trim().slice(0, 18); pass = (pass || '').trim(); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' };
+    const isNew = !Storage.local.listSync().includes(h); const s = load(h);
+    if (s.owner && s.owner !== u.id) return { ok: false, why: h + ' belongs to another account on this deck. pick another handle.', field: 'handle' };
+    if (!s.owner && s.pass) { if (!pass) return { ok: false, why: h + ' has a passcode. type it once and the handle binds to your account.', field: 'pass' }; if (s.pass !== hashPass(pass)) return { ok: false, why: 'that is not the passcode for ' + h, field: 'pass' }; }
+    const bind = !s.owner; state = s; state.handle = h; state.owner = u.id; save(); Storage.pushIfRemote(h, state, true);
+    if (isNew) log('Handle registered: ' + h); else if (bind) log('Handle bound to ' + (u.email || u.name)); return { ok: true, isNew }; }
   function logout(){ save(); if (state.handle) Storage.pushIfRemote(state.handle, state, true); run = null; state = fresh(); Storage.local.setCurrent(null); }
   if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && state.handle) Storage.pushIfRemote(state.handle, state, true); });
   // no exportSave / importSave on purpose: the deck syncs after every talk and every gig, and that is the only save there is.
-  // sign-in: push newer local records up, pull newer Drive records down (so the door lists them), then carry on
-  async function onAuth(user){ if (!user) { Storage.useLocal(); if (window.UI) UI.render(); return; } if (!Auth.token()) { if (window.UI) UI.render(); return; }
-    try { await Storage.mergeLocalIntoRemote(); for (const h of await Storage.remote.list()) { const remote = await Storage.remote.load(h); const local = Storage.local.loadSync(h); if (usable(remote) && (!local || (remote.updated || 0) > (local.updated || 0))) { Storage.local.saveSync(h, remote); if (state.handle === h) state = migrate(remote); } } save(); } catch (e) { console.warn('auth sync', e); } if (window.UI) UI.render(); }
+  // sign-in: bind the handle in use, push this account's newer records up, pull newer Drive records down (so the door lists them).
+  // only this account's records move: another handle on a shared deck stays on the deck. signing out leaves a bound handle at the door.
+  let linking = false;
+  async function onAuth(user){ const draw = () => { if (window.UI) UI.render(); };
+    if (!user) { Storage.useLocal(); if (state.owner) logout(); return draw(); }
+    if (state.owner && state.owner !== user.id) logout();
+    if (!Auth.token()) return draw();
+    linking = true; draw();
+    try { if (state.handle && !state.owner) { state.owner = user.id; save(); log('Handle bound to ' + (user.email || user.name)); }
+      for (const h of Storage.local.listSync()) { const local = Storage.local.loadSync(h); if (!local || local.owner !== user.id) continue; const remote = await Storage.remote.load(h); if (!remote || (local.updated || 0) > (remote.updated || 0)) await Storage.remote.save(h, local); }
+      for (const h of await Storage.remote.list()) { const remote = await Storage.remote.load(h); if (!usable(remote)) continue; const local = Storage.local.loadSync(h); if (local && local.owner !== user.id) continue; remote.owner = user.id; if (!local || (remote.updated || 0) > (local.updated || 0)) { Storage.local.saveSync(h, remote); if (state.handle === h) state = migrate(remote); } }
+      save(); } catch (e) { console.warn('auth sync', e); } finally { linking = false; } draw(); }
   if (window.Auth) Auth.onChange(onAuth);
   window.addEventListener('beforeunload', () => { Telemetry.touch(state); save(); });
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, shop, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, reveal, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, get linking(){ return linking; }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, shop, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
 })();
