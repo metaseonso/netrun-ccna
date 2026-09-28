@@ -238,6 +238,27 @@
   function discoveryPorts(S){ for (const n in S.neighbors) for (const x of S.neighbors[n]) { const me = S.ifaces[n][x.local].cfg, them = S.ifaces[x.dev][x.remote].cfg;
       if (me.cdpOff || them.cdpOff) x.cdp = false; if (me.lldpRxOff || them.lldpTxOff) x.lldp = false; x.cdpHold = S.cfg[x.dev].cdpHoldtime || 180; x.lldpHold = S.cfg[x.dev].lldpHoldtime || 120; } }
 
+  // ---------------------------------------------------------------- DNS
+  // names to addresses. A host asks its DNS servers (static dns or the DHCP lease) over UDP 53; a router answers from its
+  // "ip host" table when "ip dns server" is on and forwards what it does not know to its own "ip name-server"s (with lookup on);
+  // a server or cloud answers from dnsRecords: { 'name': 'ip' } in the gig's net. A router resolving for itself uses its host
+  // table first, then its name servers. Result: { ok, ip, server, reason, nx } (nx: the server answered that the name does not exist).
+  function resolve(S, from, name, depth){ depth = depth || 0; name = String(name).toLowerCase().replace(/\.$/, ''); const fail = (reason, extra) => Object.assign({ ok: false, name, ip: null, server: null, reason }, extra || {});
+    if (depth > 4) return fail('DNS loop'); let servers;
+    if (S.hosts[from] && S.hosts[from].kind !== 'cloud') { const h = S.hosts[from]; if (!h.ip) return fail(from + ' has no IP address'); servers = [].concat(h.dns || []).filter(Boolean); if (!servers.length) return fail(from + ' has no DNS server configured'); }
+    else if (S.cfg[from]) { const c = S.cfg[from]; if (c.hostTable && c.hostTable[name]) return { ok: true, name, ip: c.hostTable[name], server: 'host table', reason: 'from the host table' }; if (c.domainLookup === false) return fail('ip domain lookup is off');
+      servers = c.nameServers || []; if (!servers.length) return fail('no ip name-server configured (the query goes to 255.255.255.255 and nobody answers)'); }
+    else return fail(from + ' cannot ask for names');
+    let last = null; for (const srv of servers) { const r = dnsAsk(S, from, srv, name, depth); if (r.ok || r.nx) return r; last = r; } return last; }
+  function dnsAsk(S, from, srv, name, depth){ const D = S.net.devices; const fail = (reason, extra) => Object.assign({ ok: false, name, ip: null, server: srv, reason }, extra || {});
+    const p = ping(S, from, srv, { proto: 'udp', dport: 53 }); if (!p.ok) return fail('DNS server ' + srv + ' unreachable (' + p.reason + ')');
+    const own = S.l3.find(o => o.ip === srv && o.kind === 'iface');
+    if (own) { const c = S.cfg[own.dev]; if (!c.dnsServer) return fail(own.dev + ' at ' + srv + ' is not a DNS server (no ip dns server)'); if (c.hostTable && c.hostTable[name]) return { ok: true, name, ip: c.hostTable[name], server: srv, reason: 'answered by ' + own.dev };
+      if (c.domainLookup !== false && (c.nameServers || []).length) { const r = resolve(S, own.dev, name, depth + 1); return Object.assign({}, r, { server: srv, reason: r.ok ? 'answered by ' + own.dev + ' via ' + r.server : r.reason }); }
+      return fail(own.dev + ' has no record for ' + name, { nx: true }); }
+    const n = Object.keys(D).find(k => D[k].dnsRecords && (D[k].ip === srv || (S.hosts[k] && S.hosts[k].ip === srv))) || Object.keys(D).find(k => D[k].kind === 'cloud' && D[k].internet && D[k].dnsRecords && !RFC1918(srv));
+    if (!n) return fail('nothing answers DNS at ' + srv); const rec = D[n].dnsRecords[name]; return rec ? { ok: true, name, ip: rec, server: srv, reason: 'answered by ' + n } : fail(n + ' has no record for ' + name, { nx: true }); }
+
   // ---------------------------------------------------------------- NTP
   // who a box gets its time from: an "ntp master" is its own clock; an "ntp server" must answer a ping and be synchronised itself
   // (a router) or be a server/cloud with ntpStratum set in the gig's net. Stratum is the server's plus one; above 15 is unsynchronised.
@@ -337,7 +358,7 @@
       acl: (d, id) => S.cfg[d].acls[id] || null, aclTest: (d, id, pkt) => aclEval(S, d, id, pkt),
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),
       neighbors: d => S.neighbors[d] || [], macTable: d => S.macTable[d] || [], bundles: S.bundles,
-      ntp: d => ntpSync(S, d)
+      ntp: d => ntpSync(S, d), resolve: (d, name) => resolve(S, d, name)
     };
   }
 
@@ -345,5 +366,5 @@
   function traceLines(r, style){ const t = r.trail || []; const row = (i, ip) => style === 'pc' ? '  ' + String(i).padStart(2) + '    <1 ms    <1 ms    <1 ms  ' + ip : '  ' + i + ' ' + ip + ' 0 msec 0 msec 0 msec';
     const out = t.map((ip, i) => row(i + 1, ip)); if (!r.ok) out.push(style === 'pc' ? '  ' + String(t.length + 1).padStart(2) + '     *        *        *     Request timed out.' : '  ' + (t.length + 1) + '  *  *  * '); return out; }
   window.Net = { build, api, ping, traceLines, aclEval, lookup, inSubnet, mlen, netOf, RFC1918, short, kindOf, eui64, synthMac };
-  Net.ntpSync = ntpSync;
+  Net.ntpSync = ntpSync; Net.resolve = resolve;
 })();

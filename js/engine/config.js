@@ -79,6 +79,12 @@
         else if ((m = s.match(/^cdp (timer|holdtime) (\d+)$/))) cfg[m[1] === 'timer' ? 'cdpTimer' : 'cdpHoldtime'] = +m[2];
         else if ((m = s.match(/^lldp (timer|holdtime|reinit) (\d+)$/))) cfg['lldp' + m[1][0].toUpperCase() + m[1].slice(1)] = +m[2];
         else if (s === 'no cdp advertise-v2') cfg.cdpV1 = true; else if (s === 'cdp advertise-v2') cfg.cdpV1 = false;
+        else if ((m = s.match(/^ip host (\S+) (\d+\.\d+\.\d+\.\d+)/))) (cfg.hostTable = cfg.hostTable || {})[m[1]] = m[2];
+        else if ((m = s.match(/^no ip host (\S+)/))) { if (cfg.hostTable) delete cfg.hostTable[m[1]]; }
+        else if ((m = s.match(/^ip name-server (.+)$/))) cfg.nameServers = (cfg.nameServers || []).concat(m[1].split(' ').filter(x => !(cfg.nameServers || []).includes(x)));
+        else if ((m = s.match(/^no ip name-server ?(.*)$/))) cfg.nameServers = m[1] ? (cfg.nameServers || []).filter(x => !m[1].split(' ').includes(x)) : [];
+        else if (s === 'ip dns server') cfg.dnsServer = true; else if (s === 'no ip dns server') cfg.dnsServer = false;
+        else if (s === 'ip domain lookup' || s === 'ip domain-lookup') cfg.domainLookup = true; else if (s === 'no ip domain lookup' || s === 'no ip domain-lookup') cfg.domainLookup = false;
         else if (s === 'ntp authenticate') cfg.ntpAuth = true; else if (s === 'no ntp authenticate') cfg.ntpAuth = false;
         else if ((m = s.match(/^ntp authentication-key (\d+) md5 (\S+)/))) (cfg.ntpKeys = cfg.ntpKeys || {})[+m[1]] = m[2];
         else if ((m = s.match(/^ntp trusted-key (\d+)$/))) (cfg.ntpTrusted = cfg.ntpTrusted || []).push(+m[1]);

@@ -164,5 +164,25 @@ module.exports.run = function({ out }){
     const m = devs({ R3: ['en', 'conf t', 'ntp master'] }); const B = Net.api(Net.build({ devices: { R3: { kind: 'router' } }, links: [] }, m)); ok(B.ntp('R3').synced && B.ntp('R3').stratum === 8, 'ntp: ntp master alone is stratum 8');
     d.R2.exec('end'); d.R2.exec('clock set 10:00:00 28 sep 2026'); ok(d.R2.lines.some(r => r.mode === 'priv' && r.line === 'clock set 10:00:00 28 sep 2026') && !/Invalid/.test(d.R2.out[d.R2.out.length - 1].s), 'shell: clock set is accepted in privileged EXEC');
   }
+  // 13. DNS: a router with ip dns server answers from its host table and forwards the rest to its name server; PCs nslookup and ping by name
+  {
+    const net = { devices: { R1: { kind: 'router' }, ISP: { kind: 'cloud', ip: '203.0.113.1', mask: '255.255.255.252', internet: true, dnsRecords: { 'exchange.watson.net': '198.51.100.20' } },
+        PC1: { kind: 'host', ip: '10.0.1.10', mask: '255.255.255.0', gw: '10.0.1.1', dns: '10.0.1.1' }, PC2: { kind: 'host', ip: '10.0.1.11', mask: '255.255.255.0', gw: '10.0.1.1' },
+        SRV: { kind: 'server', ip: '10.0.2.10', mask: '255.255.255.0', gw: '10.0.2.1' } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'PC2', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'SRV', b: 'R1', bp: 'gigabitethernet0/2' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'ISP' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.1.1 255.255.255.0', 'no shut', 'int g0/2', 'ip add 10.0.2.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 203.0.113.2 255.255.255.252', 'no shut', 'exit', 'ip route 0.0.0.0 0.0.0.0 203.0.113.1', 'ip host records 10.0.2.66'] });
+    let A = Net.api(Net.build(net, d)); ok(!A.resolve('PC1', 'records').ok && /not a DNS server/.test(A.resolve('PC1', 'records').reason), 'dns: a router without ip dns server does not answer (' + A.resolve('PC1', 'records').reason + ')');
+    ok(!A.resolve('PC2', 'records').ok && /no DNS server/.test(A.resolve('PC2', 'records').reason), 'dns: a host with no DNS server cannot resolve');
+    ok(A.resolve('R1', 'records').ip === '10.0.2.66', 'dns: the router resolves its own host table');
+    d.R1.exec('ip dns server'); d.R1.exec('no ip host records'); d.R1.exec('ip host records 10.0.2.10'); A = Net.api(Net.build(net, d)); ok(A.resolve('PC1', 'records').ok && A.resolve('PC1', 'records').ip === '10.0.2.10', 'dns: ip dns server answers from the host table; no ip host replaces the entry');
+    ok(A.resolve('PC1', 'exchange.watson.net').nx, 'dns: a name not in the table and no name server is a non-existent domain');
+    d.R1.exec('ip name-server 8.8.8.8'); A = Net.api(Net.build(net, d)); ok(A.resolve('PC1', 'exchange.watson.net').ip === '198.51.100.20', 'dns: the router forwards to its name server on the internet');
+    d.R1.exec('no ip domain lookup'); A = Net.api(Net.build(net, d)); ok(!A.resolve('PC1', 'exchange.watson.net').ok && A.resolve('PC1', 'records').ok, 'dns: no ip domain lookup stops forwarding, the host table still answers');
+    ok(/records\s+None\s+\(perm, OK\)\s+0\s+IP\s+10\.0\.2\.10/.test(Show.render(d.R1, 'show hosts', A.state)) && /Name servers are 8\.8\.8\.8/.test(Show.render(d.R1, 'show hosts', A.state)), 'show hosts lists the table and the name servers');
+    const pc = new Sim.Device('PC1', { kind: 'host', netState: () => A.state }); pc.exec('nslookup records'); ok(/Name:\s+records\nAddress:\s+10\.0\.2\.10/.test(pc.out[pc.out.length - 1].s), 'pc: nslookup prints the answer');
+    pc.exec('ping records'); ok(/Pinging records \[10\.0\.2\.10\]/.test(pc.out[pc.out.length - 1].s) && /Received = 4/.test(pc.out[pc.out.length - 1].s), 'pc: ping by name resolves then pings'); pc.exec('ipconfig /displaydns'); ok(/A \(Host\) Record . . . : 10\.0\.2\.10/.test(pc.out[pc.out.length - 1].s), 'pc: ipconfig /displaydns shows the cache');
+    pc.exec('ipconfig /flushdns'); pc.exec('ipconfig /displaydns'); ok(/empty/.test(pc.out[pc.out.length - 1].s), 'pc: ipconfig /flushdns empties it');
+    const r1 = d.R1; r1.netState = null; r1._netState = () => A.state; r1.exec('end'); r1.exec('ping records'); ok(r1.out.some(o => /Success rate is 100/.test(o.s)) && r1.out.filter(o => /ping records/.test(o.s)).length === 1, 'router: ping by name uses the host table, echoed once');
+  }
   return { pass, fails };
 };

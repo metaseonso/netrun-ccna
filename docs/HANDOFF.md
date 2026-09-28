@@ -157,6 +157,14 @@ Definition of done for a day:
   are accepted in privileged EXEC; `clock summer-time NAME recurring` follows the US rule (second Sunday in March to the first
   Sunday in November). Tested (section 12).
 
+- 2026-09-28 · DNS (`Net.resolve`, `ctx.net().resolve('PC1', 'records')` → `{ ok, ip, server, reason, nx }`): a host asks its DNS
+  servers (`dns` on the host, or the DHCP lease) over UDP 53, so ACLs apply; a router with `ip dns server` answers from its
+  `ip host NAME IP` table and forwards the rest to its `ip name-server`s while `ip domain lookup` is on (the default); a server or
+  cloud answers from `dnsRecords: { name: ip }` in the gig's `net`. Parsed: `ip host`, `no ip host`, `ip name-server`,
+  `[no] ip dns server`, `[no] ip domain lookup` / `ip domain-lookup`. PCs: `nslookup NAME`, `ping NAME`, `tracert NAME`,
+  `ipconfig /displaydns`, `ipconfig /flushdns`. Routers: `show hosts`, `ping NAME` / `traceroute NAME` (translated first).
+  Tested (section 13).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a
