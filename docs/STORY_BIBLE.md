@@ -160,6 +160,8 @@ Rules and numbers live there, never in a character's mouth.
 | Imani (nurse, the clinic) | warm and dry, counts in shifts and floors, remembers the night of the loop by what she carried |
 | Ospef | careful and exact, won't act on hearsay, talks about Dijkstra the way other people talk about saints |
 | Stan (Nexthop's cousin) | easy and unbothered, Nexthop's shorter sentences, takes over without making a fuss about it |
+| Syn | quick and exact, counts everything twice, says what she's doing as she does it |
+| Ack (Syn's twin) | dry, finishes Syn's sentences, answers the question you didn't ask yet |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that
