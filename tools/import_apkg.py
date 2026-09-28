@@ -19,7 +19,7 @@ import argparse, html, json, os, re, sqlite3, sys, tempfile, zipfile
 DAY_SKILL = {
     # Only days with a built level map to a real skill (feeds STATS "weak skills"). Every other day gets
     # the pseudo-skill 'day-NN'; such cards unlock when any level covering that day has been read.
-    1: 'net-devices', 4: 'cli-modes', 20: 'stp-election', 21: 'stp-config',
+    1: 'net-devices', 2: 'cabling', 4: 'cli-modes', 20: 'stp-election', 21: 'stp-config',
 }
 
 TAG = re.compile(r'<[^>]+>')

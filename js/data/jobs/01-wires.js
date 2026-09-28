@@ -64,6 +64,56 @@
           why: 'Enable: The box keeps two copies of its settings. The running-config is what it is doing right now, and it lives in memory. Memory forgets when the power goes. The startup-config is the saved copy the box reads when it turns on. Nothing you typed has been saved yet. So the honest answer to the owner is: not yet.' },
         { type: 'cmd', skill: 'cli-modes', text: '"Save it."', need: [ { dev: 'R1', line: /^(do )?write memory$/ } ], hint: 'NC-R1# write memory   (or copy running-config startup-config)', ok: '"[OK]. Door closes behind you."',
           why: 'Enable: Saving copies memory into the startup file. Two ways to say it: write memory, or copy running-config startup-config. Short forms: wr, or copy run start. The box answers [OK]. If you are still behind door three, type end first, or say do write memory. After that, a power cut cannot take your work.' }
-      ], outro: 'The owner brings you a bowl of noodles you did not order. Enable nods once, which is as much as anyone gets. Dispatch: "Rep credited. Old Root is asking for someone at the clinic."' }
+      ], outro: 'The owner brings you a bowl of noodles you did not order. Enable nods once, which is as much as anyone gets. Dispatch: "Rep credited. Old Root is asking for someone at the clinic."' },
+
+    // ------------------------------------------------------------------ night 2 · from Lab 02 (connecting devices)
+    { id: 'd-n02-dock-link', cls: 'D', rep: 10, from: 'osi', title: 'The Loading Dock Link', day: [2], requires: ['n02-loading-dock'], devices: ['PC1'],
+      brief: 'DISPATCH » The guild\'s link to the loading dock is dead and the drivers are scanning parcels by hand. Osi has the parts. Plan the new cabling with her and get the dock back online.\n\nCLIENT (Osi Sevenfold) » "I need the right cable on every link this time. Last time someone guessed, and it cost us six years of dropped scans."',
+      net: {
+        devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0011.2202.0001' }, SW2: { kind: 'switch', mac: '0011.2202.0002' },
+          PC1: { kind: 'host', ip: '192.168.1.10', mask: '255.255.255.0', gw: '192.168.1.1' }, SCAN1: { kind: 'host', ip: '192.168.1.60', mask: '255.255.255.0', gw: '192.168.1.1' } },
+        links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'gigabitethernet0/2', b: 'SW2', bp: 'gigabitethernet0/1' },
+          { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'SW2', ap: 'fastethernet0/1', b: 'SCAN1' } ],
+        preconfig: { R1: ['interface gigabitethernet0/0', 'ip address 192.168.1.1 255.255.255.0', 'no shutdown'], SW2: ['interface gigabitethernet0/1', 'shutdown'] }
+      },
+      map: { w: 520, h: 330, nodes: [
+          { id: 'R1', label: 'guild router', type: 'router', x: 120, y: 70 }, { id: 'SW1', label: 'rack switch', type: 'switch', x: 120, y: 170 },
+          { id: 'PC1', label: 'dispatch laptop', type: 'pc', x: 120, y: 270 }, { id: 'SW2', label: 'dock switch', type: 'switch', x: 400, y: 170 }, { id: 'SCAN1', label: 'dock scanner', type: 'pc', x: 400, y: 270 } ],
+        links: [ { a: 'R1', b: 'SW1' }, { a: 'SW1', b: 'PC1' }, { a: 'SW1', b: 'SW2', ap: 'gigabitethernet0/2', bp: 'gigabitethernet0/1', tag: '180 m' }, { a: 'SW2', b: 'SCAN1' } ] },
+      steps: [
+        { type: 'find', skill: 'cabling', target: 'SW2', text: 'Osi, pointing at the map on her tablet: "One link on here is dead. Click the box at the dock end of it."', hint: 'Look for the dashed line. The dock end is on the right.', ok: 'Osi: "The dock switch. Everything out here hangs off it."',
+          why: 'Osi: A dashed line on the map means the link is down. The dead link runs from the rack switch to the dock switch, a hundred and eighty metres away, and the dock switch is the box at the far end.' },
+        { type: 'choice', skill: 'cabling', text: 'Osi: "The dock is a hundred and eighty metres from the rack. What\'s the cheapest thing that will actually reach?"', opts: ['A new UTP cable, the same as before', 'Multimode fiber with an SFP at each end', 'Single-mode fiber with an SFP at each end', 'Two UTP cables joined in the middle'], a: 1,
+          hint: 'Copper stops at 100 metres. Of the two kinds of glass, one is cheaper.', ok: 'Osi: "Multimode. It reaches, and it costs half as much."',
+          onPass: (ctx) => { if (ctx.devices.SW2) ctx.devices.SW2.preload(['interface gigabitethernet0/1', 'no shutdown']); },
+          why: 'Osi: UTP is only rated for 100 metres, and joining two cables in the middle does not change that. Both kinds of fiber reach 180 metres, but multimode is cheaper and is good for a few hundred metres, so it is the right choice. Single-mode is for kilometres.' },
+        { type: 'cmd', skill: 'cabling', text: 'Osi, as the fiber\'s link light turns green: "It\'s in. Prove it from the dispatch laptop: ping the dock scanner at 192.168.1.60."',
+          need: [ { dev: 'PC1', line: /^ping 192\.168\.1\.60$/ } ], check: (d, ctx) => ctx.net().ping('PC1', '192.168.1.60').ok,
+          hint: 'PC1 console:\nC:\\> ping 192.168.1.60', ok: 'Osi: "Four replies from the dock. The scanners are back."',
+          why: 'Osi: The laptop is in the rack room and the scanner is on the dock, so a reply means every piece in between works: the laptop, the rack switch, the new fiber and both SFPs, and the dock switch.' },
+        { type: 'form', skill: 'cabling', text: 'Osi: "The dock switch is old and has no Auto MDI-X. Tell me which copper cable goes on each of these new links."',
+          fields: [ { key: 'pcsw', label: 'Scanner to dock switch', options: ['straight-through', 'crossover'], answer: 'straight-through' },
+            { key: 'swsw', label: 'Dock switch to a spare switch', options: ['straight-through', 'crossover'], answer: 'crossover' },
+            { key: 'rtsw', label: 'Router to dock switch', options: ['straight-through', 'crossover'], answer: 'straight-through' },
+            { key: 'rtrt', label: 'Router to router', options: ['straight-through', 'crossover'], answer: 'crossover' } ],
+          hint: 'Different kinds of box: straight-through. Same kind: crossover.', ok: 'Osi: "All four right. I\'m labelling the bin."',
+          why: 'Osi: PCs, scanners and routers send on pins 1 and 2, and switches send on pins 3 and 6. When two different kinds meet, the pins already line up, so a straight-through cable works. When two of the same kind meet, both send on the same pins, so the pairs have to cross over. A router to a switch is different kinds, so straight-through. Two routers are the same kind, so crossover.' },
+        { type: 'calc', skill: 'cabling', text: 'A driver, watching: "The new link\'s a gig, right? How much is that, exactly?"',
+          fields: [ { key: 'bits', label: 'bits per second in 1 gigabit', check: v => String(v).replace(/[,\s_]/g, '') === '1000000000' },
+            { key: 'bytes', label: 'megabytes per second, at most', check: v => Number(String(v).replace(/[,\s]/g, '')) === 125 } ],
+          answer: '1000000000 bits · 125 MB/s', hint: 'Giga is a billion. There are 8 bits in a byte.', ok: 'Osi: "A hundred and twenty-five. Tell the drivers that\'s why the scans upload instantly now."',
+          why: 'Osi: Giga means a billion, so a gigabit is 1,000,000,000 bits. Network speeds are counted in bits, and a byte is 8 bits, so a gigabit per second is at most 1,000,000,000 divided by 8, which is 125,000,000 bytes, or 125 megabytes, per second.' },
+        { type: 'order', skill: 'cabling', text: 'Osi: "The spare bin has four kinds of copper module in it. Sort them slowest to fastest so nobody grabs the wrong one."',
+          items: ['1000BASE-T (802.3ab)', '10BASE-T (802.3i)', '10GBASE-T (802.3an)', '100BASE-T (802.3u)'],
+          accept: arr => arr.join('|') === ['10BASE-T (802.3i)', '100BASE-T (802.3u)', '1000BASE-T (802.3ab)', '10GBASE-T (802.3an)'].join('|'),
+          hint: 'The number before BASE is the speed in megabits.', ok: 'Osi: "Ten, a hundred, a thousand, ten thousand. Bin sorted."',
+          why: 'Osi: The number at the start of the name is the speed in megabits per second: 10BASE-T is 10 Mbps, 100BASE-T is 100 Mbps, 1000BASE-T is 1 Gbps, and 10GBASE-T is 10 Gbps. Each has its own IEEE 802.3 name: i, u, ab and an.' },
+        { type: 'choice', skill: 'cabling', text: 'Osi, closing the bin: "Last one. Why did the old copper link drop scans every afternoon but never in the morning?"', opts: ['The vans run their motors on the dock in the afternoon, and that noise hit a cable already past its length', 'Copper gets slower as it warms up', 'The switch turns its ports off after lunch', 'Fiber interference from the next building'], a: 0,
+          hint: 'What makes electrical noise on a loading dock?', ok: 'Osi: "The vans. The fiber won\'t care about them."',
+          why: 'Osi: Motors make electromagnetic interference. UTP twists its pairs to cancel noise, but a cable run past its 100 metre limit already has a weak signal, so the extra noise from the vans in the afternoon was enough to corrupt it. Fiber carries light, so EMI does not affect it.' }
+      ],
+      solution: [ { select: 'SW2' }, 'commit', { choose: 1 }, 'commit', { dev: 'PC1', type: ['ping 192.168.1.60'] }, 'commit', { form: { pcsw: 'straight-through', swsw: 'crossover', rtsw: 'straight-through', rtrt: 'crossover' } }, 'commit', { calc: { bits: '1000000000', bytes: '125' } }, 'commit',
+        { order: [1, 3, 0, 2] }, 'commit', { choose: 0 }, 'commit' ],
+      outro: 'At ten past eight the dock scanners chirp back to life, one after another down the line. The drivers stop loading by hand, and Osi writes the new cable on her map in green ink.' }
   );
 })();

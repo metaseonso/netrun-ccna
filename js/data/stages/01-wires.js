@@ -44,7 +44,48 @@
           why: 'Osi: A server is whatever provides the service, and here the service is the parcel list, so the grey box is the server. The tablet asks for the list, so it is the client. The switch only carries their traffic, and the router only matters once the request leaves the building.' } }
       ] },
 
-    { id: 'osi-intro', title: 'Seven floors, four in practice', sub: 'OSI model, TCP/IP, devices, cables', npc: 'osi', day: [2,3], src: [PS('OSI_Model_TCPSuite.md'), PS('Network_Devices.md'), PS('Interfaces_and_Cables.md')], unlocks: ['osi-layers'],
+    // ------------------------------------------------------------ night 2 · interfaces and cables
+    { id: 'n02-loading-dock', title: 'The loading dock cable', sub: 'interfaces and cables', npc: 'osi', day: [2], src: [PS('Interfaces_and_Cables.md')], unlocks: ['cabling'],
+      beats: [
+        { k: 'SCENE', where: 'The courier guild · the loading dock · six in the morning',
+          lines: [
+            { who: 'narr', text: 'The loading dock smells of diesel and wet cardboard. A van has reversed over the cable that runs along the wall, and its plastic jacket is split open. Inside you can see eight thin wires, twisted together in four pairs. Osi crouches beside the damage with a torch in her teeth, and takes it out to talk.' },
+            { who: 'osi', text: 'That was the only link between the rack and the dock switch. Every scanner out here went dark at five past six, and the drivers have been loading by hand ever since.' },
+            { who: 'osi', text: 'It\'s a [[UTP]] cable, unshielded twisted pair. Each pair is twisted around itself so the noise from the motors and the strip lights cancels out. That noise is [[EMI]], electromagnetic interference. The plug on the end is an [[RJ45]] connector with eight pins, one for each wire.' },
+            { who: 'you', text: 'Can we just splice it back together?' },
+            { who: 'osi', text: 'Not this one. It ran a hundred and eighty metres, and copper Ethernet is only rated for a hundred. It has been dropping data every afternoon for years, and nobody wrote it down.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How fast was it meant to run?', reply: 'Osi: "It\'s a gigabit port. Speeds are counted in bits per second, and a byte is eight bits, so a gigabit link moves about a hundred and twenty-five megabytes a second at best. The names go up in tens: plain Ethernet at ten megabits, [[FastEthernet]] at a hundred, [[Gigabit Ethernet]] at a thousand, then ten-gig."' },
+            { tone: 'press', say: 'Who decided a hundred metres?', reply: 'Osi: "The IEEE. They write the rules for Ethernet in a standard called 802.3, and every version of it has its own number: 802.3i for ten megabit, 802.3u for a hundred, 802.3ab for a gig. Past a hundred metres the signal on copper gets too weak and too noisy to read."' },
+            { tone: 'quiet', say: '(Take the torch and hold it for her.)', reply: 'She lets you take the light without a word and cuts away the damaged end in one clean snip.' }
+          ] } },
+        { k: 'SCENE', where: 'The loading dock · the spare parts bin', real: ['ieee'],
+          lines: [
+            { who: 'osi', text: 'Inside the cable, a PC or a router sends on pins 1 and 2 and listens on pins 3 and 6. A switch does the opposite: it sends on 3 and 6 and listens on 1 and 2. So between a PC and a switch you use a [[straight-through cable]], where pin 1 meets pin 1 at the other end.' },
+            { who: 'osi', text: 'Between two boxes of the same kind, two switches or two routers, both sides send on the same pins, so the pairs have to cross over inside the cable. That\'s a [[crossover cable]]. Most newer boxes have [[Auto MDI-X]] and swap the pins themselves, but the dock switch is too old for that.' },
+            { who: 'osi', text: 'A ten or hundred megabit link uses two of the four pairs. Gigabit and ten-gig use all four. Every link here is [[full-duplex]], so both ends can send and receive at the same time.' },
+            { who: 'osi', text: 'For the dock we need glass. [[Fiber]] carries light, so motor noise can\'t touch it, and it runs much further than copper. It plugs into a small module in the switch called an [[SFP]].' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Is there more than one kind of fiber?', reply: 'Osi: "Two. [[Multimode fiber]] has a wide core that lets light in at many angles. It\'s cheaper, and it\'s good for a few hundred metres. [[Single-mode fiber]] has a narrow core, so the light goes straight down the middle. It costs more, and it runs for kilometres. For a hundred and eighty metres, multimode is plenty."' },
+            { tone: 'press', say: 'Why not just run fiber everywhere?', reply: 'Osi: "Price. Every fiber link needs a pair of SFPs and the glass itself, and copper to a desk is almost free. We use fiber where copper can\'t reach or where the noise is bad, like out here."' },
+            { tone: 'care', say: 'Is the copper safe to leave in the walls?', reply: 'Osi: "Safe enough, but it leaks. UTP gives off a faint signal outside the cable, and someone with the right kit can pick it up. Glass doesn\'t leak. That\'s one more reason the corp towers wire their floors in fiber."' }
+          ] } },
+        { k: 'LORE', title: 'THE ETHER MEMO', year: 1973, real: ['xerox'], vibe: 'A far-out memo that ended up wiring every office on the planet.',
+          text: 'Osi, coiling the old cable: "On the twenty-second of May 1973, an engineer at Xerox PARC called Bob Metcalfe wrote a memo about linking the lab\'s computers with one shared cable. He called it Ethernet, after the ether that old physicists thought carried light. The IEEE made it the 802.3 standard ten years later, in 1983, and that\'s why every building on this street has an RJ45 socket in the wall."' },
+        { k: 'KIT', text: 'Osi writes the dock job on the back of a delivery note.', real: ['ieee'], kit: [
+          { cmd: 'RJ45 · 8 pins · UTP · 100 m max', what: 'copper Ethernet. The twists cancel EMI' },
+          { cmd: '10BASE-T 802.3i · 100BASE-T 802.3u', what: '10 and 100 Mbps. Two pairs' },
+          { cmd: '1000BASE-T 802.3ab · 10GBASE-T 802.3an', what: '1 and 10 Gbps. All four pairs' },
+          { cmd: 'PC, router, firewall: send 1,2 · receive 3,6', what: 'a switch is the other way round' },
+          { cmd: 'straight-through: different kinds · crossover: same kind', what: 'unless both ends have Auto MDI-X' },
+          { cmd: 'fiber + SFP: multimode (wide core, cheaper, shorter) · single-mode (narrow core, longer, pricier)', what: 'no EMI, no leaking signal' } ] },
+        { k: 'SYNC', q: { prompt: 'A driver watches you pack up: "The new scanners plug straight into the old dock switch. If the switch can\'t sort the pins out itself, which cable do they need?"', opts: ['Straight-through', 'Crossover', 'Single-mode fiber', 'A console cable'], a: 0,
+          yes: 'Osi: "Straight-through. A scanner and a switch are different kinds of box."', no: 'Osi: "Straight-through. Different kinds of box, so the pins already line up."',
+          why: 'Osi: A scanner sends on pins 1 and 2, like a PC, and the switch listens on 1 and 2, so a straight-through cable lines them up. Crossover is for two boxes of the same kind. Fiber would need SFPs at both ends, and a console cable is for configuring a box, not for data.' } }
+      ] },
+    { id: 'osi-intro', title: 'Seven floors, four in practice', sub: 'OSI model, TCP/IP, devices, cables', npc: 'osi', day: [3], src: [PS('OSI_Model_TCPSuite.md'), PS('Network_Devices.md'), PS('Interfaces_and_Cables.md')], unlocks: ['osi-layers'],
       beats: [
         { k: 'SCENE', where: 'Courier guild · sorting floor · your first morning',
           lines: [
