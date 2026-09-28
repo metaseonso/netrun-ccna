@@ -120,7 +120,7 @@
 .stn:hover .card{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 0 18px rgba(63,246,255,.15)} .stn:hover .dot{transform:scale(1.15)}
 .stn.on .card{border-color:var(--mag);box-shadow:0 0 20px rgba(255,63,164,.2)}
 .stn .k{font-size:10px;letter-spacing:.16em;color:var(--ink2)} .stn.cleared .k{color:var(--grn)} .stn.lit .k{color:var(--cyan)} .stn.on .k{color:var(--mag)}
-.stn .n{font-family:var(--disp);font-size:13px;letter-spacing:.1em} .stn.new .n{color:var(--ink2)}
+.stn .n{font-family:var(--disp);font-size:13px;letter-spacing:.1em;white-space:normal;max-width:150px} .stn.new .n{color:var(--ink2)}
 .nights{display:flex;flex-wrap:wrap;gap:3px;max-width:140px} .nights i{width:8px;height:8px;border:1px solid var(--ink3)} .nights i.r{background:var(--grn);border-color:var(--grn)}
 .mlegend{position:absolute;left:0;right:0;bottom:0;height:40px;display:flex;align-items:center;gap:18px;padding:0 14px;border-top:1px solid var(--line);background:rgba(7,8,13,.85);font-size:10px;letter-spacing:.12em;color:var(--ink2)}
 .mlegend span{display:flex;align-items:center;gap:7px} .mlegend i{width:9px;height:9px;border:1px solid var(--ink3)} .mlegend i.r{background:var(--grn);border-color:var(--grn)} .mlegend i.h{border-radius:50%;background:var(--mag);border-color:var(--mag)} .mlegend .grow1{flex:1}

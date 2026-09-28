@@ -55,8 +55,9 @@
     // the setting under the class: a plain word, a stamp, or a tilted glowing stamp
     const stamp = tier === 0 || tier === -1 ? (name ? '<text x="' + (W - 48) + '" y="294" class="k" text-anchor="end">' + esc(name) + '</text>' : '')
       : '<g transform="translate(' + (W - 48) + ' ' + (tier === 2 ? 284 : 292) + ') rotate(' + (tier === 2 ? -5 : -3) + ')"' + (tier === 2 ? ' filter="url(#glow)"' : '') + '>' +
-        '<rect x="' + (tier === 2 ? -214 : -128) + '" y="-24" width="' + (tier === 2 ? 214 : 128) + '" height="34" rx="4" fill="none" stroke="' + (tier === 2 ? T.accent : T.gold) + '" stroke-width="2.5"/>' +
-        '<text x="' + (tier === 2 ? -107 : -64) + '" y="0" text-anchor="middle" class="d" font-size="' + (tier === 2 ? 19 : 17) + '" font-weight="800" letter-spacing="4" fill="' + (tier === 2 ? T.accent : T.gold) + '">' + esc(name) + '</text></g>';
+        // the box is sized from the word, and the word is fitted to the box, so any font stays inside the stamp
+        (sw => '<rect x="' + (-sw) + '" y="-24" width="' + sw + '" height="34" rx="4" fill="none" stroke="' + (tier === 2 ? T.accent : T.gold) + '" stroke-width="2.5"/>' +
+        '<text x="' + (-sw / 2) + '" y="0" text-anchor="middle" class="d" font-size="' + (tier === 2 ? 19 : 17) + '" font-weight="800" fill="' + (tier === 2 ? T.accent : T.gold) + '" textLength="' + (sw - 22) + '" lengthAdjust="spacingAndGlyphs">' + esc(name) + '</text></g>')(name.length * (tier === 2 ? 17 : 15) + 22);
 
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="NETRUNNER://CCNA license ' + esc(r.number) + ' for ' + esc(handle) + (name ? ', ' + esc(name) : '') + '">' +
       '<defs>' + defs + '</defs>' +

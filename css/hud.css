@@ -121,3 +121,5 @@
 .sugctx{font-size:11px;margin:8px 0 14px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-width:760px){.sugbtn span{display:none}}
+.b-id .syncchip span{display:none}
+@media (max-width:1150px){.b-id .sugbtn span{display:none}}
