@@ -36,7 +36,7 @@
     if (t[0] === 'do' && t[1] && FIRST[t[1]]) t[1] = FIRST[t[1]];
     // interface names anywhere: join "g 0/1" into "g0/1" then canon
     for (let i = 0; i < t.length; i++) {
-      if (/^(gigabitethernet|gi|g|fastethernet|fa|f|ethernet|e|loopback|lo|serial|se|s|vlan|port-channel|po|tunnel)$/i.test(t[i]) && t[i+1] && /^\d/.test(t[i+1]) && !(t[0]==='vlan' && i===0) && !(t[0]==='no' && t[1]==='vlan' && i===1) && !(t[i]==='vlan' && (t[0]==='switchport'||t[0]==='spanning-tree'||t[0]==='ip'||t[0]==='show'||t[0]==='name'))) {
+      if (/^(gigabitethernet|gi|g|fastethernet|fa|f|ethernet|e|loopback|lo|serial|se|s|vlan|port-channel|po|tunnel)$/i.test(t[i]) && t[i+1] && /^\d/.test(t[i+1]) && !(t[0]==='vlan' && i===0) && !(t[0]==='no' && t[1]==='vlan' && i===1) && !(t[i]==='vlan' && (t[0]==='switchport'||t[0]==='spanning-tree'||t[0]==='ip'||t[0]==='show'||t[0]==='name'||(t[0]==='do'&&t[1]==='show')))) {
         const j = canonIf(t[i] + t[i+1]); if (j) { t.splice(i, 2, j); }
       } else if (i > 0 && /^(gigabitethernet|gi|g|fastethernet|fa|f|loopback|lo|serial|se|s|port-channel|po)\d/i.test(t[i])) {
         const j = canonIf(t[i]); if (j) t[i] = j;

@@ -21,6 +21,7 @@
   const netOf = (ip, mask) => IP.n2ip((IP.ip2n(ip) & IP.mask(mlen(mask))) >>> 0);
   const kindOf = p => p.startsWith('gigabitethernet') ? 'gi' : p.startsWith('fastethernet') ? 'fa' : p.startsWith('serial') ? 'se' : p.startsWith('tengigabitethernet') ? 'te' : p.startsWith('loopback') ? 'lo' : p.startsWith('vlan') ? 'vlan' : p.startsWith('port-channel') ? 'po' : 'e';
   const BW = { gi: 1000000, fa: 100000, se: 1544, te: 10000000, lo: 8000000, vlan: 1000000, po: 1000000, e: 10000 }; // kbps
+  BW.tu = 100; // a GRE tunnel's default bandwidth is 100 kbps, so OSPF costs it 1000
   const parentOf = p => p.includes('.') ? p.split('.')[0] : null;
   const short = p => p.replace('gigabitethernet', 'Gi').replace('tengigabitethernet', 'Te').replace('fastethernet', 'Fa').replace('serial', 'Se').replace('loopback', 'Lo').replace('port-channel', 'Po').replace(/^vlan/, 'Vl');
 
@@ -51,6 +52,14 @@
       // subinterfaces need the parent up
       for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.parent) { const par = S.ifaces[n][i.parent]; i.up = i.admin && !!(par && par.up); i.cabled = !!(par && par.cabled); i.peer = par && par.peer; i.peerPort = par && par.peerPort; } }
     }
+    // GRE tunnels: a tunnel interface is not shut by default. It comes up when the two ends name each other (tunnel source and
+    // tunnel destination) and the underlay carries a packet from one end's address to the other's, judged on the network without tunnels
+    const tunnels = []; for (const n in D) for (const p in S.ifaces[n]) if (p.startsWith('tunnel')) { const i = S.ifaces[n][p]; i.kind = 'tu'; i.admin = i.cfg.shutdown !== true; i.up = false; tunnels.push({ dev: n, iface: p, i }); }
+    S.tunnelPairs = [];
+    if (tunnels.length && !opts.noTunnels) { const S0 = build(net0, devices, Object.assign({}, opts, { noTunnels: true }));
+      const srcIp = t => { const s = t.i.cfg.tunnelSource; if (!s) return null; if (IP.validIp(s)) return s; const own = S0.ifaces[t.dev] && S0.ifaces[t.dev][Sim.canonIf(s) || s]; return own && own.up && own.cfg.ip ? own.cfg.ip : null; };
+      tunnels.forEach(t => { t.src = srcIp(t); t.dst = t.i.cfg.tunnelDest || null; t.ok = !!(t.i.admin && t.src && t.dst && S0.routers.includes(t.dev) && ping(S0, t.dev, t.dst, { src: t.src }).ok); });
+      tunnels.forEach(t => { const peer = tunnels.find(u => u !== t && t.ok && u.ok && u.src === t.dst && u.dst === t.src); if (!peer) return; t.i.up = true; t.i.peer = peer.dev; t.i.peerPort = peer.iface; if (t.dev + '|' + t.iface < peer.dev + '|' + peer.iface) S.tunnelPairs.push([t, peer]); }); }
     // speed and duplex: autonegotiation per link. Both ends auto: the fastest common speed, full duplex. A hard-coded end turns
     // negotiation off, so the auto end senses the speed and, at 10 or 100 Mb/s, falls back to half duplex (IEEE 802.3).
     // Different hard-coded speeds keep the link down. The operating values land on each interface as i.op.
@@ -67,7 +76,7 @@
     // ---- switch port modes, trunks, bundles
     const isSw = n => D[n].kind === 'switch' || D[n].kind === 'l3switch';
     // a switch port is a Layer 2 switchport unless no switchport made it a routed port
-    const l2 = (n, p) => isSw(n) && !(S.ifaces[n][p] && S.ifaces[n][p].cfg.routed); S.l2port = l2;
+    const l2 = (n, p) => isSw(n) && !(S.ifaces[n][p] && S.ifaces[n][p].cfg.routed); S.l2port = l2; const routedPort = (n, p) => isSw(n) && !l2(n, p);
     for (const n in D) if (isSw(n)) for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' || i.kind === 'lo' || i.parent || i.cfg.routed) continue; const c = i.cfg;
       i.mode = c.mode || 'dynamic auto'; i.vlan = c.accessVlan || 1; i.native = c.native || 1; i.allowed = c.allowed; }
     // trunk decision per switch-switch or switch-router link
@@ -96,7 +105,7 @@
     // EtherChannel bundles: same pair of switches, both ends channel-group, compatible modes
     const pairKey = (a, b) => [a, b].sort().join('|');
     const groups = {};
-    S.links.forEach(L => { if (!(isSw(L.a) && isSw(L.b))) return; const ca = S.ifaces[L.a][L.ap].cfg.channel, cb = S.ifaces[L.b][L.bp].cfg.channel; if (!ca || !cb) return;
+    S.links.forEach(L => { if (!(isSw(L.a) && isSw(L.b)) || routedPort(L.a, L.ap) || routedPort(L.b, L.bp)) return; const ca = S.ifaces[L.a][L.ap].cfg.channel, cb = S.ifaces[L.b][L.bp].cfg.channel; if (!ca || !cb) return;
       const ok = (ca.mode === 'on' && cb.mode === 'on') || (['active', 'passive'].includes(ca.mode) && ['active', 'passive'].includes(cb.mode) && !(ca.mode === 'passive' && cb.mode === 'passive')) || (['desirable', 'auto'].includes(ca.mode) && ['desirable', 'auto'].includes(cb.mode) && !(ca.mode === 'auto' && cb.mode === 'auto'));
       const k = pairKey(L.a, L.b) + '#' + ca.group + '/' + cb.group; (groups[k] = groups[k] || { a: L.a, b: L.b, ga: ca.group, gb: cb.group, links: [], ok }).links.push(L); if (!ok) groups[k].ok = false; });
     for (const k in groups) { const g = groups[k]; if (!g.ok) { S.issues.push({ kind: 'etherchannel-mode-mismatch', where: g.a + '/' + g.b }); continue; } g.links.forEach((L, i) => { S.ifaces[L.a][L.ap].bundle = g; S.ifaces[L.b][L.bp].bundle = g; L.bundleMember = i > 0; }); S.bundles[k] = g; }
@@ -104,7 +113,7 @@
     // ---- STP per VLAN on the switch subgraph
     const switches = Object.keys(D).filter(isSw); const rogueStp = Object.keys(D).filter(n => D[n].kind === 'rogue' && D[n].role === 'stp');
     if (switches.length) { const topo = { defaultMode: net.stpMode || 'rapid-pvst', switches: {} };
-      switches.forEach(n => { const ports = {}; for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' || i.kind === 'lo' || i.parent || i.cfg.routed) continue; if (!i.cabled || !i.up) continue; const L = portsOf[n][p]; if (L.link.bundleMember) continue; if (isSw(i.peer) || rogueStp.includes(i.peer)) ports[p] = { to: i.peer, peer: i.peerPort }; else ports[p] = { host: i.peer, access: !i.trunk }; } topo.switches[n] = { mac: D[n].mac || synthMac(n), ports }; });
+      switches.forEach(n => { const ports = {}; for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' || i.kind === 'lo' || i.parent) continue; if (!i.cabled || !i.up || routedPort(n, p)) continue; const L = portsOf[n][p]; if (L.link.bundleMember) continue; if ((isSw(i.peer) && !routedPort(i.peer, i.peerPort)) || rogueStp.includes(i.peer)) ports[p] = { to: i.peer, peer: i.peerPort }; else ports[p] = { host: i.peer, access: !i.trunk }; } topo.switches[n] = { mac: D[n].mac || synthMac(n), ports }; });
       rogueStp.forEach(n => { const ports = {}; for (const p in portsOf[n]) ports[p] = { to: portsOf[n][p].peer, peer: portsOf[n][p].peerPort }; topo.switches[n] = { mac: D[n].mac || '0000.0c9f.f0' + String(Object.keys(topo.switches).length).padStart(2, '0'), rogue: true, fixed: { priority: D[n].priority != null ? D[n].priority : 0, mode: 'pvst', ports: {} }, ports, removed: !!D[n].removed }; });
       S.stpTopo = topo; S.stpVlans = new Set([1]); switches.forEach(n => Object.keys(S.cfg[n].vlans).forEach(v => S.stpVlans.add(+v)));
       S.stpVlans.forEach(v => { try { S.stp[v] = Stp.compute(topo, v, devices); } catch (e) { S.issues.push({ kind: 'stp-error', where: String(e) }); } });
@@ -147,6 +156,8 @@
         const na = (ka === 'router' || ka === 'l3switch' || l3(L.a, L.ap)) ? ifNode(L.a, L.ap) : hostNode(L.a), nb = (kb === 'router' || kb === 'l3switch' || l3(L.b, L.bp)) ? ifNode(L.b, L.bp) : hostNode(L.b); uf.union(na, nb); } });
     // SVIs join their VLAN node
     for (const n of switches) for (const p in S.ifaces[n]) { const i = S.ifaces[n][p]; if (i.kind === 'vlan' && i.up && i.cfg.ip) { const v = +p.replace('vlan', ''); uf.union(node(n, v), ifNode(n, p)); } }
+    // a GRE tunnel whose two ends match is a point-to-point link between them
+    S.tunnelPairs.forEach(([a, b]) => uf.union(ifNode(a.dev, a.iface), ifNode(b.dev, b.iface)));
     S.uf = uf; S.node = node; S.hostNode = hostNode; S.ifNode = ifNode;
     const segId = x => uf.find(x);
 
@@ -254,6 +265,11 @@
     // select best per prefix
     for (const r of S.routers) { const best = {}; for (const e of cands[r] || []) { const k = e.prefix + '/' + e.len; const cur = best[k]; if (!cur || e.ad < cur[0].ad || (e.ad === cur[0].ad && e.metric < cur[0].metric)) best[k] = [e]; else if (e.ad === cur[0].ad && e.metric === cur[0].metric && !cur.some(x => x.via === e.via && x.iface === e.iface)) cur.push(e); }
       S.tables[r] = Object.values(best).flat().sort((a, b) => IP.ip2n(a.prefix) - IP.ip2n(b.prefix) || b.len - a.len); }
+    // a Layer 2 switch (no ip routing) talks from its management SVI like a host: its own subnet, then ip default-gateway.
+    // kept apart from S.tables so show ip route and the routing protocols still treat it as a switch
+    S.hostTables = {}; for (const n in D) { if (D[n].kind !== 'switch' || S.routers.includes(n)) continue; const own = S.l3.filter(o => o.dev === n && o.kind === 'iface'); if (!own.length) continue;
+      const t = own.map(o => ({ prefix: netOf(o.ip, o.mask), len: mlen(o.mask), via: null, iface: o.iface, proto: 'C', ad: 0, metric: 0 })); const gw = S.cfg[n].defaultGateway; const o = gw && own.find(x => inSubnet(gw, netOf(x.ip, x.mask), x.mask));
+      if (o) t.push({ prefix: '0.0.0.0', len: 0, via: gw, iface: o.iface, proto: 'S*', ad: 1, metric: 0 }); S.hostTables[n] = t; }
     // IPv6: connected + static only
     for (const r of S.routers) { const t6 = []; for (const p in S.ifaces[r]) { const i = S.ifaces[r][p]; if (!i.up) continue; for (const a of i.cfg.ipv6) { const addr = a.eui64 ? eui64(a.addr, synthMac(r + p)) : a.addr; t6.push({ prefix: v6net(addr, a.prefix), len: a.prefix, via: null, iface: p, proto: 'C', ad: 0 }); } }
       for (const st of S.cfg[r].routes6) { const [pre, len] = st.prefix.split('/'); t6.push({ prefix: IP.ipv6compress(pre), len: +len, via: IP.validIp(st.via) ? null : (st.via.includes(':') ? st.via : null), iface: st.via.includes(':') ? null : (Sim.canonIf(st.via) || st.via), proto: st.prefix.startsWith('::/0') || pre === '::' ? 'S' : 'S', ad: 1 }); }
@@ -375,7 +391,7 @@
 
   // ---------------------------------------------------------------- forwarding
   function ownerOn(S, seg, ip){ return (S.owners[seg] || []).find(o => o.ip === ip) || (S.owners[seg] || []).find(o => o.kind === 'cloud' && (o.internet && !RFC1918(ip) || o.serves.includes(ip))); }
-  function lookup(S, r, ip){ const t = S.tables[r] || []; let best = null; for (const e of t) { if (!inSubnet(ip, e.prefix, e.len)) continue; if (!best || e.len > best.len) best = e; } return best; }
+  function lookup(S, r, ip){ const t = S.tables[r] || (S.hostTables && S.hostTables[r]) || []; let best = null; for (const e of t) { if (!inSubnet(ip, e.prefix, e.len)) continue; if (!best || e.len > best.len) best = e; } return best; }
   function ping(S, from, dstIp, opts){
     opts = opts || {}; const proto = opts.proto || 'icmp'; const pkt0 = { src: null, dst: dstIp, proto, sport: opts.sport || 49152, dport: opts.dport || (proto === 'icmp' ? null : 80) };
     const D = S.net.devices; const path = []; const natTbl = []; const fail = (reason, extra) => Object.assign({ ok: false, reason, path, nat: natTbl }, extra || {});
@@ -383,7 +399,7 @@
     // source
     let cur, seg, pkt = Object.assign({}, pkt0);
     if (S.hosts[from]) { const h = S.hosts[from]; if (!h.up) return fail(from + ' has no link'); if (!h.ip) return fail(from + ' has no IP address' + (h.lease && h.lease.reason ? ' (' + h.lease.reason + ')' : '')); pkt.src = h.ip; cur = { kind: 'host', dev: from, seg: h.seg, ip: h.ip, mask: h.mask, gw: h.gw }; }
-    else if (S.routers.includes(from)) { const rt = lookup(S, from, dstIp); if (!rt) return fail(from + ' has no route to ' + dstIp); const o = S.l3.find(x => x.dev === from && x.iface === rt.iface); pkt.src = opts.src || (o ? o.ip : null); if (!pkt.src) return fail('no source address'); cur = { kind: 'router', dev: from, inIf: null }; }
+    else if (S.routers.includes(from) || (S.hostTables && S.hostTables[from])) { const rt = lookup(S, from, dstIp); if (!rt) return fail(from + ' has no route to ' + dstIp); const o = S.l3.find(x => x.dev === from && x.iface === rt.iface); pkt.src = opts.src || (o ? o.ip : null); if (!pkt.src) return fail('no source address'); cur = { kind: 'router', dev: from, inIf: null }; }
     else return fail(from + ' cannot originate traffic');
     if (S.hosts[from] && S.hosts[from].kind === 'cloud') cur = { kind: 'cloud', dev: from, seg: S.hosts[from].seg }; // the internet sends like the internet, not like a PC with no gateway
     const res = forward(S, cur, pkt, path, natTbl, 'request'); const trail = (path.trail || []).slice(); const fwdLen = path.length; if (res.ok && trail[trail.length - 1] !== dstIp) trail.push(dstIp); if (!res.ok) return fail(res.reason, { hops: res.hops, trail, fwdLen });
@@ -438,7 +454,7 @@
       state: S, cfg: d => S.cfg[d], issues: S.issues, hosts: S.hosts, tables: S.tables,
       ping: (from, to, o) => ping(S, from, to, o), tcp: (from, to, port) => ping(S, from, to, { proto: 'tcp', dport: port }),
       route: (r, prefix) => { const [p, l] = prefix.split('/'); return (S.tables[r] || []).find(e => e.prefix === p && e.len === +l) || null; },
-      routes: r => S.tables[r] || [], iface: (d, p) => S.ifaces[d] && S.ifaces[d][Sim.canonIf(p) || p], up: (d, p) => { const i = S.ifaces[d] && S.ifaces[d][Sim.canonIf(p) || p]; return !!(i && i.up); },
+      routes: r => S.routers.includes(r) ? (S.tables[r] || []) : [], iface: (d, p) => S.ifaces[d] && S.ifaces[d][Sim.canonIf(p) || p], up: (d, p) => { const i = S.ifaces[d] && S.ifaces[d][Sim.canonIf(p) || p]; return !!(i && i.up); },
       trunk: (d, p) => { const i = S.ifaces[d] && S.ifaces[d][Sim.canonIf(p) || p]; return !!(i && i.trunk); }, vlanOf: (d, p) => { const i = S.ifaces[d] && S.ifaces[d][Sim.canonIf(p) || p]; return i ? i.vlan : null; },
       sameSegment: (a, b) => { const na = S.hosts[a] ? S.hostNode(a) : null, nb = S.hosts[b] ? S.hostNode(b) : null; return !!(na && nb && S.uf.find(na) === S.uf.find(nb)); },
       ospfNeighbors: r => S.ospf.neighbors[r] || [], hsrpActive: vip => { const g = Object.values(S.hsrp).find(x => x.vip === vip); return g ? g.active.dev : null; },

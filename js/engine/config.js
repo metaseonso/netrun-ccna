@@ -170,6 +170,9 @@
           else if (s === 'no cdp enable') i.cdpOff = true; else if (s === 'cdp enable') i.cdpOff = false;
           else if (s === 'no lldp transmit') i.lldpTxOff = true; else if (s === 'lldp transmit') i.lldpTxOff = false;
           else if (s === 'no lldp receive') i.lldpRxOff = true; else if (s === 'lldp receive') i.lldpRxOff = false;
+          else if ((m = s.match(/^tunnel source (\S+)$/))) i.tunnelSource = m[1];
+          else if ((m = s.match(/^tunnel destination (\S+)$/))) i.tunnelDest = m[1];
+          else if ((m = s.match(/^tunnel mode (.+)$/))) i.tunnelMode = m[1];
         }
       }
       // ---------------- line config

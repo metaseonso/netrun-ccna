@@ -415,5 +415,60 @@ module.exports.run = function({ out }){
     e = devs({ A: ['en', 'conf t', 'int g0/1', 'switchport mode trunk', 'switchport nonegotiate'], B: ['en', 'conf t', 'int g0/1', 'switchport mode dynamic auto'] }); ok(!Net.api(Net.build(n2, e)).trunk('B', 'g0/1'), 'dtp: nonegotiate stops the offer, so dynamic auto stays access');
     e = devs({ A: ['en', 'conf t', 'int g0/1', 'switchport mode dynamic auto'], B: ['en', 'conf t', 'int g0/1', 'switchport mode dynamic auto'] }); ok(!Net.api(Net.build(n2, e)).trunk('A', 'g0/1'), 'dtp: auto and auto stay access');
   }
+  // 29. interface ranges on three-part port names (Catalyst 1/0/x), as the Mega Lab's switches use them
+  {
+    ok(JSON.stringify(Stp.expandRange('gigabitethernet1/0/4 - 5')) === JSON.stringify(['gigabitethernet1/0/4', 'gigabitethernet1/0/5']), 'range: g1/0/4 - 5 expands to two ports (' + JSON.stringify(Stp.expandRange('gigabitethernet1/0/4 - 5')) + ')');
+    const c = NetConfig.parse(dev('DSW1', 'ios', ['en', 'conf t', 'int range g1/0/4 - 5', 'channel-group 1 mode active', 'int range f0/1 - 2', 'switchport mode access']));
+    ok(c.interfaces['gigabitethernet1/0/5'] && c.interfaces['gigabitethernet1/0/5'].channel && c.interfaces['fastethernet0/2'].mode === 'access', 'range: config lands on every port of a 1/0/x range and a 0/x range');
+  }
+  // 30. GRE: two sites joined across a public router that knows nothing of their private networks
+  {
+    const net = { devices: { R1: { kind: 'router' }, INET: { kind: 'router' }, R3: { kind: 'router' }, PC1: { kind: 'host', ip: '10.1.1.10', mask: '255.255.255.0', gw: '10.1.1.1' }, PC3: { kind: 'host', ip: '10.3.3.10', mask: '255.255.255.0', gw: '10.3.3.1' } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'INET', bp: 'gigabitethernet0/0' }, { a: 'INET', ap: 'gigabitethernet0/1', b: 'R3', bp: 'gigabitethernet0/1' }, { a: 'R3', ap: 'gigabitethernet0/0', b: 'PC3' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.1.1.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 203.0.113.1 255.255.255.252', 'no shut', 'ip route 0.0.0.0 0.0.0.0 203.0.113.2'],
+      INET: ['en', 'conf t', 'int g0/0', 'ip add 203.0.113.2 255.255.255.252', 'no shut', 'int g0/1', 'ip add 198.51.100.2 255.255.255.252', 'no shut'],
+      R3: ['en', 'conf t', 'int g0/0', 'ip add 10.3.3.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 198.51.100.1 255.255.255.252', 'no shut', 'ip route 0.0.0.0 0.0.0.0 198.51.100.2'] });
+    let A = Net.api(Net.build(net, d)); ok(!A.ping('PC1', '10.3.3.10').ok, 'gre: private sites cannot reach each other across the public router');
+    d.R1.exec('int tunnel0'); d.R1.exec('ip add 172.16.0.1 255.255.255.252'); d.R1.exec('tunnel source g0/1'); d.R1.exec('tunnel destination 198.51.100.1'); d.R1.exec('exit'); d.R1.exec('ip route 10.3.3.0 255.255.255.0 172.16.0.2');
+    A = Net.api(Net.build(net, d)); ok(!A.up('R1', 'tunnel0'), 'gre: one end alone stays down');
+    d.R3.exec('int tunnel0'); d.R3.exec('ip add 172.16.0.2 255.255.255.252'); d.R3.exec('tunnel source g0/1'); d.R3.exec('tunnel destination 203.0.113.9'); d.R3.exec('exit'); d.R3.exec('ip route 10.1.1.0 255.255.255.0 172.16.0.1');
+    A = Net.api(Net.build(net, d)); ok(!A.up('R3', 'tunnel0') && !A.ping('PC1', '10.3.3.10').ok, 'gre: a wrong tunnel destination keeps both ends down');
+    d.R3.exec('int tunnel0'); d.R3.exec('tunnel destination 203.0.113.1'); A = Net.api(Net.build(net, d));
+    ok(A.up('R1', 'tunnel0') && A.up('R3', 'tunnel0'), 'gre: matching ends come up'); const p = A.ping('PC1', '10.3.3.10'); ok(p.ok && p.trail.includes('172.16.0.2'), 'gre: PC1 reaches PC3 through the tunnel (' + p.reason + ' ' + JSON.stringify(p.trail) + ')');
+    ok(/Tunnel0\s+172\.16\.0\.1\s.*up\s+up/i.test(Show.render(d.R1, 'show ip interface brief', A.state)), 'gre: show ip interface brief lists Tunnel0 up/up');
+    ok(/Tunnel source 203\.0\.113\.1 \(GigabitEthernet0\/1\), destination 198\.51\.100\.1/.test(Show.render(d.R1, 'show interfaces tunnel0', A.state)), 'gre: show interfaces tunnel0 names both ends');
+    d.R1.exec('router ospf 1'); d.R1.exec('network 172.16.0.0 0.0.0.3 area 0'); d.R1.exec('network 10.1.1.0 0.0.0.255 area 0'); d.R3.exec('exit'); d.R3.exec('router ospf 1'); d.R3.exec('network 172.16.0.0 0.0.0.3 area 0'); d.R3.exec('network 10.3.3.0 0.0.0.255 area 0');
+    A = Net.api(Net.build(net, d)); ok(A.ospfNeighbors('R1').some(x => x.dev === 'R3' && x.iface === 'tunnel0'), 'gre: OSPF forms an adjacency over the tunnel'); const o = A.state.ospf.routers.R1.ifaces.find(x => x.iface === 'tunnel0'); ok(o && o.cost === 1000, 'gre: OSPF costs a tunnel 1000 (' + (o && o.cost) + ')');
+  }
+  // 31. routed ports on multilayer switches: no switchport, an address, OSPF across, and spanning tree leaves the link alone
+  {
+    const net = { devices: { CSW1: { kind: 'l3switch', mac: '0012.0000.0001' }, CSW2: { kind: 'l3switch', mac: '0012.0000.0002' }, PC1: { kind: 'host', ip: '10.1.0.10', mask: '255.255.255.0', gw: '10.1.0.1' }, PC2: { kind: 'host', ip: '10.2.0.10', mask: '255.255.255.0', gw: '10.2.0.1' } },
+      links: [ { a: 'CSW1', ap: 'gigabitethernet1/0/1', b: 'CSW2', bp: 'gigabitethernet1/0/1' }, { a: 'CSW1', ap: 'gigabitethernet1/0/2', b: 'PC1' }, { a: 'CSW2', ap: 'gigabitethernet1/0/2', b: 'PC2' } ] };
+    const base = (me, v, lan, p2p) => ['en', 'conf t', 'ip routing', 'vlan ' + v, 'int g1/0/2', 'switchport mode access', 'switchport access vlan ' + v, 'int vlan ' + v, 'ip add ' + lan + ' 255.255.255.0', 'no shut', 'int g1/0/1', 'ip add ' + p2p + ' 255.255.255.252', 'router ospf 1', 'network 10.0.0.0 0.255.255.255 area 0'];
+    const d = devs({ CSW1: base('CSW1', 10, '10.1.0.1', '10.0.0.41'), CSW2: base('CSW2', 20, '10.2.0.1', '10.0.0.42') });
+    let A = Net.api(Net.build(net, d)); ok(!A.ping('PC1', '10.2.0.10').ok && !A.ospfNeighbors('CSW1').length, 'routed: an address on a switchport does not route');
+    ['CSW1', 'CSW2'].forEach(n => { d[n].exec('int g1/0/1'); d[n].exec('no switchport'); }); A = Net.api(Net.build(net, d));
+    ok(A.ospfNeighbors('CSW1').length === 1 && A.route('CSW1', '10.2.0.0/24') && A.route('CSW1', '10.2.0.0/24').proto === 'O', 'routed: OSPF neighbours across the routed link and learns the far VLAN');
+    ok(A.ping('PC1', '10.2.0.10').ok, 'routed: PC1 reaches PC2 across two multilayer switches'); ok(!A.trunk('CSW1', 'g1/0/1') && !A.stp(10).switches.CSW1.ports['gigabitethernet1/0/1'], 'routed: no trunk and no spanning tree on a routed port');
+  }
+  // 32. a Layer 2 switch's management SVI answers pings: on its own subnet, and beyond it through ip default-gateway
+  {
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0013.0000.0001' }, PC1: { kind: 'host', ip: '10.0.99.50', mask: '255.255.255.0', gw: '10.0.99.1' }, PC2: { kind: 'host', ip: '10.0.10.10', mask: '255.255.255.0', gw: '10.0.10.1' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'PC2' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.99.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.0.10.1 255.255.255.0', 'no shut'], SW1: ['en', 'conf t', 'int vlan 1', 'ip add 10.0.99.4 255.255.255.0', 'no shut'] });
+    let A = Net.api(Net.build(net, d)); ok(A.ping('PC1', '10.0.99.4').ok, 'svi: a host on the management subnet pings the switch'); const p = A.ping('PC2', '10.0.99.4'); ok(!p.ok, 'svi: from another subnet it fails without a default gateway (' + p.reason + ')');
+    ok(!A.routes('SW1').length && /Default gateway is not set/.test(Show.render(d.SW1, 'show ip route', A.state)), 'svi: the switch still has no routing table of its own');
+    d.SW1.exec('exit'); d.SW1.exec('ip default-gateway 10.0.99.1'); A = Net.api(Net.build(net, d)); ok(A.ping('PC2', '10.0.99.4').ok && A.ping('SW1', '10.0.10.10').ok, 'svi: with ip default-gateway the switch answers and pings across the router');
+  }
+  // 33. two Layer 2 islands joined only by routed links: each island has its own root, and show spanning-tree names it (also from config mode with do)
+  {
+    const net = { devices: { A1: { kind: 'l3switch', mac: '0014.0000.00a1' }, A2: { kind: 'switch', mac: '0014.0000.00a2' }, B1: { kind: 'l3switch', mac: '0014.0000.00b1' }, B2: { kind: 'switch', mac: '0014.0000.0001' } },
+      links: [ { a: 'A1', ap: 'gigabitethernet1/0/1', b: 'A2', bp: 'gigabitethernet0/1' }, { a: 'B1', ap: 'gigabitethernet1/0/1', b: 'B2', bp: 'gigabitethernet0/1' }, { a: 'A1', ap: 'gigabitethernet1/1/1', b: 'B1', bp: 'gigabitethernet1/1/1' } ] };
+    const d = devs({ A1: ['en', 'conf t', 'vlan 20', 'spanning-tree vlan 20 root primary', 'int g1/1/1', 'no switchport', 'ip add 10.0.0.1 255.255.255.252'], A2: ['en', 'conf t', 'vlan 20'], B1: ['en', 'conf t', 'vlan 20', 'int g1/1/1', 'no switchport', 'ip add 10.0.0.2 255.255.255.252'], B2: ['en', 'conf t', 'vlan 20'] });
+    const S = Net.build(net, d); d.A2.exec('do show spanning-tree vlan 20', d); d.A2.netState = () => S;
+    const out = Show.render(d.A2, 'show spanning-tree vlan 20', S); ok(/VLAN0020/.test(out) && /Address\s+0014\.0000\.00a1/.test(out), 'stp: A2 names its own island\'s root, not the lowest MAC in the building (' + out.split('\n')[3] + ')');
+    ok(S.stp[20].switches.B2.isRoot && S.stp[20].switches.A1.isRoot, 'stp: each island elects its own root');
+    ok(d.A2.lines.some(r => r.line === 'do show spanning-tree vlan 20'), 'shell: do show spanning-tree vlan 20 keeps its VLAN number');
+  }
   return { pass, fails };
 };

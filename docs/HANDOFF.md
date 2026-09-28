@@ -258,6 +258,26 @@ Definition of done for a day:
   password or local login, the access-class and TCP 23. PCs: `ssh -l USER IP`, `telnet IP`. A Layer 2 switch with an SVI now
   replies through `ip default-gateway` (it had no way back to other subnets). Tested (section 17).
   `crypto key generate rsa` names the keys after `ip domain name` as well as the older `ip domain-name`. Tested (section 17).
+- 2026-09-28 · Spanning tree with several Layer 2 islands (joined only by routed links, as in the Mega Lab): `show spanning-tree`
+  names each switch's own island's root (`rootOf` in `Stp.compute`), not the lowest bridge ID in the building. `do show
+  spanning-tree vlan N` from config mode keeps its VLAN number (the shell used to fold it into `vlanN`). Tested (14).
+
+- 2026-09-28 · A Layer 2 switch's management SVI answers pings and can ping: on its own subnet, and beyond it through
+  `ip default-gateway` (`S.hostTables`, kept apart from the routing tables, so `show ip route` still says routing is off).
+  Before, a ping reached the SVI but the reply had no route. Tested (13).
+
+- 2026-09-28 · Routed ports on multilayer switches: `no switchport` on an `l3switch` port makes it a Layer 3 port (no VLAN,
+  no trunk, no spanning tree, no EtherChannel); with an `ip address` it is a point-to-point link like a router's, so a
+  core of multilayer switches can run OSPF over /30s (the Mega Lab). `switchport` turns it back. Tested (12).
+
+- 2026-09-28 · GRE tunnels. `interface tunnelN` with `ip address`, `tunnel source <iface|ip>`, `tunnel destination <ip>`
+  (`tunnel mode gre ip` is accepted). A tunnel is not shut by default; it comes up when both ends name each other and the
+  underlay carries a ping between the two addresses (judged on the network without tunnels). The two ends then form a
+  point-to-point link: connected routes, static routes and OSPF (cost 1000, bandwidth 100 kbps) run over it, and
+  traceroute shows the far end's tunnel address. `show interfaces tunnel0` and `Tunnel0` in the tables. Tested (11).
+
+- 2026-09-28 · `interface range` works on three-part port names (`int range g1/0/4 - 5` on a Catalyst 3650), so the
+  Mega Lab's switches can be configured the way the course does it (`Stp.expandRange`, tested).
 
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
