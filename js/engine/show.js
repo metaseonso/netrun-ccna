@@ -58,7 +58,16 @@
   R['show clock'] = (d, S) => { const k = clockOf(d, S, true); return (k.synced ? '' : '*') + k.text; };
   R['show clock detail'] = (d, S) => { const k = clockOf(d, S, true); return (k.synced ? '' : '*') + k.text + '\nTime source is ' + (k.synced ? 'NTP' : 'hardware calendar'); };
   R['show calendar'] = (d, S) => { const c = S.cfg[d.name]; const k = clockOf(d, S, false); if (k.synced && c.ntpUpdateCalendar) return k.text; const tz = c.clockTz ? c.clockTz.name : 'UTC'; return '00:14:52 ' + tz + ' Mon Mar 1 1993'; };
-  R['show logging'] = (d, S) => { const c = S.cfg[d.name]; return 'Syslog logging: enabled\n    Console logging: level debugging\n    Trap logging: level informational, ' + (c.logging.length ? 'logging to ' + c.logging.join(', ') : 'no hosts configured'); };
+  // show logging: the levels, the hosts, and the buffer. Old lines come from the gig (net.devices.X.logBuffer: [{ sev, line }]); a line for
+  // the player's own configuring is stamped the way the box is set now (service timestamps, service sequence-numbers, the clock)
+  const LVN = ['emergencies', 'alerts', 'critical', 'errors', 'warnings', 'notifications', 'informational', 'debugging'];
+  R['show logging'] = (d, S) => { const c = S.cfg[d.name]; const lv = c.logLevels || {}; const off = c.logOff || {}; const L = k => off[k] ? 'disabled' : 'level ' + LVN[lv[k] != null ? lv[k] : (k === 'trap' ? 6 : 7)];
+    const def = (S.net.devices[d.name] || {}).logBuffer || []; const blv = lv.buffered != null ? lv.buffered : 7; const ts = c.logTs || { kind: 'uptime', msec: false };
+    let stamp; if (ts.kind === 'datetime') { const k = clockOf(d, S, ts.msec); const p = k.text.split(' '); stamp = (k.synced ? '' : '*') + p[3] + ' ' + String(p[4]).padStart(2) + ' ' + p[0] + ': '; } else stamp = '3d06h: ';
+    const mine = d.lines.some(r => r.mode === 'config' && r.pre === false) ? [{ sev: 5, line: (c.logSeq ? String(def.length + 1).padStart(6, '0') + ': ' : '') + stamp + '%SYS-5-CONFIG_I: Configured from console by console' }] : [];
+    const buf = def.concat(mine).filter(x => x.sev <= blv);
+    return 'Syslog logging: enabled (0 messages dropped, 0 flushes, 0 overruns)\n    Console logging: ' + L('console') + '\n    Monitor logging: ' + L('monitor') + '\n    Buffer logging:  ' + L('buffered') + '\n    Trap logging: ' + L('trap') + '\n' + (c.logging.map(h => '        Logging to ' + h + '  (udp port 514, audit disabled, link up)').join('\n') || '        (no syslog hosts)') +
+      (off.buffered ? '' : '\n\nLog Buffer (' + (c.logBufferSize || 8192) + ' bytes):\n' + (buf.map(x => x.line).join('\n') || '(empty)')); };
   R['show snmp community'] = (d, S) => { const c = S.cfg[d.name]; return c.snmp.map(x => 'Community name: ' + x.community + '\nCommunity Index: ' + x.community + '\nCommunity SecurityName: ' + x.community + '\nstorage-type: nonvolatile\tactive\taccess: ' + x.mode.toUpperCase()).join('\n') || '(no communities)'; };
   R['show version'] = (d, S) => { const k = (S.net.devices[d.name] || {}).kind; return k === 'router' ? 'Cisco IOS XE Software, Version 16.9.4\n' + d.host + ' uptime is 2 hours, 14 minutes\nSystem image file is "bootflash:isr4300-universalk9.16.09.04.SPA.bin"\nConfiguration register is 0x2102' : 'Cisco IOS Software, C2960X Software (C2960X-UNIVERSALK9-M), Version 15.2(7)E\n' + d.host + ' uptime is 2 hours, 14 minutes\nBase ethernet MAC Address       : ' + ((S.net.devices[d.name] || {}).mac || '0000.0000.0000'); };
   R['show ip dhcp conflict'] = () => '(no conflicts)';

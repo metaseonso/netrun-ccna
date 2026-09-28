@@ -176,6 +176,14 @@ Definition of done for a day:
   `snmp-server contact`, `location`, `host IP [version 1|2c|3] COMMUNITY`, `no snmp-server host`, `enable traps [types]`.
   New `show snmp` and `show snmp host`. Tested (section 15).
 
+- 2026-09-28 · Syslog has state: `logging console|monitor|buffered|trap LEVEL` (by number or name; `buffered` takes a size),
+  `no logging console|monitor|buffered`, `service timestamps log datetime|uptime [msec]`, `service sequence-numbers`, and
+  `logging synchronous` on a line are parsed (`cfg.logLevels`, `logBufferSize`, `logTs`, `logSeq`, `con.loggingSync`).
+  `ctx.net().syslog('R1')` → one entry per `logging host`, reached over UDP 514, at the trap level (default 6). `show logging`
+  prints the real levels and hosts and a buffer: a gig's old lines (`net.devices.R1.logBuffer: [{ sev, line }]`) plus a
+  `%SYS-5-CONFIG_I` line for the player's own configuring, stamped the way the box is set now (sequence number, datetime from
+  `show clock` with `*` while unsynchronised, or uptime), filtered by the buffer level. Tested (section 16).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a

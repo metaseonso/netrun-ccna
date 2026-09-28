@@ -256,6 +256,10 @@
   function snmpTraps(S, dev){ const c = S.cfg[dev]; return (c.snmpHosts || []).map(x => { if (!(c.snmpTraps || []).length) return { host: x.ip, ok: false, reason: 'snmp-server enable traps is not set' };
       const p = ping(S, dev, x.ip, { proto: 'udp', dport: 162 }); return { host: x.ip, version: x.version, community: x.community, ok: p.ok, reason: p.ok ? 'traps reach ' + x.ip : 'UDP 162 to ' + x.ip + ': ' + p.reason }; }); }
 
+  // syslog: every "logging host" gets messages at or below the trap level (default 6, informational) over UDP 514
+  function syslogHosts(S, dev){ const c = S.cfg[dev]; const lvl = (c.logLevels || {}).trap != null ? c.logLevels.trap : 6;
+    return c.logging.map(ip => { const p = ping(S, dev, ip, { proto: 'udp', dport: 514 }); return { host: ip, level: lvl, ok: p.ok, reason: p.ok ? 'messages at level ' + lvl + ' and below reach ' + ip : 'UDP 514 to ' + ip + ': ' + p.reason }; }); }
+
   // ---------------------------------------------------------------- DNS
   // names to addresses. A host asks its DNS servers (static dns or the DHCP lease) over UDP 53; a router answers from its
   // "ip host" table when "ip dns server" is on and forwards what it does not know to its own "ip name-server"s (with lookup on);
@@ -377,7 +381,7 @@
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),
       neighbors: d => S.neighbors[d] || [], macTable: d => S.macTable[d] || [], bundles: S.bundles,
       ntp: d => ntpSync(S, d), resolve: (d, name) => resolve(S, d, name),
-      snmp: (nms, ip, community, write) => snmpPoll(S, nms, ip, community, write), snmpTraps: d => snmpTraps(S, d)
+      snmp: (nms, ip, community, write) => snmpPoll(S, nms, ip, community, write), snmpTraps: d => snmpTraps(S, d), syslog: d => syslogHosts(S, d)
     };
   }
 

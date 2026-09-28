@@ -80,6 +80,11 @@
         else if ((m = s.match(/^cdp (timer|holdtime) (\d+)$/))) cfg[m[1] === 'timer' ? 'cdpTimer' : 'cdpHoldtime'] = +m[2];
         else if ((m = s.match(/^lldp (timer|holdtime|reinit) (\d+)$/))) cfg['lldp' + m[1][0].toUpperCase() + m[1].slice(1)] = +m[2];
         else if (s === 'no cdp advertise-v2') cfg.cdpV1 = true; else if (s === 'cdp advertise-v2') cfg.cdpV1 = false;
+        else if ((m = s.match(/^logging (console|monitor|buffered|trap)(?: (.+))?$/))) { const LV = ['emergencies', 'alerts', 'critical', 'errors', 'warnings', 'notifications', 'informational', 'debugging']; const lv = cfg.logLevels = cfg.logLevels || {};
+          (m[2] || '').split(' ').filter(Boolean).forEach(t => { if (/^\d+$/.test(t) && +t > 7) cfg.logBufferSize = +t; else if (/^[0-7]$/.test(t)) lv[m[1]] = +t; else if (LV.some(x => x.startsWith(t))) lv[m[1]] = LV.findIndex(x => x.startsWith(t)); }); if (lv[m[1]] == null) lv[m[1]] = m[1] === 'trap' ? 6 : 7; }
+        else if ((m = s.match(/^no logging (console|monitor|buffered)$/))) (cfg.logOff = cfg.logOff || {})[m[1]] = true;
+        else if ((m = s.match(/^service timestamps log (datetime|uptime)(.*)$/))) cfg.logTs = { kind: m[1], msec: / msec/.test(m[2]) };
+        else if (s === 'service sequence-numbers') cfg.logSeq = true; else if (s === 'no service sequence-numbers') cfg.logSeq = false;
         else if ((m = s.match(/^snmp-server contact (.+)$/))) cfg.snmpContact = m[1]; else if ((m = s.match(/^snmp-server location (.+)$/))) cfg.snmpLocation = m[1];
         else if ((m = s.match(/^snmp-server host (\S+)(?: (?:traps|informs))?(?: version (1|2c|3)(?: (?:auth|noauth|priv))?)? (\S+)/))) (cfg.snmpHosts = cfg.snmpHosts || []).push({ ip: m[1], version: m[2] || '1', community: m[3] });
         else if ((m = s.match(/^no snmp-server host (\S+)/))) cfg.snmpHosts = (cfg.snmpHosts || []).filter(x => x.ip !== m[1]);
@@ -147,6 +152,7 @@
         }
       }
       // ---------------- line config
+      if (r.mode === 'config-line' && (s === 'logging synchronous' || s === 'no logging synchronous')) (r.ctx.startsWith('line vty') ? cfg.vty : cfg.con).loggingSync = s === 'logging synchronous';
       if (r.mode === 'config-line') { const which = r.ctx.startsWith('line vty') ? cfg.vty : cfg.con;
         if ((m = s.match(/^transport input (.+)$/))) which.transport = m[1].split(' ');
         else if (s === 'login local') which.login = 'local'; else if (s === 'login') which.login = 'password'; else if (s === 'no login') which.login = 'none';

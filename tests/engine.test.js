@@ -211,5 +211,18 @@ module.exports.run = function({ out }){
     ok(A.snmpTraps('R1').length === 1 && !A.snmpTraps('R1')[0].ok, 'snmp: no traps until snmp-server enable traps'); d.R1.exec('snmp-server enable traps'); A = Net.api(Net.build(net, d)); ok(A.snmpTraps('R1')[0].ok, 'snmp: traps reach the host once enabled');
     ok(/Contact: denise/.test(Show.render(d.R1, 'show snmp', A.state)) && /Logging to 10\.0\.9\.50\.162/.test(Show.render(d.R1, 'show snmp', A.state)) && /security model: v2c/.test(Show.render(d.R1, 'show snmp host', A.state)), 'show snmp and show snmp host');
   }
+  // 16. syslog: levels, hosts over UDP 514, the buffer stamped by service timestamps and sequence numbers
+  {
+    const net = { devices: { R1: { kind: 'router', logBuffer: [ { sev: 3, line: '3d04h: %LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to down' }, { sev: 6, line: '3d04h: %SYS-6-LOGGINGHOST_STARTSTOP: Logging to host 10.0.9.60 stopped' } ] },
+        LOG: { kind: 'server', ip: '10.0.9.60', mask: '255.255.255.0', gw: '10.0.9.1' } }, links: [ { a: 'LOG', b: 'R1', bp: 'gigabitethernet0/0' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.9.1 255.255.255.0', 'no shut', 'exit', 'logging host 10.0.9.60', 'logging trap warnings', 'logging console 3', 'logging buffered 16384 informational', 'line con 0', 'logging synchronous'] });
+    let A = Net.api(Net.build(net, d)); const c = A.cfg('R1');
+    ok(c.logLevels.trap === 4 && c.logLevels.console === 3 && c.logLevels.buffered === 6 && c.logBufferSize === 16384 && c.con.loggingSync, 'syslog: levels by name or number, buffer size, logging synchronous parsed');
+    ok(A.syslog('R1').length === 1 && A.syslog('R1')[0].ok && A.syslog('R1')[0].level === 4, 'syslog: the host is reached over UDP 514 at the trap level');
+    let t = Show.render(d.R1, 'show logging', A.state); ok(/Trap logging: level warnings/.test(t) && /Logging to 10\.0\.9\.60/.test(t) && /Log Buffer \(16384 bytes\)/.test(t) && /LINK-3-UPDOWN/.test(t), 'show logging: levels, host and the buffer');
+    d.R1.exec('exit'); d.R1.exec('service timestamps log datetime msec'); d.R1.exec('service sequence-numbers'); A = Net.api(Net.build(net, d)); t = Show.render(d.R1, 'show logging', A.state);
+    ok(/000003: \*Mar  1 00:14:52\.211: %SYS-5-CONFIG_I/.test(t), 'show logging: a new line carries a sequence number and a datetime stamp (* while the clock is not synchronised) (' + t.split('\n').pop() + ')');
+    d.R1.exec('logging buffered 4'); A = Net.api(Net.build(net, d)); t = Show.render(d.R1, 'show logging', A.state); ok(/LINK-3/.test(t) && !/SYS-6/.test(t) && !/SYS-5/.test(t), 'show logging: the buffer keeps only messages at its level and below');
+  }
   return { pass, fails };
 };
