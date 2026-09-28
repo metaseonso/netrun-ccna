@@ -64,7 +64,7 @@ module.exports.run = function({ out }){
     // Marrow's tab: broke and low, the patch goes on credit; the next pay settles it and the tab opens again
     Game.state.rep = 0; Game.state.jobsDone = {}; Game.state.creds = 0; Game.state.body.chrome = 20; Game.state.body.tab = 0; Game.state.body.owed = 0;
     r = Game.shop.buy('patch'); ok(r.ok && r.onTheHouse && Game.state.body.chrome === 55 && Game.state.body.owed === patch.price, 'tab: a broke runner at 20 chrome gets the patch on the tab (' + JSON.stringify(r) + ')');
-    Game.state.body.chrome = 50; r = Game.shop.buy('patch'); ok(!r.ok, 'tab: no credit above 30 chrome');
+    Game.state.body.chrome = 80; r = Game.shop.buy('patch'); ok(!r.ok, 'tab: no credit at 70 chrome or more');
     Game.state.body.food = 10; r = Game.shop.buy('protein'); ok(r.ok && r.onTheHouse && Game.state.body.tab === 2, 'tab: food goes on it too (' + Game.state.body.tab + ')');
     Game.state.body.chrome = 20; r = Game.shop.buy('patch'); ok(!r.ok, 'tab: class D holds two items at once');
     Game.state.body.food = 100; Game.state.body.chrome = 100; const owed = Game.state.body.owed; const g = JOBS.find(j => j.solution && !j.rite && j.cls === 'D');

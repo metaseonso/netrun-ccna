@@ -207,9 +207,10 @@
   const shop = {
     items(){ return window.SHOP || []; },
     price(item){ return Math.round(item.price * (1 + 0.5 * classRank(classFor(state.rep).id))); },
-    // Marrow's tab: a broke runner who is low gets food (hunger 30 or under) or the patch (chrome 30 or under) on credit, up to
-    // 2 + classRank items at once. The next pay settles it, and the tab opens again, so nobody is ever stuck outside a dive.
-    onTab(it){ const low = (it.kind === 'food' && state.body.food <= 30) || (it.kind === 'service' && (it.effect.chrome || 100) < 100 && state.body.chrome <= 30); return low && state.creds < shop.price(it) && state.body.tab < 2 + classRank(classFor(state.rep).id); },
+    // Marrow's tab: a broke runner under 70 gets food or the patch on credit, up to 2 + classRank items at once. Under 70, not
+    // 30: a rite costs up to 45 hunger and 38 chrome, and a runner at 40 with no creds must still be able to get in. The next
+    // pay settles it, and the tab opens again, so nobody is ever stuck outside a dive.
+    onTab(it){ const low = (it.kind === 'food' && state.body.food < 70) || (it.kind === 'service' && (it.effect.chrome || 100) < 100 && state.body.chrome < 70); return low && state.creds < shop.price(it) && state.body.tab < 2 + classRank(classFor(state.rep).id); },
     owned(id){ const it = shop.items().find(x => x.id === id); if (!it) return 0; if (it.kind === 'bd') return state.bd.includes(id) ? 1 : 0; if (it.kind === 'skin') return state.perks.skins.includes(id) ? 1 : 0; return state.inventory[id] || 0; },
     buy(id){ const it = shop.items().find(x => x.id === id); if (!it) return { ok: false, why: 'no such item' }; let price = shop.price(it); if ((it.kind === 'bd' || it.kind === 'skin') && shop.owned(id)) return { ok: false, why: 'you already have it' }; if (it.kind === 'service' && state.body.chrome >= body.max) return { ok: false, why: 'nothing to fix. the ripperdoc sends you home.' };
       let onTheHouse = false; if (state.creds < price) { if (shop.onTab(it)) { onTheHouse = true; state.body.tab++; state.body.owed = (state.body.owed || 0) + price; price = 0; } else return { ok: false, why: 'not enough creds. ' + (price - state.creds) + ' short.' }; }

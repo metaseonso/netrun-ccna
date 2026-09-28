@@ -105,7 +105,7 @@ Definition of done for a day:
 - **Survival numbers are a first pass.** Costs 15 + 5 × classRank food and 10 + 5 × classRank chrome, 1 chrome per bad
   call; food at 12 / 30 / 70 creds for 15 / 40 / 100; Marrow's patch at 50 for 35 chrome; the ripperdoc at 120 for a full
   chrome; stall prices × (1 + 0.5 × classRank). A Class D gig pays 60.
-  Marrow's tab (food or the patch on credit when broke and at 30 or under, repaid from the next pay) is the
+  Marrow's tab (food or the patch on credit when broke and under 70, repaid from the next pay) is the
   anti-soft-lock; keep it. Tuned by simulation over all 68 gigs (a runner who clears each gig once, in night order):
   3 failed commits per gig ends with about 3,000 creds, 8 with about 2,000, 15 with about 1,000 and a few tabs.
 
@@ -138,6 +138,8 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · Marrow's tab opens under 70, not at 30 or under: at 30 a broke runner at 40 chrome could not afford a
+  rite's 38 and could not get credit either, so the flatline reload looped. Tested in tests/game.test.js.
 - 2026-09-28 · Pulse and dashboard: `flatline()` counts flatlines by night in `state.meta.flatNights`; the pulse adds the
   first day, the furthest night, fixers bought, the build (?v=), the day each night was first finished
   (`state.meta.nightAt`), flatlines by night and licensed. tools/watson-db.gs stores them (old sheets grow the columns)
