@@ -146,6 +146,7 @@
           else if ((m = s.match(/^maximum-paths (\d+)$/))) o.maxPaths = +m[1]; }
         if (proto === 'rip') { const o = cfg.rip || (cfg.rip = { networks: [], v2: false, noAuto: false, passive: new Set() }); if ((m = s.match(/^network (\S+)$/))) o.networks.push(m[1]); else if (s === 'version 2') o.v2 = true; else if (s === 'no auto-summary') o.noAuto = true; else if ((m = s.match(/^passive-interface (\S+)$/))) o.passive.add(m[1]); }
         if (proto === 'eigrp') { const o = cfg.eigrp || (cfg.eigrp = { as: +pid, networks: [], noAuto: false, routerId: null }); if ((m = s.match(/^network (\S+)(?: (\S+))?$/))) o.networks.push({ addr: m[1], wild: m[2] || null }); else if (s === 'no auto-summary') o.noAuto = true; else if ((m = s.match(/^eigrp router-id (\S+)$/))) o.routerId = m[1]; }
+        if (proto === 'eigrp' && (m = s.match(/^passive-interface (\S+)$/))) (cfg.eigrp.passive = cfg.eigrp.passive || new Set()).add(m[1].replace(/\s+/g, '')); // EIGRP passive: no hellos, no neighbours, the network is still advertised
       }
     }
     cfg.hostname = dev.host;

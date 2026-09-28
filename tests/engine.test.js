@@ -116,5 +116,22 @@ module.exports.run = function({ out }){
     ok(!d.lines.some(r => r.line === 'broth' || r.line === 'noodles'), 'shell: typed passwords are not recorded');
     d.exec('copy running-config startup-config'); d.exec('show startup-config'); ok(/hostname KB-R1/.test(last()) && /Using \d+ out of/.test(last()), 'shell: write saves the running-config to startup');
   }
+  // 10. EIGRP: neighbours need the same AS, passive interfaces make no neighbours but still advertise, show ip eigrp neighbors; RIP passive sends no updates
+  {
+    const net = { devices: { R1: { kind: 'router' }, R2: { kind: 'router' }, R3: { kind: 'router' }, PC1: { kind: 'host', ip: '10.9.1.10', mask: '255.255.255.0', gw: '10.9.1.1' }, PC3: { kind: 'host', ip: '10.9.3.10', mask: '255.255.255.0', gw: '10.9.3.1' } },
+      links: [ { a: 'PC1', b: 'R1', bp: 'gigabitethernet0/0' }, { a: 'R1', ap: 'gigabitethernet0/1', b: 'R2', bp: 'gigabitethernet0/0' }, { a: 'R2', ap: 'gigabitethernet0/1', b: 'R3', bp: 'gigabitethernet0/0' }, { a: 'R3', ap: 'gigabitethernet0/1', b: 'PC3' } ] };
+    const ifs = { R1: ['int g0/0', 'ip add 10.9.1.1 255.255.255.0', 'no shut', 'int g0/1', 'ip add 10.9.12.1 255.255.255.252', 'no shut'], R2: ['int g0/0', 'ip add 10.9.12.2 255.255.255.252', 'no shut', 'int g0/1', 'ip add 10.9.23.1 255.255.255.252', 'no shut'], R3: ['int g0/0', 'ip add 10.9.23.2 255.255.255.252', 'no shut', 'int g0/1', 'ip add 10.9.3.1 255.255.255.0', 'no shut'] };
+    const eig = (as, extra) => ['router eigrp ' + as, 'network 10.0.0.0', 'no auto-summary'].concat(extra || []);
+    let d = devs({ R1: ['en', 'conf t'].concat(ifs.R1, eig(100, ['passive-interface g0/0'])), R2: ['en', 'conf t'].concat(ifs.R2, eig(100)), R3: ['en', 'conf t'].concat(ifs.R3, eig(10)) });
+    let A = Net.api(Net.build(net, d)); ok(A.eigrpNeighbors('R2').length === 1 && A.eigrpNeighbors('R2')[0].dev === 'R1', 'eigrp: AS 100 and AS 10 do not become neighbours (' + JSON.stringify(A.eigrpNeighbors('R2')) + ')');
+    ok(A.issues.some(i => i.kind === 'eigrp-as-mismatch'), 'eigrp: AS mismatch reported'); ok(!A.route('R1', '10.9.3.0/24'), 'eigrp: no route across the mismatch');
+    ok(A.route('R2', '10.9.1.0/24') && A.route('R2', '10.9.1.0/24').proto === 'D' && A.route('R2', '10.9.1.0/24').ad === 90, 'eigrp: a passive LAN is still advertised as D, AD 90');
+    ok(/10\.9\.12\.1/.test(Show.render(d.R2, 'show ip eigrp neighbors', A.state)) && /AS\(100\)/.test(Show.render(d.R2, 'show ip eigrp neighbors', A.state)), 'show ip eigrp neighbors lists the neighbour and the AS');
+    d = devs({ R1: ['en', 'conf t'].concat(ifs.R1, eig(100)), R2: ['en', 'conf t'].concat(ifs.R2, eig(100)), R3: ['en', 'conf t'].concat(ifs.R3, eig(100)) }); A = Net.api(Net.build(net, d));
+    ok(A.route('R1', '10.9.3.0/24') && A.route('R1', '10.9.3.0/24').proto === 'D' && A.ping('PC1', '10.9.3.10').ok, 'eigrp: matching AS numbers route end to end');
+    d.R2.exec('router eigrp 100'); d.R2.exec('passive-interface g0/1'); A = Net.api(Net.build(net, d)); ok(A.eigrpNeighbors('R3').length === 0 && !A.route('R1', '10.9.3.0/24'), 'eigrp: a passive link interface drops the neighbour');
+    d = devs({ R1: ['en', 'conf t'].concat(ifs.R1, ['router rip', 'version 2', 'network 10.0.0.0', 'no auto-summary']), R2: ['en', 'conf t'].concat(ifs.R2, ['router rip', 'version 2', 'network 10.0.0.0', 'passive-interface g0/0']) }); A = Net.api(Net.build(net, d));
+    ok(!A.route('R1', '10.9.23.0/30') && A.route('R2', '10.9.1.0/24') && A.route('R2', '10.9.1.0/24').proto === 'R', 'rip: a passive interface sends no updates but still hears them');
+  }
   return { pass, fails };
 };

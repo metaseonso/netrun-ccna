@@ -208,6 +208,10 @@
       const enabled = (r, o) => { const c = S.cfg[r][proto]; return c.networks.some(n => { const a = typeof n === 'string' ? n : n.addr; const w = typeof n === 'string' ? null : n.wild; if (w) return wildMatch(o.ip, a, w); const cls = IP.ip2n(a) >>> 24; const len = cls < 128 ? 8 : cls < 192 ? 16 : 24; return inSubnet(o.ip, a, len); }); };
       const adj2 = {}; rs.forEach(r => adj2[r] = []);
       for (const r of rs) for (const o of S.l3) { if (o.dev !== r || o.kind !== 'iface' || !enabled(r, o)) continue; for (const p of S.owners[o.seg] || []) if (p.kind === 'iface' && p.dev !== r && rs.includes(p.dev) && enabled(p.dev, p)) adj2[r].push({ to: p.dev, via: p.ip, iface: o.iface, cost: proto === 'rip' ? 1 : Math.floor(256 * (10000000 / (BW[S.ifaces[r][o.iface].kind] || 100000) + 100)) }); }
+      // neighbours need the same EIGRP AS number and no passive interface on either end (EIGRP); a passive RIP interface sends no updates
+      const pIf = e => (S.l3.find(o => o.dev === e.to && o.ip === e.via) || {}).iface; const pas = (r, i) => !!(S.cfg[r][proto].passive && S.cfg[r][proto].passive.has(i));
+      for (const r of rs) adj2[r] = adj2[r].filter(e => { const pi = pIf(e); if (proto === 'rip') return !pas(e.to, pi); if (S.cfg[r].eigrp.as !== S.cfg[e.to].eigrp.as) { const w = [r, e.to].sort().join('/') + ' AS ' + [S.cfg[r].eigrp.as, S.cfg[e.to].eigrp.as].join('/'); if (!S.issues.some(x => x.kind === 'eigrp-as-mismatch' && x.where === w)) S.issues.push({ kind: 'eigrp-as-mismatch', where: w }); return false; } return !pas(r, e.iface) && !pas(e.to, pi); });
+      if (proto === 'eigrp') { S.eigrpNeighbors = {}; for (const r of rs) S.eigrpNeighbors[r] = adj2[r].map(e => ({ dev: e.to, ip: e.via, iface: e.iface })); }
       for (const r of rs) { const dist = { [r]: 0 }, first = {}, done = new Set(); const pq = [[0, r, null]];
         while (pq.length) { pq.sort((a, b) => a[0] - b[0]); const [d, u, f] = pq.shift(); if (done.has(u)) continue; done.add(u); if (f) first[u] = f; for (const e of adj2[u]) { const nd = d + e.cost; if (dist[e.to] == null || nd < dist[e.to]) { dist[e.to] = nd; pq.push([nd, e.to, f || { via: e.via, iface: e.iface }]); } } }
         for (const t in dist) { if (t === r) continue; const f = first[t]; if (!f) continue; if (proto === 'rip' && dist[t] > 15) continue; for (const o of S.l3) { if (o.dev !== t || o.kind !== 'iface' || !enabled(t, o)) continue; const pre = netOf(o.ip, o.mask), len = mlen(o.mask); if (S.l3.some(x => x.dev === r && x.kind === 'iface' && netOf(x.ip, x.mask) === pre)) continue; add(r, { prefix: pre, len, via: f.via, iface: f.iface, proto: proto === 'rip' ? 'R' : 'D', ad: proto === 'rip' ? 120 : 90, metric: proto === 'rip' ? dist[t] : dist[t] + 2816 }); } } } }
@@ -312,7 +316,8 @@
       sshReady: d => { const c = S.cfg[d]; const vty = c.vty; const ok = !!(c.hostname && c.hostname !== d.replace(/\d+$/, '') || true) && !!c.domain && c.sshKeyBits > 0 && !!(vty.transport && vty.transport.includes('ssh')) && vty.login === 'local' && c.users.length > 0; return { ok, hostname: !!c.hostname, domain: !!c.domain, key: c.sshKeyBits, transport: vty.transport, login: vty.login, users: c.users.length }; },
       acl: (d, id) => S.cfg[d].acls[id] || null, aclTest: (d, id, pkt) => aclEval(S, d, id, pkt),
       nat: d => ({ static: S.cfg[d].natStatic, dynamic: S.cfg[d].natDynamic, pools: S.cfg[d].natPools }),
-      neighbors: d => S.neighbors[d] || [], macTable: d => S.macTable[d] || [], bundles: S.bundles
+      neighbors: d => S.neighbors[d] || [], macTable: d => S.macTable[d] || [], bundles: S.bundles,
+      eigrpNeighbors: r => (S.eigrpNeighbors || {})[r] || []
     };
   }
 

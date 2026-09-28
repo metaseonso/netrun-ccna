@@ -136,6 +136,10 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · EIGRP neighbours need the same AS number (`eigrp-as-mismatch` issue otherwise); `passive-interface` under
+  `router eigrp` drops the neighbour on that interface but still advertises its network; a passive RIP interface sends
+  no updates. `ctx.net().eigrpNeighbors('R1')` and `show ip eigrp neighbors` (tested).
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a
