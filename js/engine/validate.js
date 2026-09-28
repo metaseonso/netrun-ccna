@@ -51,15 +51,15 @@
       if (!Array.isArray(j.steps) || !j.steps.length) { err(w, 'no steps'); return; }
       j.steps.forEach((s, si) => { const ws = w + ' › step ' + (si + 1) + ' (' + s.type + ')'; if (!STEPS.has(s.type)) { err(ws, 'unknown step type'); return; }
         if (!s.skill) err(ws, 'missing skill'); else { if (!SKILLS[s.skill]) err(ws, 'skill "' + s.skill + '" not in SKILLS'); skillsUsed.add(s.skill); }
-        if (!s.text) err(ws, 'missing text'); checkTerms(ws, s.text); if (!s.why) err(ws, 'missing why (plain explanation; feeds CODEX and SHOW ME)'); if (!s.ok) warn(ws, 'missing ok (reaction line)'); world(ws, [s.text, s.ok, s.why].concat(s.opts || []).join(' '));
-        if (s.type === 'cmd' && !s.need && !s.check) err(ws, 'cmd step needs `need` and/or `check`'); if (s.type === 'cmd' && !s.hint) warn(ws, 'cmd step has no hint (walk-through will show nothing)');
+        if (!s.text) err(ws, 'missing text'); checkTerms(ws, s.text); if (!s.why) err(ws, 'missing why (plain explanation; feeds the CODEX)'); if (!s.ok) warn(ws, 'missing ok (reaction line)'); world(ws, [s.text, s.ok, s.why].concat(s.opts || []).join(' '));
+        if (s.type === 'cmd' && !s.need && !s.check) err(ws, 'cmd step needs `need` and/or `check`'); if (s.type === 'cmd' && !s.hint) warn(ws, 'cmd step has no hint (Dispatch will have nothing to say)');
         if (s.type === 'find') { const ids = new Set(((j.map || {}).nodes || []).map(n => n.id)); const tg = s.targets || [s.target]; if (!tg.length || !tg[0]) err(ws, 'find needs target'); tg.forEach(t => { if (j.map && !ids.has(t)) err(ws, 'target "' + t + '" is not a map node'); }); }
         if (s.type === 'choice') { if (!Array.isArray(s.opts) || s.opts.length < 2) err(ws, 'choice needs 2+ opts'); if (typeof s.a !== 'number' || !s.opts || s.a < 0 || s.a >= s.opts.length) err(ws, 'a must index into opts'); }
         if (s.type === 'multi') { if (!Array.isArray(s.opts) || s.opts.length < 2) err(ws, 'multi needs opts'); if (!Array.isArray(s.answers) || !s.answers.length) err(ws, 'multi needs answers (array of indexes)'); }
-        if (s.type === 'calc') { if (!Array.isArray(s.fields) || !s.fields.length) err(ws, 'calc needs fields'); (s.fields || []).forEach((f, fi) => { if (!f.key || !f.label || typeof f.check !== 'function') err(ws + ' field ' + (fi + 1), 'field needs key, label, check(value)'); }); if (!s.answer) warn(ws, 'calc has no answer text for the KEY'); }
+        if (s.type === 'calc') { if (!Array.isArray(s.fields) || !s.fields.length) err(ws, 'calc needs fields'); (s.fields || []).forEach((f, fi) => { if (!f.key || !f.label || typeof f.check !== 'function') err(ws + ' field ' + (fi + 1), 'field needs key, label, check(value)'); }); if (!s.answer) warn(ws, 'calc has no answer text for the CODEX'); }
         if (s.type === 'order') { if (!Array.isArray(s.items) || s.items.length < 2) err(ws, 'order needs items in the correct order'); }
         if (s.type === 'form') { if (!Array.isArray(s.fields) || !s.fields.length) err(ws, 'form needs fields'); (s.fields || []).forEach((f, fi) => { if (!f.key || !f.label || !Array.isArray(f.options) || f.answer == null) err(ws + ' field ' + (fi + 1), 'form field needs key, label, options, answer'); }); }
-        if (s.type === 'text') { if (typeof s.check !== 'function') err(ws, 'text step needs check(value)'); if (!s.answer) warn(ws, 'text step has no answer text for the KEY'); } });
+        if (s.type === 'text') { if (typeof s.check !== 'function') err(ws, 'text step needs check(value)'); if (!s.answer) warn(ws, 'text step has no answer text for the CODEX'); } });
       if (!j.solution) warn(w, 'no golden solution (tools/check cannot prove this gig is passable)');
       if (Array.isArray(j.day)) day(j.day, 'jobs', j.id); });
     // ---- npcs, glossary, cards

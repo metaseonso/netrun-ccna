@@ -4,9 +4,8 @@ A story-driven browser game for studying the **CCNA 200-301**. Static files, no 
 
 **Play:** https://metaseonso.github.io/netrun-ccna/ · **Dev mode:** add `?dev=1`
 
-> **Status: Alpha framework.** The engine is complete and tested. Content built so far: Stage 4 (Spanning Tree,
-> Jeremy's IT Lab days 20–21) plus one intro level per other stage. The full 63-day campaign is being written
-> into this framework. Start at `docs/HANDOFF.md`.
+> **Status: the campaign is complete.** 63 nights across nine districts, 68 gigs, three rites of passage and the
+> finale, The Watson Exchange. Every gig is played by `npm test`. Start at `docs/HANDOFF.md`.
 
 ## What it is
 
@@ -20,13 +19,13 @@ A story-driven browser game for studying the **CCNA 200-301**. Static files, no 
 - **Crew.** Protégés who look up to you DM you from their own gigs. Every DM is a flash card on a timer. Right and
   in time, they get through. Wrong or late, it escalates: rep loss, then a flatline, and their orphan joins your crew.
   Spaced repetition decides which card comes when. Bigger gigs need a crew.
-- **Survive.** Every gig costs food and chrome at jack-in; pay comes when it is done. Marrow sells food and knows a
-  ripperdoc. Zero on either meter is a flatline: FLATLINED, game over, back to the last sync. The deck syncs after
+- **Survive.** Every gig costs food and chrome at jack-in; pay comes when it is done. Marrow sells food and a chrome patch, keeps a
+  tab for broke runners, and knows a ripperdoc. Zero on either meter is a flatline: FLATLINED, game over, back to the last sync. The deck syncs after
   every talk and every gig; there is no manual save. A handle is a name and a passcode, remembered until you log out.
-- **Stats.** Every attempt is timed. Misses, hints, walk-throughs, DM response times, weak skills, rep over time,
+- **Stats.** Every attempt is timed. Misses, hints, DM response times, weak skills, rep over time,
   a final report when the campaign is done.
-- **Key.** Every answer in the game, explained slowly, in the character's voice. Also available mid-step as
-  WALK ME THROUGH IT (costs the level-up for that step, nothing else).
+- **CODEX.** Every gig's notes, every word and every braindance you have heard. A gig's notes open when you clear it
+  yourself, or when you pay a fixer to take a floor (the fixer keeps the pay; rites refuse fixers).
 
 ## Run it
 
@@ -42,10 +41,11 @@ npm run check                   # same, listing warnings
 - `docs/CAMPAIGN_GUIDE.md` — schema for levels, gigs, steps, topologies; the engine API for checks; the feedback loop.
 - `docs/STORY_BIBLE.md` — the world, the cast, the voice, and Part II: the immersion canon (vocabulary, legacy framing, the dive, braindances, rites, the stall).
 - `docs/CREW_ARCHETYPES.md` — the six crew archetypes, bond, favors, rites.
-- `docs/TASKS.md` — all 63 days mapped to stages, NPCs, skills and lab-based gigs.
-- `docs/templates/` — a complete stage file and a complete gig that pass `npm test`.
+- `docs/TASKS.md` — all 63 nights mapped to stages, NPCs, skills and lab-based gigs, and what is left.
+- New content: copy a night's block from `js/data/stages/` and `js/data/jobs/`; the format is in `docs/CAMPAIGN_GUIDE.md`.
 - `tools/import_apkg.py` — turns Anki decks into game cards.
-- `docs/AUTH_PLAN.md` — Sign in with Google; records live in the player's own Drive. Code complete, on when the owner pastes a client ID.
+- `docs/AUTH_PLAN.md` — Sign in with Google; records live in the player's own Drive. Live.
+- `docs/WATSON_DB.md` — the suggestion box, licenses, the anonymous pulse and the owner's dashboard (`owner.html`).
 
 ## Credits
 

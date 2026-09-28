@@ -160,7 +160,7 @@ window.GLOSSARY = {
   'puppet': 'Config management with an agent on each node, pulling from a master. Ruby-flavoured.',
   'chef': 'Agent-based config management using Ruby "recipes" and "cookbooks".',
   'ice': 'Intrusion Countermeasures Electronics. Watson slang for anything that pushes back: firewalls, ACLs, port security.',
-  'deck': 'In this game: the commands and numbers you carry out of each scene, and the skills you have shown you can use without a hint.',
+  'deck': 'In this game: your cyberdeck screen. It lists every quickhack you have slotted and how sharp it is (clean uses without a hint), your deck skin, and when your record last synced.',
   'jack in': 'Start a gig. Open the console and touch the live system.',
   'decapsulation': 'The receiving host removing each layer\'s header (and the Layer 2 trailer) in turn, from the bottom up, until only the data is left. The reverse of encapsulation.',
   'tcp/ip model': 'The five-layer model of the TCP/IP suite: 1 Physical, 2 Data Link (also called Local Network), 3 Network (also called Internet), 4 Transport, 5 Application. Application is also called Layer 7, after the OSI model.',

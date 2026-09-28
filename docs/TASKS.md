@@ -7,16 +7,18 @@ folder; `_listing.json` there has every file id). Decks are imported into `js/da
 cannot be parsed here, so open them in Packet Tracer (or read the day's video notes) and rebuild the topology and tasks
 in `net` form. The capstone is the `CCNA Mega Lab` subfolder: `CCNA Mega Lab (Jeremy's IT Lab).pka` plus `Connections & IPv4 Addresses.xlsx` (the addressing plan).
 
-Import status: 70 of 71 decks imported (1,979 cards). `Day 63 (part 2) Flashcards - Terraform.apkg` uses the newer compressed Anki format and was skipped; Terraform is not on the 200-301 exam.
+Import status: all 72 decks are imported (see docs/HANDOFF.md, known gaps).
 
-Stage plan (arc 01 · THE GRID). Stage files exist as stubs; replace the intro level and add the rest.
+Stage plan (arc 01 · THE GRID). **The campaign is built:** every night below has its level(s) and gig, following
+docs/CAMPAIGN_MAP.md (which moved some nights between districts). This file stays as the original plan and the list of
+what is left, at the end.
 
 | Stage | Days | NPCs | Skills to add to SKILLS |
 |---|---|---|---|
 | 1 THE WIRES | 1–4 | Osi Sevenfold, Enable | osi-layers, cabling, cli-modes, device-security |
 | 2 THE BLOCK | 7–8, 10–13 | Cider | ipv4-basics, ipv4-header, subnetting, vlsm |
 | 3 THE FLOOR | 5–6, 9, 16–19, 23 | Mac, Vee Lan | mac-table, arp, switch-interfaces, vlan-config, trunk-config, router-on-stick, dtp-vtp, etherchannel |
-| 4 THE BRIDGES ✅ | 20–22 | Old Root | (built; add Day 22 Rapid STP level + gig) |
+| 4 THE BRIDGES | 20–22 | Old Root | stp, rstp |
 | 5 THE ROADS | 11, 14–15, 24–29, 44–45 | Nexthop, Ospef | static-route, default-route, dynamic-routing, rip-eigrp, ospf, fhrp, life-of-packet |
 | 6 THE SERVICES | 30–43, 46–47 | Syn, Sixx, Denise, Shell, Nat | tcp-udp, ipv6-addressing, ipv6-routing, acl (see stage 7), cdp-lldp, ntp, dns, dhcp, snmp, syslog, ssh, ftp-tftp, nat-static, nat-pat, qos |
 | 7 THE ICE | 34–35, 48–50, 58 | Ace Elle (+Sticky), Beacon | security-fundamentals, acl-standard, acl-extended, port-security, dhcp-snooping, dai, wireless-security |
@@ -26,14 +28,14 @@ Per day, in this order: level as scenes → braindance (title, year, vibe) → l
 
 ## Day list (level · cards · gig from the lab)
 
-Days with a ✅ are built. Everything else: write the level(s), import the deck, build the gig, run `npm test`.
+All days are built. The gig ideas below were the plan; the real gigs are in `js/data/jobs/`.
 
 | Day | Topic | Stage | Gig idea (from the lab) |
 |---|---|---|---|
 | 1 | Network Devices | 1 | D: identify devices on a map (`find` × 3), name the layer each works at (`choice`) |
 | 2 | Interfaces and Cables | 1 | D: pick cable types (`form`), fix a speed/duplex mismatch (`cmd`, check `n.issues`) |
 | 3 | OSI Model / TCP-IP | 1 | D: `order` the layers, `order` the PDUs, `multi` which devices read which header |
-| 4 | Intro to the CLI · Basic Device Security | 1 | ✅ First Jack-In (extend: `service password-encryption`, console password, banner) |
+| 4 | Intro to the CLI · Basic Device Security | 1 | D: passwords, `service password-encryption`, enable secret, save |
 | 5 | Ethernet LAN Switching 1 | 3 | D: read `show mac address-table`, `find` the port for a MAC |
 | 6 | Ethernet LAN Switching 2 | 3 | D: ARP flow `order`, ping across a switch from a PC console |
 | 7 | IPv4 Addressing 1 | 2 | D: `calc` network/broadcast, configure router interfaces, `no shut` gotcha |
@@ -43,14 +45,14 @@ Days with a ✅ are built. Everything else: write the level(s), import the deck,
 | 11 | Routing Fundamentals 1 | 5 | D: read `show ip route`, connected routes appear with `no shut` |
 | 12 | Subnetting 1 | 2 | D/C: `calc` subnetting drills (several fields), configure the result |
 | 13 | Subnetting 2 · VLSM | 2 | C: VLSM plan for 4 departments (`calc`), configure, verify pings |
-| 14 | Static Routing 2 | 5 | ✅-style: two routers, one-way route bug, fix both directions (engine test #1 is the model) |
+| 14 | Static Routing 2 | 5 | C: two routers, one-way route bug, fix both directions (engine test #1 is the model) |
 | 15 | Life of a Packet | 5 | C: `order` the encapsulation at each hop; traceroute; ARP tables on PCs |
 | 16 | VLANs 1 | 3 | D: create VLANs, assign access ports, verify `sameSegment` |
 | 17 | VLANs 2 | 3 | C: router-on-a-stick subinterfaces, trunk, `ping` across VLANs (engine test #5) |
 | 18 | VLANs 3 | 3 | C: L3 switch SVIs + `ip routing`, native VLAN mismatch issue |
 | 19 | DTP / VTP | 3 | C: `switchport nonegotiate`, mode mismatch issue, `choice` on VTP modes |
-| 20 | STP 1 ✅ | 4 | built |
-| 21 | STP 2 ✅ | 4 | built (6 gigs) |
+| 20 | STP 1 | 4 | C: find the root, port roles, pull a cable and watch the tree reconverge |
+| 21 | STP 2 | 4 | C: PortFast, BPDU Guard, root primary/secondary |
 | 22 | Rapid STP | 4 | C: mode rapid-pvst everywhere, port roles alternate/backup `choice`, edge ports |
 | 23 | EtherChannel | 3 | C: LACP active/passive, mode mismatch issue, `show etherchannel summary` |
 | 24 | Dynamic Routing | 5 | C: AD comparison `calc`, floating static |
@@ -91,8 +93,6 @@ Days with a ✅ are built. Everything else: write the level(s), import the deck,
 - **Done 2026-09-28: the owner's dashboard** (`owner.html`, docs/WATSON_DB.md; the owner must redeploy the script once). A page only the owner can open (their Google account and the DB key), with every player's traffic and stats in one overview: registrations over time, nights reached, where players stall, flatlines, fixer use, suggestions by status, licenses issued. Data comes from the Watson DB (`pulse`, `suggestions`, `licenses`); the DB will need a richer anonymous `pulse` (per-night timestamps) for it.
 
 - Extend protégé lines and add a few recurring named protégés with arcs (optional, after the campaign).
-- Sign-in: code complete. **Your first message to the owner walks them through `docs/AUTH_PLAN.md` live** until SIGN IN WITH GOOGLE works on the live site.
-- Before Day 22: the HUD and menu clarity pass (icons for every nav item, three bands, meters readable on a phone). See `docs/HANDOFF.md`, first hour, step 4.
 - Survival tuning: done 2026-09-28 (stall prices × (1 + 0.5 × classRank), Marrow's patch, a repayable tab). Re-run the
   simulation if gig pay or costs change.
 - Arcs 00, 02–04 stay locked. The engine is arc-agnostic; a new arc is a new set of stage files with `arc: 'ice'` etc.

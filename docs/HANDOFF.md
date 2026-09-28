@@ -22,33 +22,22 @@ then `docs/CAMPAIGN_GUIDE.md` (how to write content), `docs/STORY_BIBLE.md` (how
 | The dive transition, braindance title cards, in-world interface vocabulary | `js/ui.js`, `css/world.css` | done |
 | Golden-solution runner | `Game.runSolution` in `js/game.js`, `tools/check.js` | done |
 | Dev panel (`?dev=1`): lint, step diagnosis, net state, ping tester, golden runs, cards | `js/ui.js` | done |
-| Sign in with Google + saves in the player's Drive | `js/platform/*.js`, `config/platform.js`, `docs/AUTH_PLAN.md` | complete; switches on when the owner pastes the Google client ID |
+| Sign in with Google + saves in the player's Drive | `js/platform/*.js`, `config/platform.js`, `docs/AUTH_PLAN.md` | live |
 | Local handles: name + passcode, remembered until LOG OUT | `Game.setHandle(h, pass)` in `js/game.js`, the door in `js/ui.js` | complete; not security, by design |
-| The body: FOOD and CHROME meters, gig costs, food + ripperdoc at the stall, Marrow's tab | `Game.body` in `js/game.js`, `js/data/shop.js` | complete; numbers are first-pass, tune by playing |
+| The body: FOOD and CHROME meters, gig costs, food + ripperdoc at the stall, Marrow's tab | `Game.body` in `js/game.js`, `js/data/shop.js` | tuned 2026-09-28 by simulation (see Rules) |
 | Syncs (the only save) + the FLATLINED screen with reload / exit | `Game.sync`, `Game.reload`, `Game.flatline`; `deadView()` in `js/ui.js` | complete; no export/import exists on purpose |
 | Anki importer + page registration | `tools/import_apkg.py`, `tools/register_cards.py` | done; course files at `C:\Users\Seonso\Desktop\CCNA Course Files` |
-| Content: Stage 4 (Days 20–21) | `js/data/stages/04-bridges.js`, 7 gigs in `js/data/jobs.js`, 30 cards | built, the reference for tone and depth |
-| Content: Stages 1–3, 5–8 | `js/data/stages/*.js` | one intro level each; everything else is yours |
+| Content: 63 nights, 68 gigs, three rites and the finale | `js/data/stages/01–09`, `js/data/jobs/01–09`, `js/data/syllabus.js` | complete; `node tools/play.js all` plays it in order |
+| Owner's dashboard | `owner.html`, `tools/watson-db.gs`, `docs/WATSON_DB.md` | live after the 2026-09-28 redeploy |
 
 ## Your first hour
 
-0. **Your first message to the owner is the sign-in walkthrough.** Open `docs/AUTH_PLAN.md` and take them through it
-   live, one screen at a time: ask what they see, give the next click, wait. Stop when the Google client ID is in
-   `config/platform.js`, pushed, and SIGN IN WITH GOOGLE works on the live site. About ten minutes. Do this before any
-   campaign work.
 1. `npm test`. Green. Then `python -m http.server 8765` and open `http://localhost:8765/?dev=1`. Make a handle (name +
    any passcode). Press DEV.
 2. Read `docs/STORY_BIBLE.md` end to end, then `docs/CREW_ARCHETYPES.md`. These are not suggestions.
-3. Play Stage 4 as a player: meet Old Root, take the Class D dives, watch FOOD and CHROME drop, eat at Marrow's, pick up
-   one crew call, buy Dev a bowl of noodles, go in on empty once and read the FLATLINED screen. That is the bar.
-4. **Your first deliverable is the HUD.** The menu is full: MAP GRID BOARD CREW STALL DECK CODEX RECORD JOURNAL, plus
-   DEV, LOG OUT, sign-in, two meters, rep, class, creds, crew count, the rite line. Give every nav item a proper icon
-   (inline SVG, one stroke style, 16–18px, label beside it, badge kept), group the HUD into three clear bands
-   (identity · body and rep · nav), make the meters readable at a glance on a phone, and give the stall, board and crew
-   screens the same clarity pass. No new colours; the tokens in `css/style.css` are the palette. Commit that before Day 22.
-5. Warm up on **Day 22 (Rapid STP)**: one level in `04-bridges.js` with a braindance, one gig with a `net` topology and
-   a golden solution, register nothing new (same stage file). `npm test` green. Commit.
-6. Then work `docs/TASKS.md` in order, one day per commit.
+3. Play Act I as a player: meet Osi, take the Class D dives, watch HUNGER and CHROME drop, eat at Marrow's, pick up
+   one crew call, go in on empty once and read the FLATLINED screen. That is the bar.
+4. `node tools/play.js all` must print PLAYTEST CLEAN. Then read `docs/TASKS.md` for what is left.
 
 ## How to work
 
@@ -100,9 +89,7 @@ Definition of done for a day:
 
 ## Known gaps you will inherit (not engine limits)
 
-- **HUD and menu clarity** (first deliverable, see "Your first hour" step 4): icons for every nav item, three bands,
-  meters readable on a phone.
-- **Survival numbers are a first pass.** Costs 15 + 5 × classRank food and 10 + 5 × classRank chrome, 1 chrome per bad
+- **Survival numbers.** Costs 15 + 5 × classRank food and 10 + 5 × classRank chrome, 1 chrome per bad
   call; food at 12 / 30 / 70 creds for 15 / 40 / 100; Marrow's patch at 50 for 35 chrome; the ripperdoc at 120 for a full
   chrome; stall prices × (1 + 0.5 × classRank). A Class D gig pays 60.
   Marrow's tab (food or the patch on credit when broke and under 70, repaid from the next pay) is the
@@ -110,25 +97,22 @@ Definition of done for a day:
   3 failed commits per gig ends with about 3,000 creds, 8 with about 2,000, 15 with about 1,000 and a few tabs.
 
 - **Rites are now a real gate.** `Game.classFor` only promotes when the rep is there **and** the rite gig of the class
-  below is done (`rite: true` + `cls`). No rite written for a class = no gate, so the campaign can grow in order.
-  The three flagged demo gigs (`c-rogue-switch`, `b-per-vlan-split`, `a-last-storm`) are placeholders: write the
-  true rites for D→C (a Class D rite does not exist yet), C→B and B→A. Bigger topologies, a payday, an outro where
-  the district starts calling the player by their class. Retcon the demo gigs freely; nothing is saved from the alpha.
-- All twenty NPCs have portraits. New NPCs you add get the procedural sprite until the owner runs `tools/gen_npcs.py`
-  (add a `SUBJECTS` line for them). Do not run it yourself; it spends money.
+  below is done (`rite: true` + `cls`). The rites are `d-n19-clinic-front-door`, `c-n33-every-road-home`,
+  `b-n51-nobody-answers-but-us` and the finale `z-watson-exchange`.
+- Every NPC but Vesper Kade has a portrait; she has a `SUBJECTS` line and waits for the owner to run `tools/gen_npcs.py`.
+  New NPCs get the procedural sprite until then (add a `SUBJECTS` line for them). Do not run it yourself; it spends money.
 - Archetype voice lines are seed content: 3–4 lines per situation. Add depth, keep every situation covered (lint warns).
 - The crew's calls use real-time spacing (10 min, 1 h, 1 d …). In dev, DEV → CALLS → FORCE CALL.
 - All 72 decks are imported. Six decks (days 3, 5, 59, 61) and Terraform use Anki's compressed format; `tools/import_apkg.py` now reads it (needs `pip install zstandard`). Card pictures: `tools/extract_card_images.py` → `js/data/cards/images.js`, shown in crew calls.
-- Sign-in is code-complete (Google, saves in the player's own Drive). It is off until the owner pastes a client ID
-  into `config/platform.js`; `docs/AUTH_PLAN.md` has the ten-minute setup. Never touch `js/platform/` for content.
+- Sign-in is live (Google, saves in the player's own Drive; `docs/AUTH_PLAN.md`). Never touch `js/platform/` for content.
 - Save records are `VERSION` 3. Older records are dropped, not migrated. New keys go in `fresh()` with a default;
   do not raise `VERSION` for that.
-- Mobile: the door, MAP, STALL and HUD fit a 375px phone. The dive (map + console side by side) stacks; test it once
+- Mobile: every screen fits a 360px phone (checked 2026-09-28). The dive (map + console side by side) stacks; test it once
   per new gig shape.
 
 ## Known limits of the engine (extend with tests if a day needs them)
 
-- OSPF: single process, areas honoured for adjacency, no DR/BDR, no LSA types, cost from bandwidth or `ip ospf cost`.
+- OSPF: single process, areas and O IA routes, DR/BDR by priority, point-to-point, ECMP; no LSA types, cost from bandwidth or `ip ospf cost`.
 - RIP/EIGRP: adjacency and hop-style metrics only; enough for `show ip route` codes and reachability.
 - IPv6: interface addresses, link-local/EUI-64, connected + static routes, ping6 end to end (`ctx.net().ping6`); no OSPFv3, no SLAAC or DHCPv6 on hosts.
 - NAT: static, dynamic pool, PAT overload; translation table is built from pings sent in the console.

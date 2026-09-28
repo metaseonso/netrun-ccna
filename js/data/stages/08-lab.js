@@ -122,7 +122,7 @@
           ] } },
         { k: 'LORE', title: 'EVERYONE GETS A MACHINE', year: 1967, real: ['ibm', 'vmware', 'docker'], vibe: 'Out of sight. One mainframe, and every user swears it is theirs alone.',
           text: 'Prof. Hypervisor, lifting the cat off the keyboard: "In 1967 IBM\'s Cambridge Scientific Center put CP-40 into service on a modified System/360 Model 40. It gave each person at a keyboard a whole virtual machine of their own, up to fourteen at once, on one computer. VMware brought the same idea to ordinary PCs in 1999, and Docker handed containers to everyone in March 2013. I keep the first one because nobody using CP-40 could tell they were sharing, and that is still the whole trick."' },
-        { k: 'KIT', text: 'She prints it on the back of a Halvorsen brochure and hands it over warm.', kit: [
+        { k: 'KIT', real: ['docker', 'kubernetes'], text: 'She prints it on the back of a Halvorsen brochure and hands it over warm.', kit: [
           { cmd: 'Type 1 (bare-metal, native) · Type 2 (hosted)', what: 'on the hardware · a program on a host OS. The systems inside are guest OSes. Hypervisor = VMM' },
           { cmd: 'on-demand self-service · broad network access · resource pooling · rapid elasticity · measured service', what: 'NIST\'s five essential characteristics of cloud' },
           { cmd: 'SaaS (Office 365) · PaaS (AWS Lambda, Google App Engine) · IaaS (Amazon EC2, Google Compute Engine)', what: 'the three service models' },

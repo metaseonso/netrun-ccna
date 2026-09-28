@@ -61,6 +61,11 @@ module.exports.run = function({ out }){
     Game.state.body.chrome = 10; Game.shop.buy('tuneup'); ok(Game.state.body.chrome === 100, 'stall: the tune-up fills chrome to 100');
     const riteD = JOBS.find(j => j.rite && j.cls === 'D'); if (riteD) { Game.state.rep = CLASSES[1].min; Game.state.jobsDone = { [riteD.id]: 1 };
       ok(Game.shop.price(tune) === Math.round(tune.price * 1.5), 'stall: class C pays one and a half times (' + Game.shop.price(tune) + ')'); }
+    // Dispatch's favor: buying it puts one on the books, and a runner can hold only one
+    Game.state.rep = 0; Game.state.jobsDone = {}; Game.state.creds = 1000; Game.state.inventory = Game.state.inventory || {}; delete Game.state.inventory.favor;
+    r = Game.shop.buy('favor'); ok(r.ok && Game.state.inventory.favor === 1, 'favor: bought and held (' + Game.state.inventory.favor + ')');
+    r = Game.shop.buy('favor'); ok(!r.ok && Game.state.inventory.favor === 1 && Game.state.creds === 1000 - SHOP.find(i => i.id === 'favor').price, 'favor: a second one is refused and costs nothing');
+    delete Game.state.inventory.favor;
     // Marrow's tab: broke and low, the patch goes on credit; the next pay settles it and the tab opens again
     Game.state.rep = 0; Game.state.jobsDone = {}; Game.state.creds = 0; Game.state.body.chrome = 20; Game.state.body.tab = 0; Game.state.body.owed = 0;
     r = Game.shop.buy('patch'); ok(r.ok && r.onTheHouse && Game.state.body.chrome === 55 && Game.state.body.owed === patch.price, 'tab: a broke runner at 20 chrome gets the patch on the tab (' + JSON.stringify(r) + ')');

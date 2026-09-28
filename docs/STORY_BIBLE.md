@@ -1,8 +1,7 @@
 # NETRUNNER://CCNA — Story Bible
 
-This is the brief for rewriting every level and gig as lived-in story. The current text in
-`js/data/grid.js` and `js/data/jobs.js` is a placeholder: correct facts, wrong form. It explains.
-It should not explain. It should put the player inside a situation where the fact is the way out.
+This is the brief every level and gig is written to, and the rule for anything added later. A line that explains is
+wrong. A line should put the player inside a situation where the fact is the way out.
 
 ## The one rule
 
