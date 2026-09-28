@@ -136,6 +136,14 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-28 · FTP and TFTP in the shell: `copy tftp: flash:`, `copy ftp: flash:` (or `copy tftp://host/file flash:`) ask for
+  the host, the source and the destination like IOS (`Device.ask`, the prompt shows the question; an empty answer takes the
+  default), then the file moves if the router can ping the server, the server's net device lists it in `files: [{ name, size }]`,
+  and for FTP the box's `ip ftp username`/`ip ftp password` match the server's `ftp: { user, pass }`. Downloads land in
+  `dev.flash`; `copy running-config|startup-config|flash:<file> tftp:|ftp:` records uploads in `dev.sent`; both add a
+  `copy <proto>://host/file ...` line to the transcript. `show flash`, `show file systems`; `boot system`, `ip ftp username`,
+  `ip ftp password` parsed (`cfg.bootSystem`, `cfg.ftpUser`, `cfg.ftpPass`). Tested.
+
 - 2026-09-28 · The IOS shell, part 1 (`js/sim.js`): `show running-config` is built from the config, not the transcript (the last
   hostname wins, `no X` removes X, every port of the box is listed, router ports show `shutdown` until `no shutdown`); `service
   password-encryption` shows type 7 and removing it decrypts nothing; `enable secret` shows type 5; `enable` asks `Password:` once a

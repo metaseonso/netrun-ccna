@@ -78,6 +78,7 @@
   Device.prototype.preload = function(lines){ const keepOut = this.out.length; lines = (lines || []).slice(); if (this.kind !== 'host') { const first = normalize(lines[0] || ''); if (first !== 'enable' && first !== 'configure terminal') lines = ['enable', 'configure terminal'].concat(lines); }
     lines.forEach(l => this.exec(l, this._all, true)); this.out.length = keepOut; this.lines.forEach(r => { if (r.pre === undefined) r.pre = true; }); this.mode = 'user'; this.ctx = ''; this.stack = []; this.pending = null; if (this.kind !== 'host' && lines.length > 2) this.startup = configText(this); };
   Device.prototype.prompt = function(){
+    if (this.ask) return this.ask.q; // a copy command waiting for an answer (Address or name of remote host []?)
     const h = this.host; if (this.kind === 'host') return h + '>'; if (this.pending) return 'Password:';
     switch (this.mode) {
       case 'user': return h + '>'; case 'priv': return h + '#'; case 'config': return h + '(config)#';
@@ -159,6 +160,44 @@
     return o.join('\n'); }
   function runningConfig(dev){ const t = configText(dev); return 'Building configuration...\n\nCurrent configuration : ' + t.length + ' bytes\n!\n' + t; }
   function startupConfig(dev){ return dev.startup ? 'Using ' + dev.startup.length + ' out of 262136 bytes\n!\n' + dev.startup : 'startup-config is not present'; }
+
+  // ---- copy between the box and a TFTP or FTP server: IOS asks for the host and the file names, then the file moves if the
+  // server answers a ping, holds the file (net device `files: [{ name, size }]`) and, for FTP, the box's ip ftp username/password
+  // match the server's `ftp: { user, pass }`. Downloads land in dev.flash (show flash); uploads are listed in dev.sent.
+  function startCopy(dev, q, rec){
+    const t = q.split(' '); const net = x => { const m = (x || '').match(/^(tftp|ftp):?(?:\/\/([^/\s]+)\/(\S+))?$/); return m ? { proto: m[1], host: m[2] || null, file: m[3] || null } : null; };
+    const src = net(t[1]), dst = net(t[2]); const toFlash = /^flash:?(\S*)$/.exec(t[2] || ''), fromConf = /^(running-config|startup-config|flash:(\S+))$/.exec(t[1] || '');
+    dev.lines.push(rec);
+    if (src && toFlash) dev.ask = { dir: 'down', proto: src.proto, host: src.host, file: src.file, dest: toFlash[1] || null };
+    else if (fromConf && dst) dev.ask = { dir: 'up', proto: dst.proto, host: dst.host, file: fromConf[2] || fromConf[1], dest: dst.file };
+    else { dev.out.push({ t:'err', s:'%Error: this shell copies from tftp: or ftp: to flash:, and from running-config, startup-config or flash:<file> to tftp: or ftp:' }); return; }
+    copyNext(dev); }
+  function copyNext(dev){ const a = dev.ask;
+    if (!a.host) { a.stage = 'host'; a.q = 'Address or name of remote host []? '; return; }
+    if (a.dir === 'down' && !a.file) { a.stage = 'file'; a.q = 'Source filename []? '; return; }
+    if (!a.confirmed) { a.stage = 'dest'; const def = a.dest || (a.dir === 'down' ? a.file : (a.file === 'running-config' || a.file === 'startup-config' ? dev.host.toLowerCase() + '-confg' : a.file)); a.def = def; a.q = 'Destination filename [' + def + ']? '; return; }
+    dev.ask = null; copyRun(dev, a); }
+  function copyAnswer(dev, raw){ const a = dev.ask; const v = raw.trim().toLowerCase(); dev.out.push({ t:'in', s: a.q + raw.trim() });
+    if (a.stage === 'host') { if (!v) { dev.ask = null; dev.out.push({ t:'err', s:'%Error parsing filename (no host given)' }); return; } a.host = v; }
+    else if (a.stage === 'file') { if (!v) { dev.ask = null; dev.out.push({ t:'err', s:'%Error parsing filename (no file given)' }); return; } a.file = v; }
+    else if (a.stage === 'dest') { a.dest = v || a.def; a.confirmed = true; }
+    copyNext(dev); }
+  function copyRun(dev, a){ const S = dev._netState ? dev._netState() : null; const url = a.proto + '://' + a.host + '/' + (a.dir === 'down' ? a.file : a.dest);
+    const D = S && S.net ? S.net.devices : {}; const srvName = Object.keys(D).find(n => D[n].ip === a.host && !D[n].removed); const srv = srvName ? D[srvName] : null;
+    const reach = S && window.Net ? Net.ping(S, dev.name, a.host) : { ok: !!srv };
+    const fail = why => { dev.out.push({ t:'err', s:'%Error opening ' + url + ' (' + why + ')' }); };
+    if (!srv || !reach.ok) return fail('Timed out');
+    if (a.proto === 'ftp') { const c = window.NetConfig ? NetConfig.parse(dev) : {}; const want = srv.ftp || null; if (want && !(c.ftpUser === String(want.user).toLowerCase() && c.ftpPass === String(want.pass).toLowerCase())) return fail('Incorrect Login/Password'); }
+    const bar = n => '!'.repeat(Math.max(4, Math.min(40, Math.round(n / 1000000)))); const size = f => f.size || 1024;
+    if (a.dir === 'down') { const f = (srv.files || []).map(x => typeof x === 'string' ? { name: x } : x).find(x => x.name.toLowerCase() === a.file); if (!f) return fail('No such file or directory');
+      dev.flash = (dev.flash || []).filter(x => x.name !== a.dest); dev.flash.push({ name: a.dest, size: size(f) });
+      dev.out.push({ t:'out', s:'Accessing ' + url + '...\nLoading ' + a.file + ' from ' + a.host + ': ' + bar(size(f)) + '\n[OK - ' + size(f) + ' bytes]\n\n' + size(f) + ' bytes copied in ' + (size(f) / 2800000 + 0.4).toFixed(3) + ' secs' });
+      dev.lines.push({ mode: 'priv', ctx: '', line: 'copy ' + a.proto + '://' + a.host + '/' + a.file + ' flash:' + a.dest, copied: true }); return; }
+    const body = a.file === 'running-config' ? configText(dev) : a.file === 'startup-config' ? (dev.startup || '') : null; const fl = body == null ? (dev.flash || []).find(x => x.name === a.file.replace(/^flash:/, '')) : null;
+    if (body == null && !fl) { dev.out.push({ t:'err', s:'%Error opening flash:' + a.file + ' (File not found)' }); return; } const n = body != null ? body.length : fl.size;
+    dev.sent = dev.sent || []; dev.sent.push({ proto: a.proto, host: a.host, file: a.dest, what: a.file, bytes: n });
+    dev.out.push({ t:'out', s:'Writing ' + a.dest + ' ' + bar(n) + '\n' + n + ' bytes copied in 0.' + String(100 + (n % 800)).slice(0, 3) + ' secs' });
+    dev.lines.push({ mode: 'priv', ctx: '', line: 'copy ' + a.file + ' ' + a.proto + '://' + a.host + '/' + a.dest, copied: true }); }
   const HELP = {
     user: [['enable', 'Turn on privileged commands'], ['exit', 'Exit from the EXEC'], ['ping', 'Send echo messages'], ['show', 'Show running system information'], ['traceroute', 'Trace route to destination']],
     priv: [['configure', 'Enter configuration mode'], ['copy', 'Copy from one file to another'], ['disable', 'Turn off privileged commands'], ['enable', 'Turn on privileged commands'], ['exit', 'Exit from the EXEC'], ['ping', 'Send echo messages'], ['show', 'Show running system information'], ['traceroute', 'Trace route to destination'], ['write', 'Write running configuration to memory']],
@@ -172,6 +211,7 @@
 
   Device.prototype.exec = function(raw, all, silent){
     const dev = this; if (all) dev._all = all; const S = dev._netState ? dev._netState() : null;
+    if (dev.ask) { copyAnswer(dev, raw); return; } // the answer to a copy command's question, not a command
     if (dev.kind === 'host') { dev.out.push({ t:'in', s: dev.prompt() + ' ' + raw.trim() }); const o = window.Show ? Show.host(dev, raw, S) : 'no network'; if (o) dev.out.push({ t: /timed out|not recognized/.test(o) ? 'err' : 'out', s: o }); dev.lines.push({ mode: 'host', ctx: '', line: normalize(raw) }); return; }
     // the enable password prompt: the typed word is never echoed or recorded
     if (dev.pending === 'enable') { dev.out.push({ t:'in', s: 'Password: ' }); const c = window.NetConfig ? NetConfig.parse(dev) : {}; const want = c.enableSecret || c.enablePassword;
@@ -214,6 +254,7 @@
           if (q.startsWith('ping ')) dev.out.push({ t: r.ok ? 'out' : 'err', s: 'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos to ' + ip + ', timeout is 2 seconds:\n' + (r.ok ? '!!!!!\nSuccess rate is 100 percent (5/5), round-trip min/avg/max = 1/1/2 ms' : '.....\nSuccess rate is 0 percent (0/5)\n  [why: ' + r.reason + ']') });
           else dev.out.push({ t:'out', s: 'Type escape sequence to abort.\nTracing the route to ' + ip + '\n' + Net.traceLines(r, 'ios').join('\n') + (r.ok ? '' : '\n  [why: ' + r.reason + ']') }); return; }
         dev.out.push({ t:'out', s:'Type escape sequence to abort.\nSending 5, 100-byte ICMP Echos:\n!!!!!\nSuccess rate is 100 percent (5/5)' }); return; }
+      if (q.startsWith('copy ')) { if (dev.mode === 'user') { dev.out.push({ t:'err', s:'% Invalid input detected. (copy needs privileged EXEC mode: enable first.)' }); return; } startCopy(dev, q, rec); return; }
       if (q.startsWith('reload')) { dev.out.push({ t:'sys', s:'(nice try. no reloads in the sim.)' }); return; }
       if (!doCmd && dev.mode !== 'config' && !s.startsWith('show')) { if (dev.mode === 'user' || dev.mode === 'priv') { dev.out.push({ t:'err', s:'% Invalid input detected at \'^\' marker. (Config commands need "configure terminal" first.)' }); return; } }
       if (doCmd) { dev.lines.push(rec); return; }

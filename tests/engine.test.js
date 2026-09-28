@@ -116,5 +116,26 @@ module.exports.run = function({ out }){
     ok(!d.lines.some(r => r.line === 'broth' || r.line === 'noodles'), 'shell: typed passwords are not recorded');
     d.exec('copy running-config startup-config'); d.exec('show startup-config'); ok(/hostname KB-R1/.test(last()) && /Using \d+ out of/.test(last()), 'shell: write saves the running-config to startup');
   }
+  // 10. copy over TFTP and FTP: the questions IOS asks, the file landing in flash, FTP logins, boot system, a config backup
+  {
+    const img = 'c2900-universalk9-mz.spa.155-3.m4a.bin';
+    const net = { devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.4300.0001' }, SRV1: { kind: 'server', ip: '10.0.43.100', mask: '255.255.255.0', gw: '10.0.43.1', files: [{ name: img, size: 97794040 }], ftp: { user: 'shell', pass: 'keys' } } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'SRV1' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.0.43.1 255.255.255.0', 'no shut', 'end'], SW1: [] }); let S = Net.build(net, d); d.R1._netState = () => (S = Net.build(net, d));
+    const R1 = d.R1; const said = () => R1.out.map(o => o.s).join('\n');
+    R1.exec('copy tftp: flash:'); ok(R1.ask && R1.prompt() === 'Address or name of remote host []? ', 'copy: asks for the remote host');
+    R1.exec('10.0.43.100'); ok(R1.prompt() === 'Source filename []? ', 'copy: asks for the source file'); R1.exec(img.toUpperCase()); ok(R1.prompt() === 'Destination filename [' + img + ']? ', 'copy: offers the source name as the destination');
+    R1.exec(''); ok(!R1.ask && R1.prompt() === 'R1#' && (R1.flash || []).some(f => f.name === img) && /\[OK - 97794040 bytes\]/.test(said()), 'copy: TFTP download lands in flash');
+    ok(new RegExp(img.replace(/\./g, '\\.')).test(Show.render(R1, 'show flash', S)) && /c2900-universalk9-mz\.SPA\.151-4\.M4\.bin/.test(Show.render(R1, 'show flash:', S)), 'show flash lists the old image and the new one');
+    ok(/network\s+rw\s+tftp:/.test(Show.render(R1, 'show file systems', S)) && /disk\s+rw\s+flash:/.test(Show.render(R1, 'show file systems', S)), 'show file systems lists disk and network types');
+    const n0 = R1.out.length; R1.exec('copy ftp://10.0.43.100/' + img + ' flash:'); R1.exec(''); ok(/Incorrect Login\/Password/.test(R1.out.slice(n0).map(o => o.s).join('\n')), 'copy: FTP refuses a box with no matching ip ftp username/password');
+    R1.exec('conf t'); R1.exec('ip ftp username shell'); R1.exec('ip ftp password keys'); R1.exec('boot system flash:' + img); R1.exec('end');
+    const n1 = R1.out.length; R1.exec('copy ftp://10.0.43.100/' + img + ' flash:'); R1.exec(''); ok(/\[OK - 97794040 bytes\]/.test(R1.out.slice(n1).map(o => o.s).join('\n')), 'copy: FTP works once the login matches');
+    const c = NetConfig.parse(R1); ok(c.ftpUser === 'shell' && c.ftpPass === 'keys' && (c.bootSystem || [])[0] === img, 'config: ip ftp username/password and boot system are parsed');
+    R1.exec('copy tftp: flash:'); R1.exec('10.0.43.100'); R1.exec('missing.bin'); R1.exec(''); ok(/No such file/.test(said()), 'copy: a file the server does not have fails');
+    R1.exec('copy running-config tftp:'); R1.exec('10.0.43.100'); ok(R1.prompt() === 'Destination filename [r1-confg]? ', 'copy: a config backup offers hostname-confg'); R1.exec('');
+    ok((R1.sent || []).some(x => x.file === 'r1-confg' && x.what === 'running-config' && x.proto === 'tftp') && R1.lines.some(r => r.line === 'copy running-config tftp://10.0.43.100/r1-confg'), 'copy: the running-config goes to the TFTP server and is recorded');
+    R1.exec('copy tftp: flash:'); R1.exec('10.0.43.99'); R1.exec(img); R1.exec(''); ok(/Timed out/.test(said()), 'copy: an address nobody answers times out');
+  }
   return { pass, fails };
 };
