@@ -175,6 +175,7 @@ Rules and numbers live there, never in a character's mouth.
 | Vesper Kade | polished and patient, never raises her voice, speaks for Halvorsen as if it were the weather, knows people's names before they say them |
 | Imani (walk-on) | a ward nurse: direct, tired, protective of patients, remembers the night the clinic went to paper |
 | Ma Tsai, Tomas, Hanna, Voss (walk-ons) | shopkeepers and a landlord: short, concrete, about their own business and what it costs them |
+| Hollis (walk-on) | the Kabuki market pharmacist: careful, counts pills and change aloud, worries about the card reader more than the money |
 
 **Still true:**
 - Slang is seasoning: "gig", "jack in", "deck", "rep", "corpo". One per scene at most, never in the sentence that

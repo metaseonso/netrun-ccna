@@ -14,6 +14,8 @@
       vtp: { mode: 'server', domain: '', version: 1, password: null, changes: 0 }, ospf: null, rip: null, eigrp: null, ipv6Routing: false, ipRouting: false, ntp: [], logging: [], snmp: [], cdp: true, lldp: false, errdisableRecovery: false
     };
   }
+  // switch security settings that sit outside the old blank(): option 82 is inserted by default, recovery is off for every cause
+  const secBlank = () => ({ recoveryCauses: new Set(), recoveryInterval: 300, option82: true, daiValidate: [], daiFilters: {}, arpAcls: {} });
   function iface(cfg, name){
     name = name.replace(/\s+/g, '');
     return cfg.interfaces[name] || (cfg.interfaces[name] = { name, ip: null, mask: null, secondary: [], shutdown: null, desc: null, mode: null, accessVlan: null, allowed: null, native: null, encap: null, dot1q: null, helpers: [],
@@ -222,12 +224,34 @@
         else if (s === 'fair-queue') c.fairQueue = true; else if (/^random-detect/.test(s)) c.wred = s; }
       if ((r.mode === 'config-if' || r.mode === 'config-if-range' || r.mode === 'config-subif') && ((m = s.match(/^service-policy (input|output) (\S+)$/)) || (m = s.match(/^mls qos trust (cos|dscp|device cisco-phone)$/)))) for (const n of ifacesOf(r.ctx)) { const i = iface(cfg, n);
         if (s.startsWith('service-policy')) (i.servicePolicy = i.servicePolicy || {})[m[1]] = m[2]; else if (m[1] === 'device cisco-phone') i.qosTrustDevice = 'cisco-phone'; else i.qosTrust = m[1]; }
+      // ---------------- switch security extras: err-disable recovery, snooping option 82 and rate limits, DAI validation, ARP ACLs and filters
+      const X = cfg.sec || (cfg.sec = secBlank());
+      if (r.mode && r.mode.startsWith('config') && r.mode !== 'config-arp-nacl' || r.mode === 'config-arp-nacl' && /^(no )?(ip arp inspection|ip dhcp snooping|errdisable) /.test(s)) {
+        if ((m = s.match(/^errdisable recovery cause (\S+)$/))) X.recoveryCauses.add(m[1]);
+        else if ((m = s.match(/^no errdisable recovery cause (\S+)$/))) X.recoveryCauses.delete(m[1]);
+        else if ((m = s.match(/^errdisable recovery interval (\d+)$/))) X.recoveryInterval = +m[1];
+        else if (s === 'ip dhcp snooping information option') X.option82 = true; else if (s === 'no ip dhcp snooping information option') X.option82 = false;
+        else if (s === 'no ip dhcp snooping') cfg.dhcp.snooping = false;
+        else if ((m = s.match(/^no ip dhcp snooping vlan ([\d,\-]+)$/))) m[1].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let v = a; v <= (b || a); v++) cfg.dhcp.snoopVlans.delete(v); });
+        else if ((m = s.match(/^no ip arp inspection vlan ([\d,\-]+)$/))) m[1].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let v = a; v <= (b || a); v++) cfg.dhcp.daiVlans.delete(v); });
+        else if ((m = s.match(/^ip arp inspection validate ((?:src-mac|dst-mac|ip)(?: (?:src-mac|dst-mac|ip))*)$/))) X.daiValidate = m[1].split(' '); // one command sets them all; a new one replaces the old
+        else if (s === 'no ip arp inspection validate' || /^no ip arp inspection validate /.test(s)) X.daiValidate = [];
+        else if ((m = s.match(/^ip arp inspection filter (\S+) vlan ([\d,\-]+)(?: static)?$/))) m[2].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let v = a; v <= (b || a); v++) X.daiFilters[v] = m[1]; });
+        else if ((m = s.match(/^no ip arp inspection filter (\S+) vlan ([\d,\-]+)/))) m[2].split(',').forEach(x => { const [a, b] = x.split('-').map(Number); for (let v = a; v <= (b || a); v++) if (X.daiFilters[v] === m[1]) delete X.daiFilters[v]; });
+        if (r.mode === 'config-if' || r.mode === 'config-if-range') for (const n of ifacesOf(r.ctx)) { const i = iface(cfg, n);
+          if ((m = s.match(/^ip dhcp snooping limit rate (\d+)$/))) i.snoopRate = +m[1]; else if (s === 'no ip dhcp snooping limit rate') i.snoopRate = null;
+          else if ((m = s.match(/^ip arp inspection limit rate (\d+)(?: burst interval (\d+))?$/))) { i.daiRate = +m[1]; i.daiBurst = m[2] ? +m[2] : 1; } else if (s === 'ip arp inspection limit rate none') i.daiRate = 'none';
+          else if (s === 'no ip dhcp snooping trust') i.snoopTrust = false; else if (s === 'no ip arp inspection trust') i.daiTrust = false; } }
+      if (r.mode === 'config-arp-nacl') { const name = r.ctx.split(' ')[2]; const a = X.arpAcls[name] || (X.arpAcls[name] = []);
+        const hostOr = (t, k) => t[k] === 'any' ? [null, k + 1] : t[k] === 'host' ? [t[k + 1], k + 2] : [null, k + 1];
+        if ((m = s.match(/^(permit|deny) ip (.+)$/))) { const t = m[2].split(' '); const [ip, k] = hostOr(t, 0); const [mac] = t[k] === 'mac' ? hostOr(t, k + 1) : [null]; a.push({ action: m[1], ip, mac, raw: s }); } }
     }
+    if (!cfg.sec) cfg.sec = secBlank();
     if (!cfg.qos) cfg.qos = { classMaps: {}, policyMaps: {} };
     cfg.hostname = dev.host;
     cfg.stp = Stp.readConfig(dev, 1);
     return cfg;
   }
 
-  window.NetConfig = { parse, blank, iface, PORTS };
+  window.NetConfig = { parse, blank, iface, PORTS, secBlank };
 })();

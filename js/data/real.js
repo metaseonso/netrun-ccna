@@ -27,10 +27,11 @@
     vocaltec: { name: 'VocalTec', owner: 'VocalTec Communications (later magicJack VocalTec)', what: 'Sold InternetPhone in February 1995, the first commercial program for talking over the internet.' },
     mit: { name: 'MIT', owner: 'Massachusetts Institute of Technology', what: 'Where Abhay Bhushan wrote the first file transfer protocol, RFC 114, in 1971.' },
     dec: { name: 'Digital Equipment Corporation', owner: 'Hewlett Packard Enterprise', what: 'Built the first packet-filtering gateways in 1988.' },
-    microsoft: { name: 'Microsoft', owner: 'Microsoft Corporation', what: 'Makes Windows and SQL Server, the server the Slammer worm hit in 2003.' },
     sri: { name: 'SRI International', owner: 'SRI International', what: 'Ran the ARPANET\'s Network Information Center, which kept HOSTS.TXT until DNS replaced it.' },
     belllabs: { name: 'Bell Labs', owner: 'Nokia Bell Labs', what: 'Where Charles Clos worked out switching networks that never block, in 1953.' },
     ibm: { name: 'IBM', owner: 'International Business Machines', what: 'Ran the first virtual machines on CP-40 in 1967.' },
-    microsoft: { name: 'Microsoft', owner: 'Microsoft Corporation', what: 'Makes Office 365, sold as software as a service, and the Hyper-V hypervisor.' }
+    microsoft: { name: 'Microsoft', owner: 'Microsoft Corporation', what: 'Makes Windows, the Hyper-V hypervisor, Office 365, sold as software as a service, and SQL Server, the server the Slammer worm hit in 2003.' },
+    cert: { name: 'CERT/CC', owner: 'Carnegie Mellon University (Software Engineering Institute)', what: 'The CERT Coordination Center, set up in November 1988 after the Morris worm: the first computer emergency response team.' },
+    lbl: { name: 'Berkeley Lab', owner: 'Lawrence Berkeley National Laboratory', what: 'Where Clifford Stoll followed a 75-cent accounting error to an intruder selling secrets to the KGB, from August 1986.' }
   };
 })();

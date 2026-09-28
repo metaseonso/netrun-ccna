@@ -470,5 +470,39 @@ module.exports.run = function({ out }){
     ok(S.stp[20].switches.B2.isRoot && S.stp[20].switches.A1.isRoot, 'stp: each island elects its own root');
     ok(d.A2.lines.some(r => r.line === 'do show spanning-tree vlan 20'), 'shell: do show spanning-tree vlan 20 keeps its VLAN number');
   }
+  // 34. switch security: an err-disabled port stays down after the offender is unplugged (shutdown / no shutdown or errdisable
+  //     recovery bring it back); option 82 (opt-in net.option82) stops an IOS DHCP server until no ip dhcp snooping information
+  //     option; DAI drops the ARP of the untrusted uplink and of static hosts until trust or an ARP ACL; the show commands
+  {
+    const net = { option82: true, devices: { R1: { kind: 'router' }, SW1: { kind: 'switch', mac: '0001.5000.0001' }, PC1: { kind: 'host', dhcp: true, mac: '0050.7966.0001' },
+        PRN: { kind: 'host', ip: '10.50.0.5', mask: '255.255.255.0', gw: '10.50.0.1', mac: '0050.7966.0005' }, BOX: { kind: 'host', flood: 6 }, BOX2: { kind: 'host', flood: 6 }, SPOOF: { kind: 'rogue', role: 'arpspoof', claims: '10.50.0.1', mac: '0bad.0bad.0001' } },
+      links: [ { a: 'R1', ap: 'gigabitethernet0/0', b: 'SW1', bp: 'gigabitethernet0/1' }, { a: 'SW1', ap: 'fastethernet0/1', b: 'PC1' }, { a: 'SW1', ap: 'fastethernet0/5', b: 'PRN' },
+        { a: 'SW1', ap: 'fastethernet0/9', b: 'BOX' }, { a: 'SW1', ap: 'fastethernet0/8', b: 'BOX2' }, { a: 'SW1', ap: 'fastethernet0/7', b: 'SPOOF' } ] };
+    const d = devs({ R1: ['en', 'conf t', 'int g0/0', 'ip add 10.50.0.1 255.255.255.0', 'no shut', 'exit', 'ip dhcp excluded-address 10.50.0.1 10.50.0.9', 'ip dhcp pool clinic', 'network 10.50.0.0 255.255.255.0', 'default-router 10.50.0.1'],
+      SW1: ['en', 'conf t', 'int range f0/8 - 9', 'switchport mode access', 'switchport port-security'] });
+    let A = Net.api(Net.build(net, d)); ok(A.errdisabled('SW1', 'f0/9') && A.errdisabled('SW1', 'f0/8'), 'errdisable: both flooding boxes shut their ports');
+    net.devices.BOX.removed = true; net.devices.BOX2.removed = true; A = Net.api(Net.build(net, d)); ok(A.errdisabled('SW1', 'f0/9') && /err-disabled/.test(Show.render(d.SW1, 'show interfaces status', A.state)), 'errdisable: the port stays err-disabled after the box is unplugged');
+    d.SW1.exec('int f0/9'); d.SW1.exec('shutdown'); d.SW1.exec('no shutdown'); A = Net.api(Net.build(net, d)); ok(!A.errdisabled('SW1', 'f0/9') && A.errdisabled('SW1', 'f0/8'), 'errdisable: shutdown then no shutdown brings back that port only');
+    d.SW1.exec('exit'); d.SW1.exec('errdisable recovery cause psecure-violation'); d.SW1.exec('errdisable recovery interval 180'); A = Net.api(Net.build(net, d)); ok(!A.errdisabled('SW1', 'f0/8'), 'errdisable: recovery for psecure-violation brings the other back');
+    ok(/psecure-violation\s+Enabled/.test(Show.render(d.SW1, 'show errdisable recovery', A.state)) && /Timer interval: 180 seconds/.test(Show.render(d.SW1, 'show errdisable recovery', A.state)), 'show errdisable recovery lists the cause and the interval');
+    ok(A.hosts.PC1.ip === '10.50.0.10', 'option 82: without snooping the router hands out the lease (' + A.hosts.PC1.ip + ')');
+    d.SW1.exec('ip dhcp snooping'); d.SW1.exec('ip dhcp snooping vlan 1'); A = Net.api(Net.build(net, d)); ok(!A.lease('PC1').ok && /snooping/.test(A.lease('PC1').reason), 'snooping: untrusted uplink drops the router\'s offer (' + A.lease('PC1').reason + ')');
+    d.SW1.exec('int g0/1'); d.SW1.exec('ip dhcp snooping trust'); d.SW1.exec('int f0/1'); d.SW1.exec('ip dhcp snooping limit rate 10'); A = Net.api(Net.build(net, d)); ok(!A.lease('PC1').ok && /option 82/.test(A.lease('PC1').reason), 'option 82: the IOS server drops the request with giaddr 0 (' + A.lease('PC1').reason + ')');
+    d.SW1.exec('exit'); d.SW1.exec('no ip dhcp snooping information option'); A = Net.api(Net.build(net, d)); ok(A.lease('PC1').ok && !A.lease('PC1').rogue, 'option 82: no ip dhcp snooping information option → the lease arrives');
+    const sn = Show.render(d.SW1, 'show ip dhcp snooping', A.state); ok(/option 82 is disabled/.test(sn) && /FastEthernet0\/1\s+no\s+10/.test(sn), 'show ip dhcp snooping shows option 82 and the rate limit (' + sn + ')');
+    ok(/00:50:79:66:00:01\s+10\.50\.0\.10\s+86400\s+dhcp-snooping\s+1\s+FastEthernet0\/1/.test(Show.render(d.SW1, 'show ip dhcp snooping binding', A.state)), 'show ip dhcp snooping binding: MAC, IP, VLAN and port');
+    ok(!A.threats.arpspoof.blocked && A.ping('PRN', '10.50.0.1').ok, 'dai: off, nothing is inspected');
+    d.SW1.exec('ip arp inspection vlan 1'); A = Net.api(Net.build(net, d)); const p1 = A.ping('PC1', '10.50.0.1');
+    ok(A.threats.arpspoof.blocked && !p1.ok && A.daiDrops.some(x => x.dev === 'R1'), 'dai: the untrusted uplink loses the router\'s ARP, so the leased PC cannot reach its gateway (' + p1.reason + ')');
+    d.SW1.exec('int g0/1'); d.SW1.exec('ip arp inspection trust'); A = Net.api(Net.build(net, d)); const p2 = A.ping('PRN', '10.50.0.1');
+    ok(A.ping('PC1', '10.50.0.1').ok && !p2.ok && /binding table/.test(p2.reason) && !A.ping('PC1', '10.50.0.5').ok, 'dai: trusted uplink; the static printer is not in the binding table and goes dark (' + p2.reason + ')');
+    d.SW1.exec('exit'); d.SW1.exec('arp access-list printers'); d.SW1.exec('permit ip host 10.50.0.5 mac host 0050.7966.0005'); d.SW1.exec('exit'); d.SW1.exec('ip arp inspection filter printers vlan 1'); d.SW1.exec('ip arp inspection validate src-mac dst-mac ip');
+    A = Net.api(Net.build(net, d)); ok(A.ping('PRN', '10.50.0.1').ok && A.ping('PC1', '10.50.0.5').ok && A.threats.arpspoof.blocked, 'dai: an ARP ACL lets the static printer through, the spoof stays blocked');
+    const ai = Show.render(d.SW1, 'show ip arp inspection', A.state); ok(/Source Mac Validation\s+: Enabled/.test(ai) && /IP Address Validation\s+: Enabled/.test(ai) && /printers/.test(ai) && /Invalid ARPs \(Res\) on Fa0\/7, vlan 1\.\(\[0bad\.0bad\.0001\/10\.50\.0\.1/.test(ai), 'show ip arp inspection shows validation, the ACL and the spoof it dropped (' + ai + ')');
+    ok(/Gi0\/1\s+Trusted\s+None/.test(Show.render(d.SW1, 'show ip arp inspection interfaces', A.state)) && /Fa0\/1\s+Untrusted\s+15/.test(Show.render(d.SW1, 'show ip arp inspection interfaces', A.state)), 'show ip arp inspection interfaces: trust state and the 15 pps default');
+    const run = (() => { const n = d.SW1.out.length; d.SW1.exec('do show running-config'); return d.SW1.out.slice(n).map(o => o.s).join('\n'); })(); ok(/arp access-list printers\n permit ip host 10\.50\.0\.5 mac host 0050\.7966\.0005/.test(run), 'running-config prints the ARP ACL');
+    d.SW1.exec('int f0/5'); d.SW1.exec('switchport mode access'); d.SW1.exec('switchport port-security'); d.SW1.exec('switchport port-security mac-address sticky'); d.SW1._netState = () => Net.build(net, d);
+    const run2 = (() => { const n = d.SW1.out.length; d.SW1.exec('do show running-config'); return d.SW1.out.slice(n).map(o => o.s).join('\n'); })(); ok(/interface FastEthernet0\/5\n switchport mode access\n switchport port-security\n switchport port-security mac-address sticky\n switchport port-security mac-address sticky 0050\.7966\.0005/.test(run2), 'running-config lists the sticky address a port learned');
+  }
   return { pass, fails };
 };
