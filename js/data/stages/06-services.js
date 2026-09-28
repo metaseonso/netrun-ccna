@@ -90,6 +90,50 @@
         { k: 'SYNC', q: { prompt: 'Imani, on the call: "So when the desk asks for records and gets 10.37.20.10 back, what kind of answer is that?"', opts: ['An AAAA record', 'An A record', 'A lease', 'A host route'], a: 1,
           yes: 'Denise: "An A record. A name and an IPv4 address."', no: 'Denise: "An A record. AAAA is the IPv6 one."',
           why: 'Denise: An A record maps a name to an IPv4 address, like records to 10.37.20.10. An AAAA record maps a name to an IPv6 address. A lease is what DHCP hands out, and a route is how a router forwards, not how a name becomes a number.' } }
+      ] },
+
+    // ------------------------------------------------------------ night 39 · DHCP
+    { id: 'n39-leases', title: 'Dora\'s desk', sub: 'DHCP', npc: 'denise', day: [39], src: [PS('DHCP.md')], unlocks: ['dhcp'],
+      beats: [
+        { k: 'SCENE', where: 'The exchange hall · the lease desk · eleven at night',
+          lines: [
+            { who: 'narr', text: 'The hall is cold tonight and the radiators tick as they warm up. By the door, under a hand-lettered sign that says LEASES, a young woman sits at a desk with a roll of numbered paper tickets, the kind a deli counter uses, and a laptop open to the exchange router\'s shell. The desk smells of photocopier toner and orange peel.' },
+            { who: 'Dora', text: 'Denise says I\'m doing the leases from now on. Which means I\'m doing the router. Which means you\'re going to watch me do the router.' },
+            { who: 'denise', text: 'Every desk, till and laptop in the district that doesn\'t have a fixed address gets one from here. [[DHCP]], the Dynamic Host Configuration Protocol. A lease gives a host its address and mask, its default gateway, its DNS server, sometimes a domain name, and a time limit.' },
+            { who: 'denise', text: 'A host asking for its first lease has no address at all, so it can\'t talk to anyone in particular. It shouts. Four messages: Discover, Offer, Request, Acknowledge.' },
+            { who: 'Dora', text: 'D, O, R, A. Yes. Everybody makes the joke. I\'ve heard it nine times this week.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'Who says what, and to whom?', reply: 'Denise: "The client sends Discover and Request, the server sends Offer and Ack. Discover is always a broadcast, because the client knows nobody. Request is broadcast too, so every server that made an offer hears which one was taken. Offer and Ack can be broadcast or unicast, depending on what the client asked for."' },
+            { tone: 'press', say: 'What about the boxes that must never move, the printers?', reply: 'Denise: "You keep their addresses out of the pool. ip dhcp excluded-address and a first and last address, in global config. The server skips them and hands out the first free address after."' },
+            { tone: 'care', say: 'How was your first week, Dora?', reply: 'Dora: "On Monday I typed ipconfig /release on my own laptop by mistake. It sent a Release to the server, straight to it, unicast, and gave the address back, and I had no address at all until I typed ipconfig /renew. Denise laughed for a full minute."' }
+          ] } },
+        { k: 'SCENE', where: 'The lease desk · Dora\'s laptop', real: ['ietf'],
+          lines: [
+            { who: 'denise', text: 'The hall\'s own desks are easy: they sit on the exchange router\'s own port, so their shout reaches it. The clinic\'s desks are behind the clinic router, and a broadcast never crosses a router.' },
+            { who: 'denise', text: 'So the clinic router becomes a [[DHCP relay]]. ip helper-address on the port the desks are on, pointing at the server. It catches the shout and forwards it to the server as a unicast, with its own port\'s address written inside, so the server knows which pool to answer from.' },
+            { who: 'Dora', text: 'And the pool is ip dhcp pool and a name. Then network, default-router, dns-server, domain-name, lease. Lease is days, hours, minutes, or infinite.' },
+            { who: 'denise', text: 'A router can be on the other end, too. ip address dhcp on an interface makes the router a DHCP client, which is how the market router takes its address from its internet provider. And show ip dhcp binding on the server lists every address it has leased, and to which hardware address.' }
+          ],
+          choice: { opts: [
+            { tone: 'ask', say: 'How does the server pick the right pool for a relayed request?', reply: 'Denise: "By the address the relay wrote in. The clinic router puts its own port\'s address, 10.37.2.1, into the request. The exchange router looks for the pool whose network holds 10.37.2.1, and leases from that one."' },
+            { tone: 'press', say: 'Why not put a DHCP server in every building?', reply: 'Denise: "Because then there are nine tables to read when something goes wrong, and nine places for someone to change something quietly. One server, one table, one person who knows it."' },
+            { tone: 'quiet', say: '(Watch Dora type.)', reply: 'She types a line, then reads it back aloud to the screen, the way Denise reads numbers back to callers. When she gets one wrong she says "no" to herself, types the no version, and does it again.' }
+          ] } },
+        { k: 'LORE', title: 'AN ADDRESS THAT FINDS YOU', year: 1993, real: ['ietf'], vibe: 'All that and a bag of chips. You plug in and the network hands you a name tag.',
+          text: 'Denise, tearing a ticket off Dora\'s roll: "In October 1993 Ralph Droms, at Bucknell University, published DHCP as RFC 1531. It grew out of an older protocol called BOOTP, from 1985, which could hand out addresses but never take them back. Droms added the lease: an address you get to keep for a while and then return. Before that, somebody like me walked round with a clipboard and wrote an address on every machine."' },
+        { k: 'KIT', text: 'Dora writes it on the back of a ticket and gives you number 39.', kit: [
+          { cmd: 'Discover → Offer → Request → Ack', what: 'client sends D and R, server sends O and A. Discover and Request always broadcast; Offer and Ack either' },
+          { cmd: 'ip dhcp excluded-address 10.37.2.1 10.37.2.49', what: 'keep fixed addresses out of the pool' },
+          { cmd: 'ip dhcp pool CLINIC · network 10.37.2.0 255.255.255.0 · default-router 10.37.2.1 · dns-server 10.37.255.1', what: 'the pool, and what a lease carries' },
+          { cmd: 'domain-name watson.net · lease 0 12 (days hours minutes, or infinite)', what: 'the domain, and how long a lease lasts' },
+          { cmd: 'interface g0/0 · ip helper-address 10.37.12.1', what: 'relay: catch the broadcast, send it on to the server as a unicast' },
+          { cmd: 'ip address dhcp', what: 'on an interface: the router becomes a DHCP client' },
+          { cmd: 'show ip dhcp binding · show ip dhcp pool', what: 'who has which address · the pools' },
+          { cmd: 'ipconfig /release · ipconfig /renew', what: 'give the lease back (a unicast Release) · ask for one again' } ] },
+        { k: 'SYNC', q: { prompt: 'Dora, testing herself out loud: "Two of the four come from the client. Which two?"', opts: ['Offer and Ack', 'Discover and Request', 'Discover and Ack', 'Request and Offer'], a: 1,
+          yes: 'Dora: "Discover and Request. The client asks twice, the server answers twice."', no: 'Denise: "Discover and Request. The server sends the Offer and the Ack."',
+          why: 'Denise: The client sends Discover, looking for any server, and Request, taking one offer. The server sends Offer, proposing an address, and Ack, confirming it. Discover and Request are broadcasts; Offer and Ack can be broadcast or unicast.' } }
       ] }
   ] });
 })();
