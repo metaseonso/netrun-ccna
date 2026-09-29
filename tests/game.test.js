@@ -111,6 +111,22 @@ module.exports.run = function({ out }){
     const r = Game.resume(); ok(r && r.step === 0 && r.fails[0] === 1 && r.cmds.length === 3 && r.devices[dev].prompt().startsWith('BOWLS'), 'dive: resume brings back the floor, the misses and the config (' + (r && r.devices[dev].prompt()) + ')');
     Game.abort(); Object.assign(Game.state, keep); if (!keep.dive) delete Game.state.dive;
   }
+  // a floor that changes the network (onPass) is replayed on resume, so the next floor can still be cleared
+  {
+    const keep = JSON.parse(JSON.stringify({ first: Game.state.first, body: Game.state.body, handle: Game.state.handle, dive: Game.state.dive || null }));
+    Game.state.handle = Game.state.handle || 'divetest'; Game.state.first = null; Game.state.body.food = 100; Game.state.body.chrome = 100;
+    const g = JOBS.find(j => j.solution && j.steps.some((st, i) => st.onPass && i < j.steps.length - 1)); const k = g.steps.findIndex(st => st.onPass);
+    Game.startJob(g.id);
+    // play the golden solution up to and including the onPass floor, through the public calls, then reload
+    const acts = g.solution.slice(); let passed = 0; while (acts.length && passed <= k) { const a = acts.shift(); const r = Game.run;
+      if (a === 'commit') { const out = Game.commit(); if (out && out.ok) passed++; continue; }
+      if (a.select) r.selected = a.select; if (a.choose != null) r.choice = a.choose; if (a.multi) r.multi = new Set(a.multi); if (a.order) r.order = a.order.slice(); if (a.form) r.form = Object.assign({}, a.form); if (a.calc) r.calc = Object.assign({}, a.calc); if (a.text != null) r.text = a.text;
+      if (a.dev) { r.active = a.dev; (a.type || []).forEach(c => Game.exec(c)); } }
+    const saved = JSON.parse(JSON.stringify(Game.state.dive)); const before = JSON.stringify(Object.keys(Game.run.devices).map(n => Game.run.devices[n].lines.length));
+    Game.abort(); Game.state.dive = saved; const r2 = Game.resume(); const after = JSON.stringify(Object.keys(r2.devices).map(n => r2.devices[n].lines.length));
+    ok(r2.step === k + 1 && before === after, 'dive: a floor\'s own network change comes back on resume (' + g.id + ', floor ' + (k + 1) + ': ' + before + ' vs ' + after + ')');
+    Game.abort(); Object.assign(Game.state, keep); if (!keep.dive) delete Game.state.dive;
+  }
   // the first night: steps only move forward, the first dive costs no chrome, no crew call rings before the crew step
   {
     const keep = JSON.parse(JSON.stringify({ first: Game.state.first, body: Game.state.body, handle: Game.state.handle, dm: Game.state.dm, rep: Game.state.rep, read: Game.state.read, roster: Game.state.roster, cards: Game.state.cards, dmLog: Game.state.dmLog, lastDmAt: Game.state.lastDmAt }));

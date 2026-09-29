@@ -131,6 +131,15 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-29 · Second playtest round fixes. A resumed dive replays each floor's own network change (`onPass`, kept in
+  `state.dive.cmds` as `['@pass', i]` in order with the commands), so a reload can no longer leave a gig unwinnable
+  (tested). The phone account menu is no longer clipped. The Board's detail is always a gig in the current list. Crew
+  calls ring on their own (a 15 s check), also on the result screen. A log-out during the dive animation cancels the dive.
+  One lit target per first-night screen; the crew step names the crew member. Focus skips disabled buttons; one yellow
+  focus ring everywhere. CODEX words show as the talks write them; term cards open above the word. Toasts: two at a time,
+  3 s, cleared on log-out. Crew calls: wrong options from sibling questions first, matching capitals, and comparison
+  answers ("fewer") asked against their opposite. On a phone the floor's question comes before the map. 229 of 363 words
+  have an official link (30 NIST glossary pages added, each checked for the game's meaning). `?v=90`.
 - 2026-09-29 · The campaign loads after the door: `index.html` marks the engines, nights, gigs and cards `type="text/lazy"`;
   `js/ui.js` fetches them in order once the door is up, and a runner already signed in sees a short JACKING IN screen.
   Door on a throttled phone 2.1 s → 0.75 s. The tools (`tools/check.js`, `play.js`, `register_cards.py`) read the lazy

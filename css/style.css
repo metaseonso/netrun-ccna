@@ -178,3 +178,7 @@ details.why summary{cursor:pointer;color:var(--yel);font-family:var(--disp);font
 
 
 @media (max-width:760px){.toast{bottom:84px;right:12px;left:12px;align-items:flex-end}} /* above the phone tab bar */
+@media (max-width:760px){
+  .run>div:last-child{order:-1} /* phone: the floor's question first, the map under it */
+  html{scroll-padding-bottom:96px;scroll-padding-top:12px} /* scrolled-to things clear the tab bar */
+}

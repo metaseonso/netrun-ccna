@@ -86,7 +86,7 @@
 @media (max-width:760px){
   #app{padding-bottom:96px}
   .hud2 .band{gap:12px;padding:0 12px}
-  .b-id{min-height:50px;overflow:hidden} .b-id .logo{font-size:14px} .b-id .logo .lgo{display:none} .b-id .logo .sh{display:inline}
+  .b-id{min-height:50px;overflow:visible;flex-wrap:nowrap} .b-id>*{flex-shrink:1;min-width:0} .b-id .logo{font-size:14px} .b-id .logo .lgo{display:none} .b-id .logo .sh{display:inline}
   .b-id .who{min-width:0} .b-id .who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .b-id .cls{padding:3px 7px;letter-spacing:.12em} .b-id .riteline,.b-id .syncchip,.hud2 .sep{display:none}
   .b-body{flex-wrap:wrap;gap:10px 16px;padding:10px 12px}
   .meter{flex:1 1 40%} .meter .mhead{flex-wrap:wrap;gap:2px 8px} .segs i{width:auto;flex:1} .meter .mcol{flex:1} .meter .segs{width:100%}
@@ -123,3 +123,5 @@
 @media (max-width:760px){.sugbtn span{display:none}}
 .b-id .syncchip span{display:none}
 @media (max-width:1150px){.b-id .sugbtn span{display:none}}
+@media (max-width:760px){ .b-id .cls,.b-id .diffchip,.b-id .acct,.b-id .sugbtn,.b-id .logo{flex-shrink:0} .b-id .who{flex:1 1 auto} }
+@media (max-width:400px){ .b-id .who .ava,.b-id .who img{display:none} .b-id .cls{letter-spacing:.06em} }
