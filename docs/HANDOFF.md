@@ -131,6 +131,11 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-29 · Third playtest round (all three testers, every check passed after these). The phone top bar fits an
+  18-letter handle at 360–414 px with no sideways scroll (logo steps aside, `CLASS` shortens to the letter under 380 px).
+  Any log-out cancels a JACK IN still in its animation (a token). The first crew call's answers and the dive's floor
+  are outlined during the first night. An empty "Open now" Board says the next gig opens with its night and links the
+  MAP. `?v=92`.
 - 2026-09-29 · Second playtest round fixes. A resumed dive replays each floor's own network change (`onPass`, kept in
   `state.dive.cmds` as `['@pass', i]` in order with the commands), so a reload can no longer leave a gig unwinnable
   (tested). The phone account menu is no longer clipped. The Board's detail is always a gig in the current list. Crew

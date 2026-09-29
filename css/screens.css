@@ -357,3 +357,5 @@
 .scene .opts.lead{outline:2px solid var(--mag);outline-offset:4px;box-shadow:none}
 body.firstnight .stn .ring{animation:none} /* the map's own pulse stays still while Dispatch is pointing */
 :focus-visible{outline:2px solid var(--yel);outline-offset:2px} /* one clear focus ring, distinct from the pink lead */
+.dm .opts.lead,.task.lead{outline:2px solid var(--mag);outline-offset:4px;box-shadow:none;animation:none}
+.dm .opts.lead,.task.lead{outline:2px solid var(--mag);outline-offset:4px;box-shadow:none;animation:none}
