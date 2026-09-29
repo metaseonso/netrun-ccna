@@ -10,7 +10,7 @@ window.PROTEGE_LINES = {
   creds: { correct: 5 },
   bond: { levels: ['closed', 'guarded', 'talking', 'trusts you', 'family'], at: [0, 1, 2, 4, 7] },
   jobs: ['a router install at a noodle bar in Kabuki', 'a switch swap at the clinic annex', 'a corpo audit in Westbrook', 'a cabling job under the Charter Hill school', 'a night shift at a Watson pawn shop', 'a small office move in City Center', 'a badge-reader network in a corpo lobby', 'a rooftop antenna job in the rain'],
-  clients: ['a corpo tech who keeps checking his watch', 'the building manager', 'a fixer I have never met', 'the owner, who is standing right behind me', 'two people from the client who have not said a word'],
+  clients: ['a corpo tech who keeps checking his watch', 'the building manager', 'a fixer I have never met', 'the owner standing right behind me', 'two people from the client who have not said a word'],
   keepsakes: ['a cracked deck with the old handle still burned into the boot screen', 'a noodle bar loyalty card, one stamp from a free bowl', 'an out-of-focus photo of the two of them at the Kabuki market', 'a paper tag that says DO NOT UNPLUG', 'a pair of chopsticks in a paper sleeve, never used'],
   dispatch: {
     send: ['Dispatch: "{name} saw your work and asked for your handle. They\'re on your crew now and they\'ll call you when a gig goes wrong."', 'Dispatch: "{name} has taken {job}. Expect a call if it goes wrong."'],

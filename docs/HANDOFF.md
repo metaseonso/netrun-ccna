@@ -131,6 +131,15 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-29 · Fixes from three Sonnet playtests of the first night and a second loop (desktop Rookie, phone Cyberpsycho,
+  edge cases). Dive-map boxes have a 64-unit tap area (phone taps hit about 90%, were 39–73%). Toasts never block taps.
+  Leaving the first dive (jack out, reload, log out) refunds its hunger and chrome (`state.firstPaid`). Keyboard focus
+  returns to the same control after a render, or to the lit one. The first night: a WALK IN button in Dispatch's
+  card, one lit target per screen, only Osi's night open until it is heard, the stall step moves on at EAT (or a
+  non-food buy), copy that matches the screens (the kit is near the end, not last), the crew panel agrees with
+  Dispatch, the cleared floor shows as a labelled line above the next one. The door counts nights, gigs, calls and
+  districts from the data (64 nights, was a typed 63). Crew calls pick wrong options shaped like the answer. Esc
+  closes the suggestion box; a reload starts at the top. `?v=88`.
 - 2026-09-29 · Speed and cleanup. Portraits are WebP (`assets/npc/<id>.webp`, 4.8 MB of PNG → 402 KB) and load when first
   shown instead of all at once on the door (the PNGs stay as masters; `tools/gen_npcs.py` writes both). Door previews are
   WebP. Page weight 5.9 MB → 0.9 MB; fully loaded on a throttled phone 7.0 s → 2.6 s. Signed-in records upload at once on

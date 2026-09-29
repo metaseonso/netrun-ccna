@@ -46,7 +46,7 @@ a{color:var(--cyan)} button{font:inherit;cursor:pointer}
 code,kbd{font-family:var(--mono);background:#0b0f18;border:1px solid var(--line);padding:1px 5px;border-radius:3px;color:var(--grn);font-size:12px}
 .tag{display:inline-block;border:1px solid var(--line);color:var(--ink2);padding:1px 7px;font-size:10px;letter-spacing:.1em;margin-right:4px;border-radius:2px;text-transform:uppercase}
 .tag.on{color:var(--grn);border-color:var(--grn)} .tag.new{color:var(--mag);border-color:var(--mag)}
-.toast{position:fixed;right:18px;bottom:18px;z-index:99;display:flex;flex-direction:column;gap:8px}
+.toast{position:fixed;right:18px;bottom:18px;z-index:99;display:flex;flex-direction:column;gap:8px;pointer-events:none} /* never swallow a tap */
 .toast div{background:#0b0f18;border:1px solid var(--grn);color:var(--grn);padding:10px 14px;font-family:var(--disp);font-size:12px;letter-spacing:.08em;box-shadow:0 0 16px rgba(77,255,136,.35);animation:pop .25s ease-out}
 .toast div.mag{border-color:var(--mag);color:var(--mag);box-shadow:0 0 16px rgba(255,63,164,.35)}
 .toast div.yel{border-color:var(--yel);color:var(--yel);box-shadow:0 0 16px rgba(255,210,63,.35)}

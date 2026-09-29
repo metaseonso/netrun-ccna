@@ -18,8 +18,8 @@
         preconfig: { R1: ['interface gigabitethernet0/0', 'ip address 192.168.1.1 255.255.255.0', 'no shutdown'] }
       },
       map: { w: 520, h: 380, nodes: [
-          { id: 'ISP', label: 'the depot and the internet', type: 'cloud', x: 260, y: 32 },
-          { id: 'FW1', label: 'A', type: 'firewall', x: 260, y: 100 }, { id: 'R1', label: 'B', type: 'router', x: 260, y: 170 },
+          { id: 'ISP', label: 'the depot and the internet', type: 'cloud', x: 260, y: 24 },
+          { id: 'FW1', label: 'A', type: 'firewall', x: 260, y: 108 }, { id: 'R1', label: 'B', type: 'router', x: 260, y: 170 },
           { id: 'SW1', label: 'C', type: 'switch', x: 260, y: 240 },
           { id: 'PC1', label: 'dispatch laptop', type: 'pc', x: 90, y: 320 }, { id: 'PC2', label: 'driver tablet', type: 'pc', x: 260, y: 320 }, { id: 'SRV1', label: 'D', type: 'server', x: 430, y: 316 } ],
         links: [ { a: 'ISP', b: 'FW1' }, { a: 'FW1', b: 'R1' }, { a: 'R1', b: 'SW1' }, { a: 'SW1', b: 'PC1' }, { a: 'SW1', b: 'PC2' }, { a: 'SW1', b: 'SRV1' } ] },
