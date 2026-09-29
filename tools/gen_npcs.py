@@ -1,7 +1,7 @@
 """gen_npcs.py — optional NPC portrait generator.
 
-Writes assets/npc/<id>.png for each NPC in js/data/npcs.js. The game uses a PNG if present,
-otherwise its own procedural pixel sprite. One image per NPC, no variants.
+Writes assets/npc/<id>.png (the master) and <id>.webp (what the game loads) for each NPC in js/data/npcs.js. The game uses the WebP,
+then the PNG, otherwise its own procedural pixel sprite. One image per NPC, no variants.
 
 Backends:
   openrouter  — illustrated cyberpunk portraits via google/gemini-3-pro-image (default)
@@ -116,6 +116,8 @@ def main():
         im = Image.open(io.BytesIO(raw)).convert("RGBA")
         if a.backend == "openrouter": im = im.resize((384, 384), Image.LANCZOS)
         im.save(path); print(f"[{npc}] saved {path} {im.size}")
+        # the game loads the WebP (about a tenth of the PNG); the PNG stays as the master copy
+        im.save(path[:-4] + ".webp", "WEBP", quality=82, method=6); print(f"[{npc}] saved {path[:-4]}.webp")
     print("done")
 
 

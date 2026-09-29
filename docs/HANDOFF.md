@@ -131,6 +131,13 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-29 · Speed and cleanup. Portraits are WebP (`assets/npc/<id>.webp`, 4.8 MB of PNG → 402 KB) and load when first
+  shown instead of all at once on the door (the PNGs stay as masters; `tools/gen_npcs.py` writes both). Door previews are
+  WebP. Page weight 5.9 MB → 0.9 MB; fully loaded on a throttled phone 7.0 s → 2.6 s. Signed-in records upload at once on
+  every sync and after 20 quiet seconds between syncs (was 4), never more than a minute behind. Removed: the Drive
+  leftovers (`checkDrive`, `driveOk`, `Auth.ensureToken`/`needsToken`), unused variables and the door-warn CSS. The door
+  still waits for all 117 scripts (635 KB gzipped, ~2 s on a slow phone); loading the campaign data after the door is the
+  next step if that matters. `?v=87`.
 - 2026-09-29 · The first night. A new record starts with `state.first = 'welcome'` and Dispatch walks the runner through
   one loop: welcome → map → talk (night 1) → board (the first gig only) → dive → paid → stall (buy one thing) → crew (a
   forced first call) → archive (where the CODEX, DECK, RECORD and JOURNAL are) → out. Each menu appears at the step

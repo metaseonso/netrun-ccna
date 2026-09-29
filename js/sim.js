@@ -19,7 +19,6 @@
     'default-information':'default-information', 'orig':'originate', 'ori':'originate', 'ip':'ip', 'ipv6':'ipv6', 'ssh':'ssh', 'trap':'traps', 'community':'community', 'comm':'community', 'sec':'secret',
     'protocol':'protocol', 'prot':'protocol', 'vlan':'vlan', 'name':'name', 'lldp':'lldp', 'cdp':'cdp', 'ru':'run', 'g':'gigabitethernet' };
 
-  const IF_RE = /^(gigabitethernet|gi|g|fastethernet|fa|f|ethernet|e|loopback|lo|serial|se|s|vlan|port-channel|po|tunnel)\s*(\d+(?:\/\d+)*(?:\.\d+)?)$/i;
   const IF_MAP = { g:'gigabitethernet', gi:'gigabitethernet', gigabitethernet:'gigabitethernet', fa:'fastethernet', f:'fastethernet', fastethernet:'fastethernet', e:'ethernet', ethernet:'ethernet',
     lo:'loopback', loopback:'loopback', se:'serial', s:'serial', serial:'serial', vlan:'vlan', po:'port-channel', 'port-channel':'port-channel', tunnel:'tunnel' };
 

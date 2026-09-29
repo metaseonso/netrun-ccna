@@ -10,12 +10,13 @@
   function rich(text){ return esc(text).replace(/\[\[([^\]]+)\]\]/g, (m, t) => { const def = GLOSSARY[t.toLowerCase()] || 'See the codex.'; return '<span class="term" data-def="' + esc(def) + '">' + esc(t) + '</span>'; })
       .replace(/"([^"]{2,80}?)"/g, (m, q) => /^[a-z0-9 \-\/\.\,]+$/i.test(q) && /^(show|spanning-tree|configure|interface|enable|write|copy|ip |vlan|hostname|switchport|do |no |root|end$|ping|access-list|router)/i.test(q) ? '<code>' + q + '</code>' : m); }
   function toast(msg, cls){ let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); } const d = document.createElement('div'); d.className = cls || ''; d.textContent = msg; t.appendChild(d); setTimeout(() => d.remove(), 4200); }
-  const portraits = {}; // npc id -> true (file exists) | false (missing); unknown until the preload answers
-  function preloadPortraits(){ Object.keys(NPCS).forEach(id => { if (portraits[id] !== undefined) return; const im = new Image(); im.onload = () => { portraits[id] = true; }; im.onerror = () => { portraits[id] = false; }; im.src = 'assets/npc/' + id + '.png'; }); }
+  // portraits load when first shown: assets/npc/<id>.webp, then the generator's .png, then the procedural sprite
+  const portraits = {}; // npc id -> 'webp' | 'png' (what loaded) | false (neither); unknown until one is shown
   function npcEl(id, size, look){ const n = NPCS[id] || { name: id, look: look || { seed: String(id) } }; const wrap = document.createElement('span'); wrap.style.display = 'inline-block'; wrap.style.lineHeight = '0';
     const apply = el => { if (size) { el.style.width = size + 'px'; el.style.height = size + 'px'; } return el; };
     const sprite = () => { const cv = document.createElement('canvas'); Sprite.animate(cv, look || n.look); wrap.innerHTML = ''; wrap.appendChild(apply(cv)); };
-    if (NPCS[id] && portraits[id] !== false) { const img = new Image(); img.alt = n.name; img.decoding = 'async'; img.style.background = '#0b0f18'; img.src = 'assets/npc/' + id + '.png'; img.onload = () => { portraits[id] = true; }; img.onerror = () => { portraits[id] = false; sprite(); }; wrap.appendChild(apply(img)); return wrap; }
+    if (NPCS[id] && portraits[id] !== false) { const img = new Image(); let ext = portraits[id] || 'webp'; img.alt = n.name; img.decoding = 'async'; img.style.background = '#0b0f18';
+      img.onload = () => { portraits[id] = ext; }; img.onerror = () => { if (ext === 'webp') { ext = 'png'; img.src = 'assets/npc/' + id + '.png'; } else { portraits[id] = false; sprite(); } }; img.src = 'assets/npc/' + id + '.' + ext; wrap.appendChild(apply(img)); return wrap; }
     sprite(); return wrap; }
   const npcSlot = (id, size) => '<span class="npcslot" data-npc="' + esc(id) + '" data-size="' + size + '"></span>';
   const pSlot = (p, size) => '<span class="npcslot" data-protege="' + esc(p.id) + '" data-size="' + size + '"></span>';
@@ -164,7 +165,7 @@
          ['talk', 'THE TALK', 'One topic a night, in course order, taught in a scene. Each talk ends with a kit of the commands and numbers you need.'],
          ['call', 'THE CALL', 'Your crew calls with questions from the course decks, on a 60-second clock. The ones you miss come back sooner.'],
          ['board', 'THE BOARD', '68 gigs rebuilt from the course labs, from cabling and subnetting to OSPF, ACLs, NAT and automation.']]
-          .map(([f, t, d]) => '<figure><a href="assets/preview/' + f + '.jpg" target="_blank" rel="noopener"><img src="assets/preview/' + f + '.jpg" alt="' + t.toLowerCase() + ' screen" loading="lazy" width="1280" height="800"></a><figcaption><b>' + t + '</b><span>' + d + '</span></figcaption></figure>').join('') + '</div></section>' +
+          .map(([f, t, d]) => '<figure><a href="assets/preview/' + f + '.webp" target="_blank" rel="noopener"><img src="assets/preview/' + f + '.webp" alt="' + t.toLowerCase() + ' screen" loading="lazy" width="1280" height="800"></a><figcaption><b>' + t + '</b><span>' + d + '</span></figcaption></figure>').join('') + '</div></section>' +
       '<footer class="footer"><div>Course: <a href="https://www.youtube.com/@JeremysITLab" target="_blank" rel="noopener">Jeremy\'s IT Lab</a> · Notes: <a href="https://github.com/psaumur/CCNA_Course_Notes" target="_blank" rel="noopener">psaumur</a>, <a href="https://github.com/sparrowjumpy/CCNA-Notes" target="_blank" rel="noopener">sparrowjumpy</a> · Sounds: <a href="https://opengameart.org/users/jc-sounds" target="_blank" rel="noopener">JC Sounds</a> (CC-BY 4.0), <a href="https://opengameart.org/users/little-robot-sound-factory" target="_blank" rel="noopener">Little Robot Sound Factory</a> (CC-BY 3.0), <a href="https://opengameart.org/users/urizen-composer" target="_blank" rel="noopener">Urizen Composer</a> (OGA-BY 4.0), <a href="https://kenney.nl" target="_blank" rel="noopener">Kenney</a>, <a href="https://opengameart.org/users/rubberduck" target="_blank" rel="noopener">rubberduck</a>, <a href="https://opengameart.org/users/haeldb" target="_blank" rel="noopener">HaelDB</a> (CC0) · MIT License · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></div>' +
       '</footer></div>'; }
   // ---- the map: one line through the districts, a dot per night, a panel for the district you pick -----
@@ -657,5 +658,5 @@
   document.addEventListener('input', e => { const r = Game.run; if (!r || !e.target.dataset) return; if (e.target.dataset.calc) r.calc[e.target.dataset.calc] = e.target.value; if (e.target.dataset.form) r.form[e.target.dataset.form] = e.target.value; if (e.target.dataset.text) r.text = e.target.value; });
 
   window.UI = { render, toast, go: v => { view = v; render(); } };
-  document.addEventListener('DOMContentLoaded', () => { preloadPortraits(); if (window.Auth) Auth.init(window.PLATFORM); render(); });
+  document.addEventListener('DOMContentLoaded', () => { if (window.Auth) Auth.init(window.PLATFORM); render(); });
 })();

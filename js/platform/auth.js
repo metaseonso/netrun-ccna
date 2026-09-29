@@ -5,7 +5,7 @@
    on every reload and every later day. Signing out deletes the key on both ends.
    Inactive until config/platform.js has googleClientId and dbUrl.
    API: Auth.configured, Auth.user(), Auth.token() (the device key), Auth.mountButton(el), Auth.signIn(), Auth.signOut(),
-   Auth.onChange(cb), Auth.needsToken() (always false now), Auth.ensureToken(). */
+   Auth.onChange(cb). */
 (function(){
   const KEY = 'netrunner-ccna-session', OLD = 'netrunner-ccna-google';
   const listeners = []; let session = null; let waiters = []; let ready = false, told = false; const mounted = new Set();
@@ -37,8 +37,6 @@
       try { google.accounts.id.renderButton(el, { type: 'standard', theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', logo_alignment: 'left', locale: 'en', width: Math.min(360, Math.max(220, el.clientWidth || 300)) }); } catch (e) { console.warn('gsi button', e); } },
     user(){ return session ? session.user : null; },
     token(){ return session ? session.key : null; },
-    needsToken(){ return false; },
-    ensureToken(){ return Promise.resolve(this.token()); },
     // the One Tap prompt, for a click that is not on Google's button; the button stays the reliable path
     signIn(){ if (!this.configured) return Promise.reject(new Error('sign-in is not configured')); return new Promise(res => { waiters.push(res); try { google.accounts.id.prompt(n => { if (n && (n.isNotDisplayed && n.isNotDisplayed() || n.isSkippedMoment && n.isSkippedMoment())) settle(null); }); } catch (e) { settle(null); } }); },
     // the Watson DB no longer knows this key (signed out on another device, or removed): drop it here too

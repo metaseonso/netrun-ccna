@@ -1,6 +1,6 @@
 /* npcs.js — the cast. Each NPC works a trade that is one system of the network. The name gives the system away.
    In the world they are people: a job, a history, someone they argue with. `look` feeds sprite.js.
-   Drop assets/npc/<id>.png in to use real art instead of the procedural sprite. */
+   Drop assets/npc/<id>.webp (and the .png master) in to use real art instead of the procedural sprite. */
 window.NPCS = {
   dispatch: { name: 'Dispatch', sys: 'Job board · HUD messages', role: 'runs the job booth in Watson. Knows everyone\'s history. Sends a better gig instead of saying well done.',
     voice: 'short messages, dry, loyal to people who finish what they start.',

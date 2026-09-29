@@ -23,9 +23,12 @@
   // a handle-only record lives in this browser. a Google record lives only in the Watson DB: memory while playing, the Watson DB on every save.
   let dirty = false, inflight = null, flushTimer = null, names = null;
   const save = () => { if (!state.handle) return; state.updated = Date.now(); if (state.owner) { dirty = true; flush(); return; } Storage.local.saveSync(state.handle, state); Storage.local.setCurrent(state.handle); };
-  // Watson DB writes: one in flight at a time, a few seconds apart while playing, at once on a sync, LOG OUT, SIGN OUT or a hidden tab.
+  // Watson DB writes: one in flight at a time; at once on a sync (every talk and gig), LOG OUT, SIGN OUT or a hidden tab; between
+  // syncs after 20 quiet seconds, and never more than a minute behind. Each write sends the whole record, so fewer is better.
+  let dirtySince = 0;
   function flush(now){ if (!state.owner || !dirty) return inflight || Promise.resolve(true); if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
-    if (!now) { flushTimer = setTimeout(() => flush(true), 4000); return Promise.resolve(false); }
+    if (!now) { if (!dirtySince) dirtySince = Date.now(); flushTimer = setTimeout(() => flush(true), Math.max(0, Math.min(20000, dirtySince + 60000 - Date.now()))); return Promise.resolve(false); }
+    dirtySince = 0;
     if (inflight) return inflight.then(() => flush(true));
     if (!(window.Auth && Auth.token()) || !Storage.remote.ready()) return Promise.resolve(false); // stays dirty until signed in again
     const h = state.handle, snap = JSON.parse(JSON.stringify(state)); dirty = false;
@@ -238,7 +241,7 @@
   // ---- golden solution runner (tools/check.js and the dev panel) --------------------
   function runSolution(jobId, opts){ opts = opts || {}; const job = JOBS.find(j => j.id === jobId); if (!job) return { ok: false, error: 'no job ' + jobId }; if (!job.solution) return { ok: false, error: 'job has no solution', job: jobId };
     const snap = JSON.stringify(state); const savedRun = run; const res = { job: jobId, ok: true, steps: [], warnings: [], error: null };
-    try { startJob(jobId, { silent: true }); const r = run; let i = 0; if (opts.hireFixer) { state.creds = Math.max(state.creds || 0, fixer.price(job)); res.fixer = fixer.hire(); } const acts = job.solution.slice(); let stepIdx = 0; let checkedVacuous = -1;
+    try { startJob(jobId, { silent: true }); const r = run; let i = 0; if (opts.hireFixer) { state.creds = Math.max(state.creds || 0, fixer.price(job)); res.fixer = fixer.hire(); } const acts = job.solution.slice(); let checkedVacuous = -1;
       const vac = () => { if (checkedVacuous === r.step) return; checkedVacuous = r.step; const st = currentStep(); if (!st) return; const e = evaluate(); if (e.ok && st.type !== 'choice') res.warnings.push('step ' + (r.step + 1) + ' (' + st.type + ') passes before any action — the check is vacuous'); };
       for (const a of acts) { if (r.result) { res.warnings.push('solution has actions after the gig finished'); break; } vac();
         if (a === 'commit') { const st = currentStep(); const out = commit(); res.steps.push({ i: r.done.length, type: st.type, skill: st.skill, ok: !!out.ok, why: out.ok ? null : (r.feedback && r.feedback.text) }); if (!out.ok) { res.ok = false; res.error = 'step ' + (r.step + 1) + ' (' + st.type + ' · ' + st.skill + ') did not pass: ' + (r.feedback && r.feedback.text); res.console = Object.fromEntries(Object.entries(r.devices).map(([n, d]) => [n, d.out.slice(-6).map(o => o.s).join('\n')])); if (out.err) res.error += ' [' + out.err.message + ']'; break; } continue; }
@@ -271,19 +274,17 @@
   const LAST = 'netrunner-ccna-last-google'; // the last handle's name for this account, so the door can offer it. a name, not a record.
   const lastHandle = () => { try { const v = JSON.parse(localStorage.getItem(LAST) || 'null'); const u = gUser(); return v && u && v.id === u.id ? v.h : null; } catch (e) { return null; } };
   const setLast = h => { try { const u = gUser(); if (h && u) localStorage.setItem(LAST, JSON.stringify({ id: u.id, h })); else localStorage.removeItem(LAST); } catch (e) {} };
-  let driveOk = null, linking = false, linkP = Promise.resolve();
+  let linking = false, linkP = Promise.resolve();
   function myHandles(){ if (!gUser() || !names) return []; const l = lastHandle(); return names.slice().sort((a, b) => (b === l) - (a === l)); }
   function deckHandles(){ return Storage.local.listSync().filter(h => { const r = Storage.local.loadSync(h); return !(r && r.owner); }); }
-  // records live in the Watson DB behind this device's key (platform/auth.js); there is no folder to check any more
-  let driveWhy = null;
-  async function checkDrive(){ driveWhy = null; return true; }
+  // records live in the Watson DB behind this device's key (platform/auth.js)
   async function openBound(h, u){ let rec = await Storage.remote.load(h); if (rec && !usable(rec)) rec = null; const isNew = !rec;
     state = migrate(rec || Object.assign(fresh(), { handle: h })); state.handle = h; state.owner = u.id; state.pass = null; run = null; setLast(h);
     if (isNew) { log('Handle registered: ' + h); dirty = true; await flush(true); } return { ok: true, isNew }; }
   // a signed-in player never types a passcode. a handle on this deck with no account binds as it is opened and leaves the browser.
   async function claimHandle(h, pass){ const u = gUser(); if (!u) return setHandle(h, pass); h = (h || '').trim().slice(0, 18); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' };
-    if (!Auth.token()) { const t = await Auth.ensureToken(); if (!t) return { ok: false, why: 'Google did not answer. try again.', field: 'handle' }; }
-    await linkP; if (driveOk === false) return { ok: false, why: 'sign in with Google again.', field: 'handle' };
+    if (!Auth.token()) return { ok: false, why: 'sign in with Google again.', field: 'handle' };
+    await linkP;
     if (names && names.includes(h)) return openBound(h, u);
     const local = Storage.local.loadSync(h);
     if (local && local.owner && local.owner !== u.id) return { ok: false, why: h + ' belongs to another account on this deck. pick another handle.', field: 'handle' };
@@ -297,11 +298,11 @@
   // and reopen the handle this device last played, so a reload lands back in the game. LOG OUT clears that, so the door stays shut.
   function onAuth(user){ linkP = link(user); return linkP; }
   async function link(user){ const draw = () => { if (window.UI) UI.render(); };
-    if (!user) { Storage.useLocal(); names = null; driveOk = null; if (state.owner) { run = null; state = fresh(); dirty = false; } setLast(null); return draw(); }
+    if (!user) { Storage.useLocal(); names = null; if (state.owner) { run = null; state = fresh(); dirty = false; } setLast(null); return draw(); }
     if (state.owner && state.owner !== user.id) { run = null; state = fresh(); dirty = false; }
     if (!Auth.token()) return draw();
     linking = true; draw();
-    try { driveOk = await checkDrive(); if (!driveOk) return;
+    try {
       if (state.handle && !state.owner) { const h = state.handle; state.owner = user.id; state.pass = null; Storage.local.remove(h); Storage.local.setCurrent(null); setLast(h); log('Handle bound to ' + (user.email || user.name)); dirty = true; }
       for (const h of Storage.local.listSync()) { const local = Storage.local.loadSync(h); if (!local || local.owner !== user.id) continue; const remote = await Storage.remote.load(h); if (usable(local) && (!remote || (local.updated || 0) > (remote.updated || 0)) && !await Storage.remote.save(h, local)) continue; Storage.local.remove(h); }
       names = await Storage.remote.list(); if (dirty) await flush(true);
@@ -312,5 +313,5 @@
   // closing the tab with a Google record not yet in the Watson DB: push it, and let the browser ask before it goes.
   window.addEventListener('beforeunload', e => { const unsaved = state.owner && (dirty || inflight); Telemetry.touch(state); if (!state.owner) return save(); if (unsaved) { flush(true); e.preventDefault(); e.returnValue = ''; } });
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get driveOk(){ return driveOk; }, get driveWhy(){ return driveWhy; }, recheckDrive(){ const u = gUser(); return u ? onAuth(u) : Promise.resolve(); }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, pay, repOf, shop, fixer, codexStatus, nightDone, licenseRecord, cardThemes, setLicense, setDifficulty, first: { get at(){ return state.first || null; }, steps: FIRST_STEPS, go(step){ if (!state.first || !FIRST_STEPS.includes(step) || FIRST_STEPS.indexOf(step) <= FIRST_STEPS.indexOf(state.first)) return false; state.first = step; ev('first', { step }); save(); return true; }, back(step){ if (state.first && FIRST_STEPS.includes(step)) { state.first = step; save(); } }, end(how){ if (!state.first) return false; ev('first', { step: how || 'done', from: state.first }); state.first = null; save(); return true; } }, get difficulty(){ return state.difficulty; }, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, pay, repOf, shop, fixer, codexStatus, nightDone, licenseRecord, cardThemes, setLicense, setDifficulty, first: { get at(){ return state.first || null; }, steps: FIRST_STEPS, go(step){ if (!state.first || !FIRST_STEPS.includes(step) || FIRST_STEPS.indexOf(step) <= FIRST_STEPS.indexOf(state.first)) return false; state.first = step; ev('first', { step }); save(); return true; }, back(step){ if (state.first && FIRST_STEPS.includes(step)) { state.first = step; save(); } }, end(how){ if (!state.first) return false; ev('first', { step: how || 'done', from: state.first }); state.first = null; save(); return true; } }, get difficulty(){ return state.difficulty; }, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
 })();

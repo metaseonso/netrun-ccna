@@ -238,7 +238,6 @@
 .door-id{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);background:var(--bg);margin:0}
 .door-id img{width:34px;height:34px;border-radius:50%;border:1px solid var(--cyan)} .door-id span{flex:1;display:flex;flex-direction:column}
 .door-id b{color:var(--ink)} .door-id em{font-style:normal;font-size:11px;color:var(--ink2)}
-.door2 .door-warn{margin:0;max-width:none}
 .door2 .footer{display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:18px;border-top:1px solid var(--line);font-size:11px;color:var(--ink2);text-align:center}
 .door2 .footer a{color:var(--ink2);text-decoration:underline;text-decoration-color:var(--line)} .door2 .footer a:hover{color:var(--cyan)}
 @media (max-width:860px){.dgrid{grid-template-columns:1fr}   .login{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .login .btn{grid-column:1 / -1;height:44px} .login.one{grid-template-columns:minmax(0,1fr) auto} .login.one .btn{grid-column:auto}

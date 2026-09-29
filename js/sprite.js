@@ -1,6 +1,6 @@
 /* sprite.js — procedural pixel NPC portraits.
    Draws a 24x24 pixel bust on a canvas from an NPC "look" spec.
-   If assets/npc/<id>.png exists it is used instead (see ui.js). */
+   If assets/npc/<id>.webp (or .png) exists it is used instead (see ui.js). */
 (function(){
   const W = 24, H = 24;
 

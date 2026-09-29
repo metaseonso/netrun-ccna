@@ -19,8 +19,8 @@ so the game kept opening Google popups. That build is gone. Old Drive records do
 - **The Google account is the key to the handles.** After sign-in the door lists every handle on that account and
   reopens the last one. No passcode. A handle is bound (`state.owner` = the Google user id) the first time it is used.
   A bound handle cannot be opened with a passcode. SIGN OUT sends a bound handle back to the door.
-- A signed-in record lives in memory while playing. `save()` marks it dirty; `flush()` writes it a few seconds
-  later, at once on a sync, LOG OUT, SIGN OUT and a hidden tab. Closing the tab with an unsaved record makes the
+- A signed-in record lives in memory while playing. `save()` marks it dirty; `flush()` writes it at once on a sync
+  (every talk and gig), LOG OUT, SIGN OUT and a hidden tab; between syncs after 20 quiet seconds, at most a minute late. Closing the tab with an unsaved record makes the
   browser ask first.
 - Limits per account: 20 handles, 2 MB per record (a full playthrough is about 210 KB).
 - Local handles (name + passcode, no Google) stay in the browser, logged in until LOG OUT. They are not security.

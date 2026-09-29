@@ -41,7 +41,7 @@
   const vtpChange = cfg => { if (cfg.vtp.mode === 'server' || cfg.vtp.mode === 'client') cfg.vtp.changes++; };
   function parse(dev){
     const cfg = blank(); if (!dev) return cfg;
-    let aclName = null, dhcpPool = null, ospf = null, natCtx = null;
+    let dhcpPool = null, ospf = null, natCtx = null;
     for (const r of dev.lines) {
       const s = r.line; let m; const T = s.split(' ');
       // ---------------- global config
