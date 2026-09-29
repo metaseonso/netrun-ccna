@@ -22,7 +22,7 @@ then `docs/CAMPAIGN_GUIDE.md` (how to write content), `docs/STORY_BIBLE.md` (how
 | The dive transition, braindance title cards, in-world interface vocabulary | `js/ui.js`, `css/world.css` | done |
 | Golden-solution runner | `Game.runSolution` in `js/game.js`, `tools/check.js` | done |
 | Dev panel (`?dev=1`): lint, step diagnosis, net state, ping tester, golden runs, cards | `js/ui.js` | done |
-| Sign in with Google + saves in the player's Drive | `js/platform/*.js`, `config/platform.js`, `docs/AUTH_PLAN.md` | live |
+| Sign in with Google (once per device) + saves in the Watson DB | `js/platform/*.js`, `tools/watson-db.gs`, `docs/AUTH_PLAN.md` | live 2026-09-29 |
 | Local handles: name + passcode, remembered until LOG OUT | `Game.setHandle(h, pass)` in `js/game.js`, the door in `js/ui.js` | complete; not security, by design |
 | The body: FOOD and CHROME meters, gig costs, food + ripperdoc at the stall, Marrow's tab | `Game.body` in `js/game.js`, `js/data/shop.js` | tuned 2026-09-28 by simulation (see Rules) |
 | Syncs (the only save) + the FLATLINED screen with reload / exit | `Game.sync`, `Game.reload`, `Game.flatline`; `deadView()` in `js/ui.js` | complete; no export/import exists on purpose |
@@ -113,7 +113,7 @@ Definition of done for a day:
 - Archetype voice lines are seed content: 3–4 lines per situation. Add depth, keep every situation covered (lint warns).
 - The crew's calls use real-time spacing (10 min, 1 h, 1 d …). In dev, DEV → CALLS → FORCE CALL.
 - All 72 decks are imported. Six decks (days 3, 5, 59, 61) and Terraform use Anki's compressed format; `tools/import_apkg.py` now reads it (needs `pip install zstandard`). Card pictures: `tools/extract_card_images.py` → `js/data/cards/images.js`, shown in crew calls.
-- Sign-in is live (Google, saves in the player's own Drive; `docs/AUTH_PLAN.md`). Never touch `js/platform/` for content.
+- Sign-in is live (Google once per device, a device key, saves in the Watson DB; `docs/AUTH_PLAN.md`). Never touch `js/platform/` for content.
 - Save records are `VERSION` 3. Older records are dropped, not migrated. New keys go in `fresh()` with a default;
   do not raise `VERSION` for that.
 - Mobile: every screen fits a 360px phone (checked 2026-09-28). The dive (map + console side by side) stacks; test it once
@@ -131,6 +131,11 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-29 · Sign-in without popups. Google is identity only (`google.accounts.id` button, ID token, no Drive).
+  The Watson DB checks the token with Google and issues a device key that never expires (hashed in the `sessions`
+  tab); records live in its `records` tab (`{kind:'rec'}`: list/load/save/remove). `js/platform/auth.js` and
+  `storage.js` rewritten; the RECONNECT button and the Drive box are gone. The door reopens the last handle. Old
+  Drive records do not carry over. Needs the 2026-09-29 script redeploy (`docs/WATSON_DB.md`). `?v=81`.
 - 2026-09-28 · Difficulty is picked once before the campaign (`diffGate` replaces every screen until `state.diffPicked`);
   after that `Game.setDifficulty` only lowers it, never raises it. Lowering lives in the account menu (LOWER DIFFICULTY,
   with a warning that it can't be undone and the higher license is gone); the HUD shows the stars with a help tip.

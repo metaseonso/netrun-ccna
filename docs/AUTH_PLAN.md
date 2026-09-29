@@ -1,64 +1,39 @@
-# Sign in with Google, saves in the player's Drive
+# Sign in with Google, once per device; saves in the Watson DB
 
-No backend. No database. Nothing to host or pay for. The code is complete and live in the repo; it switches on
-when one value is filled in: `googleClientId` in `config/platform.js`.
+Changed 2026-09-29. The old build kept records in the player's Google Drive app folder. Drive tokens last one hour,
+so the game kept opening Google popups. That build is gone. Old Drive records do not carry over.
 
-## What happens when it is on
+## How it works
 
-- The door and the HUD show **SIGN IN WITH GOOGLE**. Google's own popup asks for the account and for permission
-  to keep the game's files in the player's Drive.
-- Every record (one per handle) is written as a small JSON file into the player's Google Drive **app folder**.
-  That folder is hidden from the player's normal Drive view and only this app can read it. The player can revoke it
-  any time at myaccount.google.com → Security → Third-party access.
-- **The Google account is the key.** After sign-in the door shows "signed in as …", a JACK IN button for every
-  handle on that account, and one field for a new handle. No passcode. A handle is bound to the account
-  (`state.owner` = the Google user id) the first time it is used. A signed-in player never types a passcode: an
-  unbound local handle binds as it is opened, a handle already in the account's Drive binds on sign-in, and the
-  handle in use when the player presses SIGN IN in the HUD binds at once.
-- A bound handle cannot be opened with a passcode. SIGN OUT sends a bound handle back to the door.
-- **A Google record lives only in the player's Drive.** Never in localStorage. While playing it is in memory;
-  `save()` marks it dirty and `flush()` writes it to Drive a few seconds later, at once on a sync, LOG OUT,
-  SIGN OUT and a hidden tab. If the token has run out, the write waits and the HUD's RECONNECT pushes it. Closing
-  the tab with an unsaved record makes the browser ask first. The browser keeps only the identity (`auth.js`) and
-  the last handle's name (`netrunner-ccna-last-google`); SIGN OUT removes both.
-- On sign-in the game makes one small Drive call to check the folder, then lists handle names. A record loads only
-  when the player picks it. Records older builds kept in the browser for this account are moved up and deleted
-  locally. Handle-only records on a shared deck stay on the deck.
-- **The Drive box.** Google shows the drive.appdata permission as a checkbox, unticked, and no site can tick it.
-  The door explains it before sign-in. If it is not ticked, the door says so and offers ALLOW DRIVE. Saves go up at most every 15 seconds, and at once on LOG OUT
-  or when the tab is hidden.
-- Google tokens last one hour. The name stays in the HUD; when the token is gone a **RECONNECT** button pulses.
-  One click renews it (the popup needs a click, browsers block it otherwise). Background saves never open popups.
-- Nothing about a player ever leaves their browser except to Google's own APIs.
-- Remembering the player is the standard. A Google account stays signed in on that browser until SIGN OUT. A local
-  handle (name + passcode, no Google) stays logged in until LOG OUT. There is no "remember me" box and there will not be one.
-- Local handles are not security. The passcode keeps two people on one deck out of each other's record; that is all it
-  is for, and the owner accepted that.
+- Google is used for **identity only**. The door and the account menu show Google's own **Continue with Google**
+  button (Google Identity Services, `google.accounts.id`). Scopes: `openid email profile`. No Drive.
+- Google gives the page an ID token. `js/platform/auth.js` posts it to the Watson DB (`{kind:'session', idToken}`).
+- `tools/watson-db.gs` checks the token with Google (tokeninfo: audience, issuer, expiry), then makes a random
+  64-hex **device key**. The sheet keeps only its SHA-256 hash (`sessions` tab). The page keeps the key in
+  localStorage (`netrunner-ccna-session`).
+- From then on the key is all the device needs. Records list, load, save and delete through the Watson DB
+  (`{kind:'rec', key, op}`, `records` tab, one row per handle, the JSON split into 45,000-character cells). No Google
+  call, no popup, on every reload and every later day. The key does not expire.
+- **SIGN OUT** deletes the key in the browser and in the sheet. If the sheet no longer knows a key (signed out
+  elsewhere, row deleted), the next call answers `signedOut` and the page returns to the door.
+- **The Google account is the key to the handles.** After sign-in the door lists every handle on that account and
+  reopens the last one. No passcode. A handle is bound (`state.owner` = the Google user id) the first time it is used.
+  A bound handle cannot be opened with a passcode. SIGN OUT sends a bound handle back to the door.
+- A signed-in record lives in memory while playing. `save()` marks it dirty; `flush()` writes it a few seconds
+  later, at once on a sync, LOG OUT, SIGN OUT and a hidden tab. Closing the tab with an unsaved record makes the
+  browser ask first.
+- Limits per account: 20 handles, 2 MB per record (a full playthrough is about 210 KB).
+- Local handles (name + passcode, no Google) stay in the browser, logged in until LOG OUT. They are not security.
+  The owner accepted that.
 
-## Setting it up (owner, about ten minutes, once)
+## Setup
 
-1. Go to https://console.cloud.google.com/ and make a project. Name: `netrunner-ccna`.
-2. **APIs & Services → Library**: enable **Google Drive API**.
-3. **APIs & Services → OAuth consent screen** (now called "Google Auth Platform → Branding / Audience"):
-   - User type **External**. App name `NETRUNNER://CCNA`, your support email, your email as developer contact.
-   - **Scopes**: add `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`, and
-     `https://www.googleapis.com/auth/drive.appdata`.
-   - **Audience**: while it says **Testing**, only the emails you list under Test users can sign in (up to 100).
-     Click **Publish app** when you want anyone to sign in. The scopes above are the low-risk kind; if Google asks
-     for a verification review anyway, the app still works for test users while it is pending.
-4. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
-   - Application type **Web application**. Name `netrunner web`.
-   - **Authorized JavaScript origins**: `https://metaseonso.github.io` and `http://127.0.0.1:8765` and `http://localhost:8765`.
-   - No redirect URIs are needed (token flow, popup).
-   - Copy the **Client ID** (ends in `.apps.googleusercontent.com`). It is public; the repo can hold it.
-5. Paste it into `config/platform.js`:
+Already done. `config/platform.js` holds `googleClientId` and `dbUrl`. The client id is also written in
+`tools/watson-db.gs` (`CLIENT_ID`); if the client id ever changes, change both.
 
-   ```js
-   googleClientId: 'PASTE-IT-HERE.apps.googleusercontent.com',
-   ```
-
-6. Commit, push, open the live site, click SIGN IN WITH GOOGLE, play one gig, open the site in another browser,
-   sign in, and the handle is on the door with the gig done.
+The Google Cloud OAuth client needs only the **Authorized JavaScript origins** (`https://metaseonso.github.io`,
+`http://127.0.0.1:8765`, `http://localhost:8765`). The Drive API and the `drive.appdata` scope are no longer used; the
+owner may remove them from the consent screen.
 
 ## For the campaign author
 
@@ -66,12 +41,4 @@ when one value is filled in: `googleClientId` in `config/platform.js`.
   `fresh()` in `js/game.js` and a fill-in in `migrate()`.
 - `VERSION` in `js/game.js` is 3. Raising it **drops** every older record on purpose (alpha rule). Do not raise it
   for a new key; only for a shape change that cannot be filled in.
-- A signed-in player with no token is normal (the hour ran out). Everything still saves locally; the RECONNECT
-  button handles the rest.
-
-## Why Google Drive and not a database
-
-A database needs an account, a schema, row-level rules, a key in the page and a bill. The Drive app folder is per
-player, per app, free, and the player owns it. For a static GitHub Pages game with a few hundred players that is the
-right size. If the game later needs leaderboards or shared crews, add a small backend then; the `Storage` adapter
-interface (`list/load/save/remove`) is the seam.
+- The `Storage` adapter interface (`list/load/save/remove`) is the seam if the store ever moves again.

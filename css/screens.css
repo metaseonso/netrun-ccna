@@ -305,3 +305,4 @@
 .pgrid a:hover img,.pgrid a:focus-visible img{border-color:var(--cyan)}
 .pgrid figcaption{display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:1.55;color:var(--ink2)} .pgrid figcaption b{font-family:var(--disp);font-size:11px;letter-spacing:.16em;color:var(--cyan);font-weight:600}
 @media (max-width:760px){.pgrid{grid-template-columns:1fr}}
+.gsibtn{display:flex;justify-content:center;min-height:44px} .modal .gsibtn{margin:14px 0}

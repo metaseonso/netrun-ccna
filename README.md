@@ -44,7 +44,7 @@ npm run check                   # same, listing warnings
 - `docs/TASKS.md` — all 63 nights mapped to stages, NPCs, skills and lab-based gigs, and what is left.
 - New content: copy a night's block from `js/data/stages/` and `js/data/jobs/`; the format is in `docs/CAMPAIGN_GUIDE.md`.
 - `tools/import_apkg.py` — turns Anki decks into game cards.
-- `docs/AUTH_PLAN.md` — Sign in with Google; records live in the player's own Drive. Live.
+- `docs/AUTH_PLAN.md` — Sign in with Google once per device; records live in the Watson DB. Live.
 - `docs/WATSON_DB.md` — the suggestion box, licenses, the anonymous pulse and the owner's dashboard (`owner.html`).
 
 ## Credits

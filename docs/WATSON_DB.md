@@ -1,8 +1,9 @@
-# The Watson DB — suggestions and licenses
+# The Watson DB — records, suggestions and licenses
 
 The game has no server. Its one database is a Google Sheet the owner owns, behind a small Apps Script web app
-(`tools/watson-db.gs`). It holds two tabs:
+(`tools/watson-db.gs`). Its tabs:
 
+- `sessions` and `records` — signed-in players' device keys (hashed) and game records. See `docs/AUTH_PLAN.md`.
 - `suggestions` — what players type into the SUGGEST box in the HUD. Each row gets an id (`S0001`) and a status:
   new → ticketed → scoped → in progress → done, or declined.
 - `licenses` — the numbered license a player gets when they finish the game (`NR-000001`), with the date, the handle,
@@ -22,6 +23,18 @@ Anyone can write (rate limited and size capped). Reading and updating need the p
    `.secrets/watson-db.json` (never committed), and adds both as GitHub secrets for the Hall of Fame robot.
 
 Changing the script later: **Deploy → Manage deployments → edit → Version: New version**. The URL stays the same.
+
+## The 2026-09-29 redeploy (sign-in without popups)
+
+The game's Google sign-in needs the script from 2026-09-29. Do this once:
+
+1. Open the Watson DB sheet → **Extensions → Apps Script**. Select all, delete, paste all of `tools/watson-db.gs`. Save.
+2. Pick the function **setup** and press **Run**. Google asks for a new permission, "Connect to an external service"
+   (the script checks sign-in tokens with Google). Allow it. The run adds the `sessions` and `records` tabs. It
+   prints a new private key only if none exists.
+3. **Deploy → Manage deployments → edit (pencil) → Version: New version → Deploy.** The URL stays the same.
+
+Claude checks the live URL and pushes the game live once the new script answers.
 
 ## Reading and working the tickets
 

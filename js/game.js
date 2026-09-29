@@ -17,14 +17,14 @@
   try { const cur = Storage.local.current(); const r = cur && Storage.local.loadSync(cur); if (r && !r.owner) state = load(cur); } catch (e) {} // a Google record never opens from the browser
   try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith('netrun-ccna-')) localStorage.removeItem(k); } } catch (e) {} // keys from before the rename
   Telemetry.ensure(state);
-  // a handle-only record lives in this browser. a Google record lives only in the player's Drive: memory while playing, Drive on every save.
+  // a handle-only record lives in this browser. a Google record lives only in the Watson DB: memory while playing, the Watson DB on every save.
   let dirty = false, inflight = null, flushTimer = null, names = null;
   const save = () => { if (!state.handle) return; state.updated = Date.now(); if (state.owner) { dirty = true; flush(); return; } Storage.local.saveSync(state.handle, state); Storage.local.setCurrent(state.handle); };
-  // Drive writes: one in flight at a time, a few seconds apart while playing, at once on a sync, LOG OUT, SIGN OUT or a hidden tab.
+  // Watson DB writes: one in flight at a time, a few seconds apart while playing, at once on a sync, LOG OUT, SIGN OUT or a hidden tab.
   function flush(now){ if (!state.owner || !dirty) return inflight || Promise.resolve(true); if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
     if (!now) { flushTimer = setTimeout(() => flush(true), 4000); return Promise.resolve(false); }
     if (inflight) return inflight.then(() => flush(true));
-    if (!(window.Auth && Auth.token()) || !Storage.remote.ready()) return Promise.resolve(false); // stays dirty: the HUD shows RECONNECT
+    if (!(window.Auth && Auth.token()) || !Storage.remote.ready()) return Promise.resolve(false); // stays dirty until signed in again
     const h = state.handle, snap = JSON.parse(JSON.stringify(state)); dirty = false;
     inflight = Storage.remote.save(h, snap).then(ok => { inflight = null; if (!ok) dirty = true; else if (names && !names.includes(h)) names = names.concat(h).sort(); return ok; });
     return inflight; }
@@ -259,7 +259,7 @@
     const s = load(h); if (s.owner) return { ok: false, why: h + ' is bound to a Google account. SIGN IN WITH GOOGLE to jack in.', field: 'handle' };
     if (s.pass && s.pass !== hashPass(pass)) return { ok: false, why: 'that is not the passcode for ' + h, field: 'pass' };
     state = s; state.handle = h; if (!state.pass) state.pass = hashPass(pass); save(); if (isNew) log('Handle registered: ' + h); return { ok: true, isNew }; }
-  // signed in with Google: the account is the key. no passcode. the record lives in the account's Drive, never in this browser.
+  // signed in with Google: the account is the key. no passcode. the record lives in the Watson DB, never in this browser.
   const gUser = () => window.Auth && Auth.user && Auth.user();
   const LAST = 'netrunner-ccna-last-google'; // the last handle's name for this account, so the door can offer it. a name, not a record.
   const lastHandle = () => { try { const v = JSON.parse(localStorage.getItem(LAST) || 'null'); const u = gUser(); return v && u && v.id === u.id ? v.h : null; } catch (e) { return null; } };
@@ -267,32 +267,27 @@
   let driveOk = null, linking = false, linkP = Promise.resolve();
   function myHandles(){ if (!gUser() || !names) return []; const l = lastHandle(); return names.slice().sort((a, b) => (b === l) - (a === l)); }
   function deckHandles(){ return Storage.local.listSync().filter(h => { const r = Storage.local.loadSync(h); return !(r && r.owner); }); }
-  // Google gives the Drive folder only when its box is ticked on the consent screen. no folder, no save file.
-  // why Drive said no: 'scope' = the box was not ticked; 'api' = the Drive API is off in the game's Google project; 'other' = anything else
+  // records live in the Watson DB behind this device's key (platform/auth.js); there is no folder to check any more
   let driveWhy = null;
-  async function checkDrive(){ driveWhy = null; try { const r = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=1&fields=files(id)', { headers: { Authorization: 'Bearer ' + Auth.token() } }); if (r.ok) return true;
-      let body = {}; try { body = await r.json(); } catch (e) {} const err = body.error || {}; const reason = ((err.errors || [])[0] || {}).reason || (err.details || []).map(d => d.reason).filter(Boolean)[0] || err.status || '';
-      let granted = null; try { const ti = await fetch('https://oauth2.googleapis.com/tokeninfo', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'access_token=' + encodeURIComponent(Auth.token()) }); const t = await ti.json(); granted = String(t.scope || '').split(' ').includes('https://www.googleapis.com/auth/drive.appdata'); } catch (e) {}
-      const kind = granted === false || /insufficient/i.test(reason) ? 'scope' : /accessNotConfigured|SERVICE_DISABLED|disabled/i.test(reason + ' ' + (err.message || '')) ? 'api' : 'other';
-      driveWhy = { kind, status: r.status, reason, message: String(err.message || '').slice(0, 300), granted }; console.warn('drive check', driveWhy); return false; } catch (e) { return true; } }
+  async function checkDrive(){ driveWhy = null; return true; }
   async function openBound(h, u){ let rec = await Storage.remote.load(h); if (rec && !usable(rec)) rec = null; const isNew = !rec;
     state = migrate(rec || Object.assign(fresh(), { handle: h })); state.handle = h; state.owner = u.id; state.pass = null; run = null; setLast(h);
     if (isNew) { log('Handle registered: ' + h); dirty = true; await flush(true); } return { ok: true, isNew }; }
   // a signed-in player never types a passcode. a handle on this deck with no account binds as it is opened and leaves the browser.
   async function claimHandle(h, pass){ const u = gUser(); if (!u) return setHandle(h, pass); h = (h || '').trim().slice(0, 18); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' };
     if (!Auth.token()) { const t = await Auth.ensureToken(); if (!t) return { ok: false, why: 'Google did not answer. try again.', field: 'handle' }; }
-    await linkP; if (driveOk === false) return { ok: false, why: 'your save file needs the Drive box ticked. press ALLOW DRIVE.', field: 'handle' };
+    await linkP; if (driveOk === false) return { ok: false, why: 'sign in with Google again.', field: 'handle' };
     if (names && names.includes(h)) return openBound(h, u);
     const local = Storage.local.loadSync(h);
     if (local && local.owner && local.owner !== u.id) return { ok: false, why: h + ' belongs to another account on this deck. pick another handle.', field: 'handle' };
-    if (local && usable(local)) { const rec = migrate(local); rec.owner = u.id; rec.pass = null; if (!await Storage.remote.save(h, rec)) return { ok: false, why: 'your Drive did not take the record. try again.', field: 'handle' };
+    if (local && usable(local)) { const rec = migrate(local); rec.owner = u.id; rec.pass = null; if (!await Storage.remote.save(h, rec)) return { ok: false, why: 'the Watson DB did not take the record. try again.', field: 'handle' };
       Storage.local.remove(h); if (Storage.local.current() === h) Storage.local.setCurrent(null); names = (names || []).concat(h).sort(); state = rec; run = null; setLast(h); log('Handle bound to ' + (u.email || u.name)); return { ok: true, isNew: false }; }
     return openBound(h, u); }
-  function logout(){ if (state.owner) flush(true); else save(); run = null; state = fresh(); dirty = false; Storage.local.setCurrent(null); }
+  function logout(){ if (state.owner) { flush(true); setLast(null); } else save(); run = null; state = fresh(); dirty = false; Storage.local.setCurrent(null); }
   if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && state.owner) flush(true); });
   // no exportSave / importSave on purpose: the deck syncs after every talk and every gig, and that is the only save there is.
-  // sign-in: check the Drive folder, move this account's records that older builds kept in the browser up to Drive, list the handle names.
-  // records load one at a time, when the player picks a handle. another handle on a shared deck stays on the deck.
+  // sign-in: move this account's records that older builds kept in the browser up to the Watson DB, list the handle names,
+  // and reopen the handle this device last played, so a reload lands back in the game. LOG OUT clears that, so the door stays shut.
   function onAuth(user){ linkP = link(user); return linkP; }
   async function link(user){ const draw = () => { if (window.UI) UI.render(); };
     if (!user) { Storage.useLocal(); names = null; driveOk = null; if (state.owner) { run = null; state = fresh(); dirty = false; } setLast(null); return draw(); }
@@ -303,10 +298,11 @@
       if (state.handle && !state.owner) { const h = state.handle; state.owner = user.id; state.pass = null; Storage.local.remove(h); Storage.local.setCurrent(null); setLast(h); log('Handle bound to ' + (user.email || user.name)); dirty = true; }
       for (const h of Storage.local.listSync()) { const local = Storage.local.loadSync(h); if (!local || local.owner !== user.id) continue; const remote = await Storage.remote.load(h); if (usable(local) && (!remote || (local.updated || 0) > (remote.updated || 0)) && !await Storage.remote.save(h, local)) continue; Storage.local.remove(h); }
       names = await Storage.remote.list(); if (dirty) await flush(true);
+      const l = lastHandle(); if (!state.handle && l && names.includes(l)) await openBound(l, user);
     } catch (e) { console.warn('auth link', e); } finally { linking = false; draw(); } }
   if (window.Auth) Auth.onChange(onAuth);
   const flushNow = () => flush(true);
-  // closing the tab with a Google record not yet in Drive: push it, and let the browser ask before it goes.
+  // closing the tab with a Google record not yet in the Watson DB: push it, and let the browser ask before it goes.
   window.addEventListener('beforeunload', e => { const unsaved = state.owner && (dirty || inflight); Telemetry.touch(state); if (!state.owner) return save(); if (unsaved) { flush(true); e.preventDefault(); e.returnValue = ''; } });
 
   window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get driveOk(){ return driveOk; }, get driveWhy(){ return driveWhy; }, recheckDrive(){ const u = gUser(); return u ? onAuth(u) : Promise.resolve(); }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, pay, repOf, shop, fixer, codexStatus, nightDone, licenseRecord, cardThemes, setLicense, setDifficulty, get difficulty(){ return state.difficulty; }, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };

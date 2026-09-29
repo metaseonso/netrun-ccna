@@ -91,12 +91,11 @@
     const openJobs = JOBS.filter(j => Game.jobStatus(j).locked.length === 0 && !s.jobsDone[j.id]).length; const alive = Protege.active(s.roster).length, lost = Protege.lost(s.roster).length; const dm = Game.dm.pending(); const u = window.Auth && Auth.user(); const on = viewGroup(view);
     const cp = s.checkpoint, initials = (u && u.name ? u.name : s.handle || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
     const id = '<div class="band b-id"><div class="logo"><span class="lgo">NETRUNNER</span><span class="sh">NR</span><small>://</small><span class="lgo">CCNA</span></div><span class="sep"></span>' +
-      '<div class="who"' + tipAttr(u ? 'Signed in as ' + u.name + '. Your record saves to your Drive.' : 'Your record saves on this deck only.') + '>' + (u && u.avatar ? avatarImg(u.avatar, u.name) : '<span class="ava">' + esc(initials) + '</span>') + '<b>' + esc(s.handle) + '</b></div>' +
+      '<div class="who"' + tipAttr(u ? 'Signed in as ' + u.name + '. Your record saves with your Google account.' : 'Your record saves on this deck only.') + '>' + (u && u.avatar ? avatarImg(u.avatar, u.name) : '<span class="ava">' + esc(initials) + '</span>') + '<b>' + esc(s.handle) + '</b></div>' +
       '<span class="cls ' + c.id + '"' + tipAttr(c.name + (nx ? '. Next: Class ' + nx.id + ' at ' + nx.min + ' rep.' : '.')) + '>CLASS ' + c.id + '</span>' + diffChip() +
       (rite && !s.jobsDone[rite.id] ? '<div class="riteline"' + tipAttr(nx ? 'Clear this gig' + (rb ? '' : ' with ' + nx.min + ' rep') + ' to reach Class ' + nx.id + '. It costs more and pays more.' : '') + '>' + icon('rite') + '<span><em>CLEARANCE</em> · ' + esc(rite.title) + '</span></div>' : '') +
       '<span class="grow"></span>' +
       (cp ? '<div class="syncchip"' + tipAttr('Last sync: ' + cp.label + '. If you flatline, you restart here.') + '>' + icon('sync') + '<span>SYNCED · ' + agoText(cp.at) + '</span></div>' : '') +
-      (u && Auth.needsToken() ? '<button id="reconnect" class="warn"' + tipAttr('Your Drive is not saving. Click to reconnect.') + '>' + icon('sync') + 'RECONNECT</button>' : '') +
       (P().dev ? '<button id="devtoggle" class="devbtn"' + tipAttr('Dev panel: lint, step diagnosis, net state, golden runs.') + '>' + icon('dev') + 'DEV</button>' : '') +
       (window.WatsonDB && WatsonDB.on ? '<button id="suggest" class="sugbtn"' + tipAttr('Tell the maker about a bug, an idea, or a line that sounds wrong.') + '>' + icon('suggest') + '<span>SUGGEST</span></button>' : '') +
       '<div class="menuwrap"><button class="acct' + (cur.menu === 'acct' ? ' open' : '') + '" data-menu="acct" aria-haspopup="true" aria-expanded="' + (cur.menu === 'acct') + '" aria-label="Your account">' + icon('user') + icon('chev', 'sm') + '</button>' +
@@ -125,25 +124,22 @@
     document.addEventListener('focusin', e => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el) arm(el, 0); });
     document.addEventListener('focusout', hide); document.addEventListener('scroll', hide, true); document.addEventListener('click', hide, true); })();
 
-  // the door, signed in: the Google account is the key. the record lives in the account's Drive; the door lists names, one load per pick.
-  const DRIVE_WHY = 'When Google asks, tick the Drive box. Your save goes there.';
+  // the door, signed in: the Google account is the key. records live in the Watson DB behind this device's key; the door lists names, one load per pick.
+  const GOOGLE_WHY = 'Sign in once on this device. Your record follows your Google account.';
+  // Google's own sign-in button is drawn into every .gsibtn after a render (platform/auth.js)
+  const gsiSlot = () => '<div class="gsibtn" aria-label="Sign in with Google"></div>';
   // a Google profile photo: sent with no referrer (googleusercontent refuses some), and initials if it still fails
   const avatarImg = (url, name) => { const ini = (name || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
     return '<img src="' + esc(url) + '" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML=\'<span class=&quot;ava&quot;>' + esc(ini) + '</span>\'">'; };
-  function doorSignedIn(){ const u = Auth.user(), tok = !!Auth.token(), mine = Game.myHandles(), last = Game.lastHandle(), loose = Game.deckHandles();
-    let body;
-    if (Game.linking) body = '<p class="muted">Reading your Drive…</p>';
-    else if (Game.driveOk === false) { const w = Game.driveWhy || { kind: 'scope' };
-      body = w.kind === 'scope' ? '<div class="door-warn"><b>Drive is off, so nothing can save.</b><br>Press ALLOW DRIVE and tick the Drive box.</div><button class="btn mag wide" id="signin">ALLOW DRIVE</button>'
-        : '<div class="door-warn"><b>Google Drive refused the game.</b> ' + (w.kind === 'api' ? 'The game\'s Drive access is switched off. Only the maker can fix this.' : 'Google says:') + '<br><code>' + esc(w.status + ' ' + (w.reason || '') + (w.message ? ' · ' + w.message : '')) + '</code></div><button class="btn wide" id="drivetry">TRY AGAIN</button>'; }
-    else if (!tok) body = (last ? '<button class="btn mag wide" data-mine="' + esc(last) + '">JACK IN AS ' + esc(last) + '</button>' : '') + '<button class="btn ' + (last ? 'ghost' : 'mag') + ' wide" id="reconnect">' + (last ? 'ANOTHER HANDLE' : 'OPEN MY RECORD') + '</button>';
-    else body = (mine.length ? mine.map((h, i) => '<button class="btn ' + (i ? 'ghost' : 'mag') + ' wide" data-mine="' + esc(h) + '">JACK IN AS ' + esc(h) + '</button>').join('') + '<div class="or"><span>or start a new one</span></div>' : '') +
+  function doorSignedIn(){ const u = Auth.user(), mine = Game.myHandles(), loose = Game.deckHandles();
+    const body = Game.linking ? '<p class="muted">Opening your records…</p>' :
+      (mine.length ? mine.map((h, i) => '<button class="btn ' + (i ? 'ghost' : 'mag') + ' wide" data-mine="' + esc(h) + '">JACK IN AS ' + esc(h) + '</button>').join('') + '<div class="or"><span>or start a new one</span></div>' : '') +
       '<div class="login one"><input id="handle" placeholder="' + (mine.length ? 'new handle' : 'pick a handle') + '" maxlength="18" autocomplete="off"><button class="btn ' + (mine.length ? 'ghost' : 'mag') + '" id="go">JACK IN</button></div>' +
       (loose.length ? '<div class="chips"><span class="muted">Also on this device:</span>' + loose.map(h => '<button class="btn ghost sm" data-mine="' + esc(h) + '">' + esc(h) + '</button>').join('') + '</div>' : '');
-    return '<div class="door-id">' + (u.avatar ? avatarImg(u.avatar, u.name) : '') + '<span><b>' + esc(u.name) + '</b><em>Saved to your Google Drive</em></span><button class="btn ghost sm" id="signout">SIGN OUT</button></div>' + body; }
+    return '<div class="door-id">' + (u.avatar ? avatarImg(u.avatar, u.name) : '') + '<span><b>' + esc(u.name) + '</b><em>Signed in with Google</em></span><button class="btn ghost sm" id="signout">SIGN OUT</button></div>' + body; }
   // the door, no account: a handle and a passcode on this deck only. Google is offered first because it follows the player.
   function doorLocal(){ const deck = Game.deckHandles(), g = window.Auth && Auth.configured;
-    return (g ? '<button class="btn mag wide" id="signin">SIGN IN WITH GOOGLE</button><p class="hint">' + esc(DRIVE_WHY) + '</p><div class="or"><span>or play on this device only</span></div>' : '') +
+    return (g ? gsiSlot() + '<p class="hint">' + esc(GOOGLE_WHY) + '</p><div class="or"><span>or play on this device only</span></div>' : '') +
       '<div class="login"><input id="handle" placeholder="handle" maxlength="18" autocomplete="off"><input id="pass" type="password" placeholder="passcode" maxlength="32" autocomplete="off"><button class="btn ' + (g ? 'ghost' : 'mag') + '" id="go">JACK IN</button></div><p class="hint">New handle? Pick any passcode.</p>' +
       (deck.length ? '<div class="chips"><span class="muted">On this device:</span>' + deck.map(h => '<button class="btn ghost sm" data-resume="' + esc(h) + '">' + esc(h) + '</button>').join('') + '</div>' : ''); }
   let pubStats = null, pubAsked = false, hallCards = null, hallAsked = false;
@@ -187,6 +183,9 @@
     '<p class="muted">Pick one to start. It can be lowered later from the account menu. It can\'t be raised.</p></div>'; }
   function diffChip(){ const s = Game.state; if (!s.diffPicked) return ''; const d = DIFFICULTY[s.difficulty];
     return '<span class="diffchip ' + s.difficulty + '"' + tipAttr('Difficulty: ' + d.name + '. ' + (DIFFICULTY_ORDER.indexOf(s.difficulty) > 0 ? 'Lowering difficulty is available in the account drop-down, top right.' : 'This is the lowest difficulty.')) + '>' + stars(s.difficulty) + icon('help', 'sm') + '</span>'; }
+  // a handle on this device only, signing in from the account menu: Google's button in a box; the handle moves to the account
+  function gsiModal(){ if (!cur.gsiOpen || (window.Auth && Auth.user())) return '';
+    return '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="gsih"><h3 id="gsih">' + icon('key') + 'SIGN IN WITH GOOGLE</h3><p>' + esc(GOOGLE_WHY) + ' This handle moves to your account.</p>' + gsiSlot() + '<div class="row"><button class="btn ghost" id="gsiclose">NOT NOW</button></div></div></div>'; }
   function lowerModal(){ const s = Game.state; if (!cur.lowerOpen || !s.diffPicked) return ''; const lower = DIFFICULTY_ORDER.slice(0, DIFFICULTY_ORDER.indexOf(s.difficulty));
     return '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ldh"><h3 id="ldh">' + icon('warn') + 'ARE YOU SURE?</h3>' +
       '<ul class="warns"><li>' + icon('warn') + '<span>If you go down, you can\'t go back up.</span></li>' +
@@ -487,17 +486,18 @@
   window.addEventListener('error', e => { const b = document.createElement('div'); b.className = 'errbanner'; b.textContent = 'JS error: ' + e.message + ' (' + (e.filename || '').split('/').pop() + ':' + e.lineno + ')'; document.body.appendChild(b); setTimeout(() => b.remove(), 12000); });
 
   // ---- render ---------------------------------------------------------------------------------
+  const mountGsi = root => { if (window.Auth && Auth.mountButton) root.querySelectorAll('.gsibtn').forEach(el => Auth.mountButton(el)); };
   function render(){ const s = Game.state; const a = app(); document.body.classList.toggle('devon', !!(P().dev && cur.devOpen)); document.body.className = document.body.className.replace(/\btheme-\w+/g, '').trim() + (s.perks && s.perks.theme ? ' theme-' + s.perks.theme : '');
     if (s.handle && s.dead) { a.innerHTML = deadView(); return; }
-    if (!s.handle) { a.innerHTML = intro(); const pass = $('#pass'); const go = h => Promise.resolve(Game.claimHandle(h, pass ? pass.value : '')).then(r => { if (r.ok) { view = 'home'; render(); } else { toast(r.why, 'mag'); render(); const f = r.field === 'pass' && $('#pass') ? $('#pass') : $('#handle'); if (f) f.focus(); } });
+    if (!s.handle) { a.innerHTML = intro(); mountGsi(a); const pass = $('#pass'); const go = h => Promise.resolve(Game.claimHandle(h, pass ? pass.value : '')).then(r => { if (r.ok) { view = 'home'; render(); } else { toast(r.why, 'mag'); render(); const f = r.field === 'pass' && $('#pass') ? $('#pass') : $('#handle'); if (f) f.focus(); } });
       if ($('#go')) $('#go').onclick = () => go($('#handle').value); if ($('#handle')) $('#handle').onkeydown = e => { if (e.key === 'Enter') { if (pass) pass.focus(); else $('#go').click(); } }; if (pass) pass.onkeydown = e => { if (e.key === 'Enter') $('#go').click(); };
       a.querySelectorAll('[data-mine]').forEach(b => b.onclick = () => go(b.dataset.mine)); a.querySelectorAll('[data-resume]').forEach(b => b.onclick = () => { $('#handle').value = b.dataset.resume; $('#pass').focus(); }); if ($('#handle')) $('#handle').focus(); return; }
     if (view !== 'run') Game.dm.maybeCreate();
     let body = ''; if (view === 'home') body = home(); else if (view === 'grid') body = grid(); else if (view === 'level') body = level(); else if (view === 'jobs') body = jobs(); else if (view === 'run') body = runView(); else if (view === 'deck') body = deck(); else if (view === 'shop') body = shopView(); else if (view === 'key') body = keyView(); else if (view === 'stats') body = statsView(); else if (view === 'crew') body = crewView(); else if (view === 'done') body = doneView(); else body = logView();
-    a.innerHTML = hud() + (s.handle && !s.diffPicked ? diffGate() : body) + lowerModal() + fixerModal() + fixerNotes() + suggestModal() + dmOverlay() + devPanel(); if (cur.suggest && !cur.sugBusy) { const ta = $('#sugtext'); if (ta) { ta.focus(); ta.oninput = () => { cur.sugDraft = ta.value; }; } }
+    a.innerHTML = hud() + (s.handle && !s.diffPicked ? diffGate() : body) + lowerModal() + gsiModal() + fixerModal() + fixerNotes() + suggestModal() + dmOverlay() + devPanel(); if (cur.suggest && !cur.sugBusy) { const ta = $('#sugtext'); if (ta) { ta.focus(); ta.oninput = () => { cur.sugDraft = ta.value; }; } }
     a.querySelectorAll('.npcslot').forEach(sl => { if (sl.dataset.protege) { const p = Game.state.roster.list.find(x => x.id === sl.dataset.protege) || (cur.dmResult && cur.dmResult.protege); sl.replaceWith(npcEl(null, +sl.dataset.size, p ? p.look : { seed: 'p' })); } else sl.replaceWith(npcEl(sl.dataset.npc, +sl.dataset.size)); });
     if (view === 'run' && Game.run && !Game.run.result) { drawMap(); const o = $('#conout'); if (o) o.scrollTop = o.scrollHeight; const inp = $('#conin'); if (inp && !Game.dm.pending()) inp.focus(); }
-    if (view !== lastView) window.scrollTo({ top: 0 }); lastView = view; react(); }
+    mountGsi(a); if (view !== lastView) window.scrollTo({ top: 0 }); lastView = view; react(); }
   setInterval(() => { const r = Game.run; const el = $('#runclock'); if (r && el && !r.result) { const s = Math.floor((Date.now() - r.startedAt) / 1000); el.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); } }, 1000);
 
   document.addEventListener('input', e => { if (e.target.id !== 'csearch') return; cur.codexQ = e.target.value; const pos = e.target.selectionStart; render(); const el = $('#csearch'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } });
@@ -531,11 +531,9 @@
   document.addEventListener('click', e => { if (cur.hall && e.target.id === 'hallback') { cur.hall = false; render(); } });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && cur.hall) { cur.hall = false; render(); return; } if (e.key === 'Escape' && cur.menu) { const was = cur.menu; cur.menu = null; render(); const b = $('[data-menu="' + was + '"]'); if (b) b.focus(); } });
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-multi],[data-up],[data-down],[data-dev],[data-node],[data-dmans],[data-devtab],[data-golden],[data-buy],[data-eat],[data-give],[data-favor],[data-theme],[data-diff],[data-ltheme],#next,#prev,#finish,#commit,#hint,#abort,#wipe,#logout,#signin,#signout,#reconnect,#reload,#exitdoor,#devtoggle,#opendm,#dmopen,#dmlater,#dmclose,#forcedm,#devping,#fixer,#fxyes,#fxno,#fxnotes,#fxclose,#sfxtoggle,#lowerdiff,#lowerno,[data-ctab],[data-cfilter],[data-cjob],[data-bshow],[data-bcls],[data-bstage],[data-bfold],[data-mstage],[data-bjump],[data-shelf],#drivetry,#suggest,#sugsend,#sugno,#lissue,#lsvg,#lpng,#cprint,#lhall,#hallopen,#hallclose'); if (!t) return; if (t.closest('.dropdown')) cur.menu = null; if (t.id === 'sfxtoggle') { const on = window.Sfx && Sfx.toggle(); toast(on ? 'SOUND ON' : 'SOUND OFF', 'grn'); return render(); }
+    const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-multi],[data-up],[data-down],[data-dev],[data-node],[data-dmans],[data-devtab],[data-golden],[data-buy],[data-eat],[data-give],[data-favor],[data-theme],[data-diff],[data-ltheme],#next,#prev,#finish,#commit,#hint,#abort,#wipe,#logout,#signin,#gsiclose,#signout,#reload,#exitdoor,#devtoggle,#opendm,#dmopen,#dmlater,#dmclose,#forcedm,#devping,#fixer,#fxyes,#fxno,#fxnotes,#fxclose,#sfxtoggle,#lowerdiff,#lowerno,[data-ctab],[data-cfilter],[data-cjob],[data-bshow],[data-bcls],[data-bstage],[data-bfold],[data-mstage],[data-bjump],[data-shelf],#drivetry,#suggest,#sugsend,#sugno,#lissue,#lsvg,#lpng,#cprint,#lhall,#hallopen,#hallclose'); if (!t) return; if (t.closest('.dropdown')) cur.menu = null; if (t.id === 'sfxtoggle') { const on = window.Sfx && Sfx.toggle(); toast(on ? 'SOUND ON' : 'SOUND OFF', 'grn'); return render(); }
     if (t.id === 'logout') { if (view === 'run' && Game.run && !Game.run.result && !confirm('Jack out? This dive is lost.')) return; Game.logout(); view = 'home'; cur = Object.assign(cur, { stage: null, level: null, beat: 0, job: null, synced: null }); return render(); }
-    if (t.id === 'signin') { Auth.signIn().then(tok => { if (!tok) toast('sign-in did not go through', 'mag'); }).catch(err => toast('sign-in failed: ' + err.message, 'mag')); return; } if (t.id === 'signout') { Game.flushNow().then(() => Auth.signOut()).then(() => { view = 'home'; render(); }); return; }
-    if (t.id === 'drivetry') { (Auth.token() ? Game.recheckDrive() : Auth.ensureToken()).then(() => render()); return; }
-    if (t.id === 'reconnect') { Auth.ensureToken().then(tok => { if (tok && Game.state.handle) toast('your Drive is listening again', 'grn'); else if (!tok) toast('Google did not answer. try again', 'mag'); Game.flushNow(); render(); }); return; }
+    if (t.id === 'signin') { cur.gsiOpen = true; cur.menu = null; return render(); } if (t.id === 'gsiclose') { cur.gsiOpen = false; return render(); } if (t.id === 'signout') { Game.flushNow().then(() => Auth.signOut()).then(() => { view = 'home'; render(); }); return; }
     if (t.id === 'devtoggle') { cur.devOpen = !cur.devOpen; return render(); } if (t.dataset.devtab) { if (t.dataset.devtab === 'close') cur.devOpen = false; else cur.dev = t.dataset.devtab; return render(); }
     if (t.dataset.golden) { cur.goldenRes = Game.runSolution(t.dataset.golden); return render(); } if (t.id === 'devping') { const r = Game.dev.ping($('#devfrom').value.trim(), $('#devto').value.trim()); $('#devpingres').textContent = r ? (r.ok ? 'OK ' : 'FAIL ') + r.reason + ' · ' + r.path.map(p => p.dev + ':' + p.act).join(' → ') : 'no net'; return; }
     if (t.dataset.buy) { const r = Game.shop.buy(t.dataset.buy); cur.shopMsg = r.ok ? (r.onTheHouse ? 'It\'s on the tab, and I\'ll take it out of your next pay.' : r.item.line ? r.item.line.replace(/^Marrow: /, '').replace(/^"|"$/g, '') : 'Yours.') : r.why; toast(r.ok ? (r.onTheHouse ? 'ON THE TAB · ' : r.item.kind === 'service' ? 'CHROME · ' + Game.state.body.chrome : 'BOUGHT · ' + r.item.name) : r.why, r.ok ? 'grn' : 'mag'); return render(); }

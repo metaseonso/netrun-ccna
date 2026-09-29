@@ -1,35 +1,50 @@
-/* platform/auth.js — Sign in with Google, no backend.
-   Uses Google Identity Services (the gsi/client script) with the implicit token flow. The token carries identity
-   (openid email profile) and one Drive scope, drive.appdata, so saves live in the player's own Google Drive, in the
-   hidden app folder that only this app can see. No database, no server, nothing to host.
-   Inactive until config/platform.js has googleClientId. Then: Auth.configured, Auth.user(), Auth.signIn(), Auth.signOut(), Auth.onChange(cb), Auth.token(). */
+/* platform/auth.js — Sign in with Google, once per device.
+   Google Identity Services' sign-in button asks Google who the player is (an ID token; no Drive, no other scope).
+   The Watson DB (tools/watson-db.gs) checks that token with Google and hands this device a random key. From then on
+   the key is all the device needs: records load and save through the Watson DB, with no Google calls and no popups,
+   on every reload and every later day. Signing out deletes the key on both ends.
+   Inactive until config/platform.js has googleClientId and dbUrl.
+   API: Auth.configured, Auth.user(), Auth.token() (the device key), Auth.mountButton(el), Auth.signIn(), Auth.signOut(),
+   Auth.onChange(cb), Auth.needsToken() (always false now), Auth.ensureToken(). */
 (function(){
-  const SCOPES = 'openid email profile https://www.googleapis.com/auth/drive.appdata';
-  const listeners = []; let current = null; let token = null; let tokenExp = 0; let client = null; let waiters = []; const KEY = 'netrunner-ccna-google';
+  const KEY = 'netrunner-ccna-session', OLD = 'netrunner-ccna-google';
+  const listeners = []; let session = null; let waiters = []; let ready = false, told = false; const mounted = new Set();
   const settle = t => { waiters.splice(0).forEach(r => { try { r(t); } catch (e) {} }); };
-  const emit = () => { const u = Auth.user(); if (u) Storage.useRemote({ token: () => Auth.token() }, u.id); else Storage.useLocal(); listeners.forEach(cb => { try { cb(u); } catch (e) { console.error(e); } }); };
-  async function whoami(t){ const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + t } }); if (!r.ok) throw new Error('userinfo ' + r.status); return r.json(); }
+  const store = { get(){ try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }, set(v){ try { v ? localStorage.setItem(KEY, JSON.stringify(v)) : localStorage.removeItem(KEY); } catch (e) {} } };
+  const dbUrl = () => (window.PLATFORM || {}).dbUrl || '';
+  const post = body => fetch(dbUrl(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow' }).then(r => r.json());
+  const emit = () => { told = true; const u = Auth.user(); if (u) Storage.useRemote({ token: () => Auth.token(), onSignedOut: () => Auth.forget() }, u.id); else Storage.useLocal(); listeners.forEach(cb => { try { cb(u); } catch (e) { console.error(e); } }); };
+  // Google's answer to a sign-in: trade the ID token for this device's key
+  async function onCredential(resp){
+    try { const d = await post({ kind: 'session', idToken: resp && resp.credential });
+      if (!d || !d.ok || !d.key) throw new Error((d && d.why) || 'no key');
+      session = { key: d.key, user: d.user }; store.set(session); settle(d.key); emit();
+    } catch (e) { console.warn('sign-in', e); settle(null); if (window.UI && UI.toast) UI.toast('Sign-in did not go through. Try again.', 'mag'); } }
   const Auth = {
     configured: false, providers: ['google'],
-    init(cfg){ cfg = cfg || {}; this.clientId = cfg.googleClientId || ''; if (!this.clientId) { this.configured = false; return this; }
-      // the gsi script loads async; wait for it (up to ~10 s) instead of giving up at DOMContentLoaded
-      if (!window.google || !google.accounts || !google.accounts.oauth2) { this._tries = (this._tries || 0) + 1; if (this._tries < 40) setTimeout(() => Auth.init(cfg), 250); return this; }
-      if (client) return this; this.configured = true;
-      client = google.accounts.oauth2.initTokenClient({ client_id: this.clientId, scope: SCOPES,
-        error_callback: (e) => { console.warn('google sign-in', e && e.type); settle(null); emit(); },
-        callback: async (resp) => { if (resp.error) { console.warn('google token', resp); settle(null); emit(); return; } token = resp.access_token; tokenExp = Date.now() + (resp.expires_in - 60) * 1000;
-          try { const me = await whoami(token); current = { id: me.sub, email: me.email, name: me.name || me.email, avatar: me.picture }; try { localStorage.setItem(KEY, JSON.stringify(current)); } catch (e) {} } catch (e) { console.warn(e); current = null; token = null; }
-          settle(token); emit(); } });
-      // remembered identity: show the name at once; a fresh token comes with the first RECONNECT (a click, so the popup is allowed)
-      try { const saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved && saved.id) current = saved; } catch (e) {}
-      emit(); return this; },
-    user(){ return current; },
-    token(){ return token && Date.now() < tokenExp ? token : null; },
-    needsToken(){ return !!(current && !this.token()); },
-    // call from a click: opens the Google popup only if a silent refresh is not possible
-    ensureToken(){ if (this.token()) return Promise.resolve(this.token()); if (!client) return Promise.resolve(null); return new Promise(res => { waiters.push(res); try { client.requestAccessToken({ prompt: '', login_hint: current && current.email || undefined }); } catch (e) { settle(null); } }); },
-    signIn(){ if (!this.configured) return Promise.reject(new Error('sign-in is not configured')); return new Promise(res => { waiters.push(res); client.requestAccessToken({ prompt: 'select_account' }); }); },
-    async signOut(){ if (token && window.google) { try { google.accounts.oauth2.revoke(token, () => {}); } catch (e) {} } token = null; tokenExp = 0; current = null; try { localStorage.removeItem(KEY); } catch (e) {} emit(); },
+    init(cfg){ cfg = cfg || {}; this.clientId = cfg.googleClientId || ''; if (!this.clientId || !cfg.dbUrl) { this.configured = false; return this; }
+      try { localStorage.removeItem(OLD); } catch (e) {} // the Drive sign-in this replaced
+      if (!session) { const s = store.get(); if (s && s.key && s.user && s.user.id) session = s; }
+      // the gsi script loads async; wait for it (up to ~10 s). A saved key works without it.
+      if (!window.google || !google.accounts || !google.accounts.id) { this._tries = (this._tries || 0) + 1; if (this._tries === 1 && session) emit(); if (this._tries < 40) setTimeout(() => Auth.init(cfg), 250); return this; }
+      if (ready) return this; ready = true; this.configured = true;
+      google.accounts.id.initialize({ client_id: this.clientId, callback: onCredential, auto_select: false, cancel_on_tap_outside: true, use_fedcm_for_button: true, use_fedcm_for_prompt: true, context: 'signin', itp_support: true });
+      mounted.forEach(el => el.isConnected ? this.mountButton(el) : mounted.delete(el));
+      // a saved key was already announced while the script loaded; otherwise tell the door that Google sign-in is here
+      if (!told || !session) emit(); return this; },
+    // Google's own button, drawn into el (the door, or the sign-in box in the account menu)
+    mountButton(el){ if (!el) return; mounted.forEach(m => { if (!m.isConnected) mounted.delete(m); }); mounted.add(el); if (!ready) return; if (el.dataset.gsi === '1' && el.childElementCount) return; el.dataset.gsi = '1';
+      try { google.accounts.id.renderButton(el, { type: 'standard', theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', logo_alignment: 'left', width: Math.min(360, Math.max(220, el.clientWidth || 300)) }); } catch (e) { console.warn('gsi button', e); } },
+    user(){ return session ? session.user : null; },
+    token(){ return session ? session.key : null; },
+    needsToken(){ return false; },
+    ensureToken(){ return Promise.resolve(this.token()); },
+    // the One Tap prompt, for a click that is not on Google's button; the button stays the reliable path
+    signIn(){ if (!this.configured) return Promise.reject(new Error('sign-in is not configured')); return new Promise(res => { waiters.push(res); try { google.accounts.id.prompt(n => { if (n && (n.isNotDisplayed && n.isNotDisplayed() || n.isSkippedMoment && n.isSkippedMoment())) settle(null); }); } catch (e) { settle(null); } }); },
+    // the Watson DB no longer knows this key (signed out on another device, or removed): drop it here too
+    forget(){ session = null; store.set(null); emit(); },
+    async signOut(){ const key = this.token(); session = null; store.set(null); try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
+      emit(); if (key && dbUrl()) { try { await post({ kind: 'signout', key }); } catch (e) {} } },
     onChange(cb){ listeners.push(cb); return () => { const i = listeners.indexOf(cb); if (i >= 0) listeners.splice(i, 1); }; }
   };
   window.Auth = Auth;

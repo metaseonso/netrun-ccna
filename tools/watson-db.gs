@@ -5,16 +5,24 @@
    adds `pulse` and `licenses` up for the sign-in page; it never returns a row. The owner's dashboard (owner.html) reads
    all three with the key through `?action=dashboard`.
    Anyone may write (rate limited, sizes capped). Reading and updating need the private key, which only the owner,
-   the Hall of Fame robot (.github/workflows/hall.yml) and tools/watson-db.js hold. Setup: docs/WATSON_DB.md. */
+   the Hall of Fame robot (.github/workflows/hall.yml) and tools/watson-db.js hold. Setup: docs/WATSON_DB.md.
+   Two more tabs hold the signed-in players' records. `sessions`: a player signs in with Google once per device; the
+   script checks that sign-in with Google (tokeninfo) and hands the device a random key, stored here only as a
+   SHA-256 hash. `records`: one row per player and handle, the save split across cells (a cell holds 50,000
+   characters). A device key is all a device needs from then on: no Google calls, no popups. */
 
 const SUG_HEAD = ['id', 'received', 'handle', 'screen', 'night', 'version', 'text', 'status', 'note', 'updated'];
 const LIC_HEAD = ['number', 'issued', 'handle', 'hall', 'record'];
 const PULSE_HEAD = ['id', 'updated', 'cls', 'nights', 'flatlines', 'first', 'reached', 'fixers', 'version', 'trail', 'flats', 'licensed', 'difficulty'];
 const STATUSES = ['new', 'ticketed', 'scoped', 'in progress', 'done', 'declined'];
+const SESS_HEAD = ['keyhash', 'sub', 'email', 'name', 'avatar', 'created', 'seen'];
+const REC_HEAD = ['sub', 'handle', 'updated', 'chunks'];
+const CLIENT_ID = '18221020659-3is07svdcb7d15gk27hkhhukge6mud8t.apps.googleusercontent.com'; // the game's public Google client id (config/platform.js)
+const CHUNK = 45000, MAX_RECORD = 2000000, MAX_HANDLES = 20;
 
 // Run once from the editor (pick setup, press Run). Makes both tabs and a private key, and logs the key.
 function setup() {
-  tab_('suggestions', SUG_HEAD); tab_('licenses', LIC_HEAD); tab_('pulse', PULSE_HEAD);
+  tab_('suggestions', SUG_HEAD); tab_('licenses', LIC_HEAD); tab_('pulse', PULSE_HEAD); tab_('sessions', SESS_HEAD); tab_('records', REC_HEAD);
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('KEY')) props.setProperty('KEY', Utilities.getUuid().replace(/-/g, ''));
   Logger.log('Private key: ' + props.getProperty('KEY'));
@@ -38,8 +46,13 @@ function doPost(e) {
   let d = {};
   try { d = JSON.parse(e.postData.contents); } catch (err) { return json_({ ok: false, why: 'bad json' }); }
   const who = clip_(d.handle, 40) || 'anon';
-  const lock = LockService.getScriptLock(); lock.waitLock(8000);
+  // a sign-in is checked with Google before the lock, so a slow answer never holds up other players
+  const google = d.kind === 'session' ? verifyGoogle_(d.idToken) : null;
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
+    if (d.kind === 'session') return session_(google);
+    if (d.kind === 'signout') return signout_(d);
+    if (d.kind === 'rec') return record_(d);
     if (d.kind === 'license') return license_(d, who);
     if (d.kind === 'pulse') return pulse_(d);
     return suggestion_(d, who);
@@ -71,6 +84,61 @@ function pulse_(d) {
   if (i < 0) sh.appendRow(row); else sh.getRange(i + 2, 1, 1, PULSE_HEAD.length).setValues([row]);
   CacheService.getScriptCache().remove('stats');
   return json_({ ok: true });
+}
+
+// ---- signed-in players ------------------------------------------------------------------------------------
+// the Google sign-in (an ID token) is sent to Google's tokeninfo; only a token issued to this game's client id counts
+function verifyGoogle_(idToken) {
+  const t = String(idToken || ''); if (t.length < 100 || t.length > 5000) return null;
+  try {
+    const r = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(t), { muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) return null;
+    const p = JSON.parse(r.getContentText());
+    if (p.aud !== CLIENT_ID || !/^(https:\/\/)?accounts\.google\.com$/.test(p.iss) || Number(p.exp) * 1000 < Date.now() || !p.sub) return null;
+    return { sub: String(p.sub), email: clip_(p.email, 120), name: clip_(p.name || p.email, 80), avatar: clip_(p.picture, 400) };
+  } catch (err) { return null; }
+}
+const hash_ = k => Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(k)).map(b => ('0' + ((b + 256) % 256).toString(16)).slice(-2)).join('');
+const col_ = (sh, n) => sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, n).getValues() : [];
+
+function session_(g) {
+  if (!g) return json_({ ok: false, why: 'Google did not confirm the sign-in. Try again.' });
+  const key = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, ''); const now = new Date().toISOString();
+  tab_('sessions', SESS_HEAD).appendRow([hash_(key), g.sub, g.email, g.name, g.avatar, now, now]);
+  return json_({ ok: true, key, user: { id: g.sub, email: g.email, name: g.name, avatar: g.avatar } });
+}
+// the player behind a device key, or null; `seen` is refreshed at most once a day
+function sessionOf_(key) {
+  if (!/^[a-f0-9]{64}$/.test(String(key || ''))) return null;
+  const sh = tab_('sessions', SESS_HEAD); const h = hash_(key); const rows = col_(sh, 7); const i = rows.findIndex(r => r[0] === h); if (i < 0) return null;
+  if (Date.now() - Date.parse(rows[i][6]) > 86400000) sh.getRange(i + 2, 7).setValue(new Date().toISOString());
+  return { row: i + 2, sub: String(rows[i][1]) };
+}
+function signout_(d) { const s = sessionOf_(d.key); if (s) tab_('sessions', SESS_HEAD).deleteRow(s.row); return json_({ ok: true }); }
+
+// a signed-in player's records: list, load, save, remove. The player comes from the device key, never from the request.
+function record_(d) {
+  const s = sessionOf_(d.key); if (!s) return json_({ ok: false, why: 'signed out', signedOut: true });
+  const sh = tab_('records', REC_HEAD); const keys = col_(sh, 2); const mine = keys.map((r, i) => ({ sub: String(r[0]), handle: String(r[1]), row: i + 2 })).filter(r => r.sub === s.sub);
+  const handle = clip_(d.handle, 18); const hit = mine.find(r => r.handle === handle);
+  if (d.op === 'list') return json_({ ok: true, handles: mine.map(r => r.handle).sort() });
+  if (!handle) return json_({ ok: false, why: 'no handle' });
+  if (d.op === 'load') {
+    if (!hit) return json_({ ok: true, data: null });
+    const n = Number(sh.getRange(hit.row, 4).getValue()) || 0; const data = n ? sh.getRange(hit.row, 5, 1, n).getValues()[0].join('') : '';
+    return json_({ ok: true, data: data || null });
+  }
+  if (d.op === 'save') {
+    const data = String(d.data || ''); if (!data || data.length > MAX_RECORD) return json_({ ok: false, why: 'record too large' });
+    if (!hit && mine.length >= MAX_HANDLES) return json_({ ok: false, why: 'too many handles' });
+    const parts = []; for (let i = 0; i < data.length; i += CHUNK) parts.push(data.slice(i, i + CHUNK));
+    const row = hit ? hit.row : sh.getLastRow() + 1; const old = hit ? Number(sh.getRange(row, 4).getValue()) || 0 : 0;
+    sh.getRange(row, 1, 1, 4 + parts.length).setValues([[s.sub, handle, new Date().toISOString(), parts.length].concat(parts)]);
+    if (old > parts.length) sh.getRange(row, 5 + parts.length, 1, old - parts.length).clearContent();
+    return json_({ ok: true });
+  }
+  if (d.op === 'remove') { if (hit) sh.deleteRow(hit.row); return json_({ ok: true }); }
+  return json_({ ok: false, why: 'unknown op' });
 }
 
 // one license per handle and record fingerprint; asking again returns the same number

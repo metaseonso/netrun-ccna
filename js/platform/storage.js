@@ -1,6 +1,6 @@
 /* platform/storage.js — where records live. The game talks only to Storage; adapters do the work.
    LocalAdapter: this browser's localStorage, one profile per handle.
-   RemoteAdapter: the signed-in player's Google Drive app folder (drive.appdata), one JSON file per handle.
+   RemoteAdapter: the signed-in player's records in the Watson DB, reached with this device's key (platform/auth.js).
    After sign-in, Storage.mergeLocalIntoRemote() uploads local profiles once; then remote is primary and local is a cache. */
 (function(){
   const PREFIX = 'netrunner-ccna-profile:', CUR = 'netrunner-ccna-current', FN = 'netrunner-';
@@ -16,27 +16,23 @@
     current(){ try { return localStorage.getItem(CUR); } catch (e) { return null; } },
     setCurrent(h){ try { if (h) localStorage.setItem(CUR, h); else localStorage.removeItem(CUR); } catch (e) {} }
   };
-  // Drive appData adapter. `client.token()` returns a bearer token or null.
-  const API = 'https://www.googleapis.com/drive/v3', UP = 'https://www.googleapis.com/upload/drive/v3';
+  // Watson DB adapter: the signed-in player's records, behind this device's key (platform/auth.js). `client.token()` returns the key.
   const RemoteAdapter = {
-    name: 'drive', client: null, userId: null, ids: {},
-    ready(){ return !!(this.client && this.userId); },
-    async tok(){ const t = this.client && this.client.token(); if (!t) throw new Error('no token'); return t; },
-    live(){ return this.ready() && !!this.client.token(); },
-    async req(url, opts){ const t = await this.tok(); const r = await fetch(url, Object.assign({}, opts, { headers: Object.assign({ Authorization: 'Bearer ' + t }, (opts && opts.headers) || {}) })); if (!r.ok) throw new Error('drive ' + r.status + ' ' + (await r.text()).slice(0, 120)); return r; },
-    fname: h => FN + encodeURIComponent(h) + '.json',
-    async find(h){ if (this.ids[h]) return this.ids[h]; const r = await this.req(API + '/files?spaces=appDataFolder&fields=files(id,name,modifiedTime)&q=' + encodeURIComponent("name='" + this.fname(h) + "'")); const d = await r.json(); const f = d.files && d.files[0]; if (f) this.ids[h] = f.id; return f ? f.id : null; },
-    async list(){ if (!this.ready()) return []; try { const r = await this.req(API + '/files?spaces=appDataFolder&fields=files(id,name)&pageSize=100'); const d = await r.json(); return (d.files || []).map(f => f.name).filter(n => n.startsWith(FN) && n.endsWith('.json')).map(n => decodeURIComponent(n.slice(FN.length, -5))).sort(); } catch (e) { console.warn('drive.list', e); return []; } },
-    async load(h){ if (!this.ready()) return null; try { const id = await this.find(h); if (!id) return null; const r = await this.req(API + '/files/' + id + '?alt=media'); return await r.json(); } catch (e) { console.warn('drive.load', e); return null; } },
-    async save(h, state){ if (!this.ready()) return false; try { const id = await this.find(h); const meta = { name: this.fname(h), parents: id ? undefined : ['appDataFolder'] }; const boundary = 'netrun' + Date.now();
-        const body = '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(meta) + '\r\n--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(state) + '\r\n--' + boundary + '--';
-        const r = await this.req(UP + '/files' + (id ? '/' + id : '') + '?uploadType=multipart&fields=id', { method: id ? 'PATCH' : 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + boundary }, body }); const d = await r.json(); this.ids[h] = d.id; return true; } catch (e) { console.warn('drive.save', e); return false; } },
-    async remove(h){ if (!this.ready()) return false; try { const id = await this.find(h); if (id) await this.req(API + '/files/' + id, { method: 'DELETE' }); delete this.ids[h]; return true; } catch (e) { return false; } }
+    name: 'watson', client: null, userId: null,
+    ready(){ return !!(this.client && this.userId && this.client.token()); },
+    live(){ return this.ready(); },
+    async req(body){ const url = (window.PLATFORM || {}).dbUrl; const key = this.client && this.client.token(); if (!url || !key) throw new Error('not signed in');
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ kind: 'rec', key }, body)), redirect: 'follow' });
+      const d = await r.json(); if (d && d.signedOut && this.client.onSignedOut) this.client.onSignedOut(); if (!d || !d.ok) throw new Error('watson ' + ((d && d.why) || r.status)); return d; },
+    async list(){ if (!this.ready()) return []; try { return (await this.req({ op: 'list' })).handles || []; } catch (e) { console.warn('records.list', e); return []; } },
+    async load(h){ if (!this.ready()) return null; try { const d = await this.req({ op: 'load', handle: h }); return d.data ? JSON.parse(d.data) : null; } catch (e) { console.warn('records.load', e); return null; } },
+    async save(h, state){ if (!this.ready()) return false; try { await this.req({ op: 'save', handle: h, data: JSON.stringify(state) }); return true; } catch (e) { console.warn('records.save', e); return false; } },
+    async remove(h){ if (!this.ready()) return false; try { await this.req({ op: 'remove', handle: h }); return true; } catch (e) { return false; } }
   };
   let pending = null, lastPush = 0;
   const Storage = {
     local: LocalAdapter, remote: RemoteAdapter, primary: LocalAdapter,
-    useRemote(client, userId){ RemoteAdapter.client = client; RemoteAdapter.userId = userId; RemoteAdapter.ids = {}; this.primary = RemoteAdapter; },
+    useRemote(client, userId){ RemoteAdapter.client = client; RemoteAdapter.userId = userId; this.primary = RemoteAdapter; },
     useLocal(){ this.primary = LocalAdapter; },
     async mergeLocalIntoRemote(){ if (!RemoteAdapter.ready()) return { merged: 0 }; let merged = 0; for (const h of LocalAdapter.listSync()) { const local = LocalAdapter.loadSync(h); const remote = await RemoteAdapter.load(h); if (local && (!remote || (local.updated || 0) > (remote.updated || 0))) { if (await RemoteAdapter.save(h, local)) merged++; } } return { merged }; },
     // debounced background push: at most one upload every 15 s, plus an immediate one when `now` is set
