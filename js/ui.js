@@ -159,7 +159,7 @@
       '<ul class="doorwhat"><li>' + icon('grid') + '<b>THE GRID</b><span>People who teach you the gear, one part of the net each.</span></li><li>' + icon('board') + '<b>THE BOARD</b><span>Gigs where you fix a real network from the shell.</span></li><li>' + icon('crew') + '<b>THE CREW</b><span>Runners who call you for help. Answer right and in time.</span></li></ul></section>' +
       '<section class="dcard" aria-label="Jack in"><h2>JACK IN</h2>' + (window.Auth && Auth.user() ? doorSignedIn() : doorLocal()) + '</section></div>' +
       // what a night holds, for someone deciding whether to jack in: real captures from the game (assets/preview, tools: scratchpad capture script)
-      '<section class="dpreview" aria-label="Inside a night in Watson"><h2>INSIDE A NIGHT IN WATSON</h2><div class="pstats"><span><b>63</b> nights</span><span><b>68</b> gigs</span><span><b>2,251</b> crew calls</span><span><b>9</b> districts</span></div><div class="pgrid">' +
+      '<section class="dpreview" aria-label="Inside a night in Watson District"><h2>INSIDE A NIGHT IN WATSON DISTRICT</h2><div class="pstats"><span><b>63</b> nights</span><span><b>68</b> gigs</span><span><b>2,251</b> crew calls</span><span><b>9</b> districts</span></div><div class="pgrid">' +
         [['gig', 'THE DIVE', 'A real router and switch shell on a live network. The check reads what the network does, so any working config clears the floor.'],
          ['talk', 'THE TALK', 'One topic a night, in course order, taught in a scene. Each talk ends with a kit of the commands and numbers you need.'],
          ['call', 'THE CALL', 'Your crew calls with questions from the course decks, on a 60-second clock. The ones you miss come back sooner.'],
