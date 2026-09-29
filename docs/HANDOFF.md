@@ -131,6 +131,12 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-29 · Sound files. The owner picked 21 cues on the sound bench (https://claude.ai/artifact/QpFrvjTrsi6SzUxX38CTHY);
+  they live in `assets/sfx/` (credits in `assets/sfx/CREDITS.md` and the door's footer; JC Sounds, Little Robot Sound
+  Factory and Urizen Composer must stay credited). `js/sfx.js` loads them on the first gesture, levels each cue, queues
+  the big moments one after another, and falls back to the synth. New cues: `tab` (top-level view change), `done` (gig
+  complete), `rite` (clearance granted), `night` (first read of a night), `answer` / `miss` (crew call right / wrong or
+  too late), and `tick` on any button with no cue of its own. `?v=85`.
 - 2026-09-29 · Google's sign-in button and prompt are always in English (`locale: 'en'`, `gsi/client?hl=en`); the game
   is English only. `?v=83`.
 - 2026-09-29 · Door: the preview reads INSIDE A NIGHT IN WATSON DISTRICT; the shots open in an overlay (`.shotview`, Esc or a

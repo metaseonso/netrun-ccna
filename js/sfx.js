@@ -1,12 +1,20 @@
-/* sfx.js — short interface sounds, made in the browser with WebAudio. No files, no licences to track.
+/* sfx.js — the game's sounds. Files in assets/sfx/ (chosen by the owner, credits in assets/sfx/CREDITS.md and the
+   door's footer); the WebAudio synth below plays a cue until its file has loaded, or if it fails to.
    Sfx.play(name) · Sfx.on · Sfx.toggle(). Silent until the first user gesture (browsers require it) and when muted.
-   Every sound has a visual twin in the UI; nothing is signalled by sound alone. A CC0 file can replace any cue later:
-   put it in assets/sfx/<name>.ogg and list the name in FILES. */
+   Every sound has a visual twin in the UI; nothing is signalled by sound alone.
+   Menus: tick (any button with no cue of its own), open, close, tab. Results: ok, fail, done, rite, promo, night,
+   answer, miss. The street: ring, jack, sync, coin, spend, eat, fix (repair), drain, flatline. */
 (function(){
   const KEY = 'netrunner-ccna-sound';
   let ctx = null, master = null, on = true;
   try { on = localStorage.getItem(KEY) !== 'off'; } catch (e) {}
-  const FILES = {}; // name -> AudioBuffer, filled when a file cue exists
+  const FILES = {}; // name -> AudioBuffer, once loaded
+  // per-cue level: the files are all peak-matched, so the small ones are turned down here
+  const GAIN = { tick: 0.3, tab: 0.4, open: 0.45, close: 0.45, ok: 0.6, fail: 0.6, answer: 0.6, miss: 0.6, spend: 0.55, eat: 0.6, sync: 0.55, coin: 0.65, drain: 0.6, ring: 0.7, fix: 0.7, jack: 0.8, night: 0.75, done: 0.85, rite: 0.9, promo: 0.9, flatline: 0.9 };
+  // the big moments play one after another instead of on top of each other (a won rite, then the class-up)
+  const QUEUED = { done: 1, rite: 1, promo: 1, night: 1, coin: 1, sync: 1 }; let freeAt = 0, lastAt = 0;
+  let loading = false;
+  function load(){ if (loading || !ready()) return; loading = true; Object.keys(GAIN).forEach(n => fetch('assets/sfx/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(a => new Promise((res, rej) => ctx.decodeAudioData(a, res, rej))).then(b => { FILES[n] = b; }).catch(() => {})); }
   function ready(){ if (ctx) return ctx; const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination); return ctx; }
   // one voice: oscillator (or noise) through a gain envelope, optional pitch glide and filter
   function tone(o){ const c = ready(); if (!c) return; const t = c.currentTime + (o.at || 0); const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || 0.2, t + (o.a || 0.005)); g.gain.exponentialRampToValueAtTime(0.0001, t + (o.d || 0.12));
@@ -32,6 +40,13 @@
     flatline: () => tone({ f: 988, type: 'sine', vol: 0.12, a: 0.02, d: 2.4 }),
     drain: () => tone({ f: 420, f2: 160, type: 'triangle', vol: 0.07, d: 0.3 })
   };
-  function play(name){ if (!on) return; const c = ready(); if (!c) return; if (c.state === 'suspended') c.resume(); if (FILES[name]) { const s = c.createBufferSource(); s.buffer = FILES[name]; s.connect(master); s.start(); return; } const f = CUES[name]; if (f) try { f(); } catch (e) {} }
+  CUES.tab = CUES.tick; CUES.done = CUES.fix; CUES.rite = CUES.promo; CUES.night = CUES.sync; CUES.answer = CUES.ok; CUES.miss = CUES.fail;
+  function play(name){ lastAt = Date.now(); if (!on) return; const c = ready(); if (!c) return; if (c.state === 'suspended') c.resume(); load();
+    const b = FILES[name]; if (!b) { const f = CUES[name]; if (f) try { f(); } catch (e) {} return; }
+    let at = c.currentTime; if (QUEUED[name]) { at = Math.max(at, freeAt); freeAt = at + Math.min(b.duration, 2.5) + 0.05; }
+    const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = GAIN[name] || 0.6; s.connect(g); g.connect(master); s.start(at); }
+  // a button press with no cue of its own gets the tick; a cue played by the click's own handler wins
+  document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('button,[role="button"],a[href],summary,[data-v]'); if (!t || t.disabled) return; const at = Date.now(); setTimeout(() => { if (lastAt < at) play('tick'); }, 0); }, true);
+  ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (on) load(); }, { once: true, capture: true }));
   window.Sfx = { play, get on(){ return on; }, toggle(){ on = !on; try { localStorage.setItem(KEY, on ? 'on' : 'off'); } catch (e) {} if (on) play('tick'); return on; }, cues: Object.keys(CUES) };
 })();
