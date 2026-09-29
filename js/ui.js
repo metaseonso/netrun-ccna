@@ -159,7 +159,7 @@
       '<ul class="doorwhat"><li>' + icon('grid') + '<b>THE GRID</b><span>People who teach you the gear, one part of the net each.</span></li><li>' + icon('board') + '<b>THE BOARD</b><span>Gigs where you fix a real network from the shell.</span></li><li>' + icon('crew') + '<b>THE CREW</b><span>Runners who call you for help. Answer right and in time.</span></li></ul></section>' +
       '<section class="dcard" aria-label="Jack in"><h2>JACK IN</h2>' + (window.Auth && Auth.user() ? doorSignedIn() : doorLocal()) + '</section></div>' +
       // what a night holds, for someone deciding whether to jack in: real captures from the game (assets/preview, tools: scratchpad capture script)
-      '<section class="dpreview" aria-label="Inside a night"><h2>INSIDE A NIGHT</h2><div class="pstats"><span><b>63</b> nights</span><span><b>68</b> gigs</span><span><b>2,251</b> crew calls</span><span><b>9</b> districts</span></div><div class="pgrid">' +
+      '<section class="dpreview" aria-label="Inside a night in Watson"><h2>INSIDE A NIGHT IN WATSON</h2><div class="pstats"><span><b>63</b> nights</span><span><b>68</b> gigs</span><span><b>2,251</b> crew calls</span><span><b>9</b> districts</span></div><div class="pgrid">' +
         [['gig', 'THE DIVE', 'A real router and switch shell on a live network. The check reads what the network does, so any working config clears the floor.'],
          ['talk', 'THE TALK', 'One topic a night, in course order, taught in a scene. Each talk ends with a kit of the commands and numbers you need.'],
          ['call', 'THE CALL', 'Your crew calls with questions from the course decks, on a 60-second clock. The ones you miss come back sooner.'],
@@ -529,6 +529,14 @@
   document.addEventListener('click', e => { const m = e.target.closest('[data-menu]'); if (m) { e.stopPropagation(); cur.menu = cur.menu === m.dataset.menu ? null : m.dataset.menu; sfx(cur.menu ? 'open' : 'close'); render(); const first = cur.menu && $('.dropdown button'); if (first && e.detail === 0) first.focus(); return; }
     if (cur.menu && !e.target.closest('.dropdown')) { cur.menu = null; render(); } }, true);
   document.addEventListener('click', e => { if (cur.hall && e.target.id === 'hallback') { cur.hall = false; render(); } });
+  // the door's preview shots open full size over the page, not in a new tab
+  const shut = () => { const v = document.querySelector('.shotview'); if (!v) return false; v.remove(); if (v._from && v._from.isConnected) v._from.focus(); return true; };
+  document.addEventListener('click', e => { const a = e.target.closest('.pgrid a'); if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) { e.preventDefault(); shut();
+      const f = a.closest('figure'), cap = f && f.querySelector('figcaption'), v = document.createElement('div'); v.className = 'shotview'; v.setAttribute('role', 'dialog'); v.setAttribute('aria-modal', 'true'); v.setAttribute('aria-label', a.querySelector('img').alt); v._from = a;
+      v.innerHTML = '<button class="shotx" aria-label="Close">×</button><figure><img src="' + a.getAttribute('href') + '" alt="' + a.querySelector('img').alt + '">' + (cap ? '<figcaption>' + cap.innerHTML + '</figcaption>' : '') + '</figure>';
+      document.body.appendChild(v); v.querySelector('.shotx').focus(); return; }
+    if (e.target.closest('.shotview') && !e.target.closest('figcaption')) shut(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && shut()) e.stopImmediatePropagation(); }, true);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && cur.hall) { cur.hall = false; render(); return; } if (e.key === 'Escape' && cur.menu) { const was = cur.menu; cur.menu = null; render(); const b = $('[data-menu="' + was + '"]'); if (b) b.focus(); } });
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-v],[data-stage],[data-level],[data-job],[data-start],[data-opt],[data-choice],[data-multi],[data-up],[data-down],[data-dev],[data-node],[data-dmans],[data-devtab],[data-golden],[data-buy],[data-eat],[data-give],[data-favor],[data-theme],[data-diff],[data-ltheme],#next,#prev,#finish,#commit,#hint,#abort,#wipe,#logout,#signin,#gsiclose,#signout,#reload,#exitdoor,#devtoggle,#opendm,#dmopen,#dmlater,#dmclose,#forcedm,#devping,#fixer,#fxyes,#fxno,#fxnotes,#fxclose,#sfxtoggle,#lowerdiff,#lowerno,[data-ctab],[data-cfilter],[data-cjob],[data-bshow],[data-bcls],[data-bstage],[data-bfold],[data-mstage],[data-bjump],[data-shelf],#drivetry,#suggest,#sugsend,#sugno,#lissue,#lsvg,#lpng,#cprint,#lhall,#hallopen,#hallclose'); if (!t) return; if (t.closest('.dropdown')) cur.menu = null; if (t.id === 'sfxtoggle') { const on = window.Sfx && Sfx.toggle(); toast(on ? 'SOUND ON' : 'SOUND OFF', 'grn'); return render(); }

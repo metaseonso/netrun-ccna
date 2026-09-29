@@ -131,6 +131,8 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-29 · Door: the preview reads INSIDE A NIGHT IN WATSON; the shots open in an overlay (`.shotview`, Esc or a
+  click closes it). `?v=82`.
 - 2026-09-29 · Sign-in without popups. Google is identity only (`google.accounts.id` button, ID token, no Drive).
   The Watson DB checks the token with Google and issues a device key that never expires (hashed in the `sessions`
   tab); records live in its `records` tab (`{kind:'rec'}`: list/load/save/remove). `js/platform/auth.js` and

@@ -92,6 +92,16 @@ All days are built. The gig ideas below were the plan; the real gigs are in `js/
 
 - **Done 2026-09-28: the owner's dashboard** (`owner.html`, docs/WATSON_DB.md; the owner must redeploy the script once). A page only the owner can open (their Google account and the DB key), with every player's traffic and stats in one overview: registrations over time, nights reached, where players stall, flatlines, fixer use, suggestions by status, licenses issued. Data comes from the Watson DB (`pulse`, `suggestions`, `licenses`); the DB will need a richer anonymous `pulse` (per-night timestamps) for it.
 
+- **Ticket 2026-09-29: speed and cleanup (owner).** Make everything run smoother and faster, mainly under the hood,
+  and remove what serves nothing. Scope: measure first (load time, first paint, time to JACK IN, frame time on the
+  map and the dive, on a mid phone). Then: `index.html` loads about 118 script tags, so group or defer what the door
+  does not need (card decks, night scripts, card images) and load it on first use; check the size of `assets/`
+  (about 5 MB) and `js/data/`, and compress or lazy-load; find code, CSS rules, assets and storage keys nothing uses
+  and delete them; make sure a full render does not run where a small update would; check the Watson DB calls
+  (fewer, smaller, no repeat reads). Keep `npm test` and `node tools/play.js all` green and change no gameplay.
+  Report the before and after numbers.
+- Done 2026-09-29: the door's preview is "INSIDE A NIGHT IN WATSON", and its shots open in an overlay.
+
 - Extend protégé lines and add a few recurring named protégés with arcs (optional, after the campaign).
 - Survival tuning: done 2026-09-28 (stall prices × (1 + 0.5 × classRank), Marrow's patch, a repayable tab). Re-run the
   simulation if gig pay or costs change.
