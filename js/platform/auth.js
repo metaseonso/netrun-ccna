@@ -34,7 +34,7 @@
       if (!told || !session) emit(); return this; },
     // Google's own button, drawn into el (the door, or the sign-in box in the account menu)
     mountButton(el){ if (!el) return; mounted.forEach(m => { if (!m.isConnected) mounted.delete(m); }); mounted.add(el); if (!ready) return; if (el.dataset.gsi === '1' && el.childElementCount) return; el.dataset.gsi = '1';
-      try { google.accounts.id.renderButton(el, { type: 'standard', theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', logo_alignment: 'left', width: Math.min(360, Math.max(220, el.clientWidth || 300)) }); } catch (e) { console.warn('gsi button', e); } },
+      try { google.accounts.id.renderButton(el, { type: 'standard', theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', logo_alignment: 'left', locale: 'en', width: Math.min(360, Math.max(220, el.clientWidth || 300)) }); } catch (e) { console.warn('gsi button', e); } },
     user(){ return session ? session.user : null; },
     token(){ return session ? session.key : null; },
     needsToken(){ return false; },

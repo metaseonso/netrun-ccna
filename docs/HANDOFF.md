@@ -131,6 +131,8 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-29 · Google's sign-in button and prompt are always in English (`locale: 'en'`, `gsi/client?hl=en`); the game
+  is English only. `?v=83`.
 - 2026-09-29 · Door: the preview reads INSIDE A NIGHT IN WATSON; the shots open in an overlay (`.shotview`, Esc or a
   click closes it). `?v=82`.
 - 2026-09-29 · Sign-in without popups. Google is identity only (`google.accounts.id` button, ID token, no Drive).
