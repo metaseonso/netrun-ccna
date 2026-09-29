@@ -125,3 +125,7 @@
 @media (max-width:1150px){.b-id .sugbtn span{display:none}}
 @media (max-width:760px){ .b-id .cls,.b-id .diffchip,.b-id .acct,.b-id .sugbtn,.b-id .logo{flex-shrink:0} .b-id .who{flex:1 1 auto} }
 @media (max-width:400px){ .b-id .who .ava,.b-id .who img{display:none} .b-id .cls{letter-spacing:.06em} }
+/* small phones: the handle gets the room; the logo is on the door, the rest stays compact */
+@media (max-width:420px){ .b-id{gap:8px!important;padding:0 10px!important} .b-id .logo{display:none} .b-id .cls{padding:3px 6px;font-size:10px} .b-id .sugbtn,.b-id .acct{padding-left:6px;padding-right:6px} .b-id .acct .ic.sm{display:none} }
+@media (max-width:420px){ .b-id .who b{font-size:12px;letter-spacing:0} .b-id .who{gap:0} }
+@media (max-width:380px){ .b-id .cls .cw{display:none} }
