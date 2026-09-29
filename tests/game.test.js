@@ -100,5 +100,24 @@ module.exports.run = function({ out }){
     Game.startJob(g.id); const res = Game.finishJob().result; const cut = Math.min(owed, res.creds); ok(res.settled === cut && Game.state.body.owed === owed - cut && Game.state.body.tab === (owed > cut ? 2 : 0) && Game.state.creds === res.creds - cut, 'tab: the next pay settles it (' + JSON.stringify({ settled: res.settled, owed: Game.state.body.owed, creds: Game.state.creds }) + ')');
     Object.assign(Game.state, keep);
   }
+  // the first night: steps only move forward, the first dive costs no chrome, no crew call rings before the crew step
+  {
+    const keep = JSON.parse(JSON.stringify({ first: Game.state.first, body: Game.state.body, handle: Game.state.handle, dm: Game.state.dm, rep: Game.state.rep, read: Game.state.read, roster: Game.state.roster, cards: Game.state.cards, dmLog: Game.state.dmLog, lastDmAt: Game.state.lastDmAt }));
+    Game.state.handle = Game.state.handle || 'firsttest'; Game.state.first = 'map';
+    ok(!Game.first.go('welcome') && Game.first.at === 'map', 'first night: a step never goes back through go()');
+    ok(Game.first.go('talk') && Game.first.at === 'talk', 'first night: map moves on to talk');
+    Game.state.first = 'dive'; Game.state.body.chrome = 100; const g = JOBS.find(j => j.solution && !j.rite && j.cls === 'D' && j.steps[0].type === 'choice') || JOBS.find(j => j.solution && !j.rite && j.cls === 'D');
+    Game.startJob(g.id); const c0 = Game.state.body.chrome; Game.run.choice = -1; Game.run.text = '#nothing#'; let r = Game.commit();
+    ok(!r.ok && Game.state.body.chrome === c0, 'first night: a wrong answer on the first dive costs no chrome (' + c0 + ' → ' + Game.state.body.chrome + ')');
+    Game.state.first = null; r = Game.commit(); ok(!r.ok && Game.state.body.chrome < c0, 'first night: after it, a wrong answer costs chrome (' + Game.state.body.chrome + ')'); Game.abort();
+    Game.state.first = 'board'; Game.state.dm = null; ok(Game.dm.maybeCreate(true) === null, 'first night: no crew call before the crew step, even forced');
+    Game.state.first = 'crew'; Game.state.dm = null; Game.state.read['n01-back-room'] = Game.state.read['n01-back-room'] || Date.now(); if (!Protege.active(Game.state.roster).length) Protege.recruit(Game.state.roster, 'test');
+    const d = Game.dm.maybeCreate(true); if (d) { Game.dm.open(); const p = Game.state.roster.list.find(x => x.id === d.protege), dz = p.danger, rep0 = Game.state.rep; const wrong = d.type === 'choice' ? (d.a + 1) % d.opts.length : 0;
+      const res = Game.dm.answer(wrong); ok(!res.ok && Game.state.rep === rep0 && p.danger === dz, 'first night: a missed first call costs no rep and no danger (' + rep0 + ' → ' + Game.state.rep + ', danger ' + dz + ' → ' + p.danger + ')'); }
+    else ok(false, 'first night: the crew step can force a call');
+    Game.state.first = 'archive'; ok(Game.first.end('done') && Game.first.at === null, 'first night: end() clears it');
+    ok(!Game.first.go('map'), 'first night: nothing moves once it is over');
+    Object.assign(Game.state, keep);
+  }
   return { pass, fails };
 };

@@ -100,6 +100,8 @@ All days are built. The gig ideas below were the plan; the real gigs are in `js/
   and delete them; make sure a full render does not run where a small update would; check the Watson DB calls
   (fewer, smaller, no repeat reads). Keep `npm test` and `node tools/play.js all` green and change no gameplay.
   Report the before and after numbers.
+- Done 2026-09-29: the first night (player feedback: the opening was overwhelming). Dispatch walks a new runner through one
+  loop, one menu at a time, on every difficulty. See HANDOFF changelog.
 - Done 2026-09-29: the door's preview is "INSIDE A NIGHT IN WATSON DISTRICT", and its shots open in an overlay.
 
 - Extend protégé lines and add a few recurring named protégés with arcs (optional, after the campaign).

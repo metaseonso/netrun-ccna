@@ -312,3 +312,22 @@
 .shotview figcaption{display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:1.55;color:var(--ink2);cursor:auto} .shotview figcaption b{font-family:var(--disp);font-size:11px;letter-spacing:.16em;color:var(--cyan);font-weight:600}
 .shotx{position:absolute;top:10px;right:12px;width:40px;height:40px;background:var(--panel);border:1px solid var(--line);color:var(--ink);font-size:22px;line-height:1;cursor:pointer} .shotx:hover,.shotx:focus-visible{border-color:var(--cyan);color:var(--cyan)}
 .gsibtn{display:flex;justify-content:center;min-height:44px} .modal .gsibtn{margin:14px 0}
+/* the first night: Dispatch's card, and the one thing to press, lit */
+.first{display:flex;flex-direction:column;gap:12px;border-color:var(--mag);background:linear-gradient(180deg,rgba(255,63,164,.07),transparent 70%),var(--panel)}
+.first .fnarr{font-style:italic;color:var(--ink2);line-height:1.65;max-width:72ch}
+.first .fsay{display:flex;gap:14px;align-items:flex-start}
+.first .fsay>div:last-child{min-width:0}
+.first .fwho{font-family:var(--disp);font-size:11px;letter-spacing:.2em;color:var(--mag)}
+.first .fsay p{margin:4px 0 0;color:var(--ink);font-size:15px;line-height:1.6;max-width:68ch}
+.first .frules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.first .frules li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink2);line-height:1.55}
+.first .frules li .ic{flex:none;margin-top:3px;color:var(--cyan)}
+.first .row{gap:10px;flex-wrap:wrap}
+.first.welcome{max-width:760px;margin:clamp(12px,4vh,40px) auto}
+.first.away{flex-direction:row;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--mag);margin-bottom:12px;font-size:13px;color:var(--ink2)}
+.first.away>span{flex:1;min-width:0} .first.away b{font-family:var(--disp);font-size:10.5px;letter-spacing:.18em;color:var(--mag);margin-right:6px}
+.bdetail.solo{max-width:720px}
+.lead{position:relative;box-shadow:0 0 0 2px var(--mag),0 0 18px rgba(255,63,164,.55);animation:leadpulse 1.6s ease-in-out infinite}
+@keyframes leadpulse{50%{box-shadow:0 0 0 2px var(--mag),0 0 4px rgba(255,63,164,.2)}}
+@media (prefers-reduced-motion:reduce){.lead{animation:none}}
+@media (max-width:560px){.first .fsay p{font-size:14px}.first.away{flex-wrap:wrap}}

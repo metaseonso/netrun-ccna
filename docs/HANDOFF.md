@@ -131,6 +131,14 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-29 · The first night. A new record starts with `state.first = 'welcome'` and Dispatch walks the runner through
+  one loop: welcome → map → talk (night 1) → board (the first gig only) → dive → paid → stall (buy one thing) → crew (a
+  forced first call) → archive (where the CODEX, DECK, RECORD and JOURNAL are) → out. Each menu appears at the step
+  that uses it; the body band appears at the Board. Same on every difficulty: the first dive's wrong answers cost no
+  chrome, no fixer is offered, and a missed first call costs no rep or danger. SKIP · I KNOW THE STREET ends it on
+  the welcome card. Records with any night heard or gig cleared skip it (`migrate`). Rules in `Game.first` and
+  `tests/game.test.js`; steps, lines and highlights in `FIRST` in `js/ui.js`. Also: crew-call options no longer repeat
+  an answer that differs only in capitals. `?v=86`.
 - 2026-09-29 · Sound files. The owner picked 21 cues on the sound bench (https://claude.ai/artifact/QpFrvjTrsi6SzUxX38CTHY);
   they live in `assets/sfx/` (credits in `assets/sfx/CREDITS.md` and the door's footer; JC Sounds, Little Robot Sound
   Factory and Urizen Composer must stay credited). `js/sfx.js` loads them on the first gesture, levels each cue, queues
