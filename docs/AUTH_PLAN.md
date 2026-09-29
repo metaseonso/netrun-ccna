@@ -22,6 +22,7 @@ so the game kept opening Google popups. That build is gone. Old Drive records do
 - A signed-in record lives in memory while playing. `save()` marks it dirty; `flush()` writes it at once on a sync
   (every talk and gig), LOG OUT, SIGN OUT and a hidden tab; between syncs after 20 quiet seconds, at most a minute late. Closing the tab with an unsaved record makes the
   browser ask first.
+- Handles are ALL CAPS. Lowercase names from before 2026-09-29 are renamed on the next sign-in.
 - Limits per account: 20 handles, 2 MB per record (a full playthrough is about 210 KB).
 - Local handles (name + passcode, no Google) stay in the browser, logged in until LOG OUT. They are not security.
   The owner accepted that.

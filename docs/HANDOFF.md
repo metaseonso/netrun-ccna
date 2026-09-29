@@ -131,6 +131,18 @@ Definition of done for a day:
 
 ## CHANGELOG (append engine changes here)
 
+- 2026-09-29 · The campaign loads after the door: `index.html` marks the engines, nights, gigs and cards `type="text/lazy"`;
+  `js/ui.js` fetches them in order once the door is up, and a runner already signed in sees a short JACKING IN screen.
+  Door on a throttled phone 2.1 s → 0.75 s. The tools (`tools/check.js`, `play.js`, `register_cards.py`) read the lazy
+  tags and load the game first, then the campaign. **New data files go in the lazy block.**
+  Handles are ALL CAPS, always; older records are renamed once (local at load, Watson DB at sign-in).
+  A dive in progress is kept in the record (`state.dive`: floor, misses, every command) and resumes after a reload or a
+  log-out; only JACK OUT, a clear or a flatline ends it. The shell folds away (OPEN THE SHELL) on floors that are not typed
+  into and name no command. Lit words open a term card (hover or tap): the meaning, the course notes for the night the
+  word first comes up, and an official source from `js/data/glossary-links.js` (199 of 363 terms, all checked; Cisco-only
+  features have none because cisco.com could not be verified from here). CODEX → WORDS lists only words heard. A reload
+  returns to the same screen and page (this tab). Also: tooltips stay quiet on the control just clicked, gig titles wrap
+  on the Board, toasts sit above the phone tab bar, the static page no longer mentions Drive. `?v=89`.
 - 2026-09-29 · Fixes from three Sonnet playtests of the first night and a second loop (desktop Rookie, phone Cyberpsycho,
   edge cases). Dive-map boxes have a 64-unit tap area (phone taps hit about 90%, were 39–73%). Toasts never block taps.
   Leaving the first dive (jack out, reload, log out) refunds its hunger and chrome (`state.firstPaid`). Keyboard focus

@@ -41,8 +41,7 @@ a{color:var(--cyan)} button{font:inherit;cursor:pointer}
 .btn.ghost{border-color:var(--line);color:var(--ink2)} .btn[disabled]{opacity:.4;cursor:not-allowed}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 
-.term{color:var(--term);font-weight:700;text-shadow:0 0 6px rgba(255,176,32,.5);cursor:help;border-bottom:1px dotted rgba(255,176,32,.6);position:relative}
-.term:hover::after{content:attr(data-def);position:absolute;left:0;top:120%;z-index:30;width:min(360px,70vw);background:#0b0f18;border:1px solid var(--term);color:var(--ink);font-weight:400;text-shadow:none;padding:8px 10px;font-size:12px;line-height:1.45;white-space:normal}
+.term{color:var(--term);font-weight:700;text-shadow:0 0 6px rgba(255,176,32,.5);cursor:pointer;border-bottom:1px dotted rgba(255,176,32,.6);position:relative} .term:focus-visible{outline:2px solid var(--term);outline-offset:2px}
 code,kbd{font-family:var(--mono);background:#0b0f18;border:1px solid var(--line);padding:1px 5px;border-radius:3px;color:var(--grn);font-size:12px}
 .tag{display:inline-block;border:1px solid var(--line);color:var(--ink2);padding:1px 7px;font-size:10px;letter-spacing:.1em;margin-right:4px;border-radius:2px;text-transform:uppercase}
 .tag.on{color:var(--grn);border-color:var(--grn)} .tag.new{color:var(--mag);border-color:var(--mag)}
@@ -178,3 +177,4 @@ details.why summary{cursor:pointer;color:var(--yel);font-family:var(--disp);font
 
 
 
+@media (max-width:760px){.toast{bottom:84px;right:12px;left:12px;align-items:flex-end}} /* above the phone tab bar */

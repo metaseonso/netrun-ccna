@@ -100,6 +100,17 @@ module.exports.run = function({ out }){
     Game.startJob(g.id); const res = Game.finishJob().result; const cut = Math.min(owed, res.creds); ok(res.settled === cut && Game.state.body.owed === owed - cut && Game.state.body.tab === (owed > cut ? 2 : 0) && Game.state.creds === res.creds - cut, 'tab: the next pay settles it (' + JSON.stringify({ settled: res.settled, owed: Game.state.body.owed, creds: Game.state.creds }) + ')');
     Object.assign(Game.state, keep);
   }
+  // a dive in progress survives a reload: the floor, the misses and every command typed come back
+  {
+    const keep = JSON.parse(JSON.stringify({ first: Game.state.first, body: Game.state.body, handle: Game.state.handle, dive: Game.state.dive || null, read: Game.state.read }));
+    Game.state.handle = Game.state.handle || 'divetest'; Game.state.first = null; Game.state.body.food = 100; Game.state.body.chrome = 100;
+    Game.startJob('d-n04-seven-bowls'); const dev = Game.run.active; Game.run.form = {}; Game.commit();
+    ['enable', 'configure terminal', 'hostname BOWLS'].forEach(c => Game.exec(c));
+    const saved = JSON.parse(JSON.stringify(Game.state.dive)); ok(saved && saved.cmds.length === 3 && saved.fails[0] === 1, 'dive: the record keeps the floor, misses and commands (' + (saved && saved.cmds.length) + ' commands)');
+    Game.abort(); ok(!Game.state.dive, 'dive: JACK OUT ends it'); Game.state.dive = saved;
+    const r = Game.resume(); ok(r && r.step === 0 && r.fails[0] === 1 && r.cmds.length === 3 && r.devices[dev].prompt().startsWith('BOWLS'), 'dive: resume brings back the floor, the misses and the config (' + (r && r.devices[dev].prompt()) + ')');
+    Game.abort(); Object.assign(Game.state, keep); if (!keep.dive) delete Game.state.dive;
+  }
   // the first night: steps only move forward, the first dive costs no chrome, no crew call rings before the crew step
   {
     const keep = JSON.parse(JSON.stringify({ first: Game.state.first, body: Game.state.body, handle: Game.state.handle, dm: Game.state.dm, rep: Game.state.rep, read: Game.state.read, roster: Game.state.roster, cards: Game.state.cards, dmLog: Game.state.dmLog, lastDmAt: Game.state.lastDmAt }));

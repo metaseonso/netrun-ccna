@@ -8,11 +8,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); os.chdir(ROO
 html = open('index.html', encoding='utf-8').read()
 m = re.search(r'\?v=(\d+)"', html); ver = m.group(1) if m else '1'
 files = sorted(f for f in os.listdir('js/data/cards') if re.match(r'day\d+[a-z]?\.js$', f))
-anchor = '<script src="js/data/cards.js?v=%s"></script>\n' % ver
+anchor = '<script type="text/lazy" src="js/data/cards.js?v=%s"></script>\n' % ver
 if anchor not in html: sys.exit('index.html has no js/data/cards.js script tag to anchor on')
 added = 0; block = ''
 for f in files:
-    tag = '<script src="js/data/cards/%s?v=%s"></script>\n' % (f, ver)
+    tag = '<script type="text/lazy" src="js/data/cards/%s?v=%s"></script>\n' % (f, ver)
     if ('js/data/cards/%s' % f) in html: continue
     block += tag; added += 1
 if block: html = html.replace(anchor, anchor + block); open('index.html', 'w', encoding='utf-8', newline='\n').write(html)

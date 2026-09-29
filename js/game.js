@@ -17,6 +17,9 @@
   const usable = s => !!s && (s.v || 0) >= VERSION;
   let state = fresh();
   function load(h){ const s = Storage.local.loadSync(h); if (s && !usable(s)) { Storage.local.remove(h); console.info('record from an earlier build dropped:', h); } return usable(s) ? migrate(s) : Object.assign(fresh(), { handle: h }); }
+  // handles are ALL CAPS, always. Records made before that are renamed once (a record already under the capital name wins).
+  const up = h => (h || '').trim().slice(0, 18).toUpperCase();
+  try { Storage.local.listSync().forEach(h => { const H = h.toUpperCase(); if (h === H) return; const r = Storage.local.loadSync(h), cur = Storage.local.current(); if (r && !Storage.local.listSync().includes(H)) { r.handle = H; Storage.local.saveSync(H, r); } Storage.local.remove(h); if (cur === h) Storage.local.setCurrent(H); }); } catch (e) {}
   try { const cur = Storage.local.current(); const r = cur && Storage.local.loadSync(cur); if (r && !r.owner) state = load(cur); } catch (e) {} // a Google record never opens from the browser
   try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith('netrun-ccna-')) localStorage.removeItem(k); } } catch (e) {} // keys from before the rename
   Telemetry.ensure(state);
@@ -63,7 +66,7 @@
       state.inventory[id]--; const before = state.body.food; state.body.food = Math.min(body.max, state.body.food + (it.effect.food || 0)); ev('eat', { item: id, food: state.body.food }); log('Ate ' + it.name + ' (food ' + before + ' → ' + state.body.food + ')'); save(); return { ok: true, item: it, food: state.body.food }; },
     wear(n, why){ if (!state.handle) return false; state.body.chrome = Math.max(0, state.body.chrome - n); if (state.body.chrome <= 0) { flatline(why || 'the chrome gave out.'); return true; } return false; }
   };
-  function flatline(why){ state.dead = { at: Date.now(), why, food: state.body.food, chrome: state.body.chrome, job: run ? run.job.id : null }; state.meta.deaths++; const fn = run && run.job.day ? run.job.day[0] : null; if (fn) { state.meta.flatNights = state.meta.flatNights || {}; state.meta.flatNights[fn] = (state.meta.flatNights[fn] || 0) + 1; } ev('flatline', { why, job: state.dead.job }); log('FLATLINED. ' + why); run = null; save(); }
+  function flatline(why){ delete state.dive; state.dead = { at: Date.now(), why, food: state.body.food, chrome: state.body.chrome, job: run ? run.job.id : null }; state.meta.deaths++; const fn = run && run.job.day ? run.job.day[0] : null; if (fn) { state.meta.flatNights = state.meta.flatNights || {}; state.meta.flatNights[fn] = (state.meta.flatNights[fn] || 0) + 1; } ev('flatline', { why, job: state.dead.job }); log('FLATLINED. ' + why); run = null; save(); }
   // a sync is the only save the player gets: after a talk, after a gig. no chips, no manual saves. pacing stays ours.
   // telemetry, the journal and the passcode ride outside the snapshot so a reload never erases the record of what happened.
   const KEEP = ['events', 'log', 'dmLog', 'meta', 'checkpoint', 'pass', 'owner', 'codex', 'completedAt', 'license'];
@@ -131,7 +134,7 @@
     if (!opts.silent) { const c = body.cost(job); if (state.first) state.firstPaid = { food: Math.min(c.food, state.body.food), chrome: Math.min(c.chrome, state.body.chrome) }; state.body.food = Math.max(0, state.body.food - c.food); state.body.chrome = Math.max(0, state.body.chrome - c.chrome); ev('body', { job: job.id, food: state.body.food, chrome: state.body.chrome });
       if (state.body.food <= 0) { flatline('you went in hungry. ' + (job.rite ? 'the clearance run' : 'the dive') + ' took the rest.'); return null; } if (state.body.chrome <= 0) { flatline('the chrome was already failing. it quit two floors down.'); return null; } save(); }
     const topo = job.topo ? JSON.parse(JSON.stringify(job.topo)) : null; const netDef = job.net ? JSON.parse(JSON.stringify(job.net)) : null;
-    const devices = {}; const R = { job, topo, netDef, devices, step: 0, hinted: {}, sharpened: {}, fails: {}, done: [], selected: null, feedback: null, calc: {}, choice: null, multi: new Set(), order: null, form: {}, text: '', active: job.devices[0], history: [], startedAt: Date.now(), stepStart: Date.now(), lastWhy: null, hintShown: null, _netKey: null, _net: null };
+    const devices = {}; const R = { job, topo, netDef, devices, step: 0, hinted: {}, sharpened: {}, fails: {}, done: [], selected: null, feedback: null, calc: {}, choice: null, multi: new Set(), order: null, form: {}, text: '', active: job.devices[0], history: [], cmds: [], live: !opts.silent, startedAt: Date.now(), stepStart: Date.now(), lastWhy: null, hintShown: null, _netKey: null, _net: null };
     const ctx = { job, topo, netDef, devices, get selected(){ return R.selected; },
       state(){ if (!netDef) return null; const key = Object.values(devices).map(d => d.lines.length).join(',') + '|' + JSON.stringify(Object.keys(netDef.devices).map(n => !!netDef.devices[n].removed)); if (R._netKey !== key) { R._net = Net.build(netDef, devices); R._netKey = key; } return R._net; },
       net(){ const s = ctx.state(); return s ? Net.api(s) : null; }, cfg(dev){ return devices[dev] ? NetConfig.parse(devices[dev]) : null; },
@@ -142,7 +145,15 @@
     all.forEach(n => { const kind = netDef && netDef.devices[n] && ['host', 'server'].includes(netDef.devices[n].kind) ? 'host' : 'ios'; const shows = topo ? stpShowsFor(topo) : {}; if (job.shows && job.shows[n]) Object.assign(shows, job.shows[n]);
       devices[n] = new Sim.Device(n, { shows, kind, netState: () => ctx.state(), banner: kind === 'host' ? n + ' — type help' : n + ' con0 is now available\n\nPress RETURN to get started.' }); });
     if (netDef && netDef.preconfig) for (const n in netDef.preconfig) if (devices[n]) devices[n].preload(netDef.preconfig[n]);
-    run = R; if (!opts.silent) { ev('job_start', { job: id }); log('Jacked in: ' + job.title); } return run; }
+    run = R; if (!opts.silent) { ev('job_start', { job: id }); log('Jacked in: ' + job.title); saveDive(); } return run; }
+  // a dive in progress is kept in the record (floor, misses, every command typed), so a reload or a lost tab picks it up again.
+  // Only JACK OUT, a clear or a flatline ends it.
+  function saveDive(){ if (!run || run.result || !run.live) return; state.dive = { id: run.job.id, step: run.step, fails: run.fails, hinted: run.hinted, sharpened: run.sharpened, done: run.done, cmds: run.cmds, active: run.active, startedAt: run.startedAt, outsourced: !!run.outsourced }; save(); }
+  function resume(){ const d = state.dive; if (!d || run) return run; if (!JOBS.find(j => j.id === d.id)) { delete state.dive; return null; }
+    startJob(d.id, { silent: true }); run.live = true; ['step', 'fails', 'hinted', 'sharpened', 'done', 'active', 'startedAt', 'outsourced'].forEach(k => { if (d[k] != null) run[k] = d[k]; });
+    (d.cmds || []).forEach(([dev, raw]) => { if (run.devices[dev]) { run.devices[dev].exec(raw, run.devices); run.history.push(raw); run.cmds.push([dev, raw]); } });
+    run.stepStart = Date.now(); log('Back in the dive: ' + run.job.title); return run; }
+  function exec(raw){ const r = run; if (!r) return null; const d = r.devices[r.active]; r.history.push(raw); r.cmds.push([r.active, raw]); d.exec(raw, r.devices); saveDive(); return d; }
   function stpShowsFor(topo){ return {
       'show spanning-tree': (d, all) => Stp.render(topo, 1, d.name, all), 'show spanning-tree vlan 1': (d, all) => Stp.render(topo, 1, d.name, all), 'show spanning-tree vlan 10': (d, all) => Stp.render(topo, 10, d.name, all), 'show spanning-tree vlan 20': (d, all) => Stp.render(topo, 20, d.name, all),
       'show spanning-tree summary': (d, all) => { const c = Stp.compute(topo, 1, all).switches[d.name]; return 'Switch is in ' + c.cfg.mode + ' mode\nRoot bridge for: ' + (c.isRoot ? 'VLAN0001' : 'none') + '\nPortfast Default            is ' + (c.cfg.portfastDefault ? 'enabled' : 'disabled') + '\nPortFast BPDU Guard Default is ' + (c.cfg.bpduguardDefault ? 'enabled' : 'disabled'); },
@@ -177,7 +188,7 @@
     if (run.step >= run.job.steps.length) return finishJob(); return r; }
   function useHint(){ run.hinted[run.step] = true; ev('hint', { job: run.job.id, step: run.step, skill: currentStep().skill }); return currentStep().hint; }
   function answerOf(st){ if (!st) return ''; if (st.type === 'choice') return String.fromCharCode(65 + st.a) + '. ' + st.opts[st.a]; if (st.type === 'multi') return st.answers.map(i => String.fromCharCode(65 + i) + '. ' + st.opts[i]).join('  ·  '); if (st.type === 'find') return 'Click ' + (st.targets || [st.target]).join(' or ') + ' on the map.'; if (st.type === 'calc') return st.answer || st.fields.map(f => f.label).join(' · '); if (st.type === 'order') return st.items.map((x, i) => (i + 1) + '. ' + x).join('\n'); if (st.type === 'form') return st.fields.map(f => f.label + ': ' + f.answer).join('\n'); if (st.type === 'text') return st.answer || '(see explanation)'; return st.hint || ''; }
-  function finishJob(){ const job = run.job; const prev = state.jobsDone[job.id]; const hintedCount = Object.keys(run.hinted).length; const fails = Object.values(run.fails).reduce((a, b) => a + b, 0); const ms = Date.now() - run.startedAt;
+  function finishJob(){ delete state.dive; const job = run.job; const prev = state.jobsDone[job.id]; const hintedCount = Object.keys(run.hinted).length; const fails = Object.values(run.fails).reduce((a, b) => a + b, 0); const ms = Date.now() - run.startedAt;
     // a fixer's run: the client is served, the fixer keeps the pay. nothing greenlit, no rep, no sync. the gig stays on the Board.
     if (run.outsourced) { ev('job_finish', { job: job.id, ms, fails, hints: hintedCount, rep: 0, outsourced: true }); log('Gig handed off: ' + job.title + ' (the fixer kept the pay)'); save();
       run.result = { rep: 0, creds: 0, hintedCount, fails, ms, leveled: [], promoted: null, repeat: !!prev, recruit: null, outsourced: true }; return { ok: true, finished: true, result: run.result }; }
@@ -200,7 +211,7 @@
       if (run.job.rite) return { ok: false, why: 'The Board watches clearance runs. No fixer will touch this one.' };
       if (codexStatus(run.job) !== 'sealed') return { ok: false, why: 'You already have the notes for this gig. They are in the CODEX.', have: true }; const price = fixer.price(run.job);
       if ((state.creds || 0) < price) return { ok: false, why: 'A fixer wants ' + price + ' creds for this gig. You have ' + (state.creds || 0) + '.', price }; return { ok: true, price }; },
-    hire(){ const c = fixer.can(); if (!c.ok) return c; addCreds(-c.price, 'fixer ' + run.job.id); run.outsourced = true; if (!state.jobsDone[run.job.id]) state.codex[run.job.id] = 'paid';
+    hire(){ const c = fixer.can(); if (!c.ok) return c; addCreds(-c.price, 'fixer ' + run.job.id); run.outsourced = true; if (!state.jobsDone[run.job.id]) state.codex[run.job.id] = 'paid'; saveDive();
       ev('fixer', { job: run.job.id, price: c.price, step: run.step }); log('Hired a fixer on ' + run.job.title + ' for ' + c.price + ' creds'); save(); return { ok: true, price: c.price }; }
   };
   // a gig's codex entry: greenlit once you clear it, paid once a fixer sold it to you, sealed otherwise
@@ -240,7 +251,7 @@
     favor(protegeId){ const p = state.roster.list.find(x => x.id === protegeId); if (!p || p.status !== 'active') return { ok: false, why: 'no such runner' }; if (!(state.inventory.favor > 0)) return { ok: false, why: (PROTEGE_LINES.dispatch || {}).favorEmpty || 'no favor on the books' }; state.inventory.favor--; const out = Protege.favor(p); ev('favor', { protege: protegeId }); log('Called in a favor for ' + p.name); state.dmLog.unshift({ t: Date.now(), protege: p.id, name: 'Dispatch', letter: true, text: out.dispatch }, { t: Date.now() + 1, protege: p.id, name: p.name, letter: true, text: out.them }); if (state.dm && state.dm.protege === p.id) state.dm = null; save(); return { ok: true, out }; },
     setTheme(id){ if (id && !state.perks.skins.some(s => shop.items().find(x => x.id === s).effect.theme === id)) return false; state.perks.theme = id || null; if (id && !state.perks.used.includes(id)) state.perks.used.push(id); save(); return true; }
   };
-  function abort(){ if (run && !run.result) { ev('job_abort', { job: run.job.id, step: run.step }); log('Jacked out early: ' + run.job.title); } run = null; }
+  function abort(){ delete state.dive; if (run && !run.result) { ev('job_abort', { job: run.job.id, step: run.step }); log('Jacked out early: ' + run.job.title); } run = null; }
 
   // ---- golden solution runner (tools/check.js and the dev panel) --------------------
   function runSolution(jobId, opts){ opts = opts || {}; const job = JOBS.find(j => j.id === jobId); if (!job) return { ok: false, error: 'no job ' + jobId }; if (!job.solution) return { ok: false, error: 'job has no solution', job: jobId };
@@ -268,7 +279,7 @@
   function reset(){ const h = state.handle, pass = state.pass, owner = state.owner; Storage.local.remove(h); state = Object.assign(fresh(), { handle: h, pass, owner }); run = null; save(); }
   // not security, by design: a passcode keeps two people on one deck out of each other's record. it is hashed so it is not stored as typed.
   function hashPass(p){ let h = 0x811c9dc5; for (const c of String(p)) { h ^= c.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, '0') + String(p).length.toString(16); }
-  function setHandle(h, pass){ h = (h || '').trim().slice(0, 18); pass = (pass || '').trim(); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' }; const isNew = !Storage.local.listSync().includes(h);
+  function setHandle(h, pass){ h = up(h); pass = (pass || '').trim(); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' }; const isNew = !Storage.local.listSync().includes(h);
     if (!pass) return { ok: false, why: isNew ? 'pick a passcode too. anything. you need it again after LOG OUT.' : 'passcode for ' + h + '?', field: 'pass' };
     const s = load(h); if (s.owner) return { ok: false, why: h + ' is bound to a Google account. SIGN IN WITH GOOGLE to jack in.', field: 'handle' };
     if (s.pass && s.pass !== hashPass(pass)) return { ok: false, why: 'that is not the passcode for ' + h, field: 'pass' };
@@ -276,7 +287,7 @@
   // signed in with Google: the account is the key. no passcode. the record lives in the Watson DB, never in this browser.
   const gUser = () => window.Auth && Auth.user && Auth.user();
   const LAST = 'netrunner-ccna-last-google'; // the last handle's name for this account, so the door can offer it. a name, not a record.
-  const lastHandle = () => { try { const v = JSON.parse(localStorage.getItem(LAST) || 'null'); const u = gUser(); return v && u && v.id === u.id ? v.h : null; } catch (e) { return null; } };
+  const lastHandle = () => { try { const v = JSON.parse(localStorage.getItem(LAST) || 'null'); const u = gUser(); return v && u && v.id === u.id ? up(v.h) : null; } catch (e) { return null; } };
   const setLast = h => { try { const u = gUser(); if (h && u) localStorage.setItem(LAST, JSON.stringify({ id: u.id, h })); else localStorage.removeItem(LAST); } catch (e) {} };
   let linking = false, linkP = Promise.resolve();
   function myHandles(){ if (!gUser() || !names) return []; const l = lastHandle(); return names.slice().sort((a, b) => (b === l) - (a === l)); }
@@ -286,7 +297,7 @@
     state = migrate(rec || Object.assign(fresh(), { handle: h })); state.handle = h; state.owner = u.id; state.pass = null; run = null; setLast(h);
     if (isNew) { log('Handle registered: ' + h); dirty = true; await flush(true); } return { ok: true, isNew }; }
   // a signed-in player never types a passcode. a handle on this deck with no account binds as it is opened and leaves the browser.
-  async function claimHandle(h, pass){ const u = gUser(); if (!u) return setHandle(h, pass); h = (h || '').trim().slice(0, 18); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' };
+  async function claimHandle(h, pass){ const u = gUser(); if (!u) return setHandle(h, pass); h = up(h); if (!h) return { ok: false, why: 'pick a handle', field: 'handle' };
     if (!Auth.token()) return { ok: false, why: 'sign in with Google again.', field: 'handle' };
     await linkP;
     if (names && names.includes(h)) return openBound(h, u);
@@ -309,7 +320,10 @@
     try {
       if (state.handle && !state.owner) { const h = state.handle; state.owner = user.id; state.pass = null; Storage.local.remove(h); Storage.local.setCurrent(null); setLast(h); log('Handle bound to ' + (user.email || user.name)); dirty = true; }
       for (const h of Storage.local.listSync()) { const local = Storage.local.loadSync(h); if (!local || local.owner !== user.id) continue; const remote = await Storage.remote.load(h); if (usable(local) && (!remote || (local.updated || 0) > (remote.updated || 0)) && !await Storage.remote.save(h, local)) continue; Storage.local.remove(h); }
-      names = await Storage.remote.list(); if (dirty) await flush(true);
+      names = await Storage.remote.list();
+      for (const n of names.filter(n => n !== n.toUpperCase() && !names.includes(n.toUpperCase()))) { const rec = await Storage.remote.load(n); if (rec) { rec.handle = n.toUpperCase(); if (state.handle === n) state.handle = rec.handle; if (await Storage.remote.save(rec.handle, rec)) await Storage.remote.remove(n); } }
+      if (names.some(n => n !== n.toUpperCase())) names = await Storage.remote.list();
+      if (dirty) await flush(true);
       const l = lastHandle(); if (!state.handle && l && names.includes(l)) await openBound(l, user);
     } catch (e) { console.warn('auth link', e); } finally { linking = false; draw(); } }
   if (window.Auth) Auth.onChange(onAuth);
@@ -317,5 +331,5 @@
   // closing the tab with a Google record not yet in the Watson DB: push it, and let the browser ask before it goes.
   window.addEventListener('beforeunload', e => { const unsaved = state.owner && (dirty || inflight); Telemetry.touch(state); if (!state.owner) return save(); if (unsaved) { flush(true); e.preventDefault(); e.returnValue = ''; } });
 
-  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit, useHint, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, pay, repOf, shop, fixer, codexStatus, nightDone, licenseRecord, cardThemes, setLicense, setDifficulty, first: { get at(){ return state.first || null; }, steps: FIRST_STEPS, go(step){ if (!state.first || !FIRST_STEPS.includes(step) || FIRST_STEPS.indexOf(step) <= FIRST_STEPS.indexOf(state.first)) return false; state.first = step; if (step === 'paid') delete state.firstPaid; ev('first', { step }); save(); return true; }, back(step){ if (state.first && FIRST_STEPS.includes(step)) { state.first = step; const p = state.firstPaid; if (p && step === 'board') { state.body.food = Math.min(100, state.body.food + p.food); state.body.chrome = Math.min(100, state.body.chrome + p.chrome); log('Jacked out of the first dive. Dispatch covered what it cost.'); } delete state.firstPaid; save(); } }, end(how){ if (!state.first) return false; ev('first', { step: how || 'done', from: state.first }); state.first = null; save(); return true; } }, get difficulty(){ return state.difficulty; }, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
+  window.Game = { get state(){ return state; }, get run(){ return run; }, save, log, classFor, nextClass, classRank, levelById, stageOf, readLevel, jobStatus, startJob, currentStep, evaluate, commit(){ const r = commit(); saveDive(); return r; }, useHint(){ const h = useHint(); saveDive(); return h; }, resume, exec, get diving(){ return !!state.dive; }, answerOf, abort, finishJob, runSolution, reset, setHandle, claimHandle, myHandles, deckHandles, lastHandle, flushNow, get linking(){ return linking; }, get unsaved(){ return !!(state.owner && dirty); }, logout, riteFor, riteBlocking, body, sync, reload, profiles: () => Storage.local.listSync(), skill, allCards, cardUnlocked, dm, dev, addRep, addCreds, pay, repOf, shop, fixer, codexStatus, nightDone, licenseRecord, cardThemes, setLicense, setDifficulty, first: { get at(){ return state.first || null; }, steps: FIRST_STEPS, go(step){ if (!state.first || !FIRST_STEPS.includes(step) || FIRST_STEPS.indexOf(step) <= FIRST_STEPS.indexOf(state.first)) return false; state.first = step; if (step === 'paid') delete state.firstPaid; ev('first', { step }); save(); return true; }, back(step){ if (state.first && FIRST_STEPS.includes(step)) { state.first = step; const p = state.firstPaid; if (p && step === 'board') { state.body.food = Math.min(100, state.body.food + p.food); state.body.chrome = Math.min(100, state.body.chrome + p.chrome); log('Jacked out of the first dive. Dispatch covered what it cost.'); } delete state.firstPaid; save(); } }, end(how){ if (!state.first) return false; ev('first', { step: how || 'done', from: state.first }); state.first = null; save(); return true; } }, get difficulty(){ return state.difficulty; }, get completed(){ return !!state.completedAt; }, stats: () => Telemetry.summary(state, { levels: STAGES.reduce((a, s) => a + s.levels.length, 0), read: Object.keys(state.read).length, jobs: JOBS.length, done: Object.keys(state.jobsDone).length, roster: state.roster, retention: SRS.retention(state.cards), cards: allCards().length, unlocked: allCards().filter(cardUnlocked).length }), LEVEL_NAMES, LEVEL_AT, VERSION };
 })();

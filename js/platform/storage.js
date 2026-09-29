@@ -1,9 +1,9 @@
 /* platform/storage.js — where records live. The game talks only to Storage; adapters do the work.
    LocalAdapter: this browser's localStorage, one profile per handle.
    RemoteAdapter: the signed-in player's records in the Watson DB, reached with this device's key (platform/auth.js).
-   After sign-in, Storage.mergeLocalIntoRemote() uploads local profiles once; then remote is primary and local is a cache. */
+   js/game.js decides which one a record uses: a handle bound to a Google account lives only in the Watson DB. */
 (function(){
-  const PREFIX = 'netrunner-ccna-profile:', CUR = 'netrunner-ccna-current', FN = 'netrunner-';
+  const PREFIX = 'netrunner-ccna-profile:', CUR = 'netrunner-ccna-current';
   const LocalAdapter = {
     name: 'local',
     list(){ return Promise.resolve(LocalAdapter.listSync()); },
@@ -29,14 +29,10 @@
     async save(h, state){ if (!this.ready()) return false; try { await this.req({ op: 'save', handle: h, data: JSON.stringify(state) }); return true; } catch (e) { console.warn('records.save', e); return false; } },
     async remove(h){ if (!this.ready()) return false; try { await this.req({ op: 'remove', handle: h }); return true; } catch (e) { return false; } }
   };
-  let pending = null, lastPush = 0;
   const Storage = {
-    local: LocalAdapter, remote: RemoteAdapter, primary: LocalAdapter,
-    useRemote(client, userId){ RemoteAdapter.client = client; RemoteAdapter.userId = userId; this.primary = RemoteAdapter; },
-    useLocal(){ this.primary = LocalAdapter; },
-    async mergeLocalIntoRemote(){ if (!RemoteAdapter.ready()) return { merged: 0 }; let merged = 0; for (const h of LocalAdapter.listSync()) { const local = LocalAdapter.loadSync(h); const remote = await RemoteAdapter.load(h); if (local && (!remote || (local.updated || 0) > (remote.updated || 0))) { if (await RemoteAdapter.save(h, local)) merged++; } } return { merged }; },
-    // debounced background push: at most one upload every 15 s, plus an immediate one when `now` is set
-    pushIfRemote(h, state, now){ if (this.primary !== RemoteAdapter || !RemoteAdapter.live()) return false; const go = () => { lastPush = Date.now(); pending = null; RemoteAdapter.save(h, state); }; if (now || Date.now() - lastPush > 15000) { if (pending) { clearTimeout(pending); pending = null; } go(); } else if (!pending) pending = setTimeout(go, 15000 - (Date.now() - lastPush)); return true; }
+    local: LocalAdapter, remote: RemoteAdapter,
+    useRemote(client, userId){ RemoteAdapter.client = client; RemoteAdapter.userId = userId; },
+    useLocal(){ RemoteAdapter.client = null; RemoteAdapter.userId = null; },
   };
   window.Storage = Storage;
 })();

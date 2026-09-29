@@ -12,7 +12,7 @@ const ROOT = path.resolve(__dirname, '..'); process.chdir(ROOT);
 global.window = global; global.location = { search: '', origin: 'http://localhost', pathname: '/' };
 const mem = {}; global.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; }, key: i => Object.keys(mem)[i] || null, get length(){ return Object.keys(mem).length; } };
 global.document = { addEventListener(){}, body: { contains(){ return false; } }, querySelector(){ return null; }, querySelectorAll(){ return []; } }; global.setInterval = () => 0; global.addEventListener = () => {}; global.confirm = () => true;
-const html = fs.readFileSync('index.html', 'utf8'); const scripts = [...html.matchAll(/<script src="([^"?]+)(?:\?[^"]*)?"><\/script>/g)].map(m => m[1]).filter(s => !/^https?:/.test(s) && s !== 'js/ui.js');
+const html = fs.readFileSync('index.html', 'utf8'); const tags = [...html.matchAll(/<script (type="text\/lazy" )?src="([^"?]+)(?:\?[^"]*)?"><\/script>/g)]; const scripts = tags.filter(m => !m[1]).concat(tags.filter(m => m[1])).map(m => m[2]) /* the game first, then the campaign, as the browser does */.filter(s => !/^https?:/.test(s) && s !== 'js/ui.js');
 for (const s of scripts) vm.runInThisContext(fs.readFileSync(s, 'utf8'), { filename: s });
 
 const arg = process.argv[2] || 'all'; let nights;

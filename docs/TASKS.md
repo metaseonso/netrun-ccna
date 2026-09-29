@@ -92,8 +92,9 @@ All days are built. The gig ideas below were the plan; the real gigs are in `js/
 
 - **Done 2026-09-28: the owner's dashboard** (`owner.html`, docs/WATSON_DB.md; the owner must redeploy the script once). A page only the owner can open (their Google account and the DB key), with every player's traffic and stats in one overview: registrations over time, nights reached, where players stall, flatlines, fixer use, suggestions by status, licenses issued. Data comes from the Watson DB (`pulse`, `suggestions`, `licenses`); the DB will need a richer anonymous `pulse` (per-night timestamps) for it.
 
-- Done 2026-09-29: speed and cleanup (see HANDOFF changelog for the numbers). Open idea: load the campaign data after
-  the door, which would take the door from about 2 s to under 1 s on a slow phone.
+- Done 2026-09-29: speed and cleanup, then the campaign loading after the door (door 2.2 s → 0.75 s on a slow phone).
+- Done 2026-09-29: all-caps handles, dives that survive a reload, the shell only where it is used, term cards with course
+  notes and official links.
 - Done 2026-09-29: the first night (player feedback: the opening was overwhelming). Dispatch walks a new runner through one
   loop, one menu at a time, on every difficulty. See HANDOFF changelog.
 - Done 2026-09-29: the door's preview is "INSIDE A NIGHT IN WATSON DISTRICT", and its shots open in an overlay.
