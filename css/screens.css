@@ -350,7 +350,7 @@
 .tlinks{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .tlinks a{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid var(--line);color:var(--cyan);text-decoration:none;font-size:10.5px;letter-spacing:.14em;font-family:var(--disp)}
 .tlinks a:hover,.tlinks a:focus-visible{border-color:var(--cyan);background:rgba(63,246,255,.06)}
-.tlinks a em{font-style:normal;font-family:var(--mono);letter-spacing:0;color:var(--ink2);margin-left:6px;text-transform:none}
+.tlinks a em{font-style:normal;white-space:nowrap;font-family:var(--mono);letter-spacing:0;color:var(--ink2);margin-left:6px;text-transform:none}
 .cword .tlinks{margin-top:6px} .cwcount{margin:8px 0 4px;font-size:12px}
 @media (prefers-reduced-motion:reduce){.termcard{transition:none}}
 #handle{text-transform:uppercase} #handle::placeholder{text-transform:none}

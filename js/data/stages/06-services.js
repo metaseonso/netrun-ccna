@@ -350,7 +350,7 @@
       ] },
 
     // ------------------------------------------------------------ night 41 · syslog
-    { id: 'n41-on-air', title: 'The night band', sub: 'syslog', npc: 'beacon', day: [41], src: [PS('Syslog.md')], unlocks: ['syslog'],
+    { id: 'n41-on-air', title: 'The night band', sub: 'syslog', npc: 'beacon', day: [41], src: [PS('SYSLOG.md')], unlocks: ['syslog'],
       beats: [
         { k: 'SCENE', where: 'The exchange hall · the attic · Beacon\'s station, on air',
           lines: [
@@ -485,7 +485,7 @@
       ] },
 
     // ------------------------------------------------------------ night 44 · NAT, part 1
-    { id: 'n44-one-face', title: 'A face the street has seen', sub: 'NAT, part 1', npc: 'nat', day: [44], src: [PS('Network_Address_Translation_Part1.md')], unlocks: ['nat-static'],
+    { id: 'n44-one-face', title: 'A face the street has seen', sub: 'NAT, part 1', npc: 'nat', day: [44], src: [PS('NAT_Static_Part1.md')], unlocks: ['nat-static'],
       beats: [
         { k: 'SCENE', where: 'The exchange hall · Nat\'s mask stall · half past nine',
           lines: [
@@ -527,7 +527,7 @@
       ] },
 
     // ------------------------------------------------------------ night 45 · NAT, part 2
-    { id: 'n45-many-faces', title: 'Eleven things and one address', sub: 'NAT, part 2', npc: 'nat', day: [45], src: [PS('Network_Address_Translation_Part2.md')], unlocks: ['nat-dynamic'],
+    { id: 'n45-many-faces', title: 'Eleven things and one address', sub: 'NAT, part 2', npc: 'nat', day: [45], src: [PS('NAT_Dynamic_Part2.md')], unlocks: ['nat-dynamic'],
       beats: [
         { k: 'SCENE', where: 'The exchange hall · Nat\'s mask stall · nine at night',
           lines: [
@@ -570,7 +570,7 @@
       ] },
 
     // ------------------------------------------------------------ night 46 · QoS, part 1, and voice VLANs
-    { id: 'n46-pieces-of-a-word', title: 'Pieces of a word', sub: 'voice VLANs, PoE and QoS, part 1', npc: 'dispatch', day: [46], src: [PS('QoS_Part1.md')], unlocks: ['voice-vlan'],
+    { id: 'n46-pieces-of-a-word', title: 'Pieces of a word', sub: 'voice VLANs, PoE and QoS, part 1', npc: 'dispatch', day: [46], src: [PS('QoS_VoiceLan.md')], unlocks: ['voice-vlan'],
       beats: [
         { k: 'SCENE', where: 'Dispatch\'s booth · the job board · a quarter to midnight',
           lines: [
@@ -617,7 +617,7 @@
       ] },
 
     // ------------------------------------------------------------ night 47 · QoS, part 2
-    { id: 'n47-who-goes-first', title: 'Who goes first', sub: 'QoS, part 2', npc: 'dispatch', day: [47], src: [PS('QoS_Part2.md')], unlocks: ['qos'],
+    { id: 'n47-who-goes-first', title: 'Who goes first', sub: 'QoS, part 2', npc: 'dispatch', day: [47], src: [PS('QoS_Quality_of_Service.md')], unlocks: ['qos'],
       beats: [
         { k: 'SCENE', where: 'Dispatch\'s booth · the job board · eleven at night',
           lines: [

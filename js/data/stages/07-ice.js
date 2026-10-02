@@ -240,7 +240,7 @@
       ] },
 
     // ------------------------------------------------------------ night 51 · dynamic ARP inspection, the reveal, Marrow's tab
-    { id: 'n51-who-is-asking', title: 'Who is asking', sub: 'dynamic ARP inspection', npc: 'ace', day: [51], src: [PS('Dynamic_ARP_Inspection.md')], unlocks: ['dai'],
+    { id: 'n51-who-is-asking', title: 'Who is asking', sub: 'dynamic ARP inspection', npc: 'ace', day: [51], src: [PS('Dynamic_Arp_Inspection.md')], unlocks: ['dai'],
       beats: [
         { k: 'SCENE', where: 'The Watson clinic · the comms room · twenty past eleven at night',
           lines: [

@@ -86,7 +86,7 @@
           why: 'Nexthop: Each frame carries the packet one hop, so its destination MAC is the next device on that link: across the river, the depot router\'s interface. Only on the last hop, from the depot router to the tracker, is the tracker\'s MAC the destination.' } }
       ] },
     // ------------------------------------------------------------ night 24 · dynamic routing
-    { id: 'n24-night-routes', title: 'The roads change at night', sub: 'dynamic routing, administrative distance, metrics, floating static routes', npc: 'nexthop', day: [24], src: [PS('Dynamic_Routing.md')], unlocks: ['dynamic-routing'],
+    { id: 'n24-night-routes', title: 'The roads change at night', sub: 'dynamic routing, administrative distance, metrics, floating static routes', npc: 'nexthop', day: [24], src: [PS('DynamicRouting.md')], unlocks: ['dynamic-routing'],
       beats: [
         { k: 'SCENE', where: 'Nexthop\'s cab · the Watson ring road · Sunday, 01:10',
           lines: [
@@ -299,7 +299,7 @@
           why: 'Ospef: On a broadcast segment the DR is the router with the highest OSPF interface priority, and every interface starts at 1. With the priorities tied, the highest router ID wins, so 3.3.3.3 is DR and 2.2.2.2, the next highest, is BDR.' } }
       ] },
     // ------------------------------------------------------------ night 29 · first hop redundancy
-    { id: 'n29-cousins-cab', title: 'Two cabs, one number', sub: 'first hop redundancy: HSRP, VRRP and GLBP', npc: 'nexthop', day: [29], src: [PS('FHRPs.md')], unlocks: ['fhrp'],
+    { id: 'n29-cousins-cab', title: 'Two cabs, one number', sub: 'first hop redundancy: HSRP, VRRP and GLBP', npc: 'nexthop', day: [29], src: [PS('First_Hop_Redundancy_Protocols.md')], unlocks: ['fhrp'],
       beats: [
         { k: 'SCENE', where: 'The cab rank · Saturday, 03:10',
           lines: [

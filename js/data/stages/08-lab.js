@@ -94,7 +94,7 @@
       ] },
 
     // ------------------------------------------------------------ night 54 · virtualisation, cloud, containers and VRF
-    { id: 'n54-little-instances', title: 'Machines inside machines', sub: 'virtualisation, cloud, containers and VRF', npc: 'hypervisor', day: [54], src: [PS('Virtualizations_and_Cloud_Part1.md'), PS('Virtualizations_and_Cloud_Part2.md')], unlocks: ['virtualization'],
+    { id: 'n54-little-instances', title: 'Machines inside machines', sub: 'virtualisation, cloud, containers and VRF', npc: 'hypervisor', day: [54], src: [PS('Virtualizations_and_Cloud_Part1.md'), PS('Virtualization_Containers.md')], unlocks: ['virtualization'],
       beats: [
         { k: 'SCENE', where: 'The Lab · the blade chassis · after midnight', real: ['cisco'],
           lines: [
@@ -176,7 +176,7 @@
       ] },
 
     // ------------------------------------------------------------ night 56 · wireless architectures
-    { id: 'n56-forty-rooms', title: 'Forty rooms, one controller', sub: 'wireless architectures', npc: 'beacon', day: [56], src: [PS('Wireless_Architectures.md')], unlocks: ['wifi-arch'],
+    { id: 'n56-forty-rooms', title: 'Forty rooms, one controller', sub: 'wireless architectures', npc: 'beacon', day: [56], src: [PS('Wireless_Architecutres.md')], unlocks: ['wifi-arch'],
       beats: [
         { k: 'SCENE', where: 'The clinic\'s new wing · the second-floor corridor · after midnight',
           lines: [
@@ -304,7 +304,7 @@
       ] },
 
     // ------------------------------------------------------------ night 59 · network automation and AI
-    { id: 'n59-a-thousand-boxes', title: 'A thousand boxes', sub: 'network automation and AI', npc: 'ansible', day: [59], src: [PS('Network_Automation.md')], unlocks: ['automation'],
+    { id: 'n59-a-thousand-boxes', title: 'A thousand boxes', sub: 'network automation and AI', npc: 'ansible', day: [59], src: [PS('Introduction_to_Network_Automation.md')], unlocks: ['automation'],
       beats: [
         { k: 'SCENE', where: 'The Lab · Ansible\'s bench · eleven at night',
           lines: [

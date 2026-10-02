@@ -293,7 +293,7 @@
           why: 'Vee Lan: Dynamic auto never starts DTP negotiation; it only accepts an offer. Two dynamic auto ports both wait and the link stays an access link. VTP advertisements only travel over trunks, so the spare switch could not have overwritten the VLANs.' } }
       ] },
     // ------------------------------------------------------------ night 23 · EtherChannel
-    { id: 'n23-two-cables', title: 'Two cables, one name', sub: 'EtherChannel: LACP, PAgP and static bundles', npc: 'veelan', day: [23], src: [PS('EtherChannel.md')], unlocks: ['etherchannel'],
+    { id: 'n23-two-cables', title: 'Two cables, one name', sub: 'EtherChannel: LACP, PAgP and static bundles', npc: 'veelan', day: [23], src: [PS('Etherchannel.md')], unlocks: ['etherchannel'],
       beats: [
         { k: 'SCENE', where: 'The switch floor under the market · Saturday, 21:15',
           lines: [
