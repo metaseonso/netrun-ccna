@@ -129,3 +129,4 @@
 @media (max-width:420px){ .b-id{gap:8px!important;padding:0 10px!important} .b-id .logo{display:none} .b-id .cls{padding:3px 6px;font-size:10px} .b-id .sugbtn,.b-id .acct{padding-left:6px;padding-right:6px} .b-id .acct .ic.sm{display:none} }
 @media (max-width:420px){ .b-id .who b{font-size:12px;letter-spacing:0} .b-id .who{gap:0} }
 @media (max-width:380px){ .b-id .cls .cw{display:none} }
+@media (max-width:400px){.b-id .sugbtn{width:28px;padding:0;justify-content:center}}

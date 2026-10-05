@@ -376,3 +376,22 @@ body.firstnight .stn .ring{animation:none} /* the map's own pulse stays still wh
 .prel ul{list-style:none;margin:0;padding:0;display:grid;gap:8px} .prel li{display:grid;grid-template-columns:76px 1fr;gap:10px;font-size:13px;line-height:1.55;color:var(--ink2)}
 .ptag{font-family:var(--disp);font-size:10px;letter-spacing:.14em;padding-top:3px} .ptag.new{color:var(--cyan)} .ptag.change{color:var(--yel,#ffd84a)} .ptag.fix{color:var(--grn,#5dff9a)}
 @media (max-width:480px){.prel li{grid-template-columns:1fr;gap:2px}}
+
+/* the shard: the runner's own notes */
+.modal.jot .jtag{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:4px 0 10px;font-size:12px;color:var(--ink2)}
+.modal.jot .jtag b{color:var(--cyan);font-weight:normal}
+.modal.jot .jtag .btn{height:26px;padding:0 10px;font-size:10px}
+.shint{margin:6px 0 14px;font-size:12px;line-height:1.5;max-width:720px}
+.sempty{margin-top:10px}
+.snotes{display:grid;gap:10px;margin-top:8px;max-width:820px}
+.snote{border:1px solid var(--line);padding:12px 14px;background:rgba(63,246,255,.02)}
+.snote[hidden]{display:none}
+.snote .stext{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.55;color:var(--ink)}
+.snote textarea{width:100%;box-sizing:border-box;padding:10px 12px;background:var(--bg);border:1px solid var(--cyan);color:var(--ink);font:13px/1.5 var(--mono);resize:vertical}
+.snote .smeta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:10px;font-size:11px;color:var(--ink3)}
+.snote .smeta .grow{flex:1}
+.snote .smeta .btn{height:28px;padding:0 10px;font-size:10.5px}
+.snote .smeta .btn.sdel{border-color:var(--red);color:var(--red)}
+.snote .stag{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 8px;border:1px solid var(--line);background:none;color:var(--cyan);font:11px var(--mono);cursor:pointer;text-align:left}
+.snote .stag span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.snote .stag:hover,.snote .stag:focus-visible{border-color:var(--cyan)}

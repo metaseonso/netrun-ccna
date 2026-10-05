@@ -164,5 +164,21 @@ module.exports.run = function({ out }){
     Game.state.dm = { id: 'x' }; ok(!Game.drill.start(5).ok, 'drill: refused while a crew call waits');
     Object.assign(Game.state, JSON.parse(snap));
   }
+  // the shard: notes save, edit and delete, stay in bounds, and survive a flatline
+  {
+    const snap = JSON.stringify(Game.state); Game.state.shard = [];
+    ok(!Game.shard.add('   ').ok, 'shard: an empty note is refused');
+    const a = Game.shard.add('  show ip int brief  ', { view: 'level', ref: 'n10-the-tab', label: 'night 10 · Reading the tab' }); ok(a.ok && a.note.text === 'show ip int brief' && a.note.at.ref === 'n10-the-tab', 'shard: a note saves, trimmed, with its tag');
+    const b = Game.shard.add('x'.repeat(Game.shard.LEN + 500)); ok(b.ok && b.note.text.length === Game.shard.LEN && !b.note.at, 'shard: a long note is cut to the limit, no tag');
+    ok(Game.shard.list()[0].id === b.note.id, 'shard: newest first');
+    ok(Game.shard.edit(a.note.id, 'show ip interface brief').ok && Game.shard.list().find(n => n.id === a.note.id).text === 'show ip interface brief', 'shard: a note edits');
+    ok(!Game.shard.edit(a.note.id, '').ok, 'shard: an edit cannot empty a note');
+    Game.sync('test'); Game.shard.add('after the sync'); Game.reload();
+    ok(Game.state.shard.length === 3 && Game.state.shard[0].text === 'after the sync', 'shard: a flatline keeps every note (' + Game.state.shard.length + ')');
+    ok(Game.shard.remove(b.note.id).ok && Game.state.shard.length === 2, 'shard: a note deletes');
+    Game.state.shard = Array.from({ length: Game.shard.MAX }, (_, i) => ({ id: 'z' + i, t: 1, u: 1, text: 'n' + i, at: null }));
+    ok(!Game.shard.add('one more').ok, 'shard: full at ' + Game.shard.MAX);
+    Object.assign(Game.state, JSON.parse(snap));
+  }
   return { pass, fails };
 };

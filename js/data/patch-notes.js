@@ -2,6 +2,11 @@
    Read by the PATCH NOTES screen (ARCHIVE menu) and by patch-notes.html (linked from the door).
    Every change that reaches players gets a line here before it is pushed: plain words, what a runner will notice. */
 window.PATCH_NOTES = [
+  { v: '1.2.0', date: '2026-10-06', build: 96, items: [
+    ['new', 'SHARD: your own notes. Press JOT in the top bar on any screen, even mid-dive, and type. The note is tagged with where you were, like a night or a gig floor.'],
+    ['new', 'ARCHIVE > SHARD lists every note, newest first. Search them, edit them, delete them, or tap a tag to go back to that night or gig.'],
+    ['new', 'Notes stay with your record, follow your Google sign-in to other devices, and survive a flatline. A note you have not saved yet is kept if you close the box.']
+  ] },
   { v: '1.1.0', date: '2026-10-06', build: 95, items: [
     ['new', 'DISPATCH DRILL on the CREW screen. Pick 5, 10, 20, all, or any number of practice calls and Dispatch puts them on a quiet line one after another. Drill calls pay no rep or creds and put nobody on your crew at risk. The questions you miss come back sooner on real calls. (Suggestion S0005)'],
     ['new', 'Every talk shows a COURSE NOTES link for its night, under the title. (Suggestions S0003 and S0004)'],
