@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NETRUNNER://CCNA · Patch Notes</title>
+<style>
+  :root { --bg:#07080d; --ink:#e6f1ff; --ink2:#9fb3d1; --ink3:#6b7f9e; --line:#1d2a3d; --cyan:#3ff6ff; --yel:#ffd23f; --grn:#4dff88; }
+  body { background:var(--bg); color:var(--ink); font:16px/1.6 Consolas, monospace; margin:0; padding:32px 16px; }
+  main { max-width:720px; margin:0 auto; }
+  h1 { color:var(--cyan); font-size:22px; }
+  a { color:var(--cyan); }
+  section { border:1px solid var(--line); padding:12px 16px; margin:14px 0; }
+  section:first-of-type { border-color:var(--cyan); }
+  .ph { display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; margin-bottom:6px; }
+  .ph b { color:var(--cyan); letter-spacing:.08em; } .ph time { color:var(--ink3); font-size:13px; }
+  ul { list-style:none; margin:0; padding:0; }
+  li { display:grid; grid-template-columns:84px 1fr; gap:10px; color:var(--ink2); font-size:14px; margin:6px 0; }
+  .t { font-size:11px; letter-spacing:.14em; padding-top:2px; } .new { color:var(--cyan); } .change { color:var(--yel); } .fix { color:var(--grn); }
+  @media (max-width:480px) { li { grid-template-columns:1fr; gap:0; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Patch Notes</h1>
+<p><a href="./">← back to the game</a></p>
+<div id="notes"><noscript>The notes need JavaScript.</noscript></div>
+</main>
+<script src="js/data/patch-notes.js?v=95"></script>
+<script>
+  (function(){ var tag = { new: 'NEW', change: 'CHANGED', fix: 'FIXED' }, out = document.getElementById('notes');
+    (window.PATCH_NOTES || []).forEach(function(r){ var s = document.createElement('section'), h = document.createElement('div'), b = document.createElement('b'), t = document.createElement('time'), ul = document.createElement('ul');
+      h.className = 'ph'; b.textContent = r.v + '-alpha'; t.textContent = r.date; h.append(b, t); s.append(h, ul);
+      r.items.forEach(function(it){ var li = document.createElement('li'), k = document.createElement('span'), x = document.createElement('span'); k.className = 't ' + it[0]; k.textContent = tag[it[0]] || it[0].toUpperCase(); x.textContent = it[1]; li.append(k, x); ul.append(li); });
+      out.append(s); }); })();
+</script>
+</body>
+</html>

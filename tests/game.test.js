@@ -146,5 +146,23 @@ module.exports.run = function({ out }){
     ok(!Game.first.go('map'), 'first night: nothing moves once it is over');
     Object.assign(Game.state, keep);
   }
+  // a dispatch drill: as many calls as asked, no rep, no creds, no crew at risk, and each answer still moves the card's schedule
+  {
+    const snap = JSON.stringify(Game.state); Game.state.first = null; Game.state.dm = null;
+    STAGES.forEach(stg => stg.levels.slice(0, 2).forEach(l => { Game.state.read[l.id] = Date.now(); (l.unlocks || []).forEach(k => { Game.skill(k).slotted = true; }); }));
+    const pool = Game.drill.pool(); ok(pool > 3, 'drill: heard nights give questions (' + pool + ')');
+    const rep0 = Game.state.rep, cr0 = Game.state.creds, roster0 = JSON.stringify(Game.state.roster);
+    const r = Game.drill.start(3); ok(r.ok && Game.drill.active().total === 3, 'drill: starts with the number asked (' + JSON.stringify(r) + ')');
+    ok(Game.dm.maybeCreate(true) === null, 'drill: no crew call rings during a drill');
+    const seen = []; for (let i = 0; i < 3; i++) { const d = Game.drill.active(); const c = d.call; seen.push(c.card); const st0 = JSON.stringify(Game.state.cards[c.card] || null); Game.drill.answer(i === 0 ? c.a : (c.a + 1) % c.opts.length); ok(JSON.stringify(Game.state.cards[c.card]) !== st0, 'drill: the answer moves the card schedule'); if (i < 2) Game.drill.next(); }
+    const d = Game.drill.active(); ok(d.done === 3 && d.right === 1 && !d.call, 'drill: three calls, one right (' + d.done + ', ' + d.right + ')');
+    ok(new Set(seen).size === 3, 'drill: no question twice in one drill');
+    Game.drill.next(); ok(!Game.drill.active().call, 'drill: no call past the number asked');
+    ok(Game.state.rep === rep0 && Game.state.creds === cr0 && JSON.stringify(Game.state.roster) === roster0, 'drill: no rep, no creds, the crew untouched');
+    Game.drill.stop(); ok(!Game.drill.active(), 'drill: stop ends it');
+    ok(Game.drill.start(pool + 50).ok && Game.drill.active().total === pool, 'drill: asking for more than you have heard gives all of it'); Game.drill.stop();
+    Game.state.dm = { id: 'x' }; ok(!Game.drill.start(5).ok, 'drill: refused while a crew call waits');
+    Object.assign(Game.state, JSON.parse(snap));
+  }
   return { pass, fails };
 };

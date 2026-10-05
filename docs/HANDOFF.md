@@ -48,6 +48,11 @@ the owner makes releases on the Releases page.
 `?v=` bumped) fast-forward `main` to it (`git push origin <branch>:main`). The owner approved this on 2026-09-28; no
 per-release sign-off is needed.
 
+**Patch notes.** Every release that goes live gets an entry at the top of `js/data/patch-notes.js`, in plain words a
+player will notice, with the version (`1.x.y`, matching `package.json` as `1.x.y-alpha`) and the build (`?v=`). Bump
+`?v=` in `index.html` and `patch-notes.html` together. `npm test` fails when the build, the page or the package disagree
+with the newest entry. Players read the notes under ARCHIVE > PATCH NOTES and at `patch-notes.html` (linked from the door).
+
 ```bash
 npm test                # lint + every golden solution + engine tests. Must pass before every commit.
 npm run check           # same, with warnings listed

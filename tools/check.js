@@ -41,5 +41,11 @@ try { const T = require(path.join(ROOT, 'tests', 'engine.test.js')); const res =
 out('\n== GAME RULES ==');
 try { const G = require(path.join(ROOT, 'tests', 'game.test.js')); const res = G.run({ out }); fails += res.fails; out(res.pass + ' passed, ' + res.fails + ' failed'); } catch (e) { out('game tests could not run: ' + e.message); fails++; }
 
+// ---- 5. patch notes: every build that goes live has its entry, and the notes page and package agree with it
+out('\n== PATCH NOTES ==');
+{ const v = +((html.match(/\?v=(\d+)/) || [])[1]); const top = (window.PATCH_NOTES || [])[0]; const page = +((fs.readFileSync('patch-notes.html', 'utf8').match(/patch-notes\.js\?v=(\d+)/) || [])[1]); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+  const bad = !top ? 'no patch notes' : top.build !== v ? 'index.html is ?v=' + v + ' but the newest patch note is build ' + top.build + '. Add a patch note for this build in js/data/patch-notes.js.' : page !== v ? 'patch-notes.html loads ?v=' + page + ', index.html is ?v=' + v : pkg !== top.v + '-alpha' ? 'package.json is ' + pkg + ' but the newest patch note is ' + top.v : '';
+  if (bad) { out('FAIL   ' + bad); fails++; } else out(top.v + ' · build ' + v + ' · ' + top.items.length + ' notes'); }
+
 out('\n' + (fails ? 'CHECK FAILED (' + fails + ')' : 'CHECK PASSED'));
 process.exit(fails ? 1 : 0);

@@ -166,6 +166,15 @@
 .callbar .cs{display:flex;flex-direction:column;align-items:center} .callbar .cs b{font-family:var(--disp);font-size:22px;color:var(--mag)} .callbar .cs span{font-size:10px;color:var(--ink2)}
 .callbar .btn.big{flex:0 0 auto;padding:0 24px}
 .crewquiet{margin:10px 0 14px}
+.drillbox{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin:12px 0 16px;padding:14px 18px;border:1px solid var(--line);background:rgba(63,246,255,.03)}
+.drillbox .dbt{flex:1 1 300px} .drillbox .blbl{display:flex;align-items:center;gap:8px;color:var(--cyan)} .drillbox .dbt .muted{font-size:12px;margin-top:6px;line-height:1.5}
+.drillbox .dbgo{display:flex;flex-wrap:wrap;align-items:center;gap:6px} .drillbox .dbgo .btn.ghost{min-width:44px}
+.drillbox .dbn{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink3);margin-left:4px}
+.drillbox .dbn input{width:64px;padding:7px 8px;background:transparent;border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:13px}
+.drillbox .dbn input:focus-visible{outline:none;border-color:var(--cyan)}
+.dm.drill{border-color:var(--cyan);box-shadow:0 0 40px rgba(63,246,255,.22)} .dm.drill .from .n{color:var(--cyan)}
+.dm .drico{width:48px;height:48px;display:grid;place-items:center;border:1px solid var(--line);color:var(--cyan)}
+.dm .drsum{margin-top:10px;font-family:var(--disp);letter-spacing:.14em;color:var(--cyan)}
 .crew2{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px} @media (max-width:960px){.crew2{grid-template-columns:1fr}}
 .rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-content:start}
 .rcard{display:flex;gap:14px;padding:14px;background:var(--bg2);border:1px solid var(--line);transition:transform .16s,box-shadow .16s}
@@ -359,3 +368,11 @@ body.firstnight .stn .ring{animation:none} /* the map's own pulse stays still wh
 :focus-visible{outline:2px solid var(--yel);outline-offset:2px} /* one clear focus ring, distinct from the pink lead */
 .dm .opts.lead,.task.lead{outline:2px solid var(--mag);outline-offset:4px;box-shadow:none;animation:none}
 .dm .opts.lead,.task.lead{outline:2px solid var(--mag);outline-offset:4px;box-shadow:none;animation:none}
+/* patch notes */
+.patch{display:grid;gap:14px;margin-top:12px;max-width:820px}
+.prel{border:1px solid var(--line);padding:12px 16px} .prel.cur{border-color:var(--cyan)}
+.prel .ph{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:8px} .prel .ph b{font-family:var(--disp);letter-spacing:.12em;color:var(--cyan)} .prel .ph time{font-size:12px;color:var(--ink3)}
+.prel .pnow{font-size:10px;letter-spacing:.18em;color:var(--bg);background:var(--cyan);padding:2px 6px}
+.prel ul{list-style:none;margin:0;padding:0;display:grid;gap:8px} .prel li{display:grid;grid-template-columns:76px 1fr;gap:10px;font-size:13px;line-height:1.55;color:var(--ink2)}
+.ptag{font-family:var(--disp);font-size:10px;letter-spacing:.14em;padding-top:3px} .ptag.new{color:var(--cyan)} .ptag.change{color:var(--yel,#ffd84a)} .ptag.fix{color:var(--grn,#5dff9a)}
+@media (max-width:480px){.prel li{grid-template-columns:1fr;gap:2px}}

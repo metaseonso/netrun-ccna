@@ -1,6 +1,6 @@
 {
   "name": "netrunner-ccna",
-  "version": "1.0.0-alpha",
+  "version": "1.1.0-alpha",
   "description": "NETRUNNER://CCNA — a story-driven browser game for CCNA 200-301 study. Static, no build.",
   "private": true,
   "scripts": {
